@@ -1,0 +1,26 @@
+{
+  "name": "ant-lib",
+  "version": "0.1.0",
+  "private": true,
+  "author": "Henning Knut Skoglund <hkskoglund@gmail.com>",
+  "description": "An ANT USB library for wireless communication",
+  "keywords": [
+    "ant",
+    "usb",
+    "library",
+	"wireless"
+  ],
+  "main" : "./ant.js",
+  "dependencies" : {
+    "usb"  : " >=0.2.x"
+  },
+  "bundledDependencies": [
+    "usb",
+	"bindings"
+  ],  
+  "analyze": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=0.10.x"
+  }
+}
