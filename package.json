@@ -18,7 +18,8 @@
     "usb",
 	"bindings"
   ],  
-  "analyze": false,
+   "bugs" : 
+        { "url" : "https://github.com/hkskoglund/ANT-lib/issues" },
   "license": "MIT",
   "engines": {
     "node": ">=0.10.x"
