@@ -7,7 +7,7 @@ var events = require('events'),
    // DeviceProfile_ANTFS = require('./deviceProfile_ANTFS.js');
 
 // Low level API/interface to ANT USB stick
-function ANT(idVendor, idProduct, nodeInstance) {
+function ANT(idVendor, idProduct) {
    
     events.EventEmitter.call(this); // Call super constructor
 
@@ -17,13 +17,8 @@ function ANT(idVendor, idProduct, nodeInstance) {
     if (typeof idProduct === "undefined")
         throw new Error("Product id not specified");
 
-    if (typeof nodeInstance === "undefined")
-        throw new Error("Node instance not specified");
-
     this.idVendor = idVendor;
     this.idProduct = idProduct;
-
-    this.nodeInstance = nodeInstance;
 
    // this.deviceProfile_ANTFS = new DeviceProfile_ANTFS(nodeInstance);
 

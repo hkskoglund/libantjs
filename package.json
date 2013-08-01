@@ -14,10 +14,6 @@
   "dependencies" : {
     "usb"  : " >=0.2.x"
   },
-  "bundledDependencies": [
-    "usb",
-	"bindings"
-  ],  
    "bugs" : 
         { "url" : "https://github.com/hkskoglund/ANT-lib/issues" },
   "license": "MIT",
