@@ -14,6 +14,10 @@
   "dependencies" : {
     "usb"  : " >=0.2.x"
   },
+   "repository": {
+    "type": "git",
+    "url": "https://github.com/hkskoglund/ANT-lib.git"
+  },
    "bugs" : 
         { "url" : "https://github.com/hkskoglund/ANT-lib/issues" },
   "license": "MIT",
