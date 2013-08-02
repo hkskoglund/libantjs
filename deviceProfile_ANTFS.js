@@ -207,9 +207,17 @@ DeviceProfile_ANTFS.prototype = {
         FIT : 0x80
     },
 
+    addCommand: function (command) {
+        this._commandQueue.push(command);
+    },
+
+    addIndex: function (index) {
+        this._commandIndex.push(index);
+    },
+
     setNetworkKey : function (key)
     {
-        this.networkKey = key;
+        this._networkKey = key;
     },
 
     setHomeDirectory: function (homeDir) {
@@ -687,7 +695,7 @@ DeviceProfile_ANTFS.prototype = {
                               
     getSlaveChannelConfiguration: function (networkNr, channelNr, deviceNr, deviceType, transmissionType, searchTimeout, startupDirectory) {
         // Setup channel parameters for ANT-FS
-        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this.networkKey), startupDirectory);
+        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this._networkKey), startupDirectory);
 
         this.channel.setChannelId(deviceNr, deviceType, transmissionType, false);
         this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
@@ -1411,11 +1419,11 @@ DeviceProfile_ANTFS.prototype = {
                         console.log(Date.now() + " Did not receive any LINK beacon from device in 1 second, connection probably lost/device closed channel");
                     }, 1000);
 
-                    if (beacon.dataAvailable || self.nodeInstance.commandQueue.length > 0) // Only go to auth. layer if new data is available or there is more commands to process
+                    if (beacon.dataAvailable || self._commandQueue.length > 0) // Only go to auth. layer if new data is available or there is more commands to process
                     {
-                        if (self.nodeInstance.commandQueue.length === 0 && beacon.dataAvailable) {
+                        if (self._commandQueue.length === 0 && beacon.dataAvailable) {
                             console.log(Date.now() + " LINK beacon reports data available, scheduling download of new files");
-                            self.nodeInstance.commandQueue.push(DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW);
+                            self._commandQueue.push(DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW);
                         }
 
                         switch (beacon.authenticationType) {
@@ -1506,8 +1514,8 @@ DeviceProfile_ANTFS.prototype = {
                     { // Can only process one command at a time
                         self.deviceProfile.processingCommand = true;
 
-                        console.log("COMMAND QUEUE:", self.nodeInstance.commandQueue);
-                        currentCommand = self.nodeInstance.commandQueue.shift(); // Take next command
+                        console.log("COMMAND QUEUE:", self._commandQueue);
+                        currentCommand = self._commandQueue.shift(); // Take next command
 
                         if (typeof currentCommand === "undefined") {
                             console.warn(Date.now() + " No commands available for further processing");
@@ -1539,7 +1547,7 @@ DeviceProfile_ANTFS.prototype = {
                                                     genericIndex = self.deviceProfile.directory.downloadIndex;
                                                 else if (currentCommand === DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_MULTIPLE) {
 
-                                                    genericIndex = self.nodeInstance.commandIndex[0];
+                                                    genericIndex = self._commandIndex[0];
                                                    // console.log("genericIndex", genericIndex);
                                                 }
 
@@ -1561,7 +1569,7 @@ DeviceProfile_ANTFS.prototype = {
 
                                     var genericIndex;
 
-                                    genericIndex = self.nodeInstance.commandIndex[0];
+                                    genericIndex = self._commandIndex[0];
 
                                     if (genericIndex.length > 0) {
                                         // Index position only valid for one request -> erase of one file updates index of other files -> not easy to delete multiple files in one operation -> only delete ONE file pr. operation
@@ -1585,7 +1593,7 @@ DeviceProfile_ANTFS.prototype = {
                                     break;
 
                                 default:
-                                    console.log(Date.now() + " Unknown command to process " + self.nodeInstance.commandQueue);
+                                    console.log(Date.now() + " Unknown command to process " + self._commandQueue);
                                     delete self.deviceProfile.processingCommand;
                                     break;
                             }
