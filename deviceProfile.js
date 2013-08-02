@@ -1,6 +1,6 @@
 // Based on https://developer.mozilla.org/en-US/docs/JavaScript/Introduction_to_Object-Oriented_JavaScript
-function DeviceProfile(nodeInstance) {
-    this.nodeInstance = nodeInstance;
+function DeviceProfile() {
+    
 }
 
 DeviceProfile.prototype = {

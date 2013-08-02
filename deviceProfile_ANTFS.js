@@ -11,12 +11,16 @@ var Channel = require('./channel.js');
 //console.log("ANT IS", ANT);
 
 
-function DeviceProfile_ANTFS(nodeInstance) {
+function DeviceProfile_ANTFS(configuration) {
     DeviceProfile.call(this); // Call parent
-    this.nodeInstance = nodeInstance;
+    //this.nodeInstance = nodeInstance;
 
-    //this.nodeInstance.ANT.addListener(ANT.prototype.EVENT.BROADCAST, this.broadCastDataParser);
-    //this.nodeInstance.ANT.addListener(ANT.prototype.EVENT.BURST, this.parseBurstData);
+    //this.ANT.addListener(ANT.prototype.EVENT.BROADCAST, this.broadCastDataParser);
+    //this.ANT.addListener(ANT.prototype.EVENT.BURST, this.parseBurstData);
+    console.log("Setting configuration ANT_FS device profile", configuration);
+    this._configuration = configuration;
+    this._commandQueue = [];
+    this._commandIndex = [];
 
     this.state = DeviceProfile_ANTFS.prototype.STATE.INIT; // Init state before first LINK beacon received from device
     //this.stateCounter[DeviceProfile_ANTFS.prototype.STATE.LINK_LAYER] = 0;
@@ -33,7 +37,7 @@ function DeviceProfile_ANTFS(nodeInstance) {
                 console.log("New root directory created at " + DeviceProfile_ANTFS.prototype.ROOT_DIR);
             });
         } else
-            console.log(Date.now()+ " Root directory (storage of device data)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
+            console.log(Date.now()+ " Root directory (for storage of device FIT files)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
     });
 
 }
@@ -207,6 +211,56 @@ DeviceProfile_ANTFS.prototype = {
         FIT : 0x80
     },
 
+    enableChannelConfiguration : function (channelConfNr,networkNr,channelNr)
+    {
+        var self = this;
+
+        var openChannel = function () {
+            self.ANT.libConfig(ANT.prototype.LIB_CONFIG.ENABLE_RX_TIMESTAMP | ANT.prototype.LIB_CONFIG.ENABLE_RSSI | ANT.prototype.LIB_CONFIG.ENABLE_CHANNEL_ID,
+               function errorCB(err) { console.log(Date.now() + " Could not configure ANT for extended info. RX Timestamp/RSSI/ChannelID", err); },
+                function successCB() {
+
+                    var listenFunc = function () {
+                        //    console.log(Date.now() + " Background scanning channel ANT+ OPEN");
+                        self.ANT.listen.call(self.ANT, function transferCancelCB() {
+                            self.ANT.iterateChannelStatus(0, true, function clean() {
+                                self.ANT.tryCleaningBuffers(function release() {
+                                    self.ANT.releaseInterfaceCloseDevice();
+                                });
+                            });
+                        });
+                    };
+
+                    //console.trace();
+
+                    //if (self._configuration.scanningChannel === ANT.prototype.SCANNING_CHANNEL_TYPE.CONTINOUS)
+                    //    self.ANT.openRxScanMode(0, function (err) { console.log("Could not open Rx Scan Mode channel", err); }, listenFunc);
+                    //else
+                        self.ANT.open(channelConfNr, function (err) { console.log("Could not open channel", err); }, listenFunc);
+
+                });
+        };
+
+        this.ANT.setChannelConfiguration(channelConfNr, this.getSlaveChannelConfiguration(networkNr, channelNr,
+              // Timeout : Math.round(60 / 2.5)
+              Channel.prototype.CHANNELID.DEVICE_NUMBER_WILDCARD, Channel.prototype.CHANNELID.DEVICE_TYPE_WILDCARD,
+              Channel.prototype.CHANNELID.TRANSMISSION_TYPE_WILDCARD,
+              ANT.prototype.SEARCH_TIMEOUT.INFINITE_SEARCH));
+
+        this.ANT.activateChannelConfiguration(channelConfNr, function error(err) { console.log("Could not configure background scanning for ANT-FS", err); },
+                                                               function successCB() {
+                                                                   openChannel();
+                                                               });
+    },
+
+    initANT : function (successCB,errorCB)
+    {
+
+        this.ANT = new ANT (this._configuration.usb.idVendor, this._configuration.usb.idProduct);
+
+        this.ANT.init(errorCB, successCB);
+    },
+
     addCommand: function (command) {
         this._commandQueue.push(command);
     },
@@ -215,11 +269,7 @@ DeviceProfile_ANTFS.prototype = {
         this._commandIndex.push(index);
     },
 
-    setNetworkKey : function (key)
-    {
-        this._networkKey = key;
-    },
-
+  
     setHomeDirectory: function (homeDir) {
         var self = this; // Keep our this reference in callbacks please!
 
@@ -275,7 +325,7 @@ DeviceProfile_ANTFS.prototype = {
             console.log(Date.now() + " Repeat request", self.deviceProfile.request);
 
             if (self.deviceProfile.request.request === DeviceProfile_ANTFS.prototype.REQUEST_TYPE.DOWNLOAD) {
-                self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, self.deviceProfile.request.dataOffset,
+                self.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, self.deviceProfile.request.dataOffset,
                                        self.deviceProfile.request.initialRequest, self.deviceProfile.request.CRCSeed, 0, self.deviceProfile.request.callback); // Reuse previous callback for new request
 
             }
@@ -304,10 +354,10 @@ DeviceProfile_ANTFS.prototype = {
             console.error("Expected beacon id. (0x43) in the first packet of burst payload", data);
         else {
             // Packet 1 BEACON
-            beacon = this.nodeInstance.deviceProfile_ANTFS.parseClientBeacon.call(this,data, true);
+            beacon = this.deviceProfile.parseClientBeacon.call(this,data, true);
 
-            if (beacon.hostSerialNumber !== this.nodeInstance.ANT.serialNumber) {
-                console.warn("Beacon in bulk transfer header/packet 1, was for ", beacon.hostSerialNumber, ", our device serial number is ", this.nodeInstance.ANT.serialNumber, "beacon packet ", data);
+            if (beacon.hostSerialNumber !== this.deviceProfile.ANT.serialNumber) {
+                console.warn("Beacon in bulk transfer header/packet 1, was for ", beacon.hostSerialNumber, ", our device serial number is ", this.ANT.serialNumber, "beacon packet ", data);
 
             } else {
 
@@ -484,7 +534,7 @@ DeviceProfile_ANTFS.prototype = {
 
                                   //  console.log(currentDataOffset, downloadRequestType);
 
-                                    self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, currentDataOffset,
+                                    self.deviceProfile.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, currentDataOffset,
                                         downloadRequestType, currentCRCSeed, 0, self.deviceProfile.request.callback); // Reuse previous callback for new request
 
                                     // Kick in retry if no burst response
@@ -494,7 +544,7 @@ DeviceProfile_ANTFS.prototype = {
                                         if (self.deviceProfile.timeoutRetry < 10) {
                                             console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.deviceProfile.timeoutRetry);
 
-                                            self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, currentDataOffset,
+                                            self.deviceProfile.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, currentDataOffset,
                                          downloadRequestType, currentCRCSeed, 0, self.deviceProfile.request.callback);
                                         } else {
                                             console.log(Date.now() + " Something is wrong with the link to the device. Cannot proceed. Reached maximum retries.", self.deviceProfile.timeoutRetry);
@@ -538,14 +588,14 @@ DeviceProfile_ANTFS.prototype = {
                                 // Try to resume download with last good CRC
                                 console.log(Date.now() + " Resume block " + resumeIndex + " data offset: " + resumeDataOffset + " CRC Seed: " + resumeCRCSeed);
 
-                                self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, resumeDataOffset,
+                                self.deviceProfile.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, resumeDataOffset,
                                     DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
 
                                 self.deviceProfile.timeoutID = setInterval(function retry() {
                                     self.deviceProfile.timeoutRetry++;
                                     if (self.deviceProfile.timeoutRetry < 10) {
                                         console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
-                                        self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, resumeDataOffset,
+                                        self.deviceProfile.sendDownloadRequest.call(self, self.deviceProfile.request.dataIndex, resumeDataOffset,
                                           DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
                                     } else {
                                         console.log(Date.now() + " Lost the link to the device. Cannot proceed.");
@@ -571,13 +621,13 @@ DeviceProfile_ANTFS.prototype = {
                                 erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.NOT_READY) {
 
                                 if (++self.deviceProfile.request.retry <= 3) {
-                                    self.nodeInstance.deviceProfile_ANTFS.sendEraseRequest.call(self, self.deviceProfile.request.dataIndex, false);
+                                    self.deviceProfile.sendEraseRequest.call(self, self.deviceProfile.request.dataIndex, false);
                                     self.deviceProfile.timeoutID = setInterval(function retry() {
                                         self.deviceProfile.timeoutRetry++;
                                         if (self.deviceProfile.timeoutRetry < 10) {
                                             console.log(Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.deviceProfile.timeoutRetry);
 
-                                            self.nodeInstance.deviceProfile_ANTFS.sendEraseRequest.call(self, self.deviceProfile.request.dataIndex, false);
+                                            self.deviceProfile.sendEraseRequest.call(self, self.deviceProfile.request.dataIndex, false);
                                         } else {
                                             console.log(Date.now() + " Something is wrong with the link to the device. Cannot proceed.");
                                             process.kill(process.pid, 'SIGINT');
@@ -695,7 +745,7 @@ DeviceProfile_ANTFS.prototype = {
                               
     getSlaveChannelConfiguration: function (networkNr, channelNr, deviceNr, deviceType, transmissionType, searchTimeout, startupDirectory) {
         // Setup channel parameters for ANT-FS
-        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this._networkKey), startupDirectory);
+        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this._configuration.network_keys.ANT_FS), startupDirectory);
 
         this.channel.setChannelId(deviceNr, deviceType, transmissionType, false);
         this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
@@ -712,15 +762,17 @@ DeviceProfile_ANTFS.prototype = {
         this.channel.addListener(Channel.prototype.EVENT.BROADCAST, this.channel.broadCastDataParser);
         this.channel.addListener(Channel.prototype.EVENT.BURST, this.channel.parseBurstData);
 
-        this.channel.nodeInstance = this.nodeInstance; // Attach channel to nodeInstance
+       // this.channel.nodeInstance = this.nodeInstance; // Attach channel to nodeInstance
         this.channel.deviceProfile = this; // Attach channel to device profile
+        console.log("Device profile on channel", this.channel.deviceProfile);
 
         return this.channel;
     },
 
     channelResponseEvent: function (data) {
+        //console.log("THIS IS", this);
         //console.log(Date.now() + " Got channelResponseEvent on ANT-FS channel ", data);
-        var self = this, antInstance = this.nodeInstance.ANT;
+        var self = this, antInstance = this.deviceProfile.ANT;
         
         if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_FAIL_GO_TO_SEARCH, data))
             console.log(Date.now() + " ANT-FS Channel " + self.number + " cannot track broadcast anymore, missed to many expected broadcasts from device");
@@ -824,14 +876,14 @@ DeviceProfile_ANTFS.prototype = {
     sendLinkCommand: function (errorCallback, successCallback) {
         //console.log("LINK", this); this = channelConfiguration
         var channelNr = this.number, self = this;
-        var linkMsg = this.deviceProfile.ANTFSCOMMAND_Link(ANT.prototype.ANTFS_FREQUENCY, DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD.Hz8, this.nodeInstance.ANT.serialNumber);
-        this.nodeInstance.ANT.sendAcknowledgedData(channelNr, linkMsg, errorCallback, successCallback);
+        var linkMsg = this.deviceProfile.ANTFSCOMMAND_Link(ANT.prototype.ANTFS_FREQUENCY, DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD.Hz8, this.deviceProfile.ANT.serialNumber);
+        this.deviceProfile.ANT.sendAcknowledgedData(channelNr, linkMsg, errorCallback, successCallback);
     },
 
     sendDisconnect: function (errorCallback, successCallback) {
         var channelNr = this.number, self = this;
         var disconnectMsg = this.deviceProfile.ANTFSCOMMAND_Disconnect(DeviceProfile_ANTFS.prototype.DISCONNECT_COMMAND.RETURN_TO_LINK_LAYER, 0x00, 0x00);
-        this.nodeInstance.ANT.sendAcknowledgedData(channelNr, disconnectMsg, errorCallback,
+        this.deviceProfile.ANT.sendAcknowledgedData(channelNr, disconnectMsg, errorCallback,
             function () {
                 // For FR 910XT -> only 1 or 2 LINK messages are received after disconnect before device channel is closed
                 // To prevent LINK command being sent, its possible to set a flag to indicate that we don't want to do any
@@ -852,7 +904,7 @@ DeviceProfile_ANTFS.prototype = {
     //1368702944983 Rx:  <Buffer a4 09 50 e1 65 72 20 39 31 30 58 54 1f> * NO parser specified *
     sendRequestForClientDeviceSerialNumber: function (errorCB, successCB, authenticationResponseCB) {
         var channelNr = this.number, self = this;
-        var authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, 0, this.nodeInstance.ANT.serialNumber);
+        var authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, 0, this.deviceProfile.ANT.serialNumber);
         // It's OK to send it as an acknowledgedData if authentication string length is 0, otherwise a burst must be used
 
         self.deviceProfile.request = {
@@ -861,7 +913,7 @@ DeviceProfile_ANTFS.prototype = {
             callback: authenticationResponseCB, // When authentication response is received as a burst
         };
 
-        this.nodeInstance.ANT.sendAcknowledgedData(channelNr, authMsg,
+        this.deviceProfile.ANT.sendAcknowledgedData(channelNr, authMsg,
             function error(err) {
                 console.log(Date.now() + " Could not send request for client device serial number", error);
                 errorCB(err);
@@ -887,13 +939,13 @@ DeviceProfile_ANTFS.prototype = {
             authenticationString = new Buffer(friendlyName, "utf8");
         }
 
-        var authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_PAIRING, authStringLength, this.nodeInstance.ANT.serialNumber);
+        var authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_PAIRING, authStringLength, this.ANT.serialNumber);
 
         // Observation : client will signal state BUSY and pop up user dialog for "Pair with unknown - Yes/No". If yes then client enter transport state. If no,
         // client closes channel -> we get EVENT_RX_FAIL ... EVENT_RX_FAIL_GO_TO_SEARCH
         if (authStringLength === 0) {
             // It's OK to send it as an acknowledgedData if authentication string length is 0, otherwise a burst must be used
-            this.nodeInstance.ANT.sendAcknowledgedData(channelNr, authMsg,
+            this.ANT.sendAcknowledgedData(channelNr, authMsg,
                 function error() {
                     console.log(Date.now() + " Could not send acknowledged message request for pairing for unknown ANT-FS host ");
                     errorCB();
@@ -904,7 +956,7 @@ DeviceProfile_ANTFS.prototype = {
                 });
         } else {
             var data = Buffer.concat([authMsg.buffer, authenticationString]);
-            this.nodeInstance.ANT.sendBurstTransfer(channelNr, data, function error(err) {
+            this.ANT.sendBurstTransfer(channelNr, data, function error(err) {
                 console.log(Date.now() + " Failed to send burst transfer with request for pairing", err);
             },
                 function success() { console.log(Date.now() + " Sent burst transfer with request for pairing", data); }, "Pairing request");
@@ -923,10 +975,10 @@ DeviceProfile_ANTFS.prototype = {
             authenticationString = passkey;
         }
 
-        authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_PASSKEY_EXCHANGE, authStringLength, this.nodeInstance.ANT.serialNumber);
+        authMsg = this.deviceProfile.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_PASSKEY_EXCHANGE, authStringLength, this.deviceProfile.ANT.serialNumber);
 
         data = Buffer.concat([authMsg.buffer, authenticationString]);
-        this.nodeInstance.ANT.sendBurstTransfer(channelNr, data, function error(err) { console.log(Date.now() + " Failed to send burst transfer with passkey", err); errorCB(error); },
+        this.deviceProfile.ANT.sendBurstTransfer(channelNr, data, function error(err) { console.log(Date.now() + " Failed to send burst transfer with passkey", err); errorCB(error); },
             function success() { console.log(Date.now() + " Sent burst transfer with passkey", data); successCB(); }, "Transfer with passkey");
     },
 
@@ -1207,7 +1259,7 @@ DeviceProfile_ANTFS.prototype = {
                 setTimeout(function () { retry(); }, 130);
             }
             else
-                self.nodeInstance.ANT.sendBurstTransfer(channelNr, downloadMsg, function error() {
+                self.deviceProfile.ANT.sendBurstTransfer(channelNr, downloadMsg, function error() {
                     self.deviceProfile.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.ERROR;
                     console.log(Date.now() + " Failed to send burst transfer with download request");
                 },
@@ -1251,7 +1303,7 @@ DeviceProfile_ANTFS.prototype = {
                 setTimeout(function () { retryIfBusy(); }, 130);
             }
             else
-                self.nodeInstance.ANT.sendAcknowledgedData(channelNr, eraseMsg,
+                self.ANT.sendAcknowledgedData(channelNr, eraseMsg,
                     function error() {
                         self.deviceProfile.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.ERROR;
                         console.log(Date.now() + " Failed to send acknowledged transfer with erase request");
@@ -1273,7 +1325,7 @@ DeviceProfile_ANTFS.prototype = {
         function downloadNextFile() {
             var nextFileIndex = files.shift();
             if (typeof nextFileIndex !== "undefined")
-                self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self, nextFileIndex, 0,
+                self.deviceProfile.sendDownloadRequest.call(self, nextFileIndex, 0,
                     DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER, 0, 0, function downloadFinishedCB() {
                         downloadNextFile();
                     });
@@ -1301,7 +1353,7 @@ DeviceProfile_ANTFS.prototype = {
 
             if (typeof nextFileIndex !== "undefined")
 
-                self.nodeInstance.deviceProfile_ANTFS.sendEraseRequest.call(self, nextFileIndex, true, function complete() {
+                self.deviceProfile.sendEraseRequest.call(self, nextFileIndex, true, function complete() {
                     eraseNextFile();
                 });
 
@@ -1319,7 +1371,7 @@ DeviceProfile_ANTFS.prototype = {
 
     disconnectFromDevice: function (completeCB) {
         var self = this;
-        self.nodeInstance.deviceProfile_ANTFS.sendDisconnect.call(self, function error() {
+        self.deviceProfile.sendDisconnect.call(self, function error() {
             console.log(Date.now() + " Failed to send ANT-FS disconnect command to device");
             // delete self.deviceProfile.sendingLINK;
         },
@@ -1340,7 +1392,10 @@ DeviceProfile_ANTFS.prototype = {
     // This can be verified by looking at the code for emit in REPL console : console.log((new (require('events').EventEmitter)).emit.toString()) ->
     // event handler is called using handler.call(this=ANT Instance,...)
     broadCastDataParser: function (data) {
-       // Function context -  console.log(this);
+        // Function context -  
+        //console.log("THIS.deviceProfile IN broadCatDataParser", this.deviceProfile);
+       // console.log(typeof this.deviceProfile.sendingLink);
+
         var beaconID = data[4], channelNr = data[3],
             beacon, self = this,
             retryLINK = 0, currentCommand;
@@ -1358,7 +1413,7 @@ DeviceProfile_ANTFS.prototype = {
 
         function retryLink() {
             if (++retryLINK < 10) {
-                self.nodeInstance.deviceProfile_ANTFS.sendLinkCommand.call(self,
+                self.deviceProfile.sendLinkCommand.call(self,
                     function error() {
                         console.log(Date.now() + " Failed to send ANT-FS link command to device");
                         delete self.deviceProfile.sendingLINK; // Release MUTEX
@@ -1387,7 +1442,7 @@ DeviceProfile_ANTFS.prototype = {
 
             // If we not have updated channel id, then get it
 
-            beacon = self.nodeInstance.deviceProfile_ANTFS.parseClientBeacon.call(self,data);
+            beacon = self.deviceProfile.parseClientBeacon.call(self,data);
 
             self.deviceProfile.lastBeacon = { beacon: beacon, timestamp: Date.now() };
 
@@ -1419,11 +1474,11 @@ DeviceProfile_ANTFS.prototype = {
                         console.log(Date.now() + " Did not receive any LINK beacon from device in 1 second, connection probably lost/device closed channel");
                     }, 1000);
 
-                    if (beacon.dataAvailable || self._commandQueue.length > 0) // Only go to auth. layer if new data is available or there is more commands to process
+                    if (beacon.dataAvailable || self.deviceProfile._commandQueue.length > 0) // Only go to auth. layer if new data is available or there is more commands to process
                     {
-                        if (self._commandQueue.length === 0 && beacon.dataAvailable) {
+                        if (self.deviceProfile._commandQueue.length === 0 && beacon.dataAvailable) {
                             console.log(Date.now() + " LINK beacon reports data available, scheduling download of new files");
-                            self._commandQueue.push(DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW);
+                            self.deviceProfile._commandQueue.push(DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW);
                         }
 
                         switch (beacon.authenticationType) {
@@ -1454,14 +1509,14 @@ DeviceProfile_ANTFS.prototype = {
 
                     // Is authentication beacon for us?
 
-                    if (beacon.hostSerialNumber !== self.nodeInstance.ANT.serialNumber)
-                        console.warn("Authentication beacon was for ", beacon.hostSerialNumber, ", our device serial number is ", self.nodeInstance.ANT.serialNumber);
+                    if (beacon.hostSerialNumber !== self.deviceProfile.ANT.serialNumber)
+                        console.warn("Authentication beacon was for ", beacon.hostSerialNumber, ", our device serial number is ", self.deviceProfile.ANT.serialNumber);
                     else
                         if (typeof self.deviceProfile.sendingAUTH_CLIENT_SN === "undefined") // MUTEX
                         {
                             self.deviceProfile.sendingAUTH_CLIENT_SN = true;
                             // Observation: client device will transmit AUTHENTICATION beacon for 10 seconds after receiving this request
-                            self.nodeInstance.deviceProfile_ANTFS.sendRequestForClientDeviceSerialNumber.call(self, function error(err) {
+                            self.deviceProfile.sendRequestForClientDeviceSerialNumber.call(self, function error(err) {
                                 delete self.deviceProfile.sendingAUTH_CLIENT_SN; // Allow resend
                             }, function success() {
                                 // Device will send a authentication burst response after a short while after receiving the authentication request
@@ -1479,7 +1534,7 @@ DeviceProfile_ANTFS.prototype = {
                                             if (err) throw err;
                                             self.deviceProfile.passkey = data;
                                             //console.log(data);
-                                            self.nodeInstance.deviceProfile_ANTFS.sendRequestWithPasskey.call(self, data, function error(err) {
+                                            self.deviceProfile.sendRequestWithPasskey.call(self, data, function error(err) {
                                                 delete self.deviceProfile.sendingAUTH_CLIENT_SN;
                                             }, function success() {
                                             });
@@ -1487,7 +1542,7 @@ DeviceProfile_ANTFS.prototype = {
                                     }
                                     else {
                                         console.log(Date.now() + " Did not find passkey.bin file, requesting pairing with device");
-                                        self.nodeInstance.deviceProfile_ANTFS.sendRequestForPairing.call(self, DeviceProfile_ANTFS.prototype.FRIENDLY_NAME, function error(err) {
+                                        self.deviceProfile.sendRequestForPairing.call(self, DeviceProfile_ANTFS.prototype.FRIENDLY_NAME, function error(err) {
                                             delete self.deviceProfile.sendingAUTH_CLIENT_SN;
                                         }, function success() {
 
@@ -1514,12 +1569,12 @@ DeviceProfile_ANTFS.prototype = {
                     { // Can only process one command at a time
                         self.deviceProfile.processingCommand = true;
 
-                        console.log("COMMAND QUEUE:", self._commandQueue);
-                        currentCommand = self._commandQueue.shift(); // Take next command
+                        console.log("COMMAND QUEUE:", self.deviceProfile._commandQueue);
+                        currentCommand = self.deviceProfile._commandQueue.shift(); // Take next command
 
                         if (typeof currentCommand === "undefined") {
                             console.warn(Date.now() + " No commands available for further processing");
-                            self.nodeInstance.deviceProfile_ANTFS.disconnectFromDevice.call(self, function complete() {
+                            self.deviceProfile.disconnectFromDevice.call(self, function complete() {
                                 delete self.deviceProfile.processingCommand;
                             });
                             
@@ -1532,14 +1587,14 @@ DeviceProfile_ANTFS.prototype = {
                                 case DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_ALL:
                                 case DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_MULTIPLE:
 
-                                    self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self,
+                                    self.deviceProfile.sendDownloadRequest.call(self,
                                             DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE, 0,
                                             DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER, 0, 0,
                                             function completeCB() {
                                                 // var self = this;
                                                 var genericIndex;
 
-                                                self.nodeInstance.deviceProfile_ANTFS.parseDirectory.call(self, self.deviceProfile.response.downloadFile);
+                                                self.deviceProfile.parseDirectory.call(self, self.deviceProfile.response.downloadFile);
 
                                                 if (currentCommand === DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW)
                                                     genericIndex = self.deviceProfile.directory.newIndex;
@@ -1574,13 +1629,13 @@ DeviceProfile_ANTFS.prototype = {
                                     if (genericIndex.length > 0) {
                                         // Index position only valid for one request -> erase of one file updates index of other files -> not easy to delete multiple files in one operation -> only delete ONE file pr. operation
                                         self.deviceProfile.eraseMultipleFiles.call(self, [genericIndex[0]], function complete() {
-                                            self.nodeInstance.deviceProfile_ANTFS.sendDownloadRequest.call(self,
+                                            self.sendDownloadRequest.call(self,
                                            DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE, 0,
                                            DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER, 0, 0,
                                            function completeCB() {
                                                // var self = this;
 
-                                               self.nodeInstance.deviceProfile_ANTFS.parseDirectory.call(self, self.deviceProfile.response.downloadFile);
+                                               self.parseDirectory.call(self, self.deviceProfile.response.downloadFile);
 
                                                delete self.deviceProfile.processingCommand;
                                            });
