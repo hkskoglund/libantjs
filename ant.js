@@ -1485,7 +1485,7 @@ ANT.prototype.init = function (errorCallback, callback) {
 
         self.antInterface = self.device.interface();
         if (typeof self.antInterface === "undefined") {
-            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not get interface to ant device, aborting");
+            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not get interface to ANT device, aborting");
             errorCallback();
         }
         //else {

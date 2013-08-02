@@ -207,6 +207,11 @@ DeviceProfile_ANTFS.prototype = {
         FIT : 0x80
     },
 
+    setNetworkKey : function (key)
+    {
+        this.networkKey = key;
+    },
+
     setHomeDirectory: function (homeDir) {
         var self = this; // Keep our this reference in callbacks please!
 
@@ -682,7 +687,7 @@ DeviceProfile_ANTFS.prototype = {
                               
     getSlaveChannelConfiguration: function (networkNr, channelNr, deviceNr, deviceType, transmissionType, searchTimeout, startupDirectory) {
         // Setup channel parameters for ANT-FS
-        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this.nodeInstance.configuration.network_keys.ANT_FS), startupDirectory);
+        this.channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this.networkKey), startupDirectory);
 
         this.channel.setChannelId(deviceNr, deviceType, transmissionType, false);
         this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
