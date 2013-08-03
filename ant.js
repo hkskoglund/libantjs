@@ -1192,7 +1192,7 @@ ANT.prototype.getDeviceSerialNumber = function (callback) {
 
                    self.parse_response(data);
                    if (typeof callback === "function")
-                       callback();
+                       callback.call(self);
                    else
                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no callback after getDeviceSerialNumber");
                });
