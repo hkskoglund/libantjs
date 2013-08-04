@@ -168,12 +168,10 @@ Channel.prototype.setLowPrioritySearchTimeout = function (ucSearchTimeout) {
 };
 
 Channel.prototype.setChannelFrequency = function (ucRFFreq) {
-    var freq = 2400 + ucRFFreq, friendlyFormat;
-
-    friendlyFormat = "Setting RF frequency to " + freq + " MHz";
+    var freq = 2400+ ucRFFreq;
 
     this.RFfrequency = ucRFFreq;
-    this.RFfrequencyFriendly = friendlyFormat;
+    this.RFfrequencyFriendly = "Setting RF frequency to " + freq + " MHz";;
 };
 
 Channel.prototype.setChannelSearchWaveform = function (waveform) {

@@ -3,59 +3,51 @@ var Channel = require('./channel.js');
 var Network = require('./network.js');
 var ANT = require('ant-lib');
 
-function DeviceProfile_HRM(nodeInstance) {
-    DeviceProfile.call(this, nodeInstance); // Call parent
-    this.nodeInstance = nodeInstance;
-
+function DeviceProfile_HRM(configuration) {
+    console.log("HRM configuration", configuration);
+    DeviceProfile.call(this,configuration); 
 }
 
-DeviceProfile_HRM.prototype = DeviceProfile.prototype;  // Inherit properties/methods
+DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
 
-DeviceProfile_HRM.constructor = DeviceProfile_HRM;  // Update constructor
+DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
 
-DeviceProfile_HRM.prototype = {
+DeviceProfile_HRM.prototype.NAME = 'HRM';
 
-    NAME : 'HRM',
+DeviceProfile_HRM.prototype.DEVICE_TYPE = 0x78;
 
-    DEVICE_TYPE: 0x78,
+DeviceProfile_HRM.prototype.CHANNEL_PERIOD = 8070;
 
-    CHANNEL_PERIOD: 8070,
-
-    // Override/"property shadowing"
-    //                                   Network.prototype.ANT,      0, 0, 0, Math.round(15/2.5)
-    getSlaveChannelConfiguration: function (networkNr, channelNr, deviceNr, transmissionType, searchTimeout) {
+DeviceProfile_HRM.prototype.getSlaveChannelConfiguration = function (config) {
+    console.log("HRM slave channel config", config);
+    // networkNr, channelNr, deviceNr, transmissionType, searchTimeout
         // ANT+ Managed Network Document – Heart Rate Monitor Device Profile  , p . 9  - 4 channel configuration
+    var channelResponseEventFunc,
+        broadCastDataParserFunc;
 
-        var channel = new Channel(channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, networkNr, new Buffer(this.nodeInstance.configuration.network_keys.ANT_PLUS), this.nodeInstance.STARTUP_DIRECTORY);
+        this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, config.networkNr, new Buffer(this._configuration.network_keys.ANT_PLUS));
 
-        channel.setChannelId(deviceNr, DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType, false);
+        this.channel.setChannelId(config.deviceNr, DeviceProfile_HRM.prototype.DEVICE_TYPE, config.transmissionType, false);
 
-        channel.setChannelPeriod(DeviceProfile_HRM.prototype.CHANNEL_PERIOD); // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
-        channel.setChannelSearchTimeout(searchTimeout);
-        channel.setChannelFrequency(ANT.prototype.ANT_FREQUENCY);
+        this.channel.setChannelPeriod(DeviceProfile_HRM.prototype.CHANNEL_PERIOD); // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
+        this.channel.setChannelSearchTimeout(config.searchTimeout);
+        this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
 
-        channel.broadCastDataParser = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser; // Called on received broadcast data
+        broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser; // Called on received broadcast data
+        channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
-        channel.nodeInstance = this.nodeInstance; // Attach channel to nodeInstance
-        channel.deviceProfile = this; // Attach deviceprofile to channel
-
-        this.channel = channel; // Attach channel to device profile
-        this.channel.channelResponseEvent = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
-
-        this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, this.channel.channelResponseEvent);
-        this.channel.addListener(Channel.prototype.EVENT.BROADCAST, this.channel.broadCastDataParser);
-
-        
+        this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+        this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
 
         return channel;
-    },
+    }
 
-    channelResponseEvent : function (data)
+DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
     {
-        var self = this, antInstance = this.nodeInstance.ANT, reOpeningTimeout = 5000;
+        var self = this, antInstance = this.ANT, reOpeningTimeout = 5000;
 
         if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data)) {
-            console.log(Date.now() + " Channel " + self.number + " search timed out.");
+            console.log(Date.now() + " Channel " + self.channel.number + " search timed out.");
             //setTimeout(function handler() {
             //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
             //        function successCB() { });
@@ -74,11 +66,11 @@ DeviceProfile_HRM.prototype = {
             //        function successCB() { });
             //}, reOpeningTimeout);
         }
-    },
+    }
 
-    broadCastDataParser: function (data) {
+DeviceProfile_HRM.prototype.broadCastDataParser = function (data) {
         var receivedTimestamp = Date.now(),
-            self = this;// Will be cannel configuration
+            self = this;
 
         // 0 = SYNC, 1= Msg.length, 2 = Msg. id (broadcast), 3 = channel nr , 4= start of page  ...
         var startOfPageIndex = 4;
@@ -92,7 +84,7 @@ DeviceProfile_HRM.prototype = {
 
             timestamp: receivedTimestamp,
             //deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE,  // Should make it possible to classify which sensors data comes from
-            channelID : this.channelID,  // Channel ID is already contained in data, but its already parsed in the ANT library (parse_response func.)
+            channelID : this.channel.channelID,  // Channel ID is already contained in data, but its already parsed in the ANT library (parse_response func.)
 
             pageChangeToggle: pageChangeToggle,
             dataPageNumber: dataPageNumber,
@@ -103,12 +95,12 @@ DeviceProfile_HRM.prototype = {
 
         };
 
-        if (typeof this.channelID === "undefined")
+        if (typeof this.channel.channelID === "undefined")
             console.log(Date.now(), "No channel ID found for this master, every master has a channel ID, verify that channel ID is set (should be set during parse_response in ANT lib.)");
 
-        if (typeof this.channelIDCache[this.channelID.toProperty] === "undefined") {
-            console.log(Date.now(), "Creating object in channelIDCache to store i.e previousHeartBeatEventTime for master with channel Id", this.channelID);
-            this.channelIDCache[this.channelID.toProperty] = {};
+        if (typeof this.channel.channelIDCache[this.channel.channelID.toProperty] === "undefined") {
+            console.log(Date.now(), "Creating object in channelIDCache to store i.e previousHeartBeatEventTime for master with channel Id", this.channel.channelID);
+            this.channelIDCache[this.channel.channelID.toProperty] = {};
         }
 
         switch (dataPageNumber) {
@@ -126,20 +118,20 @@ DeviceProfile_HRM.prototype = {
                     page.RRInterval = page.heartBeatEventTime - page.previousHeartBeatEventTime;
 
                 // Must index channel = this by channelID to handle multiple masters
-                if (this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {  // Filter out identical messages
-                    this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {  // Filter out identical messages
+                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
                     var msg = page.pageType + " " + page.dataPageNumber + " HR " + page.computedHeartRate + " heart beat count " + page.heartBeatCount + " RR " + page.RRInterval;
                     console.log(msg);
                     this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
 
 
-                    if (this.channelIDCache[this.channelID.toProperty].timeout) {
-                        clearTimeout(this.channelIDCache[this.channelID.toProperty].timeout);
+                    if (this.channelIDCache[this.channel.channelID.toProperty].timeout) {
+                        clearTimeout(this.channelIDCache[this.channel.channelID.toProperty].timeout);
                         //console.log("After clearing", this.timeout);
-                        delete this.channelIDCache[this.channelID.toProperty].timeout;
+                        delete this.channelIDCache[this.channel.channelID.toProperty].timeout;
                     }
 
-                    this.channelIDCache[this.channelID.toProperty].timeout = setTimeout(function () { console.log(Date.now() + " Lost broadcast data from HRM"); }, 3000);
+                    this.channelIDCache[this.channel.channelID.toProperty].timeout = setTimeout(function () { console.log(Date.now() + " Lost broadcast data from HRM"); }, 3000);
                 }
                 break;
 
@@ -148,8 +140,8 @@ DeviceProfile_HRM.prototype = {
                 page.manufacturerID = data[startOfPageIndex + 1];
                 page.serialNumber = data.readUInt16LE(startOfPageIndex + 2);
 
-                if (this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
                     console.log(page.pageType + " " + page.dataPageNumber + " Manufacturer " + page.manufacturerID + " serial number : " + page.serialNumber);
                     this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
                 }
@@ -162,8 +154,8 @@ DeviceProfile_HRM.prototype = {
                 page.softwareVersion = data[startOfPageIndex + 2];
                 page.modelNumber = data[startOfPageIndex + 3];
 
-                if (this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
                     console.log(page.pageType + " " + page.dataPageNumber + " HW version " + page.hardwareVersion + " SW version " + page.softwareVersion + " Model " + page.modelNumber);
                     this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
                 }
@@ -173,8 +165,8 @@ DeviceProfile_HRM.prototype = {
             case 1: // Background data page
                 page.pageType = "Background";
                 page.cumulativeOperatingTime = (data.readUInt32LE(startOfPageIndex + 1) & 0x00FFFFFF) / 2; // Seconds since reset/battery replacement
-                if (this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
                     console.log(page.pageType+" "+page.dataPageNumber+ " Cumulative operating time (s) " + page.cumulativeOperatingTime + " hours: " + page.cumulativeOperatingTime / 3600);
                     this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
                 }
@@ -193,7 +185,6 @@ DeviceProfile_HRM.prototype = {
 
         
     }
-};
 
 module.exports = DeviceProfile_HRM;
 

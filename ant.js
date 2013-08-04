@@ -1575,40 +1575,40 @@ ANT.prototype.init = function (errorCallback, callback) {
 };
 
 // Associates a channel with a channel configuration
-ANT.prototype.setChannelConfiguration = function (channelConfNr, channel) {
+ANT.prototype.setChannelConfiguration = function (channel) {
     var self = this;
     //console.trace();
 
-   // console.log(Date.now() + "Configuration nr. ", channelConfNr, "of channel nr ", channel.number);
-
-    //console.log("CHANNEL_CONFIGURATION", self.channelConfiguration.length);
+    //console.log(Date.now() + "Configuration of channel nr ", channel.number);
 
     if (typeof self.channelConfiguration === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No channel configuration object available to attach channel to. getCapabilities should be run beforehand to get max. available channels for device");
         return;
     }
 
-    self.channelConfiguration[channelConfNr] = channel;
+    self.channelConfiguration[channel.number] = channel;
+    //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
 },
 
 // Configures a channel
-ANT.prototype.activateChannelConfiguration = function (channelConfNr, errorCallback, successCallback) {
-    var self = this;
-    var channel = self.channelConfiguration[channelConfNr];
+ANT.prototype.activateChannelConfiguration = function (desiredChannel, errorCallback, successCallback) {
+    //console.log("DESIRED CHANNEL", desiredChannel);
+    var self = this, channelNr = desiredChannel.number;
+    var channel = self.channelConfiguration[channelNr];
 
     var continueConfiguration = function () {
 
-        self.setChannelSearchTimeout(channelConfNr,
+        self.setChannelSearchTimeout(channelNr,
                function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not channel searchtimeout " + channel); errorCallback(err); },
                 function (data) {
                     //console.log(Date.now() + " Set channel search timeout OK");
 
-                    self.setChannelRFFrequency(channelConfNr,
+                    self.setChannelRFFrequency(channelNr,
                            function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not set RF frequency " + channel); errorCallback(err); },
                             function (data) {
                                 // console.log(Date.now() + " Set channel RF frequency OK");
                                 if (typeof channel.searchWaveform !== "undefined") {
-                                    self.setSearchWaveform(channelConfNr,
+                                    self.setSearchWaveform(channelNr,
                                        function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not channel search waveform " + channel); errorCallback(err); },
                                        function (data) {
                                            // console.log(Date.now() + " Set channel search waveform OK");
@@ -1620,28 +1620,28 @@ ANT.prototype.activateChannelConfiguration = function (channelConfNr, errorCallb
                 });
     };
 
-    //console.log("Configuring : ", channelConfNr);
+    //console.log("Configuring : ", channelNr);
 
     
-    self.setNetworkKey(channelConfNr,
+    self.setNetworkKey(channelNr,
                                function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to set network key." + channel.network); errorCallback(err); },
                                function (data) {
                                    // console.log("Set network key OK ");
-                 self.assignChannel(channelConfNr,
+                 self.assignChannel(channelNr,
                      function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not assign channel "+channel); errorCallback(err); },
                      function (data) {
                        
                          //console.log(Date.now() + " Assign channel OK");
-                         self.setChannelId(channelConfNr,
+                         self.setChannelId(channelNr,
                              function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not set channel id "+ channel); errorCallback(err); },
                               function (data) {
                                   //console.log(Date.now() + " Set channel id OK ");
-                                  self.setChannelPeriod(channelConfNr,
+                                  self.setChannelPeriod(channelNr,
                                      function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not set period "+ channel); errorCallback(err); },
                                       function (data) {
                                           //console.log(Date.now() + " Set channel period OK ");
                                           if (typeof channel.lowPrioritySearchTimeout !== "undefined")
-                                              self.setLowPriorityChannelSearchTimeout(channelConfNr,
+                                              self.setLowPriorityChannelSearchTimeout(channelNr,
                                                   function error(err) { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Could not set low priority search timeout" + channel); errorCallback(err); },
                                                   function success() {
                                                       continueConfiguration();
@@ -1698,19 +1698,19 @@ ANT.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriorit
 
 }
 
-ANT.prototype.setNetworkKey = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setNetworkKey = function (channelNr, errorCallback, successCallback) {
     var self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
 
-    // console.log("Setting network key on net " + channel.network.number + " key: " + channel.network.key +" channel "+channel.number);
+    //console.log("Setting network key on net " + channel.network.number + " key: " + channel.network.key +" channel "+channel.number);
 
     this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.set_network_key, Buffer.concat([new Buffer([channel.network.number]), new Buffer(channel.network.key)])), self.ANT_MESSAGE.set_network_key.id, errorCallback, successCallback);
     
 };
 
-ANT.prototype.assignChannel = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.assignChannel = function (channelNr, errorCallback, successCallback) {
 
-    var channel = this.channelConfiguration[channelConfNr], self = this;
+    var channel = this.channelConfiguration[channelNr], self = this;
 
     //console.log("Assign channel " + channel.number + " to channel type " + Channel.prototype.CHANNEL_TYPE[channel.channelType] + "(" +
     //    channel.channelType + ")" + " on network " + channel.network.number);
@@ -1725,7 +1725,7 @@ ANT.prototype.assignChannel = function (channelConfNr, errorCallback, successCal
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended assignment");
 };
 
-ANT.prototype.setChannelId = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setChannelId = function (channelNr, errorCallback, successCallback) {
 
     //(false, 0, 0, 0, 0),  // Search, no pairing   
     //                        DEFAULT_RETRY, ANT_DEVICE_TIMEOUT,
@@ -1733,7 +1733,7 @@ ANT.prototype.setChannelId = function (channelConfNr, errorCallback, successCall
     // ANTWARE II - log file   1061.985 { 798221031} Tx - [A4][05][51][00][00][00][78][00][88][00][00]
 
     var set_channel_id_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
     //console.log("Setting channel id. - channel number " + channel.number + " device type " + channel.deviceType + " transmission type " + channel.transmissionType);
 
     var buf = new Buffer(5);
@@ -1750,10 +1750,10 @@ ANT.prototype.setChannelId = function (channelConfNr, errorCallback, successCall
 
 };
 
-ANT.prototype.setChannelPeriod = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setChannelPeriod = function (channelNr, errorCallback, successCallback) {
 
     var set_channel_period_msg, rate, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
    
     var msg = "";
 
@@ -1782,13 +1782,13 @@ ANT.prototype.setChannelPeriod = function (channelConfNr, errorCallback, success
 // Low priority search mode
 // Spec. p. 72 : "...a low priority search will not interrupt other open channels on the device while searching",
 // "If the low priority search times out, the module will switch to high priority mode"
-ANT.prototype.setLowPriorityChannelSearchTimeout = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setLowPriorityChannelSearchTimeout = function (channelNr, errorCallback, successCallback) {
 
     // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
 
     var channel_low_priority_search_timeout_msg, 
         self = this,
-        channel = this.channelConfiguration[channelConfNr];
+        channel = this.channelConfiguration[channelNr];
 
     if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED) {
         //channel.lowPrioritySearchTimeout = ucSearchTimeout;
@@ -1804,11 +1804,11 @@ ANT.prototype.setLowPriorityChannelSearchTimeout = function (channelConfNr, erro
 };
 
 // High priority search mode
-ANT.prototype.setChannelSearchTimeout = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setChannelSearchTimeout = function (channelNr, errorCallback, successCallback) {
 
     // Each count in ucSearchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
     var channel_search_timeout_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
 
     if (typeof channel.searchTimeout === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No high priority search timeout specified for channel " + channel.number);
@@ -1824,23 +1824,23 @@ ANT.prototype.setChannelSearchTimeout = function (channelConfNr, errorCallback, 
 
 };
 
-ANT.prototype.setChannelRFFrequency = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setChannelRFFrequency = function (channelNr, errorCallback, successCallback) {
     // ucRFFreq*1Mhz+2400 Mhz
     var RFFreq_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
 
-    // console.log("Set channel RF frequency channel " + channel.number + " frequency " + channel.RFfrequency);
+     console.log("Set channel RF frequency channel " + channel.number + " frequency " + channel.RFfrequency);
     RFFreq_msg = this.create_message(this.ANT_MESSAGE.set_channel_RFFreq, new Buffer([channel.number, channel.RFfrequency]));
     this.sendAndVerifyResponseNoError(RFFreq_msg, self.ANT_MESSAGE.set_channel_RFFreq.id, errorCallback, successCallback);
     
 };
 
-ANT.prototype.setSearchWaveform = function (channelConfNr, errorCallback, successCallback) {
+ANT.prototype.setSearchWaveform = function (channelNr, errorCallback, successCallback) {
     // waveform in little endian!
 
     var set_search_waveform_msg, self = this,
         buf = new Buffer(3);
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
 
     if (typeof channel.searchWaveform === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No search waveform specified");
@@ -1858,19 +1858,19 @@ ANT.prototype.setSearchWaveform = function (channelConfNr, errorCallback, succes
     
 };
 
-ANT.prototype.openRxScanMode = function (channelConfNr, errorCallback, successCallback, noVerifyResponseNoError) {
+ANT.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     var openRxScan_channel_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
     //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
     openRxScan_channel_msg = this.create_message(this.ANT_MESSAGE.open_rx_scan_mode, new Buffer([0]));
 
     this.sendAndVerifyResponseNoError(openRxScan_channel_msg, self.ANT_MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
 },
 
-ANT.prototype.open = function (channelConfNr, errorCallback, successCallback, noVerifyResponseNoError) {
+ANT.prototype.open = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     //console.log("Opening channel "+ucChannel);
     var open_channel_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
     //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
     open_channel_msg = this.create_message(this.ANT_MESSAGE.open_channel, new Buffer([channel.number]));
 
@@ -1878,10 +1878,10 @@ ANT.prototype.open = function (channelConfNr, errorCallback, successCallback, no
 };
 
 // Closing first gives a response no error, then an event channel closed
-ANT.prototype.close = function (channelConfNr, errorCallback, successCallback, noVerifyResponseNoError) {
+ANT.prototype.close = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     //console.log("Closing channel "+ucChannel);
     var close_channel_msg, self = this;
-    var channel = this.channelConfiguration[channelConfNr];
+    var channel = this.channelConfiguration[channelNr];
     //console.log("Closing channel " + channel.number);
     close_channel_msg = this.create_message(this.ANT_MESSAGE.close_channel, new Buffer([channel.number]));
 
