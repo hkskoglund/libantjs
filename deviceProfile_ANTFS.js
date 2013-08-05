@@ -944,8 +944,9 @@ DeviceProfile_ANTFS.prototype.sendDisconnect = function (errorCallback, successC
     //1368702944975 Rx:  <Buffer a4 09 50 41 46 6f 72 65 72 75 6e 6e 85> * NO parser specified *
     //1368702944983 Rx:  <Buffer a4 09 50 e1 65 72 20 39 31 30 58 54 1f> * NO parser specified *
 DeviceProfile_ANTFS.prototype.sendRequestForClientDeviceSerialNumber = function (errorCB, successCB, authenticationResponseCB) {
-    var channelNr = this.channel.number, self = this;
-    var authMsg = this.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, 0, this.ANT.serialNumber);
+    var channelNr = this.channel.number,
+        self = this,
+        authMsg = this.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, 0, this.ANT.serialNumber);
     // It's OK to send it as an acknowledgedData if authentication string length is 0, otherwise a burst must be used
 
     self.request = {
@@ -955,12 +956,12 @@ DeviceProfile_ANTFS.prototype.sendRequestForClientDeviceSerialNumber = function 
     };
 
     this.ANT.sendAcknowledgedData(channelNr, authMsg,
-        function error(err) {
-            console.log(Date.now() + " Could not send request for client device serial number", error);
+        function _errorCBRequestForClientDeviceSerialNumber(err) {
+            console.log(Date.now() + " Could not send request for client device serial number", err);
             errorCB(err);
 
         },
-        function success() {
+        function _successCBRequestForClientDeviceSerialNumber() {
             console.log(Date.now() + " Request for client device serial number acknowledged by device.");
             if (typeof successCB === "function")
                 successCB();
@@ -1518,7 +1519,7 @@ DeviceProfile_ANTFS.prototype.broadCastDataParser = function (data) {
                                         function success() {
                                             console.log(Date.now() + " ANT-FS link command acknowledged by device.");
                                             // Device should transition to authentication beacon now if all went well
-                                            setTimeout(function handler() {
+                                            setTimeout(function _timeoutForLINK() {
                                                 if (typeof self._mutex.sendingLINK !== "undefined") {
                                                     console.log(Date.now() + " Device did not transition to authentication state. Retrying when LINK beacon is received from device.");
                                                     delete self._mutex.sendingLINK;
@@ -1557,8 +1558,13 @@ DeviceProfile_ANTFS.prototype.broadCastDataParser = function (data) {
                             delete self._mutex.sendingAUTH_CLIENT_SN; // Allow resend
                         }, function success() {
                             // Device will send a authentication burst response after a short while after receiving the authentication request
+                            setTimeout(function _timeoutForAUTH_CLIENT_SN() {
+                                if (typeof self._mutex.sendingAUTH_CLIENT_SN !== "undefined") {
+                                    console.log(Date.now() + " Device did respond on request for client serial number. Retrying when AUTHENTICATION beacon is received from device.");
+                                    delete self._mutex.sendingAUTH_CLIENT_SN;
+                                }
+                            }, 2000); // Allow resend of request for client serial number
                         },
-
                         // Callback from parseBurstData when authentication response is received from the device
                         function authenticationCB() {
                             // Try to read passkey from file

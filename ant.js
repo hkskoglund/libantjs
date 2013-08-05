@@ -641,13 +641,28 @@ ANT.prototype.parse_response = function (data) {
         payloadData,
         resendMsg,
         burstMsg,
-        burstParser;
+        burstParser,
+        msgCRC = data[3 + msgLength],
+        verifiedCRC = self.getCRC(data),
+        SYNCOK = (firstSYNC === ANT.prototype.SYNC),
+        CRCOK = (msgCRC === verifiedCRC);
+
+    if (typeof msgCRC === "undefined")
+        console.log("msgCRC", msgCRC, "msgLength", msgLength, data);
 
     // Check for valid SYNC byte at start
 
-    if (firstSYNC !== ANT.prototype.SYNC) {
+    if (!SYNCOK) {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Invalid SYNC byte "+ firstSYNC+ " expected "+ ANT.prototype.SYNC+" cannot trust the integrety of data, thus discarding bytes:"+ data.length);
         return;
+    }
+
+    // Check CRC
+
+    if (!CRCOK) {
+        console.log("CRC failure");
+        //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "CRC failure - verified CRC " + verifiedCRC.toString(16) + " message CRC" + msgCRC.toString(16));
+        //return;
     }
 
     switch (msgID) {
@@ -900,7 +915,7 @@ ANT.prototype.parse_response = function (data) {
 // Continuously listen on incoming packets from ANT engine and send it to the general parser for further processing
 ANT.prototype.listen = function (transferCancelledCallback) {
 
-    var self = this, NO_TIMEOUT = 0, TIMEOUT = 30000, msgLength, channelNr;
+    var self = this, NO_TIMEOUT = 0, TIMEOUT = 30000, msgLength, channelNr, msgCRC, verifiedCRC, SYNCOK,CRCOK;
 
     function retry() {
 
@@ -930,12 +945,17 @@ ANT.prototype.listen = function (transferCancelledCallback) {
         successCB = function success(data) {
             msgLength = data[1];
             channelNr = data[3];
+           
+
             //if (data.length > 1 + msgLength + 2+1) {
             //    //console.log(data.inspect());
             //    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Buffered data (more than one data message) received on channel "+channelNr+ ", length of data " + data.length + " bytes");
             //}
-            self.parse_response.call(self, data);
-            process.nextTick(retry);
+            //console.log("RAW", data);
+            //console.log("Verified CRC", verifiedCRC.toString(16),"CRC in msg.",msgCRC.toString(16));
+           
+                self.parse_response(data);
+               process.nextTick(retry);
         };
 
        
@@ -949,6 +969,20 @@ ANT.prototype.listen = function (transferCancelledCallback) {
     retry();
 
 };
+
+// CheckSUM = XOR of all bytes in message
+ANT.prototype.getCRC = function (messageBuffer) {
+    var checksum = messageBuffer[0],
+        len = messageBuffer[1] + 3,
+        byteNr;
+    //console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len);
+    for (byteNr = 1; byteNr < len; byteNr++) {
+        checksum = checksum ^ messageBuffer[byteNr]
+        //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
+    }
+
+    return checksum;
+}
 
 /*
 This function create a raw message 
@@ -994,12 +1028,14 @@ ANT.prototype.create_message = function (message, content) {
     // Checksum
     //console.log("Message buffer:", messageBuffer, "Message buffer length", messageBuffer.length, " content length: ", content_len, "content buffer: ", contentBuffer);
 
-    var checksum = messageBuffer.readUInt8(0);
-    //console.log("Start checksum", checksum);
-    for (byteNr = 1; byteNr < messageBuffer.length; byteNr++) {
-        checksum = checksum ^ messageBuffer.readUInt8(byteNr);
-        //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
-    }
+    //var checksum = messageBuffer.readUInt8(0);
+    ////console.log("Start checksum", checksum);
+    //for (byteNr = 1; byteNr < messageBuffer.length; byteNr++) {
+    //    checksum = checksum ^ messageBuffer.readUInt8(byteNr);
+    //    //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
+    //}
+
+    var checksum = this.getCRC(messageBuffer);
 
     //checksum = 0; // -> Provoke Serial Error Message, error 2 - checksum of ANT msg. incorrect
     messageBuffer = Buffer.concat([messageBuffer, new Buffer([checksum])], 4 + content_len);
@@ -1989,21 +2025,50 @@ ANT.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, 
 
 // p. 96 ANT Message protocol and usave rev. 5.0
 // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
-// 3rd option : GO_TO_SEARCH is received if channel is droppped -> channel should be unassigned
+// 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
 ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
-    var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]), self = this,
+    var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
+        self = this,
         ack_msg = self.create_message(ANT.prototype.ANT_MESSAGE.acknowledged_data, buf),
         resendMsg;
 
     // Add to retry queue -> will only be of length === 1
     resendMsg = {
         message: ack_msg,
-        timeoutRetry: 0,
         retry: 0,
         EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
         EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
 
-        timestamp: Date.now()
+        timestamp: Date.now(),
+
+        retryCB : function _resendAckowledgedDataCB() {
+
+            if (resendMsg.timeoutID)  // If we already have a timeout running, reset
+                clearTimeout(resendMsg.timeoutID);
+
+            resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
+            resendMsg.retry++;
+
+            if (resendMsg.retry <= ANT.prototype.TX_DEFAULT_RETRY) {
+                resendMsg.lastRetryTimestamp = Date.now();
+                // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF 
+                self.sendOnly(ack_msg, ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
+                    function error(err) {
+                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
+                        if (typeof errorCallback === "function")
+                            errorCallback(error);
+                        else
+                            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
+                    },
+                    function success() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
+            } else {
+                self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
+                if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
+                    resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
+                else
+                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
+            }
+        }
     };
 
     this.retryQueue[ucChannel].push(resendMsg);
@@ -2019,36 +2084,6 @@ ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, erro
     //    else
     //        console.log(Date.now() + " Reached maxium number of timeout retries");
     //};
-
-
-    resendMsg.retryCB = function send() {
-
-        if (resendMsg.timeoutID)  // If we already have a timeout running, reset
-            clearTimeout(resendMsg.timeoutID);
-
-        resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
-        resendMsg.retry++;
-
-        if (resendMsg.retry <= ANT.prototype.TX_DEFAULT_RETRY) {
-            resendMsg.lastRetryTimestamp = Date.now();
-            // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF 
-            self.sendOnly(ack_msg, ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-                function error(err) {
-                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
-                    if (typeof errorCallback === "function")
-                        errorCallback(error);
-                    else
-                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
-                },
-                function success() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
-        } else {
-            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
-            if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
-                resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
-            else
-                self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
-        }
-    };
 
     resendMsg.retryCB();
 

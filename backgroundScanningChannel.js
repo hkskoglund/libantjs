@@ -24,23 +24,29 @@ BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (con
     // networkNr, channelNr, deviceNr, deviceType, transmissionType, lowPrioritySearchTimeout
     // Setup channel parameters for background scanning
     //console.log("Low priority search timeout", lowPrioritySearchTimeout);
+    var broadCastDataParserFunc,
+        channelResponseEventFunc;
+
     this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_only_channel, config.networkNr, this._configuration.network_keys.ANT_PLUS);
 
     this.channel.setExtendedAssignment(Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE);
     this.channel.setChannelId(config.deviceNr, config.deviceType, config.transmissionType, false);
     //this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
-    this.channel.setLowPrioritySearchTimeout(lowPrioritySearchTimeout);
+    this.channel.setLowPrioritySearchTimeout(config.searchTimeoutLP);
    
-    this.channel.setChannelSearchTimeout(0); // Disable High priority search
+    if (config.searchTimeoutHP !== 0x00) {
+        console.log(Date.now(), "High priority search timeout is not disabled = "+config.searchTimeoutHP.toString(16)+" , forced disable = 0x00 for background scanning");
+        config.searchTimeoutHP = 0x00;
+    }
+    this.channel.setChannelSearchTimeout(config.searchTimeoutHP); // Disable High priority search
     this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
     //this.channel.setChannelSearchWaveform(DeviceProfile_ANTFS.prototype.SEARCH_WAVEFORM);
 
-    // Functions available as callbacks
-    this.channel.broadCastDataParser = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
-    this.channel.channelResponseEvent = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
+    broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
+    channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
-    this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, this.channel.channelResponseEvent.bind(this));
-    this.channel.addListener(Channel.prototype.EVENT.BROADCAST, this.channel.broadCastDataParser.bind(this));
+    this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+    this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
 
    // console.log("BACKGROUND CHANNEL",this.channel);
 
@@ -98,7 +104,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
         case DeviceProfile_HRM.prototype.DEVICE_TYPE:
 
             // By convention when a master is found and a new channel is created/opened to handle broadcasts,
-            // the background channel search will not trigger anymore on this master, but can trigger on same device type.
+            // the background channel search will not trigger anymore on this particular master, but can trigger on same device type.
             // Only one channel pr. device type is allocated
 
             console.log(Date.now(), "Found HRM - heart rate monitor - master/sensor")
