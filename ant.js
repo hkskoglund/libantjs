@@ -62,7 +62,7 @@ ANT.prototype.TX_DEFAULT_RETRY = 5; // Retry of RF acknowledged packets (includi
 ANT.prototype.SEARCH_TIMEOUT = {
     INFINITE_SEARCH: 0xFF,
     DISABLE_HIGH_PRIORITY_SEARCH_MODE: 0x00
-}
+};
 
 ANT.prototype.ANT_FREQUENCY = 57;
 
@@ -506,8 +506,9 @@ ANT.prototype.parseChannelResponse = function (data) {
         msgCode = data[5],
             msg;
 
+    //console.log("CHANNEL RESPONSE RAW", data);
     if (msgId === 1) // Set to 1 for RF event
-        msg = "EVENT on channel " + channel + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly;
+        msg = "EVENT on channel " + channel + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly+" ";
     else
         msg = "RESPONSE on channel " + channel + " to msg. id 0x" + msgId.toString(16) + "  " + ANT.prototype.ANT_MESSAGE[msgId] + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly;
 
@@ -562,7 +563,7 @@ ANT.prototype.parse_extended_RSSI = function (channelNr,data,startIndex) {
             str += " Threshold conf. value " + self.channelConfiguration[channelNr].RSSI.thresholdConfigurationValue;
 
         return str;
-    }
+    };
 
     return this.channelConfiguration[channelNr].RSSI;
 
@@ -648,7 +649,7 @@ ANT.prototype.parse_response = function (data) {
         CRCOK = (msgCRC === verifiedCRC);
 
     if (typeof msgCRC === "undefined")
-        console.log("msgCRC", msgCRC, "msgLength", msgLength, data);
+        console.log("msgCRC undefined", "msgLength 0x", msgLength.toString(16) +"="+msgLength, data);
 
     // Check for valid SYNC byte at start
 
@@ -660,7 +661,7 @@ ANT.prototype.parse_response = function (data) {
     // Check CRC
 
     if (!CRCOK) {
-        console.log("CRC failure");
+        console.log("CRC failure - allow passthrough");
         //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "CRC failure - verified CRC " + verifiedCRC.toString(16) + " message CRC" + msgCRC.toString(16));
         //return;
     }
@@ -821,12 +822,14 @@ ANT.prototype.parse_response = function (data) {
             } else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_FAILED, data)) {
                 if (antInstance.retryQueue[channelNr].length >= 1) {
                     resendMsg = antInstance.retryQueue[channelNr][0];
+                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Re-sending ACKNOWLEDGE message due to TX_FAILED, retry "+resendMsg.retry);
                     resendMsg.retryCB();
                 }
 
                 if (antInstance.burstQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.burstQueue[channelNr][0];
-                    resendMsg.retryCB();
+                    burstMsg = antInstance.burstQueue[channelNr][0];
+                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Re-sending BURST message due to TX_FAILED "+burstMsg.message.friendlyName+" retry "+burstMsg.retry);
+                    burstMsg.retryCB();
                 }
             }
 
@@ -972,17 +975,19 @@ ANT.prototype.listen = function (transferCancelledCallback) {
 
 // CheckSUM = XOR of all bytes in message
 ANT.prototype.getCRC = function (messageBuffer) {
-    var checksum = messageBuffer[0],
-        len = messageBuffer[1] + 3,
+    var checksum = messageBuffer[0], // Should be SYNC 0xA4
+        len = messageBuffer[1] + 3, // Should be messageBuffer.length - 1
         byteNr;
-    //console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len);
+    // console.trace();
+    // console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len,"messageBuffer.length",messageBuffer.length);
+
     for (byteNr = 1; byteNr < len; byteNr++) {
-        checksum = checksum ^ messageBuffer[byteNr]
+        checksum = checksum ^ messageBuffer[byteNr];
         //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
     }
 
     return checksum;
-}
+};
 
 /*
 This function create a raw message 
@@ -994,11 +999,14 @@ Content = Buffer
 // Sending of LSB first = little endian NB!
 */
 ANT.prototype.create_message = function (message, content) {
-    var index;
+    var index,
+     headerBuffer = new Buffer(3),
+     contentBuffer,
+     messageBuffer,
+     trailingZeroBuffer,
+     content_len,
+     generatedMessage;
 
-    var headerBuffer = new Buffer(3), contentBuffer, messageBuffer, trailingZeroBuffer;
-
-    var content_len;
     if (content)
         content_len = content.length;
     else {
@@ -1053,13 +1061,16 @@ ANT.prototype.create_message = function (message, content) {
         messageBuffer = Buffer.concat([messageBuffer, trailingZeroBuffer]);
     }
 
-    //console.log("Created message : ", messageBuffer)
-
-    return {
+    
+    generatedMessage = {
         id: message.id,
         buffer: messageBuffer,
         friendly: message.friendly
     };
+
+   // console.log("Created message : ", message)
+
+    return generatedMessage;
 };
 
 // ANT Message Protocol and Usage. rev 5.0b - page 115
@@ -1697,12 +1708,11 @@ ANT.prototype.LIB_CONFIG = {
     ENABLE_RX_TIMESTAMP: 0x20, // Bit 6
     ENABLE_RSSI: 0x40, // Bit 7 
     ENABLE_CHANNEL_ID: 0x80 // Bit 8
-}
+};
 
 // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
 // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
-ANT.prototype.libConfig = function(ucLibConfig,errorCallback,successCallback)
-{
+ANT.prototype.libConfig = function (ucLibConfig, errorCallback, successCallback) {
     var self = this, filler = 0;
 
     //console.log("libConfig hex = ", Number(ucLibConfig).toString(16),"binary=",Number(ucLibConfig).toString(2));
@@ -1710,7 +1720,7 @@ ANT.prototype.libConfig = function(ucLibConfig,errorCallback,successCallback)
         this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.libConfig, new Buffer([filler, ucLibConfig])), self.ANT_MESSAGE.libConfig.id, errorCallback, successCallback);
     else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via LibConfig API call");
-}
+};
 
 // Only enables Channel ID extension of messages
 ANT.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
@@ -1722,17 +1732,16 @@ ANT.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallb
         this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), self.ANT_MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
     else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
-}
+};
 
 // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
 // This is the case for ANT-FS and ANT+ device profile like i.e HRM
-ANT.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback)
-{
+ANT.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
     var self = this;
 
     this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), self.ANT_MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
 
-}
+};
 
 ANT.prototype.setNetworkKey = function (channelNr, errorCallback, successCallback) {
     var self = this;
@@ -1794,7 +1803,7 @@ ANT.prototype.setChannelPeriod = function (channelNr, errorCallback, successCall
     var msg = "";
 
     if (channel.isBackgroundSearchChannel())
-        msg = "(Background search channel)"
+        msg = "(Background search channel)";
 
     //console.log("Set channel period for channel " + channel.number + " to " + channel.periodFriendly + " value: " + channel.period);
 
@@ -2056,7 +2065,7 @@ ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, erro
                     function error(err) {
                         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
                         if (typeof errorCallback === "function")
-                            errorCallback(error);
+                            errorCallback(err);
                         else
                             self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
                     },
@@ -2122,15 +2131,18 @@ ANT.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, s
 
     // Add to retry queue -> will only be of length === 1
     burstMsg = {
+        timestamp: Date.now(),
+
         message: {
             buffer: pucData,
             friendlyName: messageFriendlyName
         },
 
         retry: 0,
+
         EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
         EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
-        timestamp: Date.now(),
+        
 
     };
 

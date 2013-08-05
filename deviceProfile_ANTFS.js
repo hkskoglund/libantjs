@@ -169,11 +169,11 @@ DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE = {
     0x02: "Reject"
 };
 
-DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB = 16, // Size of download buffer in MB
+DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB = 16; // Size of download buffer in MB
 
 DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY = 3000; // Time in ms. to wait for burst response on a request before retrying previous request
 
-DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + '\\getFIT-archive',
+DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + '\\getFIT-archive';
 
 DeviceProfile_ANTFS.prototype.NODECOMMAND = {
     DOWNLOAD_MULTIPLE: 0x03,
@@ -207,7 +207,7 @@ DeviceProfile_ANTFS.prototype.FILE_TYPE = {
     FIT : 0x80
 };
 
-DeviceProfile_ANTFS.prototype
+
     //stop = function () {
       
     //    clearInterval(this.heartBeatIntervalID);
@@ -356,10 +356,12 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
         console.error(Date.now() + " Received burst data for channel ", channelNr, " intended for channel ", self.number);
         return;
     }
-    if (self.timeoutID) {
-        clearInterval(self.timeoutID);
-        self.timeoutRetry = 0;
-    }
+
+    if (self.retryRequestTimeoutID) {
+        clearInterval(self.retryRequestTimeoutID);
+        self.retryTimeout = 0;
+    } else
+        self.retryTimeout = 0;
 
     //console.log("Got burst data in device profile ANT-FS", data);
 
@@ -428,7 +430,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
                             if (authenticate_response.authenticationStringLength > 0) {
                                 authenticate_response.authenticationString = data.slice(16, 16 + authenticate_response.authenticationStringLength); // Passkey
                                 // TO DO : write to file client serial number + friendlyname + passkey + { channel id (device nr./type+transmission type) ? }
-                                fs.writeFile(self.getHomeDirectory() + '\\passkey.BIN', authenticate_response.authenticationString, function (err) {
+                                fs.writeFile(self.getHomeDirectory() + '\\passkey.json', JSON.stringify({ passkey : authenticate_response.authenticationString }), function (err) {
                                     if (err)
                                         console.log(Date.now() + " Error writing to passkey file", err);
                                     else
@@ -557,15 +559,13 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
 
                                 // Kick in retry if no burst response
 
-                                self.timeoutID = setInterval(function retry() {
-                                    self.timeoutRetry++;
-                                    if (self.timeoutRetry < 10) {
-                                        console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.timeoutRetry);
-
-                                        self.sendDownloadRequest( self.request.dataIndex, currentDataOffset,
-                                     downloadRequestType, currentCRCSeed, 0, self.request.callback);
+                                self.retryRequestTimeoutID = setInterval(function _retryDownloadRequest() {
+                                    self.retryTimeout++;
+                                    if (self.retryTimeout < 10) {
+                                        console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.retryTimeout);
+                                        self.sendDownloadRequest( self.request.dataIndex, currentDataOffset, downloadRequestType, currentCRCSeed, 0, self.request.callback);
                                     } else {
-                                        console.log(Date.now() + " Something is wrong with the link to the device. Cannot proceed. Reached maximum retries.", self.timeoutRetry);
+                                        console.log(Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
                                         process.kill(process.pid, 'SIGINT');
                                     }
                                 }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
@@ -609,9 +609,9 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
                             self.sendDownloadRequest( self.request.dataIndex, resumeDataOffset,
                                 DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
 
-                            self.timeoutID = setInterval(function retry() {
-                                self.timeoutRetry++;
-                                if (self.timeoutRetry < 10) {
+                            self.retryRequestTimeoutID = setInterval(function retry() {
+                                self.retryTimeout++;
+                                if (self.retryTimeout < 10) {
                                     console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
                                     self.sendDownloadRequest( self.request.dataIndex, resumeDataOffset,
                                       DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
@@ -640,10 +640,10 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
 
                             if (++self.request.retry <= 3) {
                                 self.sendEraseRequest( self.request.dataIndex, false);
-                                self.timeoutID = setInterval(function retry() {
-                                    self.timeoutRetry++;
-                                    if (self.timeoutRetry < 10) {
-                                        console.log(Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.timeoutRetry);
+                                self.retryRequestTimeoutID = setInterval(function retry() {
+                                    self.retryTimeout++;
+                                    if (self.retryTimeout < 10) {
+                                        console.log(Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.retryTimeout);
 
                                         self.sendEraseRequest( self.request.dataIndex, false);
                                     } else {
@@ -1131,10 +1131,10 @@ DeviceProfile_ANTFS.prototype.parseDirectory = function (data) {
 
     FileOnDevice.prototype.getFileName = function () {
         if (this.dataType === DeviceProfile_ANTFS.prototype.FILE_TYPE.FIT)
-            return  this.dataTypeFriendly + "-" + this.dataSubTypeFriendly + "-" + this.index + "-" + getDateAsString(this.date, true) + ".FIT";
+            return this.dataTypeFriendly + "-" + this.dataSubTypeFriendly + "-" + this.index + "-" + getDateAsString(this.date, true) + ".FIT";
         else
-            return this.dataTypeFriendly + "-" + getDateAsString(this.date) + "-" + this.index + ".BIN"; 
-    }
+            return this.dataTypeFriendly + "-" + getDateAsString(this.date) + "-" + this.index + ".BIN";
+    };
 
     FileOnDevice.prototype.toString = function () {
         var generalFlags = "", dataType = this.dataType, date = "", number = "", dataTypeFlags = "",
@@ -1190,8 +1190,8 @@ DeviceProfile_ANTFS.prototype.parseDirectory = function (data) {
             dataType += " " + this.dataTypeFriendly + " " + dataSubType;
         }
         // (Skip this.identifier in output->not useful)
-        return  "Index " + this.index + " " + dataType + " " + dataTypeFlags + " " + generalFlags + " " + this.size + " " + date; 
-    }
+        return "Index " + this.index + " " + dataType + " " + dataTypeFlags + " " + generalFlags + " " + this.size + " " + date;
+    };
 
     for (fileNr = 0; fileNr < numberOfFiles; fileNr++) {
 
@@ -1258,7 +1258,9 @@ DeviceProfile_ANTFS.prototype.parseDirectory = function (data) {
 };
 
 DeviceProfile_ANTFS.prototype.sendDownloadRequest = function (dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize, downloadFinishedCB) {
-    var downloadMsg, channelNr = this.channel.number, self = this;
+    var downloadMsg,
+        channelNr = this.channel.number,
+        self = this;
     //dataParser = parser;
 
     //if (dataIndex === 0x00) // For directory choose default parser
@@ -1308,7 +1310,7 @@ DeviceProfile_ANTFS.prototype.sendDownloadRequest = function (dataIndex, dataOff
        function success() {
            self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.SENT;
            //http://stackoverflow.com/questions/7695450/how-to-program-hex2bin-in-javascript
-           function pad(s, z) { s = "" + s; return s.length < z ? pad("0" + s, z) : s };
+           function pad(s, z) { s = "" + s; return s.length < z ? pad("0" + s, z) : s }
            console.log(Date.now() + " Sent burst transfer with download request dataIndex: %d dataOffset %d CRC-16 seed %s", dataIndex, dataOffset, pad(CRCSeed.toString(2),16));
        }, "DownloadRequest index: " + dataIndex + " data offset: " + dataOffset + " initial request: " + initialRequest + "CRC seed: " + CRCSeed + "max. block size: " + maximumBlockSize);
     }
@@ -1568,23 +1570,23 @@ DeviceProfile_ANTFS.prototype.broadCastDataParser = function (data) {
                         // Callback from parseBurstData when authentication response is received from the device
                         function authenticationCB() {
                             // Try to read passkey from file
-                            var passkeyFileName = self.getHomeDirectory() + '\\passkey.BIN';
+                            var passkeyFileName = self.getHomeDirectory() + '\\passkey.json';
                             console.log(Date.now() + " Trying to find passkey file at ", passkeyFileName);
                             fs.exists(passkeyFileName, function (exists) {
                                 if (exists) {
-                                    console.log(Date.now() + " Found passkey.bin file");
+                                    console.log(Date.now() + " Found passkey.json file");
                                     fs.readFile(passkeyFileName, function (err, data) {
                                         if (err) throw err;
-                                        self.passkey = data;
+                                        self.passkey = (JSON.parse(data)).passkey;
                                         //console.log(data);
-                                        self.sendRequestWithPasskey(data, function error(err) {
+                                        self.sendRequestWithPasskey(new Buffer(self.passkey), function error(err) {
                                             delete self._mutex.sendingAUTH_CLIENT_SN;
                                         }, function success() {
                                         });
                                     });
                                 }
                                 else {
-                                    console.log(Date.now() + " Did not find passkey.bin file, requesting pairing with device");
+                                    console.log(Date.now() + " Did not find passkey.json file, requesting pairing with device");
                                     self.sendRequestForPairing(DeviceProfile_ANTFS.prototype.FRIENDLY_NAME, function error(err) {
                                         delete self._mutex.sendingAUTH_CLIENT_SN;
                                     }, function success() {
