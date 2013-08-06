@@ -3,7 +3,8 @@
 var events = require('events'),
     usb = require('usb'),
     util = require('util'),
-    Channel = require('./channel.js');
+    Channel = require('./channel.js'),
+    ANTMessage = require('./ANTMessage.js');
    // DeviceProfile_ANTFS = require('./deviceProfile_ANTFS.js');
 
 // Low level API/interface to ANT USB stick
@@ -29,8 +30,8 @@ function ANT(idVendor, idProduct) {
 
     this.addListener(ANT.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
 
-    this.addListener(ANT.prototype.EVENT.STARTUP, this.parseNotificationStartup);
-    this.addListener(ANT.prototype.EVENT.SERIAL_ERROR, this.parseNotificationSerialError);
+    //this.addListener(ANT.prototype.EVENT.STARTUP, this.parseNotificationStartup);
+    //this.addListener(ANT.prototype.EVENT.SERIAL_ERROR, this.parseNotificationSerialError);
     this.addListener(ANT.prototype.EVENT.CHANNEL_STATUS, this.parseChannelStatus);
     this.addListener(ANT.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
     this.addListener(ANT.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
@@ -49,7 +50,7 @@ ANT.prototype.SCANNING_CHANNEL_TYPE = {
 
 ANT.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
-ANT.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
+
 
 ANT.prototype.ANT_DEVICE_TIMEOUT = 3 * 7; // Direct USB ANT communication  (normal 5-7 ms. processing time on device)
 
@@ -93,127 +94,8 @@ ANT.prototype.EVENT = {
 
 };
 
-ANT.prototype.NOTIFICATION = {
 
-    STARTUP: {
-        POWER_ON_RESET: 0x00,
-        HARDWARE_RESET_LINE: 0x01,
-        WATCH_DOG_RESET: 0x02,
-        COMMAND_RESET: 0x03,
-        SYNCHRONOUS_RESET: 0x04,
-        SUSPEND_RESET: 0x05
-    },
 
-    SERIAL_ERROR: {
-        FIRST_BYTE_NOT_SYNC: 0x00,
-        CRC_INCORRECT: 0x01,
-        MESSAGE_TOO_LARGE: 0x02
-    }
-};
-
-// ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usave Rev 50
-ANT.prototype.ANT_MESSAGE = {
-
-    // Control messages
-
-    0x4a: "Reset system",
-    reset_system: { id: 0x4a, friendly: "Reset system" },
-
-    0x4b: "Open channel",
-    open_channel: { id: 0x4b, friendly: "Open channel" },
-
-    0x4c: "Close channel",
-    close_channel: { id: 0x4c, friendly: "Close channel" },
-
-    0x5b: "Open RX scan mode",
-    open_rx_scan_mode: { id: 0x5b, friendly: "Open RX scan mode" },
-
-    0xc5: "Sleep message",
-    sleep_message: { id: 0xc5, friendly: "Sleep message" },
-
-    // Notification messages
-    0x6f: "Notification: Start up",
-    startup: { id: 0x6f, friendly: "Notification: Start-up" },
-
-    0xae: "Notification: Serial error",
-    serial_error: { id: 0xae, friendly: "Notification: Serial error" },
-
-    // Request/response
-
-    0x4d: "Request",
-    request: { id: 0x4d, friendly: "Request" },
-
-    0x40: "Channel response/event",
-    channel_response: { id: 0x40, friendly: "Channel Response/Event" },
-
-    0x52: "Channel Status",
-    channel_status: { id: 0x52, friendly: "Channel Status" },
-
-    0x3E: "ANT version",
-    ANT_version: { id: 0x3E, friendly: "ANT Version" },
-
-    0x54: "Capabilities",
-    capabilities: { id: 0x54, friendly: "Capabilities" },
-
-    0x61: "Device serial number",
-    device_serial_number: { id: 0x61, friendly: "Device Serial Number" },
-
-    // Config messages
-    // All conf. commands receive a response
-    0x41: "Unassign channel",
-    unassign_channel: { id: 0x41, friendly: "Unassign channel" },
-
-    0x42: "Assign channel",
-    assign_channel: { id: 0x42, friendly: "Assign channel" }, // Also sets additional parameters to defaults
-
-    0x46: "Set network key",
-    set_network_key: { id: 0x46, friendly: "Set network key" },
-
-    0x47: "Transmit power",
-    transmit_power: { id: 0x47, friendly: "Transmit power" },
-
-    0x51: "Channel ID",
-    set_channel_id: { id: 0x51, friendly: "Set channel id" },
-
-    0x43: "Channel period (Tch)",
-    set_channel_messaging_period: { id: 0x43, friendly: "Set Channel Messaging Period" },
-
-    0x63: "Low priority (LP) search timeout",
-    set_low_priority_channel_search_timeout: { id: 0x63, friendly: "Set low priority (LP) Channel Search Timeout" },
-
-    0x44: "High priority (HP) search timeout",
-    set_channel_search_timeout: { id: 0x44, friendly: "Set High priority (HP) Channel Search Timeout" },
-
-    0x45: "Channel RF frequency",
-    set_channel_RFFreq: { id: 0x45, friendly: "Set Channel RF Frequency" },
-
-    0x49: "Search waveform",
-    set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
-
-    0x75: "Channel Search Priority",
-    set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },
-
-    0x6E: "Lib Config",
-    libConfig: { id: 0x6E, friendly: "Lib Config" },
-
-    0x66: "Enable Extended Messages",
-    RxExtMesgsEnable : { id : 0x66, friendly : "Enable Extended Messages" },
-
-    // Data message
-
-    0x4E: "Broadcast Data",
-    broadcast_data: { id: 0x4e, friendly: "Broadcast data" },
-
-    0x4F: "Acknowledged Data",
-    acknowledged_data: { id: 0x4f, friendly: "Acknowledged data" },
-
-    0x50: "Burst Transfer Data",
-    burst_transfer_data: { id: 0x50, friendly: "Burst transfer data" },
-
-    0x72: "Advanced Burst Transfer Data",
-    advanced_burst_transfer_data: { id: 0x72, friendly: "Advanced burst transfer data" },
-
-};
 
 ANT.prototype.RESPONSE_EVENT_CODES = {
 
@@ -432,73 +314,8 @@ ANT.prototype.showLogMessage = function (msg) {
     console.log(Date.now(), msg);
 };
 
-ANT.prototype.parseNotificationStartup = function (data) {
-    var msg, code;
 
 
-    if (data[3] === 0) {
-        msg = "POWER_ON_RESET (cold reset)";
-        code = ANT.prototype.NOTIFICATION.STARTUP.POWER_ON_RESET;
-    }
-    else if (data[3] === 1) {
-        msg = "HARDWARE_RESET_LINE";
-        code = ANT.prototype.NOTIFICATION.STARTUP.HARDWARE_RESET_LINE;
-    }
-    else if (data[3] & (1 << 2)) {
-        msg = "WATCH_DOG_RESET";
-        code = ANT.prototype.NOTIFICATION.STARTUP.WATCH_DOG_RESET;
-    }
-    else if (data[3] & (1 << 5)) {
-        msg = "COMMAND_RESET (warm reset)";
-        code = ANT.prototype.NOTIFICATION.STARTUP.COMMAND_RESET;
-    }
-    else if (data[3] & (1 << 6)) {
-        msg = "SYNCHRONOUS_RESET";
-        code = ANT.prototype.NOTIFICATION.STARTUP.SYNCHRONOUS_RESET;
-    }
-    else if (data[3] & (1 << 7)) {
-        msg = "SUSPEND_RESET";
-        code = ANT.prototype.NOTIFICATION.STARTUP.SUSPEND_RESET;
-    }
-
-    this.emit(ANT.prototype.EVENT.LOG_MESSAGE, ANT.prototype.ANT_MESSAGE.startup.friendly + " " + msg);
-
-    this.notificationStartup = {
-        timestamp: Date.now(),
-        message: msg,
-        code: code
-    };
-
-    return code;
-
-};
-
-ANT.prototype.parseNotificationSerialError = function (data) {
-    var msg, code;
-
-    if (data[3] === 0) {
-        msg = "First byte is not SYNC = 0xA4";
-        code = ANT.prototype.NOTIFICATION.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC;
-    }
-    else if (data[3] === 2) {
-        msg = "Checksum incorrect";
-        code = ANT.prototype.NOTIFICATION.SERIAL_ERROR.CRC_INCORRECT;
-    }
-    else if (data[3] === 3) {
-        msg = "Message too large";
-        code = ANT.prototype.NOTIFICATION.SERIAL_ERROR.MESSAGE_TOO_LARGE;
-    }
-
-    this.notificationSerialError = {
-        timestamp: Date.now(),
-        message: msg,
-        code: code
-    };
-
-    this.emit(ANT.prototype.EVENT.LOG_MESSAGE, ANT.prototype.ANT_MESSAGE.serial_error.friendly + " " + msg);
-
-    return code;
-};
 
 ANT.prototype.parseChannelResponse = function (data) {
     var channel = data[3],
@@ -510,7 +327,7 @@ ANT.prototype.parseChannelResponse = function (data) {
     if (msgId === 1) // Set to 1 for RF event
         msg = "EVENT on channel " + channel + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly+" ";
     else
-        msg = "RESPONSE on channel " + channel + " to msg. id 0x" + msgId.toString(16) + "  " + ANT.prototype.ANT_MESSAGE[msgId] + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly;
+        msg = "RESPONSE on channel " + channel + " to msg. id 0x" + msgId.toString(16) + "  " + ANTMessage.prototype.ANT_MESSAGE[msgId] + " " + ANT.prototype.RESPONSE_EVENT_CODES[msgCode].friendly;
 
     
     //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, msg);
@@ -626,13 +443,20 @@ ANT.prototype.parse_extended_message = function (channelNr,data) {
 
 // Overview on p. 58 - ANT Message Protocol and Usage
 ANT.prototype.parse_response = function (data) {
-
+    var ANTmsg = new ANTMessage();
+    ANTmsg.setMessage(data, true);
+    if (ANTmsg.message)
+      this.emit(ANT.prototype.EVENT.LOG_MESSAGE, ANTmsg.message.text);
+  
+       // console.log(standardMsg.toString());
+    
     //console.log("parse_response", this);
 
-    var antInstance = this, self = this,
-        firstSYNC = data[0],
-        msgLength = data[1],
-        msgID = data[2],
+    var antInstance = this,
+        self = this,
+        firstSYNC = ANTmsg.SYNC,
+        msgLength = ANTmsg.length,
+       // msgID = ANTmsg.id,
         msgFlag, // Indicates if extended message info. is available and what info. to expect
         msgStr = "",
         msgCode,
@@ -643,18 +467,18 @@ ANT.prototype.parse_response = function (data) {
         resendMsg,
         burstMsg,
         burstParser,
-        msgCRC = data[3 + msgLength],
-        verifiedCRC = self.getCRC(data),
-        SYNCOK = (firstSYNC === ANT.prototype.SYNC),
+        msgCRC = data[3 + ANTmsg.length],
+        verifiedCRC = ANTmsg.getCRC(data),
+        SYNCOK = (ANTmsg.SYNC === ANTMessage.prototype.SYNC),
         CRCOK = (msgCRC === verifiedCRC);
 
     if (typeof msgCRC === "undefined")
-        console.log("msgCRC undefined", "msgLength 0x", msgLength.toString(16) +"="+msgLength, data);
+        console.log("msgCRC undefined", "msgLength 0x"+ ANTmsg.length.toString(16) +"="+ANTmsg.length, data);
 
     // Check for valid SYNC byte at start
 
     if (!SYNCOK) {
-        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Invalid SYNC byte "+ firstSYNC+ " expected "+ ANT.prototype.SYNC+" cannot trust the integrety of data, thus discarding bytes:"+ data.length);
+        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, " Invalid SYNC byte "+ firstSYNC+ " expected "+ ANTMessage.prototype.SYNC+" cannot trust the integrety of data, thus discarding bytes:"+ data.length);
         return;
     }
 
@@ -666,19 +490,19 @@ ANT.prototype.parse_response = function (data) {
         //return;
     }
 
-    switch (msgID) {
+    switch (ANTmsg.id) {
 
         // Data
 
-        case ANT.prototype.ANT_MESSAGE.burst_transfer_data.id:
+        case ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data.id:
             
-            channelNr = data[3] & 0x1F; // 5 lower bits
-            sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
+            ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
+            ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
 
-            if (msgLength >= 9) { // 1 byte for channel NR + 8 byte payload - standard message format
+            if (ANTmsg.length >= 9) { // 1 byte for channel NR + 8 byte payload - standard message format
 
-                msgStr += "BURST on CHANNEL " + channelNr + " SEQUENCE NR " + sequenceNr;
-                if (sequenceNr & 0x04) // last packet
+                msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
+                if (ANTmsg.sequenceNr & 0x04) // last packet
                     msgStr += " LAST";
 
                 payloadData = data.slice(4, 12);
@@ -687,41 +511,41 @@ ANT.prototype.parse_response = function (data) {
 
                 // console.log(payloadData);
 
-                if (sequenceNr === 0x00) // First packet 
+                if (ANTmsg.sequenceNr === 0x00) // First packet 
                 {
                     // console.time('burst');
-                    antInstance.channelConfiguration[channelNr].startBurstTimestamp = Date.now();
+                    antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
 
-                    antInstance.channelConfiguration[channelNr].burstData = payloadData; // Payload 8 bytes
+                    antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
 
                     // Extended msg. only in the first packet
-                    if (msgLength > 9) {
+                    if (ANTmsg.length > 9) {
                         msgFlag = data[12];
                         //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-                        this.parse_extended_message(channelNr, data);
+                        this.parse_extended_message(ANTmsg.channel, data);
                     }
                 }
-                else if (sequenceNr > 0x00)
+                else if (ANTmsg.sequenceNr > 0x00)
 
-                    antInstance.channelConfiguration[channelNr].burstData = Buffer.concat([antInstance.channelConfiguration[channelNr].burstData, payloadData]);
+                    antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
 
-                if (sequenceNr & 0x04) // msb set === last packet 
+                if (ANTmsg.sequenceNr & 0x04) // msb set === last packet 
                 {
                     //console.timeEnd('burst');
-                    antInstance.channelConfiguration[channelNr].endBurstTimestamp = Date.now();
+                    antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
 
-                    var diff = antInstance.channelConfiguration[channelNr].endBurstTimestamp - antInstance.channelConfiguration[channelNr].startBurstTimestamp;
+                    var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
 
                     // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
 
-                    burstMsg = antInstance.burstQueue[channelNr][0];
+                    burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
                     if (typeof burstMsg !== "undefined")
                         burstParser = burstMsg.parser;
 
-                    if (!antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.BURST, channelNr, antInstance.channelConfiguration[channelNr].burstData, burstParser))
-                        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event Channel.prototype.EVENT.BURST on channel "+channelNr);
+                    if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
+                        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
                     else
-                        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[channelNr].burstData.length+" bytes time "+ diff + " ms rate "+(antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1)+" bytes/sec");
+                        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
 
                     //antInstance.channelConfiguration[channelNr].parseBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
                 }
@@ -729,20 +553,20 @@ ANT.prototype.parse_response = function (data) {
             else {
                 console.trace();
                 console.log("Data", data);
-                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+msgLength+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
+                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
             }
 
             break;
 
-        case ANT.prototype.ANT_MESSAGE.broadcast_data.id:
+        case ANTMessage.prototype.ANT_MESSAGE.broadcast_data.id:
 
-            msgStr += ANT.prototype.ANT_MESSAGE.broadcast_data.friendly + " ";
+            msgStr += ANTMessage.prototype.ANT_MESSAGE.broadcast_data.friendly + " ";
 
             channelNr = data[3];
             msgStr += " on channel " + channelNr;
 
             // Parse flagged extended message info. if neccessary
-            if (msgLength > 9) {
+            if (ANTmsg.length > 9) {
                 msgFlag = data[12];
                 //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
                 this.parse_extended_message(channelNr, data); // i.e channel ID
@@ -772,30 +596,30 @@ ANT.prototype.parse_response = function (data) {
 
             // Notifications from ANT engine
 
-        case ANT.prototype.ANT_MESSAGE.startup.id:
+        //case ANTMessage.prototype.ANT_MESSAGE.startup.id:
 
-            if (!antInstance.emit(antInstance.EVENT.STARTUP, data))
-                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.STARTUP");
+        //    if (!antInstance.emit(antInstance.EVENT.STARTUP, data))
+        //        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.STARTUP");
 
-            break;
+        //    break;
 
-        case ANT.prototype.ANT_MESSAGE.serial_error.id:
+        //case ANTMessage.prototype.ANT_MESSAGE.serial_error.id:
 
-            if (!antInstance.emit(antInstance.EVENT.SERIAL_ERROR, data))
-                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.SERIAL_ERROR");
+        //    if (!antInstance.emit(antInstance.EVENT.SERIAL_ERROR, data))
+        //        antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.SERIAL_ERROR");
 
-            break;
+        //    break;
 
             // Channel event or responses
 
-        case ANT.prototype.ANT_MESSAGE.channel_response.id:
+        case ANTMessage.prototype.ANT_MESSAGE.channel_response.id:
 
             var channelResponseMessage = antInstance.parseChannelResponse(data);
 
-            //console.log(Date.now(),channelResponseMessage, data);
             self.emit(ANT.prototype.EVENT.LOG_MESSAGE, channelResponseMessage);
+            
 
-            msgStr += ANT.prototype.ANT_MESSAGE.channel_response.friendly + " " + channelResponseMessage;
+            msgStr += ANTMessage.prototype.ANT_MESSAGE.channel_response.friendly + " " + channelResponseMessage;
             channelNr = data[3];
 
             // Handle retry of acknowledged data
@@ -847,32 +671,32 @@ ANT.prototype.parse_response = function (data) {
 
             // Channel specific 
 
-        case ANT.prototype.ANT_MESSAGE.channel_status.id:
+        case ANTMessage.prototype.ANT_MESSAGE.channel_status.id:
             if (!antInstance.emit(ANT.prototype.EVENT.CHANNEL_STATUS, data))
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.CHANNEL_STATUS");
 
             break;
 
-        case ANT.prototype.ANT_MESSAGE.set_channel_id.id:
+        case ANTMessage.prototype.ANT_MESSAGE.set_channel_id.id:
             if (!antInstance.emit(ANT.prototype.EVENT.SET_CHANNEL_ID, data))
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No listener for event ANT.prototype.EVENT.SET_CHANNEL_ID");
             break;
 
             // ANT device specific, i.e nRF24AP2
 
-        case ANT.prototype.ANT_MESSAGE.ANT_version.id:
+        case ANTMessage.prototype.ANT_MESSAGE.ANT_version.id:
             if (!antInstance.emit(ANT.prototype.EVENT.ANT_VERSION, data))
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.ANT_VERSION");
             break;
 
-        case ANT.prototype.ANT_MESSAGE.capabilities.id:
+        case ANTMessage.prototype.ANT_MESSAGE.capabilities.id:
 
             if (!antInstance.emit(ANT.prototype.EVENT.CAPABILITIES, data))
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.CAPABILITIES");
 
             break;
 
-        case ANT.prototype.ANT_MESSAGE.device_serial_number.id:
+        case ANTMessage.prototype.ANT_MESSAGE.device_serial_number.id:
             if (!antInstance.emit(ANT.prototype.EVENT.DEVICE_SERIAL_NUMBER, data))
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.DEVICE_SERIAL_NUMBER");
 
@@ -887,7 +711,7 @@ ANT.prototype.parse_response = function (data) {
 
 
 
-    //if (msgID !== ANT.prototype.ANT_MESSAGE.burst_transfer_data.id) // Avoid burst logging -> gives performance problems
+    //if (msgID !== ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data.id) // Avoid burst logging -> gives performance problems
     //    console.log(Date.now() + " Rx: ", data, msgStr);
 
 
@@ -907,7 +731,7 @@ ANT.prototype.parse_response = function (data) {
 
     // There might be more buffered data messages from ANT engine available (if commands/request are sent, but not read in awhile)
 
-    var nextExpectedSYNCIndex = 1 + msgLength + 2 + 1;
+    var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
     if (data.length > nextExpectedSYNCIndex) {
        // console.log(data.slice(nextExpectedSYNCIndex));
         this.parse_response(data.slice(nextExpectedSYNCIndex));
@@ -973,105 +797,9 @@ ANT.prototype.listen = function (transferCancelledCallback) {
 
 };
 
-// CheckSUM = XOR of all bytes in message
-ANT.prototype.getCRC = function (messageBuffer) {
-    var checksum = messageBuffer[0], // Should be SYNC 0xA4
-        len = messageBuffer[1] + 3, // Should be messageBuffer.length - 1
-        byteNr;
-    // console.trace();
-    // console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len,"messageBuffer.length",messageBuffer.length);
 
-    for (byteNr = 1; byteNr < len; byteNr++) {
-        checksum = checksum ^ messageBuffer[byteNr];
-        //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
-    }
 
-    return checksum;
-};
 
-/*
-This function create a raw message 
-// Message format
-// SYNC MSG_LENGTH MSG_ID MSG_CONTENT (byte  0 - N -1) Checksum
-// SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
-// CheckSUM = XOR of all bytes in message
-Content = Buffer
-// Sending of LSB first = little endian NB!
-*/
-ANT.prototype.create_message = function (message, content) {
-    var index,
-     headerBuffer = new Buffer(3),
-     contentBuffer,
-     messageBuffer,
-     trailingZeroBuffer,
-     content_len,
-     generatedMessage;
-
-    if (content)
-        content_len = content.length;
-    else {
-        this.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Content length is 0");
-        content_len = 0;
-    }
-
-    //console.log("Message id. ", message.id, " Content is ", content);
-
-    contentBuffer = new Buffer(content_len);
-    //if (content_len > 8)
-    //    console.warn("Content length of message is ", content_len);
-
-    // Header
-    // SYNC = 0; // -> Provoke Serial Error Message, error 0 - SYNC incorrect, should be 0xA4
-
-    headerBuffer.writeUInt8(ANT.prototype.SYNC, 0);
-    headerBuffer.writeUInt8(content_len, 1);
-    headerBuffer.writeUInt8(message.id, 2);
-
-    // Content
-    for (var byteNr = 0; byteNr < content_len; byteNr++)
-        contentBuffer.writeUInt8(content.readUInt8(byteNr), byteNr);
-
-    messageBuffer = Buffer.concat([headerBuffer, contentBuffer], 3 + content_len);
-
-    // Checksum
-    //console.log("Message buffer:", messageBuffer, "Message buffer length", messageBuffer.length, " content length: ", content_len, "content buffer: ", contentBuffer);
-
-    //var checksum = messageBuffer.readUInt8(0);
-    ////console.log("Start checksum", checksum);
-    //for (byteNr = 1; byteNr < messageBuffer.length; byteNr++) {
-    //    checksum = checksum ^ messageBuffer.readUInt8(byteNr);
-    //    //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
-    //}
-
-    var checksum = this.getCRC(messageBuffer);
-
-    //checksum = 0; // -> Provoke Serial Error Message, error 2 - checksum of ANT msg. incorrect
-    messageBuffer = Buffer.concat([messageBuffer, new Buffer([checksum])], 4 + content_len);
-
-    //console.log("Checksum  : " + checksum);
-    //console.log("Raw message length : " + msg.length+", content length: "+content_len);
-
-    // Add trailing zeroes - seems to work ok without trailing zeros, but recommended
-
-    if (content_len < 8) {
-        trailingZeroBuffer = new Buffer(8 - content_len - 1); // CRC included in payload
-        for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
-            trailingZeroBuffer.writeUInt8(0, byteNr);
-
-        messageBuffer = Buffer.concat([messageBuffer, trailingZeroBuffer]);
-    }
-
-    
-    generatedMessage = {
-        id: message.id,
-        buffer: messageBuffer,
-        friendly: message.friendly
-    };
-
-   // console.log("Created message : ", message)
-
-    return generatedMessage;
-};
 
 // ANT Message Protocol and Usage. rev 5.0b - page 115
 ANT.prototype.parseCapabilities = function (data) {
@@ -1156,15 +884,15 @@ ANT.prototype.getCapabilities = function (completeCB) {
     var msgId;
     var self = this;
 
-    self.sendOnly(self.request(undefined, self.ANT_MESSAGE.capabilities.id),
+    self.sendOnly(self.request(undefined, ANTMessage.prototype.ANT_MESSAGE.capabilities.id),
         ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-       // function validation(data) { msgId = data[2]; return (msgId === self.ANT_MESSAGE.capabilities.id); },
+       // function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.ANT_MESSAGE.capabilities.id); },
         function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Failed to get device capabilities."); completeCB(); },
         function success() {
             self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, completeCB,
                 function success(data) {
                     var msgId = data[2];
-                    if (msgId !== self.ANT_MESSAGE.capabilities.id)
+                    if (msgId !== ANTMessage.prototype.ANT_MESSAGE.capabilities.id)
                         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected capabilities message response");
                     self.parse_response(data);
                     if (typeof completeCB === "function")
@@ -1180,15 +908,15 @@ ANT.prototype.getANTVersion = function (callback) {
     var msgId;
     var self = this;
 
-    self.sendOnly(self.request(undefined, self.ANT_MESSAGE.ANT_version.id),
+    self.sendOnly(self.request(undefined, ANTMessage.prototype.ANT_MESSAGE.ANT_version.id),
         ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-        //function validation(data) { msgId = data[2]; return (msgId === self.ANT_MESSAGE.ANT_version.id); },
+        //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.ANT_MESSAGE.ANT_version.id); },
         function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to get ANT version."); callback(); },
         function success() {
             self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
                function success(data) {
                    var msgId = data[2];
-                   if (msgId !== self.ANT_MESSAGE.ANT_version.id)
+                   if (msgId !== ANTMessage.prototype.ANT_MESSAGE.ANT_version.id)
                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected version message response");
                    self.parse_response(data);
                    if (typeof callback === "function")
@@ -1226,15 +954,15 @@ ANT.prototype.getDeviceSerialNumber = function (callback) {
     if (typeof self.capabilities === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "getCapabilities should be run first to determine if device supports serial number");
     } else if (self.capabilities.options.CAPABILITIES_SERIAL_NUMBER_ENABLED)
-        self.sendOnly(self.request(undefined, self.ANT_MESSAGE.device_serial_number.id),
+        self.sendOnly(self.request(undefined, ANTMessage.prototype.ANT_MESSAGE.device_serial_number.id),
             ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-            //function validation(data) { msgId = data[2]; return (msgId === self.ANT_MESSAGE.device_serial_number.id); },
+            //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.ANT_MESSAGE.device_serial_number.id); },
             function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to get device serial number"); callback(); },
             function success() {
                 self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
                function success(data) {
                    var msgId = data[2];
-                   if (msgId !== self.ANT_MESSAGE.device_serial_number.id)
+                   if (msgId !== ANTMessage.prototype.ANT_MESSAGE.device_serial_number.id)
                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected device serial number message response");
 
                    self.parse_response(data);
@@ -1251,7 +979,7 @@ ANT.prototype.getDeviceSerialNumber = function (callback) {
 ANT.prototype.getChannelStatus = function (channelNr, errorCallback, successCallback) {
     var msgId, self = this;
 
-    self.sendOnly(self.request(channelNr, self.ANT_MESSAGE.channel_status.id),
+    self.sendOnly(self.request(channelNr, ANTMessage.prototype.ANT_MESSAGE.channel_status.id),
         ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
         //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
         function error() {
@@ -1267,7 +995,7 @@ ANT.prototype.getChannelStatus = function (channelNr, errorCallback, successCall
                 self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
                    function success(data) {
                        var msgId = data[2];
-                       if (msgId !== self.ANT_MESSAGE.channel_status.id) {
+                       if (msgId !== ANTMessage.prototype.ANT_MESSAGE.channel_status.id) {
                            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected channel status message response");
                            if (++retryNr < ANT.prototype.ANT_DEFAULT_RETRY) {
                                self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Trying once more to read channel status response " + retryNr);
@@ -1299,7 +1027,7 @@ ANT.prototype.getChannelStatus = function (channelNr, errorCallback, successCall
 ANT.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successCallback) {
     var msgId, self = this;
 
-    self.sendOnly(self.request(channelNr, self.ANT_MESSAGE.set_channel_id.id),
+    self.sendOnly(self.request(channelNr, ANTMessage.prototype.ANT_MESSAGE.set_channel_id.id),
         ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
         //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
         function error(err) {
@@ -1312,7 +1040,7 @@ ANT.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successC
             self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
                function success(data) {
                    var msgId = data[2];
-                   if (msgId !== ANT.prototype.ANT_MESSAGE.set_channel_id.id)
+                   if (msgId !== ANTMessage.prototype.ANT_MESSAGE.set_channel_id.id)
                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected set channel id message response");
                    self.parse_response(data);
                    if (typeof successCallback === "function")
@@ -1326,19 +1054,20 @@ ANT.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successC
 // p. 89 ANT Message Protocol and Usage, Rv 5.0b
 // NVM not implemented
 ANT.prototype.request = function (channelNr, msgID) {
-    var channelNumber = channelNr || 0;
+    var channelNumber = channelNr || 0,
+        requestMsg = new ANTMessage();
 
-    return this.create_message(this.ANT_MESSAGE.request, new Buffer([channelNumber, msgID]));
+    return requestMsg.create_message(ANTMessage.prototype.ANT_MESSAGE.request, new Buffer([channelNumber, msgID]));
 };
 
 ANT.prototype.isStartupNotification = function (data) {
     var msgId = data[2];
-    return (msgId === this.ANT_MESSAGE.startup.id);
+    return (msgId === ANTMessage.prototype.ANT_MESSAGE.startup.id);
 };
 
 ANT.prototype.resetSystem = function (errorCallback, successCallback) {
-
-    var reset_system_msg = this.create_message(this.ANT_MESSAGE.reset_system, new Buffer([0])),
+    var resetSystemMsg = new ANTMessage(),
+       reset_system_msg = resetSystemMsg.create_message(ANTMessage.prototype.ANT_MESSAGE.reset_system, new Buffer([0])),
         self = this;
     self.sendOnly(reset_system_msg,
         ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
@@ -1713,23 +1442,25 @@ ANT.prototype.LIB_CONFIG = {
 // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
 // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
 ANT.prototype.libConfig = function (ucLibConfig, errorCallback, successCallback) {
-    var self = this, filler = 0;
+    var self = this,
+        filler = 0,
+        libConfigMsg = new ANTMessage();
 
     //console.log("libConfig hex = ", Number(ucLibConfig).toString(16),"binary=",Number(ucLibConfig).toString(2));
     if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-        this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.libConfig, new Buffer([filler, ucLibConfig])), self.ANT_MESSAGE.libConfig.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(libConfigMsg.create_message(ANTMessage.prototype.ANT_MESSAGE.libConfig, new Buffer([filler, ucLibConfig])), ANTMessage.prototype.ANT_MESSAGE.libConfig.id, errorCallback, successCallback);
     else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via LibConfig API call");
 };
 
 // Only enables Channel ID extension of messages
 ANT.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
-    var self = this, filler = 0;
+    var self = this, filler = 0, message = new ANTMessage();
 
     self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
 
     if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-        this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), self.ANT_MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.ANT_MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), ANTMessage.prototype.ANT_MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
     else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
 };
@@ -1737,25 +1468,25 @@ ANT.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallb
 // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
 // This is the case for ANT-FS and ANT+ device profile like i.e HRM
 ANT.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
-    var self = this;
+    var self = this, message = new ANTMessage();
 
-    this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), self.ANT_MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
+    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), ANTMessage.prototype.ANT_MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
 
 };
 
 ANT.prototype.setNetworkKey = function (channelNr, errorCallback, successCallback) {
     var self = this;
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
 
     //console.log("Setting network key on net " + channel.network.number + " key: " + channel.network.key +" channel "+channel.number);
 
-    this.sendAndVerifyResponseNoError(this.create_message(this.ANT_MESSAGE.set_network_key, Buffer.concat([new Buffer([channel.network.number]), new Buffer(channel.network.key)])), self.ANT_MESSAGE.set_network_key.id, errorCallback, successCallback);
+    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_network_key, Buffer.concat([new Buffer([channel.network.number]), new Buffer(channel.network.key)])), ANTMessage.prototype.ANT_MESSAGE.set_network_key.id, errorCallback, successCallback);
     
 };
 
 ANT.prototype.assignChannel = function (channelNr, errorCallback, successCallback) {
 
-    var channel = this.channelConfiguration[channelNr], self = this;
+    var channel = this.channelConfiguration[channelNr], self = this, message = new ANTMessage();
 
     //console.log("Assign channel " + channel.number + " to channel type " + Channel.prototype.CHANNEL_TYPE[channel.channelType] + "(" +
     //    channel.channelType + ")" + " on network " + channel.network.number);
@@ -1763,9 +1494,9 @@ ANT.prototype.assignChannel = function (channelNr, errorCallback, successCallbac
     // Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
     // also sets defaults values for RF, period, tx power, search timeout p.22
     if (typeof channel.extendedAssignment === "undefined") // i.e background scanning
-        this.sendAndVerifyResponseNoError(this.create_message(ANT.prototype.ANT_MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number])), ANT.prototype.ANT_MESSAGE.assign_channel.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.ANT_MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number])), ANTMessage.prototype.ANT_MESSAGE.assign_channel.id, errorCallback, successCallback);
     else if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_ASSIGN_ENABLED) {
-        this.sendAndVerifyResponseNoError(this.create_message(ANT.prototype.ANT_MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number, channel.extendedAssignment])), ANT.prototype.ANT_MESSAGE.assign_channel.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.ANT_MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number, channel.extendedAssignment])), ANTMessage.prototype.ANT_MESSAGE.assign_channel.id, errorCallback, successCallback);
     } else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_ASSIGN_ENABLED)
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support extended assignment");
 };
@@ -1777,7 +1508,7 @@ ANT.prototype.setChannelId = function (channelNr, errorCallback, successCallback
     //                        function () { exit("Failed to set channel id.") },
     // ANTWARE II - log file   1061.985 { 798221031} Tx - [A4][05][51][00][00][00][78][00][88][00][00]
 
-    var set_channel_id_msg, self = this;
+    var set_channel_id_msg, self = this, message = new ANTMessage();
     var channel = this.channelConfiguration[channelNr];
     //console.log("Setting channel id. - channel number " + channel.number + " device type " + channel.deviceType + " transmission type " + channel.transmissionType);
 
@@ -1789,15 +1520,15 @@ ANT.prototype.setChannelId = function (channelNr, errorCallback, successCallback
     buf[3] = channel.channelID.deviceType;
     buf[4] = channel.channelID.transmissionType; // Can be set to zero (wildcard) on a slave device, spec. p. 18 ANT Message Protocol and Usage, rev 5.0
 
-    set_channel_id_msg = this.create_message(this.ANT_MESSAGE.set_channel_id, buf);
+    set_channel_id_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_channel_id, buf);
 
-    this.sendAndVerifyResponseNoError(set_channel_id_msg, self.ANT_MESSAGE.set_channel_id.id, errorCallback, successCallback);
+    this.sendAndVerifyResponseNoError(set_channel_id_msg, ANTMessage.prototype.ANT_MESSAGE.set_channel_id.id, errorCallback, successCallback);
 
 };
 
 ANT.prototype.setChannelPeriod = function (channelNr, errorCallback, successCallback) {
 
-    var set_channel_period_msg, rate, self = this;
+    var set_channel_period_msg, rate, self = this, message = new ANTMessage();
     var channel = this.channelConfiguration[channelNr];
    
     var msg = "";
@@ -1812,9 +1543,9 @@ ANT.prototype.setChannelPeriod = function (channelNr, errorCallback, successCall
         buf[0] = channel.number;
         buf.writeUInt16LE(channel.period, 1);
 
-        set_channel_period_msg = this.create_message(this.ANT_MESSAGE.set_channel_messaging_period, new Buffer(buf));
+        set_channel_period_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_channel_messaging_period, new Buffer(buf));
 
-        this.sendAndVerifyResponseNoError(set_channel_period_msg, self.ANT_MESSAGE.set_channel_messaging_period.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(set_channel_period_msg, ANTMessage.prototype.ANT_MESSAGE.set_channel_messaging_period.id, errorCallback, successCallback);
     } else {
         
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Channel period not specified for channel "+channel.number+" "+msg);
@@ -1833,7 +1564,8 @@ ANT.prototype.setLowPriorityChannelSearchTimeout = function (channelNr, errorCal
 
     var channel_low_priority_search_timeout_msg, 
         self = this,
-        channel = this.channelConfiguration[channelNr];
+        channel = this.channelConfiguration[channelNr], 
+            message = new ANTMessage();
 
     if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED) {
         //channel.lowPrioritySearchTimeout = ucSearchTimeout;
@@ -1841,9 +1573,9 @@ ANT.prototype.setLowPriorityChannelSearchTimeout = function (channelNr, errorCal
         //console.log("Set channel low priority search timeout channel " + channel.number + " timeout " + channel.lowPrioritysearchTimeout);
         var buf = new Buffer([channel.number, channel.lowPrioritySearchTimeout]);
 
-        channel_low_priority_search_timeout_msg = this.create_message(ANT.prototype.ANT_MESSAGE.set_low_priority_channel_search_timeout, buf);
+        channel_low_priority_search_timeout_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_low_priority_channel_search_timeout, buf);
 
-        this.sendAndVerifyResponseNoError(channel_low_priority_search_timeout_msg, ANT.prototype.ANT_MESSAGE.set_low_priority_channel_search_timeout.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(channel_low_priority_search_timeout_msg, ANTMessage.prototype.ANT_MESSAGE.set_low_priority_channel_search_timeout.id, errorCallback, successCallback);
     } else
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Device does not support setting low priority search");
 };
@@ -1853,7 +1585,7 @@ ANT.prototype.setChannelSearchTimeout = function (channelNr, errorCallback, succ
 
     // Each count in ucSearchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
     var channel_search_timeout_msg, self = this;
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
 
     if (typeof channel.searchTimeout === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No high priority search timeout specified for channel " + channel.number);
@@ -1862,9 +1594,9 @@ ANT.prototype.setChannelSearchTimeout = function (channelNr, errorCallback, succ
         //console.log("Set channel search timeout channel " + channel.number + " timeout " + channel.searchTimeout);
         var buf = new Buffer([channel.number, channel.searchTimeout]);
 
-        channel_search_timeout_msg = this.create_message(this.ANT_MESSAGE.set_channel_search_timeout, buf);
+        channel_search_timeout_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_channel_search_timeout, buf);
 
-        this.sendAndVerifyResponseNoError(channel_search_timeout_msg, self.ANT_MESSAGE.set_channel_search_timeout.id, errorCallback, successCallback);
+        this.sendAndVerifyResponseNoError(channel_search_timeout_msg, ANTMessage.prototype.ANT_MESSAGE.set_channel_search_timeout.id, errorCallback, successCallback);
     }
 
 };
@@ -1872,11 +1604,11 @@ ANT.prototype.setChannelSearchTimeout = function (channelNr, errorCallback, succ
 ANT.prototype.setChannelRFFrequency = function (channelNr, errorCallback, successCallback) {
     // ucRFFreq*1Mhz+2400 Mhz
     var RFFreq_msg, self = this;
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
 
      console.log("Set channel RF frequency channel " + channel.number + " frequency " + channel.RFfrequency);
-    RFFreq_msg = this.create_message(this.ANT_MESSAGE.set_channel_RFFreq, new Buffer([channel.number, channel.RFfrequency]));
-    this.sendAndVerifyResponseNoError(RFFreq_msg, self.ANT_MESSAGE.set_channel_RFFreq.id, errorCallback, successCallback);
+    RFFreq_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_channel_RFFreq, new Buffer([channel.number, channel.RFfrequency]));
+    this.sendAndVerifyResponseNoError(RFFreq_msg, ANTMessage.prototype.ANT_MESSAGE.set_channel_RFFreq.id, errorCallback, successCallback);
     
 };
 
@@ -1885,7 +1617,7 @@ ANT.prototype.setSearchWaveform = function (channelNr, errorCallback, successCal
 
     var set_search_waveform_msg, self = this,
         buf = new Buffer(3);
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
 
     if (typeof channel.searchWaveform === "undefined") {
         self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No search waveform specified");
@@ -1897,38 +1629,38 @@ ANT.prototype.setSearchWaveform = function (channelNr, errorCallback, successCal
     buf[0] = channel.number;
     buf[1] = channel.searchWaveform[0];
     buf[2] = channel.searchWaveform[1];
-    set_search_waveform_msg = this.create_message(this.ANT_MESSAGE.set_search_waveform, new Buffer(buf));
+    set_search_waveform_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.set_search_waveform, new Buffer(buf));
 
-    this.sendAndVerifyResponseNoError(set_search_waveform_msg, self.ANT_MESSAGE.set_search_waveform.id, errorCallback, successCallback);
+    this.sendAndVerifyResponseNoError(set_search_waveform_msg, ANTMessage.prototype.ANT_MESSAGE.set_search_waveform.id, errorCallback, successCallback);
     
 };
 
 ANT.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
-    var openRxScan_channel_msg, self = this;
+    var openRxScan_channel_msg, self = this, message = new ANTMessage();
     var channel = this.channelConfiguration[channelNr];
     //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-    openRxScan_channel_msg = this.create_message(this.ANT_MESSAGE.open_rx_scan_mode, new Buffer([0]));
+    openRxScan_channel_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.open_rx_scan_mode, new Buffer([0]));
 
-    this.sendAndVerifyResponseNoError(openRxScan_channel_msg, self.ANT_MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
+    this.sendAndVerifyResponseNoError(openRxScan_channel_msg, ANTMessage.prototype.ANT_MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
 },
 
 ANT.prototype.open = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     //console.log("Opening channel "+ucChannel);
     var open_channel_msg, self = this;
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
     //self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-    open_channel_msg = this.create_message(this.ANT_MESSAGE.open_channel, new Buffer([channel.number]));
+    open_channel_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.open_channel, new Buffer([channel.number]));
 
-    this.sendAndVerifyResponseNoError(open_channel_msg, self.ANT_MESSAGE.open_channel.id, errorCallback, successCallback,noVerifyResponseNoError);
+    this.sendAndVerifyResponseNoError(open_channel_msg, ANTMessage.prototype.ANT_MESSAGE.open_channel.id, errorCallback, successCallback,noVerifyResponseNoError);
 };
 
 // Closing first gives a response no error, then an event channel closed
 ANT.prototype.close = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     //console.log("Closing channel "+ucChannel);
     var close_channel_msg, self = this;
-    var channel = this.channelConfiguration[channelNr];
+    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
     //console.log("Closing channel " + channel.number);
-    close_channel_msg = this.create_message(this.ANT_MESSAGE.close_channel, new Buffer([channel.number]));
+    close_channel_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.close_channel, new Buffer([channel.number]));
 
     this.sendOnly(close_channel_msg, ANT.prototype.ANT_DEFAULT_RETRY, 500, errorCallback,
         function success() {
@@ -1960,7 +1692,7 @@ ANT.prototype.close = function (channelNr, errorCallback, successCallback, noVer
             function retryResponseNoError() {
                 self.read(500, errorCallback,
                              function success(data) {
-                                 if (!self.isResponseNoError(data, self.ANT_MESSAGE.close_channel.id)) {
+                                 if (!self.isResponseNoError(data, ANTMessage.prototype.ANT_MESSAGE.close_channel.id)) {
                                      self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR for close channel");
                                      retryNr++;
                                      if (retryNr < ANT.prototype.ANT_RETRY_ON_CLOSE) {
@@ -1997,7 +1729,7 @@ ANT.prototype.close = function (channelNr, errorCallback, successCallback, noVer
 ANT.prototype.isEvent = function (code, data) {
     var msgId = data[2], channelNr = data[3], eventOrResponse = data[4], eventCode = data[5], EVENT = 1;
 
-    return (msgId === ANT.prototype.ANT_MESSAGE.channel_response.id && eventOrResponse === EVENT && code === eventCode);
+    return (msgId === ANTMessage.prototype.ANT_MESSAGE.channel_response.id && eventOrResponse === EVENT && code === eventCode);
 };
 
 // Check if channel response is a no error for a specific requested message id
@@ -2007,7 +1739,7 @@ ANT.prototype.isResponseNoError = function (data, requestedMsgId) {
     //console.log(Date.now() + " Validation");
     //console.log(data, requestedMsgId);
 
-    return (msgId === ANT.prototype.ANT_MESSAGE.channel_response.id && msgCode === ANT.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR && msgRequested === requestedMsgId);
+    return (msgId === ANTMessage.prototype.ANT_MESSAGE.channel_response.id && msgCode === ANT.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR && msgRequested === requestedMsgId);
 
 };
 
@@ -2038,7 +1770,7 @@ ANT.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, 
 ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
     var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
         self = this,
-        ack_msg = self.create_message(ANT.prototype.ANT_MESSAGE.acknowledged_data, buf),
+        ack_msg = self.create_message(ANTMessage.prototype.ANT_MESSAGE.acknowledged_data, buf),
         resendMsg;
 
     // Add to retry queue -> will only be of length === 1
@@ -2105,7 +1837,7 @@ ANT.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCal
 
     buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
 
-    burst_msg = self.create_message(ANT.prototype.ANT_MESSAGE.burst_transfer_data, buf);
+    burst_msg = self.create_message(ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data, buf);
 
     // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
     // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
@@ -2230,7 +1962,7 @@ ANT.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, s
 //                    if (!validationCallback(data, message.id)) {
 //                        // console.log("Expected startup notification after reset command, but got " + RESPONSE_EVENT_CODES[data[2]] + ", retrying...");
 //                        //--maxReceiveErrorRetries;
-//                        console.log(Date.now() + " Waiting on response for " + ANT.prototype.ANT_MESSAGE[message.id] + ", skipping this message; ", data);
+//                        console.log(Date.now() + " Waiting on response for " + ANTMessage.prototype.ANT_MESSAGE[message.id] + ", skipping this message; ", data);
 //                        //console.log(self);
 //                        self.parse_response(data);
 //                        if (Date.now() - startTimestamp > 10000) {
@@ -2271,9 +2003,9 @@ ANT.prototype.sendOnly = function (message, maxRetries, timeout, errorCallback, 
     var self = this,
         msg = "", request = "";
 
-    // console.log(message.id, ANT.prototype.ANT_MESSAGE.request);
-    if (message.id === ANT.prototype.ANT_MESSAGE.request.id)
-        request = ANT.prototype.ANT_MESSAGE[message.buffer[4]];
+    // console.log(message.id, ANTMessage.prototype.ANT_MESSAGE.request);
+    if (message.id === ANTMessage.prototype.ANT_MESSAGE.request.id)
+        request = ANTMessage.prototype.ANT_MESSAGE[message.buffer[4]];
 
     // console.log(Date.now() + " TX: ", message.buffer, " "+message.friendly + " "+request +" timeout " + timeout + " max retries " + maxRetries);
 

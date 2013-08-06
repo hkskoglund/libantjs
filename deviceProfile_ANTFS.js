@@ -808,6 +808,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function (config) {
     return this.channel;
 };
 
+
 DeviceProfile_ANTFS.prototype.channelResponseEvent = function (data) {
     //console.log("THIS IS", this);
     // console.log("arguments", arguments);
@@ -815,12 +816,16 @@ DeviceProfile_ANTFS.prototype.channelResponseEvent = function (data) {
    // console.log("CHANNEL", this.channel);
     var self = this, antInstance = this.ANT, channelNr = self.channel.number;
         
-    if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_FAIL_GO_TO_SEARCH, data))
+    if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_FAIL_GO_TO_SEARCH, data)) {
         console.log(Date.now() + " ANT-FS Channel " + channelNr + " cannot track broadcast anymore, missed to many expected broadcasts from device");
+
+        // Clean up and return to LINK layer ...
+        console.log("self", self);
+    }
     else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data))
         console.log(Date.now() + " ANT-FS Channel " + channelNr + " reached search timeout. Device did not send any ANT data in the search periode.");
     else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data))
-        console.log(Date.now() + " ANT-FS Channel "+ channelNr+" closed.");
+        console.log(Date.now() + " ANT-FS Channel " + channelNr + " closed.");
 
 };
 
