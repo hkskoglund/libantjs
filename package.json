@@ -2,26 +2,37 @@
   "name": "ant-lib",
   "version": "0.1.0",
   "private": true,
-  "author": "Henning Knut Skoglund <hkskoglund@gmail.com>",
+  "author": {
+    "name": "Henning Knut Skoglund",
+    "email": "hkskoglund@gmail.com"
+  },
   "description": "An ANT USB library for wireless communication",
   "keywords": [
     "ant",
     "usb",
     "library",
-	"wireless"
+    "wireless"
   ],
-  "main" : "./ant.js",
-  "dependencies" : {
-    "usb"  : " >=0.2.x"
+  "main": "./ant.js",
+  "dependencies": {
+    "usb": " >=0.2.x"
   },
-   "repository": {
+  "repository": {
     "type": "git",
     "url": "https://github.com/hkskoglund/ANT-lib.git"
   },
-   "bugs" : 
-        { "url" : "https://github.com/hkskoglund/ANT-lib/issues" },
+  "bugs": {
+    "url": "https://github.com/hkskoglund/ANT-lib/issues"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=0.10.x"
-  }
+  },
+  "readme": "ERROR: No README data found!",
+  "_id": "ant-lib@0.1.0",
+  "dist": {
+    "shasum": "84ff71d357c12c9370be21c9a64958aec297b40e"
+  },
+  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#3e08aa215ce9ad479df94c769ba27ee90546f2bc",
+  "_from": "ant-lib@git://github.com/hkskoglund/ANT-lib.git"
 }

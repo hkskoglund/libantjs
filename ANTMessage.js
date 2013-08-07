@@ -2,39 +2,23 @@
        SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
  */
 
-function ANTMessage() {
+function ANTMessage(data) {
+    //console.log("DATA", data);
+    if (data) {
+        this.timestamp = Date.now();
+        this.data = data;
+        this.SYNC = data[0];
+        this.length = data[1];
+        this.id = data[2];
+        this.content = data.slice(3, 3 + this.length);
+        //console.log("CONTENT", this.content);
+        this.CRC = data[3 + this.length];
+    }
 }
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
 ANTMessage.prototype.NOTIFICATION = {
-
-    STARTUP: {
-        POWER_ON_RESET:{
-            CODE : 0x00,
-            MESSAGE : 'POWER_ON_RESET'
-        },
-        HARDWARE_RESET_LINE: {
-            CODE : 0x01,
-            MESSAGE : 'HARDWARE_RESET_LINE'
-        },
-        WATCH_DOG_RESET: {
-            CODE : 0x02,
-            MESSAGE : 'WATCH_DOG_RESET'
-        },
-        COMMAND_RESET: {
-            CODE : 0x03,
-            MESSAGE : 'COMMAND_RESET'
-        },
-        SYNCHRONOUS_RESET: {
-            CODE : 0x04,
-            MESSAGE : 'SYNCHRONOUS_RESET'
-        },
-        SUSPEND_RESET: {
-            CODE: 0x05,
-            MESSAGE: 'SUSPEND_RESET'
-        }
-    },
 
     SERIAL_ERROR: {
         FIRST_BYTE_NOT_SYNC: {
@@ -52,63 +36,10 @@ ANTMessage.prototype.NOTIFICATION = {
     }
 };
 
-ANTMessage.prototype.setMessage = function (data,parse)
-{
-    //console.log("DATA", data);
-    this.timestamp = Date.now();
-    this.USBdata = data;
-    this.SYNC = data[0];
-    this.length = data[1];
-    this.id = data[2];
-    this.content = data.slice(3, 3 + this.length);
-    //console.log("CONTENT", this.content);
-    this.CRC = data[3 + this.length];
-
-    if (parse)
-        this.parse();
+ANTMessage.prototype.isSYNCOK = function () {
+    return (this.SYNC === ANTMessage.prototype.SYNC);
 }
 
-ANTMessage.prototype.parseNotificationStartup = function (data) {
-    var msg, code;
-
-    var startupMessage;
-       
-    
-    if (typeof data === "undefined")
-        startupMessage = this.content[0];
-    else
-        startupMessage = data;
-
-    if (startupMessage === 0) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.POWER_ON_RESET.MESSAGE
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.POWER_ON_RESET.CODE;
-    }
-    else if (startupMessage === 1) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.HARDWARE_RESET_LINE.MESSAGE
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.HARDWARE_RESET_LINE.CODE;
-    }
-    else if (startupMessage & (1 << 2)) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.WATCH_DOG_RESET.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.WATCH_DOG_RESET.CODE;
-    }
-    else if (startupMessage & (1 << 5)) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.COMMAND_RESET.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.COMMAND_RESET.CODE;
-    }
-    else if (startupMessage & (1 << 6)) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.SYNCHRONOUS_RESET.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.SYNCHRONOUS_RESET.CODE;
-    }
-    else if (startupMessage & (1 << 7)) {
-        msg = ANTMessage.prototype.NOTIFICATION.STARTUP.SUSPEND_RESET.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.STARTUP.SUSPEND_RESET.CODE;
-    }
-
-    //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, ANTMessage.prototype.ANT_MESSAGE.startup.friendly + " " + msg);
-
-    this.message = { 'class' : 'Notifications', 'type' : 'Start-up Message', 'text': msg, 'code': code };
-    
-};
 
 ANTMessage.prototype.parseNotificationSerialError = function (data) {
     var msg, code;
@@ -148,32 +79,34 @@ ANTMessage.prototype.parseNotificationSerialError = function (data) {
 };
 
 
-ANTMessage.prototype.parse = function () {
+//ANTMessage.prototype.parse = function () {
 
-    switch (this.id) {
+//    var msg;
 
-        // Notifications
+//    switch (this.id) {
 
-        case ANTMessage.prototype.ANT_MESSAGE.startup.id:
+//        // Notifications
 
-            this.parseNotificationStartup();
+//        case ANTMessage.prototype.ANT_MESSAGE.startup.id:
 
-            break;
+//            msg = new NotificationStartup();
 
-        case ANTMessage.prototype.ANT_MESSAGE.serial_error.id:
+//            break;
+
+//        case ANTMessage.prototype.ANT_MESSAGE.serial_error.id:
 
             
-            this.parseNotificationSerialError();
+//            this.parseNotificationSerialError();
 
-            break;
+//            break;
 
-        default:
+//        default:
 
-            console.log("Cannot parse message " + this.id);
+//            console.log("Cannot parse message " + this.id);
 
-            break;
-    }
-}
+//            break;
+//    }
+//}
 
 ANTMessage.prototype.toString = function () {
     return "ANT message:" +
@@ -293,7 +226,7 @@ ANTMessage.prototype.getCRC = function (messageBuffer) {
 };
 
 // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
-ANTMessage.prototype.ANT_MESSAGE = {
+ANTMessage.prototype.MESSAGE = {
 
     // Control messages
 

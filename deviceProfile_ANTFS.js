@@ -7,6 +7,7 @@ var CRC = require('./crc.js');
 var ANT = require('ant-lib');
 var fs = require('fs');
 var Channel = require('./channel.js');
+var PathSeparator = require('path').sep; // Win32 = \\, *nix = /
 
 function DeviceProfile_ANTFS(configuration) {
     DeviceProfile.call(this,configuration); // Call parent
@@ -173,7 +174,7 @@ DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB = 16; // Size of download buffe
 
 DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY = 3000; // Time in ms. to wait for burst response on a request before retrying previous request
 
-DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + '\\getFIT-archive';
+DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + PathSeparator+'getFIT-archive';
 
 DeviceProfile_ANTFS.prototype.NODECOMMAND = {
     DOWNLOAD_MULTIPLE: 0x03,
@@ -410,7 +411,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
                             }
 
                             // Setup home directory for device - and create device directory under root directory
-                            homeDirectory = DeviceProfile_ANTFS.prototype.ROOT_DIR + '\\' + authenticate_response.clientSerialNumber;
+                            homeDirectory = DeviceProfile_ANTFS.prototype.ROOT_DIR + PathSeparator + authenticate_response.clientSerialNumber;
 
                             self.setHomeDirectory(homeDirectory);
 
@@ -430,11 +431,11 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
                             if (authenticate_response.authenticationStringLength > 0) {
                                 authenticate_response.authenticationString = data.slice(16, 16 + authenticate_response.authenticationStringLength); // Passkey
                                 // TO DO : write to file client serial number + friendlyname + passkey + { channel id (device nr./type+transmission type) ? }
-                                fs.writeFile(self.getHomeDirectory() + '\\passkey.json', JSON.stringify({ passkey : authenticate_response.authenticationString }), function (err) {
+                                fs.writeFile(self.getHomeDirectory() + PathSeparator+'passkey.json', JSON.stringify({ passkey : authenticate_response.authenticationString }), function (err) {
                                     if (err)
                                         console.log(Date.now() + " Error writing to passkey file", err);
                                     else
-                                        console.log(Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + '\\passkey.BIN');
+                                        console.log(Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + PathSeparator+'passkey.BIN');
                                 });
                             }
                         }
@@ -579,7 +580,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser
 
                                 if (self.request.dataIndex !== DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE) {
 
-                                    var fName = self.getHomeDirectory() + '\\' + self.directory.index[self.request.dataIndex].fileName;
+                                    var fName = self.getHomeDirectory() + PathSeparator + self.directory.index[self.request.dataIndex].fileName;
                                     console.log(Date.now() + " Downloaded file ", fName, download_response.fileSize, "bytes");
                                     fs.writeFile(fName, self.response.downloadFile, function (err) {
                                         if (err)
@@ -1575,7 +1576,7 @@ DeviceProfile_ANTFS.prototype.broadCastDataParser = function (data) {
                         // Callback from parseBurstData when authentication response is received from the device
                         function authenticationCB() {
                             // Try to read passkey from file
-                            var passkeyFileName = self.getHomeDirectory() + '\\passkey.json';
+                            var passkeyFileName = self.getHomeDirectory() + PathSeparator+'passkey.json';
                             console.log(Date.now() + " Trying to find passkey file at ", passkeyFileName);
                             fs.exists(passkeyFileName, function (exists) {
                                 if (exists) {
