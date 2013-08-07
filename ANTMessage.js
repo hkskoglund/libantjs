@@ -194,7 +194,7 @@ Content = Buffer
 // Sending of LSB first = little endian NB!
 */
 ANTMessage.prototype.create_message = function (message, content) {
-    var index,
+    var 
      headerBuffer = new Buffer(3),
      contentBuffer,
      messageBuffer,
@@ -330,6 +330,7 @@ ANTMessage.prototype.ANT_MESSAGE = {
     0x52: "Channel Status",
     channel_status: { id: 0x52, friendly: "Channel Status" },
 
+    // Device specific
     0x3E: "ANT version",
     ANT_version: { id: 0x3E, friendly: "ANT Version" },
 

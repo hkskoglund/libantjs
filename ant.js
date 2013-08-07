@@ -4,12 +4,14 @@ var events = require('events'),
     usb = require('usb'),
     util = require('util'),
     Channel = require('./channel.js'),
-    ANTMessage = require('./ANTMessage.js');
-   // DeviceProfile_ANTFS = require('./deviceProfile_ANTFS.js');
+    ANTMessage = require('./ANTMessage.js'),
+    Readable = require('stream').Readable;
 
 // Low level API/interface to ANT USB stick
 function ANT(idVendor, idProduct) {
    
+    var self = this;
+
     events.EventEmitter.call(this); // Call super constructor
 
     if (typeof idVendor === "undefined")
@@ -21,12 +23,38 @@ function ANT(idVendor, idProduct) {
     this.idVendor = idVendor;
     this.idProduct = idProduct;
 
-   // this.deviceProfile_ANTFS = new DeviceProfile_ANTFS(nodeInstance);
-
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
 
     //console.log("ANT instance instance of EventEmitter",this instanceof events.EventEmitter );
+
+    this._readable = new Readable();
+
+    // Must be defined otherwise throws error
+    this._readable._read = function (size) {
+        //console.log("Consumer wants to read %d bytes",size);
+       // this.readable.push('A');
+    }.bind(this);
+
+    //this.readable.pipe(process.stdout);
+
+    // http://nodejs.org/api/stream.html#stream_class_stream_readable
+    // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
+    // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
+   this._readable.addListener('data', function (chunck)
+    {
+        self.parse_response(chunck);
+   });
+
+   //this._readable.addListener('readable', function () {
+   //    console.log("Readable",arguments);
+   //});
+
+    this._readable.addListener('error', function (msg,err) {
+        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, msg);
+        if (typeof err !== "undefined")
+            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, err);
+    });
 
     this.addListener(ANT.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
 
@@ -49,8 +77,6 @@ ANT.prototype.SCANNING_CHANNEL_TYPE = {
 };
 
 ANT.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
-
-
 
 ANT.prototype.ANT_DEVICE_TIMEOUT = 3 * 7; // Direct USB ANT communication  (normal 5-7 ms. processing time on device)
 
@@ -93,9 +119,6 @@ ANT.prototype.EVENT = {
     CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
 };
-
-
-
 
 ANT.prototype.RESPONSE_EVENT_CODES = {
 
@@ -210,8 +233,9 @@ ANT.prototype.CHANNEL_STATUS = {
     TRACKING: 0x03
 };
 
-
-
+ANT.prototype.getReadable = function () {
+    return this._readable;
+}
 // From spec. p. 17 - "an 8-bit field used to define certain transmission characteristics of a device" - shared address, global data pages.
 // For ANT+/ANTFS :
 
@@ -473,7 +497,7 @@ ANT.prototype.parse_response = function (data) {
         CRCOK = (msgCRC === verifiedCRC);
 
     if (typeof msgCRC === "undefined")
-        console.log("msgCRC undefined", "msgLength 0x"+ ANTmsg.length.toString(16) +"="+ANTmsg.length, data);
+        console.log("msgCRC undefined", "ANTmsg",ANTmsg, data);
 
     // Check for valid SYNC byte at start
 
@@ -708,27 +732,6 @@ ANT.prototype.parse_response = function (data) {
             break;
     }
 
-
-
-
-    //if (msgID !== ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data.id) // Avoid burst logging -> gives performance problems
-    //    console.log(Date.now() + " Rx: ", data, msgStr);
-
-
-    //for (var byteNr = 0; byteNr < data.length; byteNr++) {
-    //    if (byteNr === 0 && data[byteNr] === SYNC)
-    //        console.log("Buffer index " + byteNr + ", value: " + data[byteNr] + " = SYNC");
-    //    else if (byteNr === 1)
-    //        console.log("Buffer index " + byteNr + ", value: " + data[byteNr] + " = LENGTH");
-    //    else if (byteNr === 2)
-    //        console.log("Buffer index " + byteNr + ", value: " + data[byteNr] + " = ID");
-    //    else if (byteNr === data.length - 1)
-    //        console.log("Buffer index " + byteNr + ", value: " + data[byteNr] + " = CHECKSUM");
-    //    else
-    //        console.log("Buffer index " + byteNr + ", value: " + data[byteNr]);
-    //}
-
-
     // There might be more buffered data messages from ANT engine available (if commands/request are sent, but not read in awhile)
 
     var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
@@ -741,57 +744,42 @@ ANT.prototype.parse_response = function (data) {
 
 // Continuously listen on incoming packets from ANT engine and send it to the general parser for further processing
 ANT.prototype.listen = function (transferCancelledCallback) {
-
+   
     var self = this, NO_TIMEOUT = 0, TIMEOUT = 30000, msgLength, channelNr, msgCRC, verifiedCRC, SYNCOK,CRCOK;
 
     function retry() {
-
         var errorCB = function error(err) {
 
             if (err.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
-                self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Timeout: No ANT data received in "+TIMEOUT+ " ms.");
+                self._readable.emit('error',"Timeout: No ANT data received in " + TIMEOUT + " ms.",err);
+              
                 process.nextTick(retry);
             }
             else if (err.errno === usb.LIBUSB_TRANSFER_CANCELLED) {
                 //console.log(error);
                 // Transfer cancelled, may be aborted by pressing Ctrl-C in Node.js 
                 if (typeof transferCancelledCallback === "function") {
+                    self._readable.emit('error', "Transfer cancelled",err);
                     //self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Calling cancellation callback "+transferCancelledCallback.name);
                     transferCancelledCallback();
                 }
                 else
-                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "No transfer cancellation callback specified");
-               
-            } else { 
-                self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Receive error in listen:" + err);
+                    self._readable.emit('error', "No transfer cancellation callback specified");
+
+            } else {
+                self._readable.emit('error', "Receive error in listen:" + err,err);
                 process.nextTick(retry);
             }
 
         },
 
-        successCB = function success(data) {
-            msgLength = data[1];
-            channelNr = data[3];
-           
+     successCB = function success(data) {
+         self._readable.push(data);
+         process.nextTick(retry);
+     };
 
-            //if (data.length > 1 + msgLength + 2+1) {
-            //    //console.log(data.inspect());
-            //    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Buffered data (more than one data message) received on channel "+channelNr+ ", length of data " + data.length + " bytes");
-            //}
-            //console.log("RAW", data);
-            //console.log("Verified CRC", verifiedCRC.toString(16),"CRC in msg.",msgCRC.toString(16));
-           
-                self.parse_response(data);
-               process.nextTick(retry);
-        };
-
-       
-         self.read(TIMEOUT, errorCB , successCB);
+        self.read(TIMEOUT, errorCB, successCB);
     }
-
-    // self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Listening for ANT data");
-
-   // console.log(self.inTransfer);
 
     retry();
 
@@ -1069,8 +1057,10 @@ ANT.prototype.resetSystem = function (errorCallback, successCallback) {
     var resetSystemMsg = new ANTMessage(),
        reset_system_msg = resetSystemMsg.create_message(ANTMessage.prototype.ANT_MESSAGE.reset_system, new Buffer([0])),
         self = this;
+
     self.sendOnly(reset_system_msg,
-        ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
+        ANT.prototype.ANT_DEFAULT_RETRY,
+        ANT.prototype.ANT_DEVICE_TIMEOUT,
            // function validation(data) { return self.isStartupNotification(data); },
             function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Could not reset device, try to reinsert USB stick to clean up buffers and drivers."); errorCallback(); },
             function success() {
@@ -1770,7 +1760,8 @@ ANT.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, 
 ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
     var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
         self = this,
-        ack_msg = self.create_message(ANTMessage.prototype.ANT_MESSAGE.acknowledged_data, buf),
+        message = new ANTMessage(),
+        ack_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.acknowledged_data, buf),
         resendMsg;
 
     // Add to retry queue -> will only be of length === 1
@@ -1833,11 +1824,14 @@ ANT.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, erro
 // Send an individual packet as part of a bulk transfer
 ANT.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
 
-    var buf, burst_msg, self = this;
+    var buf,
+        burst_msg,
+        self = this,
+        message = new ANTMessage();
 
     buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
 
-    burst_msg = self.create_message(ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data, buf);
+    burst_msg = message.create_message(ANTMessage.prototype.ANT_MESSAGE.burst_transfer_data, buf);
 
     // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
     // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
@@ -1927,77 +1921,6 @@ ANT.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, s
     sendBurst();
 };
 
-//ANT.prototype.send = function (message, maxRetries, timeout, validationCallback, errorCallback, successCallback, skipReceive) {
-
-//    var maxReceiveErrorRetries = maxRetries,
-//        maxSendRetries = maxRetries,
-//        startTimestamp = Date.now(),
-//        self = this;
-
-//    //console.trace();
-
-//    this.device.timeout = timeout;
-
-//    function retry() {
-
-//        if (maxSendRetries === 0) {
-//            console.log("Calling error callback - too many send retries");
-//            errorCallback();
-//        }
-
-//        function receive() {
-//            if (maxReceiveErrorRetries === 0) {
-//                console.log("Calling error callback - too many receive retries");
-//                errorCallback();
-//            }
-
-//            self.inTransfer = self.inEP.transfer(ANT.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function inTransferCallback(error, data) {
-//                if (error) {
-//                    console.log(Date.now() + " Receive (after send): " + error + ", retrying...");
-//                    --maxReceiveErrorRetries;
-//                    receive(); // Just retry receive
-//                }
-//                else {
-
-//                    if (!validationCallback(data, message.id)) {
-//                        // console.log("Expected startup notification after reset command, but got " + RESPONSE_EVENT_CODES[data[2]] + ", retrying...");
-//                        //--maxReceiveErrorRetries;
-//                        console.log(Date.now() + " Waiting on response for " + ANTMessage.prototype.ANT_MESSAGE[message.id] + ", skipping this message; ", data);
-//                        //console.log(self);
-//                        self.parse_response(data);
-//                        if (Date.now() - startTimestamp > 10000) {
-//                            console.log("Validation timeout");
-//                            errorCallback();
-//                        }
-//                        else
-//                            receive();
-//                    } else {
-//                        console.log(Date.now() + " (post-validation) Received: ", data);
-//                        successCallback(data);
-//                    }
-//                }
-
-//            });
-//        }
-
-//        console.log(Date.now() + " Sending:" + message.friendly + " timeout " + timeout + " max retries " + maxRetries + " skip receive : ", skipReceive ? "yes " : "no ", message.buffer);
-
-//        // console.log("Transfering " + message.friendly);
-//        //console.log("THIS", this);
-//        self.outTransfer = self.outEP.transfer(message.buffer, function outTransferCallback(error) {
-//            if (error) {
-//                console.log(Date.now() + "Send: " + error + ", retrying...");
-//                retry(--maxSendRetries);
-//            }
-//            else if (typeof skipReceive === "undefined" || !skipReceive)
-//                receive();
-//            else
-//                successCallback(undefined);
-//        });
-//    }
-
-//    retry(maxSendRetries);
-//};
 
 ANT.prototype.sendOnly = function (message, maxRetries, timeout, errorCallback, successCallback) {
     var self = this,
