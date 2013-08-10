@@ -36,9 +36,9 @@ DeviceProfile.prototype = {
 
     stop: function () {
 
-        clearInterval(this.heartBeatCountIntervalID);
+        clearInterval(this.NOOPFuncIntervalID);
 
-        this.ANT.exit();
+        console.log("Device profile closed");
     },
 
     start: function (callback) {
@@ -46,19 +46,15 @@ DeviceProfile.prototype = {
         //console.log("THIS", this);
 
         var self = this,
-            heartBeatCount = 0,
-            beatFunc = function () {
-                heartBeatCount++;
-            };
+            NOOPFunc = function () { }; // "Lazy hazy crazy days of summer" - C.Tobias, H. Carste
 
-
-        self.heartBeatCountIntervalID = setInterval(beatFunc, 60000 * 60 * 24); // 1 "beat" each day 
+        self.NOOPFuncIntervalID = setInterval(NOOPFunc, 60000 * 60 * 24); // 1 "beat" each day 
 
         // Handle gracefull termination
         // http://thomashunter.name/blog/gracefully-kill-node-js-app-from-ctrl-c/
 
         process.on('SIGINT', function sigint() {
-            console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
+            //console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
 
             // TO DO:  self.sendDisconnect(); // Disconnect
 
@@ -102,12 +98,12 @@ DeviceProfile.prototype = {
                 });
         };
 
-        this.ANT.setChannelConfiguration(channel);
+        //this.ANT.setChannelConfiguration(channel);
 
-        this.ANT.activateChannelConfiguration(channel, function _errorCB(err) { console.log("Could not configure channel", err); },
-                                                               function _successCB() {
-                                                                   openChannel();
-                                                               });
+        //this.ANT.activateChannelConfiguration(channel, function _errorCB(err) { console.log("Could not configure channel", err); },
+        //                                                       function _successCB() {
+        //                                                           openChannel();
+        //                                                       });
     },
 
     getConfiguration : function () {
@@ -137,12 +133,9 @@ DeviceProfile.prototype = {
             return;
         }
 
-        this.ANT = new ANT(this._configuration.usb.idVendor, this._configuration.usb.idProduct);
+        this.ANT = new ANT();
 
-        this.ANT.init(function _errorCB() {
-            console.log(Date.now(), "ANT was not initialized, encountered an error", arguments);
-        },
-                     self.start.bind(self, cb));
+        this.ANT.init(this._configuration.usb.idVendor, this._configuration.usb.idProduct, self.start.bind(self, cb));
     },
 };
 

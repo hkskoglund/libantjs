@@ -1,5 +1,5 @@
 {
- "name": "ant-lib",
+  "name": "ant-lib",
   "version": "0.1.0",
   "private": true,
   "author": {
@@ -31,8 +31,8 @@
   "readme": "ERROR: No README data found!",
   "_id": "ant-lib@0.1.0",
   "dist": {
-    "shasum": "84ff71d357c12c9370be21c9a64958aec297b40e"
+    "shasum": "e283b0559c2299093e51b6f49e7dd7fe86c86f1a"
   },
-  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#3e08aa215ce9ad479df94c769ba27ee90546f2bc",
+  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#f2a8ddcadf39bf1ce463eecfe79423a9d6640345",
   "_from": "ant-lib@git://github.com/hkskoglund/ANT-lib.git"
 }

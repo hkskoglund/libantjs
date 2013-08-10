@@ -41,9 +41,9 @@ function DeviceProfile_ANTFS(configuration) {
 
 }
 
-DeviceProfile_ANTFS.prototype = Object.create(DeviceProfile.prototype);  // Inherit properties/methods
+DeviceProfile_ANTFS.prototype = Object.create(DeviceProfile.prototype);  
 
-DeviceProfile_ANTFS.prototype.constructor = DeviceProfile_ANTFS;  // Update constructor
+DeviceProfile_ANTFS.prototype.constructor = DeviceProfile_ANTFS;  
 
 DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD = 4096;
 

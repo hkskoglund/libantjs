@@ -1,82 +1,32 @@
-﻿/* Standard message :
+﻿"use strict"
+/* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
  */
 
 function ANTMessage(data) {
     //console.log("DATA", data);
+    this.timestamp = Date.now();
+    this.SYNC = ANTMessage.prototype.SYNC;
+
     if (data) {
-        this.timestamp = Date.now();
-        this.data = data;
+        this.buffer = data;
         this.SYNC = data[0];
         this.length = data[1];
         this.id = data[2];
         this.content = data.slice(3, 3 + this.length);
         //console.log("CONTENT", this.content);
         this.CRC = data[3 + this.length];
-    }
+    } 
 }
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
-ANTMessage.prototype.NOTIFICATION = {
-
-    SERIAL_ERROR: {
-        FIRST_BYTE_NOT_SYNC: {
-            CODE : 0x00,
-            MESSAGE : 'First byte of USB packet not SYNC = 0xA4'
-        },
-        CRC_INCORRECT: {
-            CODE : 0x02,
-            MESSAGE : 'CRC of ANT message incorrect'
-        },
-        MESSAGE_TOO_LARGE: {
-            CODE: 0x03,
-            MESSAGE: 'ANT Message is too large'
-        }
-    }
-};
+ANTMessage.prototype.FILLER_BYTE = new Buffer([0]);
 
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);
 }
 
-
-ANTMessage.prototype.parseNotificationSerialError = function (data) {
-    var msg, code;
-
-    var serialErrorMessage, faultMessage;
-
-
-    if (typeof data === "undefined") {
-        serialErrorMessage = this.content;
-    }
-    else
-        serialErrorMessage = data;
-
-    if (serialErrorMessage[0] === ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE) {
-        msg = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE;
-    }
-    else if (serialErrorMessage[0] === ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.CRC_INCORRECT.CODE) {
-        msg = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.CRC_INCORRECT.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.CRC_INCORRECT.CODE;
-    }
-    else if (serialErrorMessage[0] === ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE) {
-        msg = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.MESSAGE_TOO_LARGE.MESSAGE;
-        code = ANTMessage.prototype.NOTIFICATION.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE;
-        faultMessage = serialErrorMessage.slice(1);
-    }
-
-    //this.notificationSerialError = {
-    //    timestamp: Date.now(),
-    //    message: msg,
-    //    code: code
-    //};
-
-    //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, ANTMessage.prototype.ANT_MESSAGE.serial_error.friendly + " " + msg);
-    //console.log("SERIAL ERROR ", msg);
-    this.message = { 'class': 'Notifications', 'type': 'Serial Error Message', 'text': msg, 'code': code, 'faultMessage': faultMessage };
-};
 
 
 //ANTMessage.prototype.parse = function () {
@@ -126,17 +76,20 @@ This function create a raw message
 Content = Buffer
 // Sending of LSB first = little endian NB!
 */
-ANTMessage.prototype.create_message = function (message, content) {
-    var 
+ANTMessage.prototype.create = function (content) {
+    var
      headerBuffer = new Buffer(3),
-     contentBuffer,
      messageBuffer,
      trailingZeroBuffer,
      content_len,
-     generatedMessage;
+     byteNr;
+    
 
-    // TEST 3 - provoke "ANT Message too large" content = new Buffer(200);
+  //  console.log("args", arguments);
 
+    // TEST 3 - provoke "ANT Message too large" 
+    //content = new Buffer(200);
+    this.content = content;
     if (content)
         content_len = content.length;
     else {
@@ -146,7 +99,7 @@ ANTMessage.prototype.create_message = function (message, content) {
 
     //console.log("Message id. ", message.id, " Content is ", content);
 
-    contentBuffer = new Buffer(content_len);
+    //contentBuffer = new Buffer(content_len);
     //if (content_len > 8)
     //    console.warn("Content length of message is ", content_len);
 
@@ -159,13 +112,13 @@ ANTMessage.prototype.create_message = function (message, content) {
 
     headerBuffer.writeUInt8(ANTMessage.prototype.SYNC, 0);
     headerBuffer.writeUInt8(content_len, 1);
-    headerBuffer.writeUInt8(message.id, 2);
+    headerBuffer.writeUInt8(this.id, 2);
 
-    // Content
-    for (var byteNr = 0; byteNr < content_len; byteNr++)
-        contentBuffer.writeUInt8(content.readUInt8(byteNr), byteNr);
+    //// Content
+    //for (var byteNr = 0; byteNr < content_len; byteNr++)
+    //    contentBuffer.writeUInt8(content.readUInt8(byteNr), byteNr);
 
-    messageBuffer = Buffer.concat([headerBuffer, contentBuffer], 3 + content_len);
+    this.buffer = Buffer.concat([headerBuffer, content], 3 + content_len);
 
     // Checksum
     //console.log("Message buffer:", messageBuffer, "Message buffer length", messageBuffer.length, " content length: ", content_len, "content buffer: ", contentBuffer);
@@ -180,9 +133,9 @@ ANTMessage.prototype.create_message = function (message, content) {
 
     // TEST -> Provoke Serial Error Message, error 2 - checksum of ANT msg. incorrect
     //var checksum = 0xFF;
-    var checksum = this.getCRC(messageBuffer);
+    this.checksum = this.getCRC(this.buffer);
 
-    messageBuffer = Buffer.concat([messageBuffer, new Buffer([checksum])], 4 + content_len);
+    this.buffer = Buffer.concat([this.buffer, new Buffer([this.checksum])], 4 + content_len);
 
     //console.log("Checksum  : " + checksum);
     //console.log("Raw message length : " + msg.length+", content length: "+content_len);
@@ -194,20 +147,19 @@ ANTMessage.prototype.create_message = function (message, content) {
         for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
             trailingZeroBuffer.writeUInt8(0, byteNr);
 
-        messageBuffer = Buffer.concat([messageBuffer, trailingZeroBuffer]);
+        this.buffer = Buffer.concat([this.buffer, trailingZeroBuffer]);
     }
 
+    
+    this.SYNC = ANTMessage.prototype.SYNC;
+    this.length = content_len;
 
-    generatedMessage = {
-        id: message.id,
-        buffer: messageBuffer,
-        friendly: message.friendly
-    };
-
-   // console.log("Created message : ", generatedMessage)
-
-    return generatedMessage;
+ 
 };
+
+ANTMessage.prototype.getBuffer = function () {
+    return this.buffer;
+}
 
 // CheckSUM = XOR of all bytes in message
 ANTMessage.prototype.getCRC = function (messageBuffer) {
@@ -225,13 +177,19 @@ ANTMessage.prototype.getCRC = function (messageBuffer) {
     return checksum;
 };
 
+
+ANTMessage.prototype.getMessageId = function ()
+{
+    return this.id;
+}
+
 // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
 ANTMessage.prototype.MESSAGE = {
 
     // Control messages
 
-    0x4a: "Reset system",
-    reset_system: { id: 0x4a, friendly: "Reset system" },
+    //0x4A: "Reset system",
+    RESET_SYSTEM:  0x4A,
 
     0x4b: "Open channel",
     open_channel: { id: 0x4b, friendly: "Open channel" },
@@ -245,12 +203,22 @@ ANTMessage.prototype.MESSAGE = {
     0xc5: "Sleep message",
     sleep_message: { id: 0xc5, friendly: "Sleep message" },
 
-    // Notification messages
-    0x6f: "Notification: Start up",
-    startup: { id: 0x6f, friendly: "Notification: Start-up" },
+    // Notification messages 
+    //0x6f: "Notification: Start up",
+    NOTIFICATION_STARTUP: 0x6F,
 
     0xae: "Notification: Serial error",
-    serial_error: { id: 0xae, friendly: "Notification: Serial error" },
+    NOTIFICATION_SERIAL_ERROR: 0xae,
+
+    // Device specific
+    0x3E: "ANT version",
+    ANT_version: { id: 0x3E, friendly: "ANT Version" },
+
+    0x54: "Capabilities",
+    capabilities: { id: 0x54, friendly: "Capabilities" },
+
+    0x61: "Device serial number",
+    device_serial_number: { id: 0x61, friendly: "Device Serial Number" },
 
     // Request/response
 
@@ -263,15 +231,7 @@ ANTMessage.prototype.MESSAGE = {
     0x52: "Channel Status",
     channel_status: { id: 0x52, friendly: "Channel Status" },
 
-    // Device specific
-    0x3E: "ANT version",
-    ANT_version: { id: 0x3E, friendly: "ANT Version" },
-
-    0x54: "Capabilities",
-    capabilities: { id: 0x54, friendly: "Capabilities" },
-
-    0x61: "Device serial number",
-    device_serial_number: { id: 0x61, friendly: "Device Serial Number" },
+   
 
     // Config messages
     // All conf. commands receive a response
