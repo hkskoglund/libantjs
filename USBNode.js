@@ -179,14 +179,16 @@ function drainLIBUSB(callback) {
 }
 
 USBNode.prototype.receive = function (successCallback) {
-    //console.trace();
+   // console.trace();
     console.log("Read timeout is : ", this.device.timeout);
+    //console.log("Success callback is : ", successCallback.toString());
     
     
     var receiveAttempt = 1,
         MAXATTEMPT = 5,
         self = this,
         validateSuccessCallback = function _validate(data) {
+            //console.log("Validated data", data);
             if (typeof successCallback === "function")
                 successCallback(data);
             else {
@@ -227,7 +229,8 @@ USBNode.prototype.receive = function (successCallback) {
                                 emitEvent(USBDevice.prototype.EVENT.LOG, "RX: Retry receiving " + receiveAttempt);
                                 receiveAttempt++;
 
-                                process.nextTick(retry);
+                                setImmediate(retry);
+                                //process.nextTick(retry);
                                 //retry();
                             }, self.device.timeout);
                         } else {
@@ -280,7 +283,7 @@ USBNode.prototype.send = function (chunk, successCallback)
         //console.trace();
         try {
             self.outTransfer = self.outEP.transfer(chunk, function _outTransferCallback(error) {
-                // Test LIBUSB transfer error
+                 // Test LIBUSB transfer error
                 //error = {};
                 //if (sendAttempt === 3)
                 //    error.errno = usb.LIBUSB_TRANSFER_CANCELLED;
@@ -297,7 +300,9 @@ USBNode.prototype.send = function (chunk, successCallback)
                                 self.emit(USBDevice.prototype.EVENT.LOG, "TX: Retry sending " + sendAttempt);
                                 sendAttempt++;
 
-                                process.nextTick(retry);
+                                // http://stackoverflow.com/questions/15349733/setimmediate-vs-nexttick
+                                setImmediate(retry);  
+                                //process.nextTick(retry);
                                 //retry();
                             }, self.device.timeout);
                         } else {
@@ -316,14 +321,12 @@ USBNode.prototype.send = function (chunk, successCallback)
                     validateSuccessCallback();
             }.bind(self));
         } catch (error) {
-            emitEvent(USBDevice.prototype.EVENT.ERROR, "I/O error - Attempt to write to USB ANT generated an serious output error " + error);
+            emitEvent(USBDevice.prototype.EVENT.ERROR, "I/O error - Attempt to write to USB ANT chip generated an serious output error " + error);
             process.exit();
         }
     }
 
     retry();
 }
-
-
 
 module.exports = USBNode;

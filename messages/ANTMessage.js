@@ -76,6 +76,7 @@ This function create a raw message
 Content = Buffer
 // Sending of LSB first = little endian NB!
 */
+
 ANTMessage.prototype.create = function (content) {
     var
      headerBuffer = new Buffer(3),
@@ -161,6 +162,8 @@ ANTMessage.prototype.getBuffer = function () {
     return this.buffer;
 }
 
+ANTMessage.prototype.toBuffer = ANTMessage.prototype.getBuffer;
+
 // CheckSUM = XOR of all bytes in message
 ANTMessage.prototype.getCRC = function (messageBuffer) {
     var checksum = messageBuffer[0], // Should be SYNC 0xA4
@@ -181,6 +184,10 @@ ANTMessage.prototype.getCRC = function (messageBuffer) {
 ANTMessage.prototype.getMessageId = function ()
 {
     return this.id;
+}
+
+ANTMessage.prototype.toString = function () {
+    return this.name + " 0x" + this.id.toString(16);
 }
 
 // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
@@ -207,23 +214,23 @@ ANTMessage.prototype.MESSAGE = {
     //0x6f: "Notification: Start up",
     NOTIFICATION_STARTUP: 0x6F,
 
-    0xae: "Notification: Serial error",
-    NOTIFICATION_SERIAL_ERROR: 0xae,
+   // 0xae: "Notification: Serial error",
+    NOTIFICATION_SERIAL_ERROR: 0xAE,
 
-    // Device specific
+    // Requested messages with REQUEST 0x4D 
     0x3E: "ANT version",
     ANT_version: { id: 0x3E, friendly: "ANT Version" },
 
-    0x54: "Capabilities",
-    capabilities: { id: 0x54, friendly: "Capabilities" },
+    //0x54: "Capabilities",
+    CAPABILITIES:  0x54,
 
     0x61: "Device serial number",
     device_serial_number: { id: 0x61, friendly: "Device Serial Number" },
 
     // Request/response
 
-    0x4d: "Request",
-    request: { id: 0x4d, friendly: "Request" },
+    //0x4d: "Request",
+    REQUEST: 0x4D,
 
     0x40: "Channel response/event",
     channel_response: { id: 0x40, friendly: "Channel Response/Event" },

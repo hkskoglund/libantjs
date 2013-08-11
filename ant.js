@@ -14,7 +14,10 @@ var events = require('events'),
     NotificationSerialError = require('./messages/NotificationSerialError.js'),
 
     // Control ANT
-    ResetSystemMessage = require('./messages/ResetSystemMessage.js');
+    ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
+
+    // Request -response
+    RequestMessage = require('./messages/RequestMessage.js');
         
     
 
@@ -25,7 +28,9 @@ function ANT() {
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
 
-    this.CHIPQueue = {}; // Queue of request sent directly to the ANT chip
+    //this.CHIPQueue = {}; // Queue of request sent directly to the ANT chip
+
+    this._mutex = {};
 
     //console.log("ANT instance instance of EventEmitter",this instanceof events.EventEmitter );
 }
@@ -67,6 +72,7 @@ ANT.prototype.EVENT = {
     CHANNEL_STATUS: 'channelStatus',
 
     LOG_MESSAGE: 'logMessage',
+    ERROR : 'error',
 
     SET_CHANNEL_ID: 'setChannelId',
 
@@ -585,13 +591,15 @@ ANT.prototype.parse_response = function (data) {
             // Notifications from ANT engine
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
-
+            //console.trace();
             //if (!antInstance.emit(antInstance.EVENT.STARTUP, data))
             //    antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.STARTUP");
 
             var notification = new NotificationStartup(data);
           
             self.emit(ANT.prototype.EVENT.LOG_MESSAGE, notification.toString());
+           // console.log("PARSER", this);
+            this.notificationStartupCallback();
 
             break;
 
@@ -751,7 +759,7 @@ ANT.prototype.listen = function (transferCancelledCallback) {
          process.nextTick(retry);
      };
 
-        self.receive(TIMEOUT, errorCB, successCB);
+        self.read(TIMEOUT, errorCB, successCB);
     }
 
     retry();
@@ -841,27 +849,32 @@ ANT.prototype.parseCapabilities = function (data) {
 };
 
 // Get device capabilities
-ANT.prototype.getCapabilities = function (completeCB) {
-    var msgId;
-    var self = this;
+ANT.prototype.getCapabilities = function (successCB) {
+    //var msgId;
+    //var self = this;
 
-    self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.capabilities.id),
-        ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-       // function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.capabilities.id); },
-        function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Failed to get device capabilities."); completeCB(); },
-        function success() {
-            self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, completeCB,
-                function success(data) {
-                    var msgId = data[2];
-                    if (msgId !== ANTMessage.prototype.MESSAGE.capabilities.id)
-                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected capabilities message response");
-                    self.parse_response(data);
-                    if (typeof completeCB === "function")
-                        completeCB();
-                    else
-                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no callback after getCapabilities");
-                });
-        });
+    //self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.capabilities.id),
+    //    ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
+    //   // function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.capabilities.id); },
+    //    function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Failed to get device capabilities."); completeCB(); },
+    //    function success() {
+    //        self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, completeCB,
+    //            function success(data) {
+    //                var msgId = data[2];
+    //                if (msgId !== ANTMessage.prototype.MESSAGE.capabilities.id)
+    //                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected capabilities message response");
+    //                self.parse_response(data);
+    //                if (typeof completeCB === "function")
+    //                    completeCB();
+    //                else
+    //                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no callback after getCapabilities");
+    //            });
+    //    });
+
+    var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
+    this.write(msg, this.read(function _scb(data) {
+            console.log("Got capabilities", data);
+        }));
 };
 
 // Get ANT device version
@@ -874,7 +887,7 @@ ANT.prototype.getANTVersion = function (callback) {
         //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.ANT_version.id); },
         function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to get ANT version."); callback(); },
         function success() {
-            self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
+            self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
                function success(data) {
                    var msgId = data[2];
                    if (msgId !== ANTMessage.prototype.MESSAGE.ANT_version.id)
@@ -920,7 +933,7 @@ ANT.prototype.getDeviceSerialNumber = function (callback) {
             //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.device_serial_number.id); },
             function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to get device serial number"); callback(); },
             function success() {
-                self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
+                self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
                function success(data) {
                    var msgId = data[2];
                    if (msgId !== ANTMessage.prototype.MESSAGE.device_serial_number.id)
@@ -953,7 +966,7 @@ ANT.prototype.getChannelStatus = function (channelNr, errorCallback, successCall
             var retryNr = 0;
 
             function retry() {
-                self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
+                self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
                    function success(data) {
                        var msgId = data[2];
                        if (msgId !== ANTMessage.prototype.MESSAGE.channel_status.id) {
@@ -998,7 +1011,7 @@ ANT.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successC
                 self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no error callback");
         },
         function success() {
-            self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
+            self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
                function success(data) {
                    var msgId = data[2];
                    if (msgId !== ANTMessage.prototype.MESSAGE.set_channel_id.id)
@@ -1014,11 +1027,14 @@ ANT.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successC
 
 // p. 89 ANT Message Protocol and Usage, Rv 5.0b
 // NVM not implemented
-ANT.prototype.request = function (channelNr, msgID) {
-    var channelNumber = channelNr || 0,
-        requestMsg = new ANTMessage();
+ANT.prototype.getRequestMessage = function (channel,requestMessageId,addr,size) {
+    //var channelNumber = channelNr || 0,
+    //    requestMsg = new ANTMessage();
 
-    return requestMsg.create_message(ANTMessage.prototype.MESSAGE.request, new Buffer([channelNumber, msgID]));
+    //return requestMsg.create_message(ANTMessage.prototype.MESSAGE.request, new Buffer([channelNumber, msgID]));
+
+    return new RequestMessage(channel || 0, requestMessageId, addr, size);
+
 };
 
 //ANT.prototype.isStartupNotification = function (data) {
@@ -1042,22 +1058,44 @@ function resetANTreceiveStateMachine(callback)
 
 ANT.prototype.resetSystem = function (successCallback) {
 
+    
+    var msg = new ResetSystemMessage(),
+        MAXRetries = 5;
+
     this.usb.setDirectANTChipCommunicationTimeout();
-    var msg = new ResetSystemMessage();
-    console.log("RESET SYSTEM MSG:",msg);
-    this._stream.write(msg.getBuffer(), 'buffer', this.receive(function _cb(data) {
-        //console.log("HELLO",data,successCallback.toString());
-        var cb = function () {
-            setTimeout(function _resetDelayTimeout() { successCallback(data) }, ANT.prototype.RESET_DELAY_TIMEOUT);
-        };
 
-        if (typeof data === "undefined") // Probably work...?
-            resetANTreceiveStateMachine.bind(this)(function () { this.receive(function (data) { cb(); }) }.bind(this));
-        else
-            cb();
+    
 
+    if (this._mutex.resetSystem) {
+        this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Awaiting response to a reset system message, this request is discarded');
+        return;
+    }
+
+    console.log("RESET SYSTEM MSG:", msg);
+
+    this._mutex.resetSystem = true;
+
+    this._stream.write(msg.getBuffer(), 'buffer', this.read(function _cb(response) {
+
+        this.notificationStartupCallback = function () {
+            setTimeout(
+                function _resetDelayTimeout() {
+                        delete this._mutex.resetSystem;
+                        successCallback(response)
+                    }.bind(this), ANT.prototype.RESET_DELAY_TIMEOUT);
+                }.bind(this);
+           
+        //if (typeof response === "undefined") // Probably work...?
+        //    //    resetANTreceiveStateMachine.bind(this)(function _resetReceiveStateMachineCB() { this.read(function (response) { 
+        //    //        }) }.bind(this));
+        //    ////else
+        //    //    // Call success-callback when Notification-startup is received in parse_response - takes care of all message processing
+
+        //    //    //cb();
        
-    }.bind(this))); 
+            }.bind(this))); 
+
+
 };
 
    
@@ -1157,7 +1195,7 @@ ANT.prototype.resetSystem = function (successCallback) {
             product =  idProduct || 4104;
 
         process.on('SIGINT', function sigint() {
-            this.exit(function _exitCB() { console.log("USB ANT device closed"); });
+            this.exit(function _exitCB() { console.log("USB ANT device closed. Exiting."); });
 
         }.bind(this));
 
@@ -1181,9 +1219,9 @@ ANT.prototype.resetSystem = function (successCallback) {
         // http://nodejs.org/api/stream.html#stream_class_stream_readable
         // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
         // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
-        this._stream.addListener('data', function (ANTresponse) {
-            console.log(Date.now(), 'Stream RX:', ANTresponse);
-            this.parse_response(ANTresponse);
+        this._stream.addListener('data', function _streamDataListener(response) {
+            console.log(Date.now(), 'Stream RX:', response);
+            this.parse_response(response);
         }.bind(this));
 
 
@@ -1210,7 +1248,7 @@ ANT.prototype.resetSystem = function (successCallback) {
         this._stream._write = function _write(ANTrequest, encoding, nextCB) {
             // console.trace();
             console.log(Date.now(), "Stream TX:", ANTrequest);
-            this.send(ANTrequest,nextCB);
+            this.write(ANTrequest,nextCB);
        
             //self._stream.end();
             //console.log("nextCB", nextCB.toString());
@@ -1222,6 +1260,7 @@ ANT.prototype.resetSystem = function (successCallback) {
         }.bind(this);
 
         this.addListener(ANT.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
+        this.addListener(ANT.prototype.EVENT.ERROR, this.showLogMessage);
 
         //this.addListener(ANT.prototype.EVENT.STARTUP, this.parseNotificationStartup);
         //this.addListener(ANT.prototype.EVENT.SERIAL_ERROR, this.parseNotificationSerialError);
@@ -1235,11 +1274,17 @@ ANT.prototype.resetSystem = function (successCallback) {
     
         // console.log("Self.usb", self.usb);
         this.usb.init(vendor, product, function () {
-            this.resetSystem(function () {
-                console.log(Date.now(), "Reset system sent and response received", arguments);
-                if (typeof callback === "function")
-                    callback();
-            });
+            // TEST mutex resetSystem for (var i = 0;i<3;i++) {
+                this.resetSystem(function _successCB() {
+                    console.log(Date.now(), "Reset system sent and response received", arguments);
+
+                    this.getCapabilities(function () {
+
+                        if (typeof callback === "function")
+                            callback();
+                    });
+                }.bind(this));
+           // }
         }.bind(this));
         //console.log("THIS IS", this);
 
@@ -1582,7 +1627,7 @@ ANT.prototype.resetSystem = function (successCallback) {
 
                 function retryEventChannelClosed() {
 
-                    self.receive(500, errorCallback,
+                    self.read(500, errorCallback,
                         function success(data) {
                             retryNr = 0;
 
@@ -1604,7 +1649,7 @@ ANT.prototype.resetSystem = function (successCallback) {
                 }
 
                 function retryResponseNoError() {
-                    self.receive(500, errorCallback,
+                    self.read(500, errorCallback,
                                  function success(data) {
                                      if (!self.isResponseNoError(data, ANTMessage.prototype.MESSAGE.close_channel.id)) {
                                          self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR for close channel");
@@ -1663,7 +1708,7 @@ ANT.prototype.resetSystem = function (successCallback) {
         function success() {
        
             //if (typeof noVerification === "undefined") {
-            //    self.receive(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCB,
+            //    self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, errorCB,
             //         function success(data) {
             //             if (!self.isResponseNoError(data, msgId))
             //                 self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR"); // No retry
@@ -1845,21 +1890,34 @@ ANT.prototype.resetSystem = function (successCallback) {
         sendBurst();
     };
 
-    ANT.prototype.receive = function (successCallback) {
-
+    ANT.prototype.read = function (successCallback) {
+      
         //self.device.timeout = timeout;
         var receiveCB = function _successCB(data) {
-            if (typeof data !== "undefined")
-                this._stream.push(data)
+           
+            // The sequence here is important since the RX stream _read handler callback on 'data'-events calls parse_response on everything
+
             successCallback(data);
+
+            if (typeof data !== "undefined")
+                this._stream.push(data);
+            
         };
+
 
         this.usb.receive(receiveCB.bind(this));
 
     };
 
-    ANT.prototype.send = function (chunk, successCallback) {
-        this.usb.send(chunk, successCallback);
+    ANT.prototype.write = function (chunk, successCallback) {
+        if (Buffer.isBuffer(chunk))
+            this.usb.send(chunk, successCallback);
+        else if (chunk instanceof ANTMessage) {
+            //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Chunk was instance of ANTMessage, using buffer property');
+            this.usb.send(chunk.getBuffer(), successCallback);
+        }
+        else
+            this.emit(ANT.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream. Type of chunck is ' + (chunk instanceof ANTMessage));
     }
 
     module.exports = ANT;
