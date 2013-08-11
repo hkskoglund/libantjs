@@ -17,7 +17,9 @@ var events = require('events'),
     ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
 
     // Request -response
-    RequestMessage = require('./messages/RequestMessage.js');
+    RequestMessage = require('./messages/RequestMessage.js'),
+
+    CapabilitiesMessage = require('./messages/CapabilitiesMessage.js')
         
     
 
@@ -65,9 +67,9 @@ ANT.prototype.ANTFS_FREQUENCY = 50;
 // for event emitter
 ANT.prototype.EVENT = {
 
-    // Notifications
-    STARTUP: 'notificationStartup',
-    SERIAL_ERROR: 'notificationSerialError',
+    //// Notifications
+    //STARTUP: 'notificationStartup',
+    //SERIAL_ERROR: 'notificationSerialError',
 
     CHANNEL_STATUS: 'channelStatus',
 
@@ -694,10 +696,16 @@ ANT.prototype.parse_response = function (data) {
                 antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.ANT_VERSION");
             break;
 
-        case ANTMessage.prototype.MESSAGE.capabilities.id:
+        case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            if (!antInstance.emit(ANT.prototype.EVENT.CAPABILITIES, data))
-                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.CAPABILITIES");
+            //if (!antInstance.emit(ANT.prototype.EVENT.CAPABILITIES, data))
+            //    antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.CAPABILITIES");
+
+
+            var capabilities = new CapabilitiesMessage(data);
+
+            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
+
 
             break;
 
@@ -770,83 +778,6 @@ ANT.prototype.listen = function (transferCancelledCallback) {
 
 
 
-// ANT Message Protocol and Usage. rev 5.0b - page 115
-ANT.prototype.parseCapabilities = function (data) {
-    var maxANTChannels = data[3],
-        maxNetworks = data[4],
-        standardOptions = data[5],
-        advancedOptions = data[6],
-        advancedOptions2 = data[7],
-        advancedOptions3 = data[8],
-            self = this;
-
-    //console.log("self in parseCapabilities is", self);
-    self.capabilities = {
-
-        MAX_CHAN: maxANTChannels,
-        MAX_NET: maxNetworks,
-
-        raw: {
-            standardOptions: standardOptions,
-            advancedOptions: advancedOptions,
-            advancedOptions2: advancedOptions2,
-            advancedOptions3: advancedOptions3
-        },
-
-        options: {
-
-            CAPABILITIES_NO_RECEIVE_CHANNELS: standardOptions & 0x01,
-            CAPABILITIES_NO_TRANSMIT_CHANNELS: standardOptions & 0x02,
-            CAPABILITIES_NO_RECEIVE_MESSAGES: standardOptions & (1 << 3),
-            CAPABILITIES_NO_TRANSMIT_MESSAGES: standardOptions & (1 << 4),
-            CAPABILITIES_NO_ACKD_MESSAGES: standardOptions & (1 << 5),
-            CAPABILITIES_NO_BURST_MESSAGES: standardOptions & (1 << 6),
-
-            CAPABILITIES_NETWORK_ENABLED: advancedOptions & 0x02,
-            CAPABILITIES_SERIAL_NUMBER_ENABLED: advancedOptions & (1 << 3),
-            CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED: advancedOptions & (1 << 4),
-            CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED: advancedOptions & (1 << 5),
-            CAPABILITIES_SCRIPT_ENABLED: advancedOptions & (1 << 6),
-            CAPABILITIES_SEARCH_LIST_ENABLED: advancedOptions & (1 << 7),
-
-            CAPABILITIES_LED_ENABLED: advancedOptions2 & 0x01,
-            CAPABILITIES_EXT_MESSAGE_ENABLED: advancedOptions2 & 0x02,
-            CAPABILITIES_SCAN_MODE_ENABLED: advancedOptions2 & (1 << 2),
-            CAPABILITIES_PROXY_SEARCH_ENABLED: advancedOptions2 & (1 << 4),
-            CAPABILITIES_EXT_ASSIGN_ENABLED: advancedOptions2 & (1 << 5),
-            CAPABILITIES_FS_ANTFS_ENABLED: advancedOptions2 & (1 << 6), // (1 << n) = set bit n high (bit numbered from 0 - n)
-
-            CAPABILITIES_ADVANCED_BURST_ENABLED: advancedOptions3 & 0x01,
-            CAPABILITIES_EVENT_BUFFERING_ENABLED: advancedOptions3 & 0x02,
-            CAPABILITIES_EVENT_FILTERING_ENABLED: advancedOptions3 & (1 << 2),
-            CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED: advancedOptions3 & (1 << 3),
-            CAPABILITIES_SELECTIVE_DATA_ENABLED: advancedOptions3 & (1 << 6)
-        }
-    };
-
-    //console.log(self.capabilities);
-
-    var msg = "Capabilities: channels " + maxANTChannels + " networks " + maxNetworks + " : ";
-
-    for (var prop in self.capabilities.options)
-        if (self.capabilities.options[prop])
-            msg += prop.substring(13, prop.length - 8) + " ";
-
-    self.capabilities.toString = function () { return msg; };
-
-    self.channelConfiguration = new Array(self.capabilities.MAX_CHAN);
-
-    // Init Retry queue of acknowledged data packets
-    for (var channelNr = 0; channelNr < self.capabilities.MAX_CHAN; channelNr++) {
-        self.retryQueue[channelNr] = [];
-        self.burstQueue[channelNr] = [];
-    }
-
-    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, self.capabilities.toString());
-
-    return self.capabilities;
-
-};
 
 // Get device capabilities
 ANT.prototype.getCapabilities = function (successCB) {
@@ -1268,7 +1199,7 @@ ANT.prototype.resetSystem = function (successCallback) {
         this.addListener(ANT.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
         this.addListener(ANT.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
         this.addListener(ANT.prototype.EVENT.ANT_VERSION, this.parseANTVersion);
-        this.addListener(ANT.prototype.EVENT.CAPABILITIES, this.parseCapabilities);
+        //this.addListener(ANT.prototype.EVENT.CAPABILITIES, this.parseCapabilities);
 
 
     
@@ -1917,7 +1848,7 @@ ANT.prototype.resetSystem = function (successCallback) {
             this.usb.send(chunk.getBuffer(), successCallback);
         }
         else
-            this.emit(ANT.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream. Type of chunck is ' + (chunk instanceof ANTMessage));
+            this.emit(ANT.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream.');
     }
 
     module.exports = ANT;
