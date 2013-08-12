@@ -812,7 +812,7 @@ ANT.prototype.getCapabilities = function (nextCB) {
 
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
 
-    this.write(msg, nextCB);
+    this._stream.write(msg.toBuffer(), nextCB);
 };
 
 // Get ANT device version
@@ -820,7 +820,7 @@ ANT.prototype.getANTVersion = function (nextCB) {
   
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION);
 
-    this.write(msg, nextCB);
+    this._stream.write(msg.toBuffer(), nextCB);
 };
 
 // Get device serial number if available
@@ -983,7 +983,7 @@ ANT.prototype.resetSystem = function (nextCB) {
 
     this.usb.setDirectANTChipCommunicationTimeout();
 
-    console.log("RESET SYSTEM MSG:", msg);
+    //console.log("RESET SYSTEM MSG:", msg);
 
     this._stream.write(msg.getBuffer(),'buffer',nextCB);
 };
@@ -1029,53 +1029,24 @@ ANT.prototype.resetSystem = function (nextCB) {
     };
 
     ANT.prototype.exit = function (callback) {
-      
-        // Finish TX stream
-        this._stream.end(null,null,function _streamTXFinishCallback() { this.usb.exit(callback); }.bind(this));
-        // TO DO : Close RX stream
+        console.log("Inside exit ANT");
 
+        // Finish TX stream
+        this._stream.end(null) 
+        // TEST : [Error: write after end]
+        //this._stream.write(new Buffer(10));
+
+        // Close RX stream
+        this._stream.push(null);
+        // TEST EOF readable stream : this._stream.push(new Buffer(10)); 
+        //-> gives [Error: stream.push() after EOF]
+
+        // Exit USB
+
+        this.usb.exit(callback);
       
 
     };
-
-    //// Noticed that in endpoint buffers are not cleared sometimes when stopping application using Ctrl-C -> process SIGINT -> exit
-    //// Max. buffer size = 64 on in endpoint
-    //ANT.prototype.tryCleaningBuffers = function (callback) {
-    //    var self = this;
-    //    var retries = 0, bytes = 0;
-    //    //console.log(self.device);
-
-    //    self.device.timeout = ANT.prototype.ANT_DEVICE_TIMEOUT;
-
-    //    function retry() {
-    //        self.inEP.transfer(ANT.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function inTransferCallback(error, data) {
-    //            if (error) {
-    //                if (error.errno !== usb.LIBUSB_TRANSFER_TIMED_OUT) {
-    //                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Error:"+ error);
-    //                    retries++;
-    //                    retry();
-    //                    //process.nextTick(retry());
-    //                    //process.nextTick.call(self, self.tryCleaningBuffers);
-    //                }
-    //                else {
-    //                    if (bytes > 0)
-    //                        self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Discarded "+bytes+" bytes from libusb buffers on in endpoint.");
-    //                    callback(); // No more data, timeout
-    //                }
-    //            }
-    //            else {
-    //                //console.log("Discarding buffer data:", data, data.length)
-    //                bytes += data.length;
-    //                retries++;
-    //                retry();
-    //                //process.nextTick(retry());
-    //            }
-    //        });
-    //    }
-
-    //    retry();
-
-//};
 
     function initStream() {
         // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
@@ -1089,7 +1060,7 @@ ANT.prototype.resetSystem = function (nextCB) {
             // this.readable.push('A');
         }.bind(this);
 
-        //this.readable.pipe(process.stdout);
+        //this._stream.pipe(process.stdout);
 
         // http://nodejs.org/api/stream.html#stream_class_stream_readable
         // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
@@ -1121,8 +1092,9 @@ ANT.prototype.resetSystem = function (nextCB) {
         // Callback from doWrite-func. in module _stream_writable (internal node.js)
         this._stream._write = function _write(ANTrequest, encoding, nextCB) {
             // console.trace();
+            //console.log("_WRITE ARGS:", arguments);
             console.log(Date.now(), "Stream TX:", ANTrequest);
-            console.log("NEXTCB", nextCB.toString());
+            //console.log("NEXTCB", nextCB.toString());
             this.write(ANTrequest, nextCB);
 
             //self._stream.end();
@@ -1788,14 +1760,15 @@ ANT.prototype.resetSystem = function (nextCB) {
         this.usb.receive(receiveCB.bind(this));
 
     };
-
-    ANT.prototype.write = function (chunk, successCallback) {
+// Writes a buffer to the out endpoint of USB
+    ANT.prototype.write = function (chunk, nextCB) {
+       
         if (Buffer.isBuffer(chunk))
-            this.usb.write(chunk, successCallback);
-        else if (chunk instanceof ANTMessage) {
-            //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Chunk was instance of ANTMessage, using buffer property');
-            this.usb.write(chunk.getBuffer(), successCallback);
-        }
+            this.usb.write(chunk, nextCB);
+        //else if (chunk instanceof ANTMessage) {
+        //    //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Chunk was instance of ANTMessage, using buffer property');
+        //    this.usb.write(chunk.getBuffer(), nextCB);
+        //}
         else
             this.emit(ANT.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream.');
     }

@@ -12,7 +12,7 @@ function ANTVersionMessage(data) {
     this.name = "ANT Version";
     this.id = ANTMessage.prototype.MESSAGE.ANT_VERSION;
 
-    console.log("Created ANTVersionMessage", this);
+   // console.log("Created ANTVersionMessage", this);
 }
 
 ANTVersionMessage.prototype = Object.create(ANTMessage.prototype);

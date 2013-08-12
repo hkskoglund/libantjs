@@ -25,7 +25,8 @@ function RequestMessage(channel,requestMessageId,NVMaddr,NVMsize) {
     } 
     
     this.create(msgBuffer);
-    console.log("RequestMessage", this);
+
+    // console.log("RequestMessage", this);
 
 }
 

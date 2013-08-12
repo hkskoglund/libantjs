@@ -13,7 +13,7 @@ function NotificationStartup(data) {
     this.name = "Notification: Startup";
     this.id = ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP;
 
-    console.log("Created NotificationStartup", this);
+   // console.log("Created NotificationStartup", this);
 }
 
 NotificationStartup.prototype = Object.create(ANTMessage.prototype);

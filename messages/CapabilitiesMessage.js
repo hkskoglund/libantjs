@@ -13,7 +13,7 @@ function CapabilitiesMessage(data) {
     this.name = "Capabilities";
     this.id = ANTMessage.prototype.MESSAGE.CAPABILITIES;
 
-    console.log("Created CapabilitiesMessage", this);
+   // console.log("Created CapabilitiesMessage", this);
 }
 
 CapabilitiesMessage.prototype = Object.create(ANTMessage.prototype);
