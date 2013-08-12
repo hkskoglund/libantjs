@@ -218,8 +218,8 @@ ANTMessage.prototype.MESSAGE = {
     NOTIFICATION_SERIAL_ERROR: 0xAE,
 
     // Requested messages with REQUEST 0x4D 
-    0x3E: "ANT version",
-    ANT_version: { id: 0x3E, friendly: "ANT Version" },
+    
+    ANT_VERSION:  0x3E,
 
     //0x54: "Capabilities",
     CAPABILITIES:  0x54,

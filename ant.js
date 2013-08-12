@@ -19,7 +19,8 @@ var events = require('events'),
     // Request -response
     RequestMessage = require('./messages/RequestMessage.js'),
 
-    CapabilitiesMessage = require('./messages/CapabilitiesMessage.js')
+    CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
+    ANTVersionMessage = require('./messages/ANTVersionMessage.js')
         
     
 
@@ -329,13 +330,13 @@ ANT.prototype.parseChannelResponse = function (data) {
     return msg;
 };
 
-ANT.prototype.parseANTVersion = function (data) {
-    this.ANTVersion = data.toString('utf8', 3, 13);
+//ANT.prototype.parseANTVersion = function (data) {
+//    this.ANTVersion = data.toString('utf8', 3, 13);
 
-    this.emit(ANT.prototype.EVENT.LOG_MESSAGE, "ANT Version: " + this.ANTVersion);
+//    this.emit(ANT.prototype.EVENT.LOG_MESSAGE, "ANT Version: " + this.ANTVersion);
 
-    return this.ANTVersion;
-};
+//    return this.ANTVersion;
+//};
 
 ANT.prototype.RSSI =
     {
@@ -691,16 +692,20 @@ ANT.prototype.parse_response = function (data) {
 
             // ANT device specific, i.e nRF24AP2
 
-        case ANTMessage.prototype.MESSAGE.ANT_version.id:
-            if (!antInstance.emit(ANT.prototype.EVENT.ANT_VERSION, data))
-                antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.ANT_VERSION");
+        case ANTMessage.prototype.MESSAGE.ANT_VERSION:
+            //if (!antInstance.emit(ANT.prototype.EVENT.ANT_VERSION, data))
+            //    antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.ANT_VERSION");
+
+            var version = new ANTVersionMessage(data);
+
+            self.emit(ANT.prototype.EVENT.LOG_MESSAGE, version.toString());
+
             break;
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
             //if (!antInstance.emit(ANT.prototype.EVENT.CAPABILITIES, data))
             //    antInstance.emit(ANT.prototype.EVENT.LOG_MESSAGE,"No listener for event ANT.prototype.EVENT.CAPABILITIES");
-
 
             var capabilities = new CapabilitiesMessage(data);
 
@@ -808,32 +813,14 @@ ANT.prototype.getCapabilities = function (nextCB) {
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
 
     this.write(msg, nextCB);
-       
 };
 
 // Get ANT device version
-ANT.prototype.getANTVersion = function (callback) {
-    var msgId;
-    var self = this;
+ANT.prototype.getANTVersion = function (nextCB) {
+  
+    var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION);
 
-    self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.ANT_version.id),
-        ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-        //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.ANT_version.id); },
-        function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Failed to get ANT version."); callback(); },
-        function success() {
-            self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, callback,
-               function success(data) {
-                   var msgId = data[2];
-                   if (msgId !== ANTMessage.prototype.MESSAGE.ANT_version.id)
-                       self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected version message response");
-                   self.parse_response(data);
-                   if (typeof callback === "function")
-                       callback();
-                   else
-                       self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no callback after getANTVersion");
-               });
-
-        });
+    this.write(msg, nextCB);
 };
 
 // Get device serial number if available
@@ -1174,7 +1161,7 @@ ANT.prototype.resetSystem = function (nextCB) {
         this.addListener(ANT.prototype.EVENT.CHANNEL_STATUS, this.parseChannelStatus);
         this.addListener(ANT.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
         this.addListener(ANT.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
-        this.addListener(ANT.prototype.EVENT.ANT_VERSION, this.parseANTVersion);
+        //this.addListener(ANT.prototype.EVENT.ANT_VERSION, this.parseANTVersion);
         //this.addListener(ANT.prototype.EVENT.CAPABILITIES, this.parseCapabilities);
 
         this.usb.init(vendor, product, function _usbInitCB(error) {
@@ -1188,8 +1175,11 @@ ANT.prototype.resetSystem = function (nextCB) {
               
                 this.resetSystem(function _resetCB() {
                     console.log("Inside reset CB");
-                    this.getCapabilities(function _capabilitiesCV() {
+                    this.getCapabilities(function _capabilitiesCB() {
                         console.log("Inside capabilities CB");
+                        this.getANTVersion(function _ANTVersionCB() {
+                            console.log("Inside ANT version CB");
+                        }.bind(this));
                     }.bind(this));
                     //nextCB()
                 }.bind(this));
