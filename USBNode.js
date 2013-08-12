@@ -122,12 +122,10 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         //console.log(drainLIBUSB);
         drainLIBUSB.bind(this)(function _drainLIBUSBCB(error, totalBytesDrained) {
 
-            console.log("DRAINIG FINISHED");
             if (totalBytesDrained > 0)
                 this.emit(USBDevice.prototype.EVENT.LOG, 'Drained ' + totalBytesDrained + ' from in endpoint');
 
             if (typeof nextCB === "function") {
-                console.log("Calling nextCB!");
                 nextCB(error);
             }
 
@@ -158,7 +156,7 @@ USBNode.prototype.exit = function (nextCB) {
 
     if (this.inTransfer) {
         //console.log("Canceling transfer on in endpoint");
-        this.inTransfer.cancel(); // Trigger transferCancelCB
+        this.inTransfer.cancel(); 
     }
 
     if (this.outTransfer) {

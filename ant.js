@@ -787,7 +787,7 @@ ANT.prototype.listen = function (nextCB) {
                 }
             } else {
                 // data is instanceof Buffer with length 0
-                console.log("Got error from listen", error);
+                //console.log("Got error from listen", error);
                 //console.log("NEXTCB", nextCB.toString());
                 nextCB(error);
             }
@@ -1128,7 +1128,6 @@ ANT.prototype.resetSystem = function (nextCB) {
         this._stream.addListener('finish', function () {
 
             console.log(Date.now(), "Stream TX FINISH", arguments);
-            console.log(this._events);
 
         }.bind(this));
 
@@ -1183,12 +1182,17 @@ ANT.prototype.resetSystem = function (nextCB) {
             // Normally get a timeout after draining 
             if (this.usb.isTimeoutError(error)) {
               
-                this.listen(nextCB);
+                this.listen(function _listenFinished(error, data) {
+                    nextCB(error,data);
+                });
               
                 this.resetSystem(function _resetCB() {
-                    console.trace(); console.log("SYSTEM RESET");
+                    console.log("Inside reset CB");
+                    this.getCapabilities(function _capabilitiesCV() {
+                        console.log("Inside capabilities CB");
+                    }.bind(this));
                     //nextCB()
-                });
+                }.bind(this));
             }
 
         }.bind(this));

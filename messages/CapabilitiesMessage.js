@@ -44,24 +44,27 @@ CapabilitiesMessage.prototype.parse = function () {
     advancedOptions3 = this.content[5];
     
     this.StandardOptions = {
-        CAPABILITIES_NO_RECEIVE_CHANNELS : this.standardOptions & 0x01,
-        CAPABILITIES_NO_TRANSMIT_CHANNELS : this.standardOptions & 0x02,
-        CAPABILITIES_NO_RECEIVE_MESSAGES : this.standardOptions & (1 << 3),
-        CAPABILITIES_NO_TRANSMIT_MESSAGES : this.standardOptions & (1 << 4),
-        CAPABILITIES_NO_ACKD_MESSAGES : this.standardOptions & (1 << 5),
-        CAPABILITIES_NO_BURST_MESSAGES : this.standardOptions & (1 << 6),
+        value : standardOptions.toString(2)+" "+standardOptions,
+        CAPABILITIES_NO_RECEIVE_CHANNELS : standardOptions & 0x01,
+        CAPABILITIES_NO_TRANSMIT_CHANNELS : standardOptions & 0x02,
+        CAPABILITIES_NO_RECEIVE_MESSAGES : standardOptions & (1 << 3),
+        CAPABILITIES_NO_TRANSMIT_MESSAGES : standardOptions & (1 << 4),
+        CAPABILITIES_NO_ACKD_MESSAGES : standardOptions & (1 << 5),
+        CAPABILITIES_NO_BURST_MESSAGES : standardOptions & (1 << 6),
     };
 
     this.AdvancedOptions = {
-        CAPABILITIES_NETWORK_ENABLED : this.advancedOptions & 0x02,
-        CAPABILITIES_SERIAL_NUMBER_ENABLED : this.advancedOptions & (1 << 3),
-        CAPABILITIES_ER_CHANNEL_TX_POWER_ENABLED : this.advancedOptions & (1 << 4),
-        CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED : this.advancedOptions & (1 << 5),
-        CAPABILITIES_SCRIPT_ENABLED : this.advancedOptions & (1 << 6),
-        CAPABILITIES_SEARCH_LIST_ENABLED : this.advancedOptions & (1 << 7),
+        value : advancedOptions.toString(2)+" "+advancedOptions,
+        CAPABILITIES_NETWORK_ENABLED : advancedOptions & 0x02,
+        CAPABILITIES_SERIAL_NUMBER_ENABLED : advancedOptions & (1 << 3),
+        CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED : advancedOptions & (1 << 4),
+        CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED : advancedOptions & (1 << 5),
+        CAPABILITIES_SCRIPT_ENABLED : advancedOptions & (1 << 6),
+        CAPABILITIES_SEARCH_LIST_ENABLED : advancedOptions & (1 << 7),
     }
 
     this.AdvancedOptions2 = {
+        value : advancedOptions2.toString(2)+" "+advancedOptions2,
         CAPABILITIES_LED_ENABLED : advancedOptions2 & 0x01,
         CAPABILITIES_EXT_MESSAGE_ENABLED : advancedOptions2 & 0x02,
         CAPABILITIES_SCAN_MODE_ENABLED : advancedOptions2 & (1 << 2),
@@ -71,7 +74,7 @@ CapabilitiesMessage.prototype.parse = function () {
     };
 
     this.advancedOptions3 = {
-
+        value : advancedOptions3.toString(2) + " " + advancedOptions3,
         CAPABILITIES_ADVANCED_BURST_ENABLED : advancedOptions3 & 0x01,
         CAPABILITIES_EVENT_BUFFERING_ENABLED : advancedOptions3 & 0x02,
         CAPABILITIES_EVENT_FILTERING_ENABLED : advancedOptions3 & (1 << 2),
