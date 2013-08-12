@@ -601,7 +601,7 @@ ANT.prototype.parse_response = function (data) {
           
             self.emit(ANT.prototype.EVENT.LOG_MESSAGE, notification.toString());
            // console.log("PARSER", this);
-            this.notificationStartupCallback();
+           // this.notificationStartupCallback();
 
             break;
 
@@ -731,48 +731,71 @@ ANT.prototype.parse_response = function (data) {
 
 };
 
-// Continuously listen on incoming packets from ANT engine and send it to the general parser for further processing
-ANT.prototype.listen = function (transferCancelledCallback) {
+//// Continuously listen on incoming packets from ANT engine and send it to the general parser for further processing
+//ANT.prototype.listen = function (transferCancelledCallback) {
    
-    var self = this, NO_TIMEOUT = 0, TIMEOUT = 30000, msgLength, channelNr, msgCRC, verifiedCRC, SYNCOK,CRCOK;
+//    var self = this, NO_TIMEOUT = 0, TIMEOUT = 30000, msgLength, channelNr, msgCRC, verifiedCRC, SYNCOK,CRCOK;
+
+//    function retry() {
+//        var errorCB = function error(err) {
+
+//            if (err.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
+//                self._stream.emit('error',"Timeout: No ANT data received in " + TIMEOUT + " ms.",err);
+              
+//                process.nextTick(retry);
+//            }
+//            else if (err.errno === usb.LIBUSB_TRANSFER_CANCELLED) {
+//                //console.log(error);
+//                // Transfer cancelled, may be aborted by pressing Ctrl-C in Node.js 
+//                if (typeof transferCancelledCallback === "function") {
+//                    self._stream.emit('error', "Transfer cancelled",err);
+//                    //self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Calling cancellation callback "+transferCancelledCallback.name);
+//                    transferCancelledCallback();
+//                }
+//                else
+//                    self._stream.emit('error', "No transfer cancellation callback specified");
+
+//            } else {
+//                self._stream.emit('error', "Receive error in listen:" + err,err);
+//                process.nextTick(retry);
+//            }
+
+//        },
+
+//     successCB = function success(data) {
+//         self._stream.push(data);
+//         process.nextTick(retry);
+//     };
+
+//        self.read(TIMEOUT, errorCB, successCB);
+//    }
+
+//    retry();
+
+//};
+
+ANT.prototype.listen = function (nextCB) {
 
     function retry() {
-        var errorCB = function error(err) {
 
-            if (err.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
-                self._stream.emit('error',"Timeout: No ANT data received in " + TIMEOUT + " ms.",err);
-              
-                process.nextTick(retry);
-            }
-            else if (err.errno === usb.LIBUSB_TRANSFER_CANCELLED) {
-                //console.log(error);
-                // Transfer cancelled, may be aborted by pressing Ctrl-C in Node.js 
-                if (typeof transferCancelledCallback === "function") {
-                    self._stream.emit('error', "Transfer cancelled",err);
-                    //self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Calling cancellation callback "+transferCancelledCallback.name);
-                    transferCancelledCallback();
+        this.usb.listen(function _usbListenCB(error, data) {
+            if (!error) {
+                if (data && data.length > 0) {
+                    //console.log("Got data from listen", data);
+                    this._stream.push(data);
+                    process.nextTick(retry.bind(this));
                 }
-                else
-                    self._stream.emit('error', "No transfer cancellation callback specified");
-
             } else {
-                self._stream.emit('error', "Receive error in listen:" + err,err);
-                process.nextTick(retry);
+                // data is instanceof Buffer with length 0
+                console.log("Got error from listen", error);
+                //console.log("NEXTCB", nextCB.toString());
+                nextCB(error);
             }
-
-        },
-
-     successCB = function success(data) {
-         self._stream.push(data);
-         process.nextTick(retry);
-     };
-
-        self.read(TIMEOUT, errorCB, successCB);
+        }.bind(this));
     }
 
-    retry();
-
-};
+    retry.bind(this)();
+}
 
 
 
@@ -780,32 +803,12 @@ ANT.prototype.listen = function (transferCancelledCallback) {
 
 
 // Get device capabilities
-ANT.prototype.getCapabilities = function (successCB) {
-    //var msgId;
-    //var self = this;
-
-    //self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.capabilities.id),
-    //    ANT.prototype.ANT_DEFAULT_RETRY, ANT.prototype.ANT_DEVICE_TIMEOUT,
-    //   // function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.capabilities.id); },
-    //    function error() { self.emit(ANT.prototype.EVENT.LOG_MESSAGE,"Failed to get device capabilities."); completeCB(); },
-    //    function success() {
-    //        self.read(ANT.prototype.ANT_DEVICE_TIMEOUT, completeCB,
-    //            function success(data) {
-    //                var msgId = data[2];
-    //                if (msgId !== ANTMessage.prototype.MESSAGE.capabilities.id)
-    //                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Expected capabilities message response");
-    //                self.parse_response(data);
-    //                if (typeof completeCB === "function")
-    //                    completeCB();
-    //                else
-    //                    self.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Found no callback after getCapabilities");
-    //            });
-    //    });
+ANT.prototype.getCapabilities = function (nextCB) {
 
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
-    this.write(msg, this.read(function _scb(data) {
-            console.log("Got capabilities", data);
-        }));
+
+    this.write(msg, nextCB);
+       
 };
 
 // Get ANT device version
@@ -987,49 +990,16 @@ function resetANTreceiveStateMachine(callback)
      this._stream.write(msg.getBuffer(), 'buffer', callback); 
 }
 
-ANT.prototype.resetSystem = function (successCallback) {
+ANT.prototype.resetSystem = function (nextCB) {
 
-    
-    var msg = new ResetSystemMessage(),
-        MAXRetries = 5;
+    var msg = new ResetSystemMessage();
 
     this.usb.setDirectANTChipCommunicationTimeout();
 
-    
-
-    if (this._mutex.resetSystem) {
-        this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Awaiting response to a reset system message, this request is discarded');
-        return;
-    }
-
     console.log("RESET SYSTEM MSG:", msg);
 
-    this._mutex.resetSystem = true;
-
-    this._stream.write(msg.getBuffer(), 'buffer', this.read(function _cb(response) {
-
-        this.notificationStartupCallback = function () {
-            setTimeout(
-                function _resetDelayTimeout() {
-                        delete this._mutex.resetSystem;
-                        successCallback(response)
-                    }.bind(this), ANT.prototype.RESET_DELAY_TIMEOUT);
-                }.bind(this);
-           
-        //if (typeof response === "undefined") // Probably work...?
-        //    //    resetANTreceiveStateMachine.bind(this)(function _resetReceiveStateMachineCB() { this.read(function (response) { 
-        //    //        }) }.bind(this));
-        //    ////else
-        //    //    // Call success-callback when Notification-startup is received in parse_response - takes care of all message processing
-
-        //    //    //cb();
-       
-            }.bind(this))); 
-
-
+    this._stream.write(msg.getBuffer(),'buffer',nextCB);
 };
-
-   
 
     // Iterates from channelNrSeed and optionally closes channel
     ANT.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
@@ -1118,22 +1088,9 @@ ANT.prototype.resetSystem = function (successCallback) {
 
     //    retry();
 
-    //};
+//};
 
-    ANT.prototype.init = function (idVendor,idProduct, callback) {
-
-        var vendor = idVendor || 4047,
-            product =  idProduct || 4104;
-
-        process.on('SIGINT', function sigint() {
-            this.exit(function _exitCB() { console.log("USB ANT device closed. Exiting."); });
-
-        }.bind(this));
-
-        this.usb = new USBNode();
-
-        //console.log("Packet size", this.usb.getEndpointPacketSize());
-
+    function initStream() {
         // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
         this._stream = new Duplex({ highWaterMark: this.usb.getEndpointPacketSize() });
 
@@ -1172,15 +1129,16 @@ ANT.prototype.resetSystem = function (successCallback) {
 
             console.log(Date.now(), "Stream TX FINISH", arguments);
             console.log(this._events);
-           
+
         }.bind(this));
 
         // Callback from doWrite-func. in module _stream_writable (internal node.js)
         this._stream._write = function _write(ANTrequest, encoding, nextCB) {
             // console.trace();
             console.log(Date.now(), "Stream TX:", ANTrequest);
-            this.write(ANTrequest,nextCB);
-       
+            console.log("NEXTCB", nextCB.toString());
+            this.write(ANTrequest, nextCB);
+
             //self._stream.end();
             //console.log("nextCB", nextCB.toString());
             // default passed by node
@@ -1189,6 +1147,25 @@ ANT.prototype.resetSystem = function (successCallback) {
             //}
             //nextCB();
         }.bind(this);
+    }
+
+    ANT.prototype.init = function (idVendor,idProduct, nextCB) {
+
+        var vendor = idVendor || 4047,
+            product =  idProduct || 4104;
+
+        process.on('SIGINT', function sigint() {
+            //console.log("ANT SIGINT");
+            this.exit(function _exitCB() { console.log("USB ANT device closed. Exiting."); nextCB(); });
+
+        }.bind(this));
+
+        this.usb = new USBNode();
+
+        //console.log("Packet size", this.usb.getEndpointPacketSize());
+
+        initStream.bind(this)();
+        
 
         this.addListener(ANT.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
         this.addListener(ANT.prototype.EVENT.ERROR, this.showLogMessage);
@@ -1201,42 +1178,20 @@ ANT.prototype.resetSystem = function (successCallback) {
         this.addListener(ANT.prototype.EVENT.ANT_VERSION, this.parseANTVersion);
         //this.addListener(ANT.prototype.EVENT.CAPABILITIES, this.parseCapabilities);
 
+        this.usb.init(vendor, product, function _usbInitCB(error) {
 
-    
-        // console.log("Self.usb", self.usb);
-        this.usb.init(vendor, product, function () {
-            // TEST mutex resetSystem for (var i = 0;i<3;i++) {
-                this.resetSystem(function _successCB() {
-                    console.log(Date.now(), "Reset system sent and response received", arguments);
+            // Normally get a timeout after draining 
+            if (this.usb.isTimeoutError(error)) {
+              
+                this.listen(nextCB);
+              
+                this.resetSystem(function _resetCB() {
+                    console.trace(); console.log("SYSTEM RESET");
+                    //nextCB()
+                });
+            }
 
-                    this.getCapabilities(function () {
-
-                        if (typeof callback === "function")
-                            callback();
-                    });
-                }.bind(this));
-           // }
         }.bind(this));
-        //console.log("THIS IS", this);
-
-        //self.tryCleaningBuffers(
-        //    function () {
-        //  self.resetSystem(function _getCapabilities() {
-        //            // Allow 500 ms after reset before continuing to allow for "post-reset-state"
-        //            setTimeout(function infoRequest() {
-
-        //                self.getCapabilities(function _getANTVersion() {
-        //                    self.getANTVersion(function _getDeviceSerialNumber() {
-        //                        self.getDeviceSerialNumber(callback);
-        //                    });
-        //     });
-        //            }, 500);
-
-        //        });
-        //    });
-
-
-
 
     };
 
@@ -1842,10 +1797,10 @@ ANT.prototype.resetSystem = function (successCallback) {
 
     ANT.prototype.write = function (chunk, successCallback) {
         if (Buffer.isBuffer(chunk))
-            this.usb.send(chunk, successCallback);
+            this.usb.write(chunk, successCallback);
         else if (chunk instanceof ANTMessage) {
             //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, 'Chunk was instance of ANTMessage, using buffer property');
-            this.usb.send(chunk.getBuffer(), successCallback);
+            this.usb.write(chunk.getBuffer(), successCallback);
         }
         else
             this.emit(ANT.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream.');

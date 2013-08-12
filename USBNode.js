@@ -31,8 +31,12 @@ USBNode.prototype.setDeviceTimeout = function (timeout) {
     this.device.timeout = timeout;
 }
 
-USBNode.prototype.init = function (idVendor, idProduct, callback) {
-    var self = this,
+USBNode.prototype.isTimeoutError = function (error) {
+    return (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT);
+}
+
+USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
+    var
         antInterface,
         err;
     //console.log("INIT args", arguments);
@@ -49,88 +53,105 @@ USBNode.prototype.init = function (idVendor, idProduct, callback) {
 
     //var idVendor = 4047, idProduct = 4104; // Garmin USB2 Wireless ANT+
 
-    self.device = usb.findByIds(idVendor, idProduct);
+    this.device = usb.findByIds(idVendor, idProduct);
+   // TEST this.device = undefined;
 
-    if (typeof self.device === "undefined") {
-        err = new Error("Could not find USB ANT device vendor id:" + self.idVendor + " product id.:" + self.idProduct);
-        self.emit(USBDevice.prototype.EVENT.ERROR, err);
-        throw err; 
+    if (typeof this.device === "undefined") {
+        err = new Error("Could not find USB ANT device vendor id:" + this.idVendor + " product id.:" + this.idProduct);
+        this.emit(USBDevice.prototype.EVENT.ERROR, err);
+        nextCB(err);
+        //throw err; 
         //return;
         //errorCallback();
     } 
 
+        this.emit(USBDevice.prototype.EVENT.LOG, "USB ANT device found vendor 0x" + this.idVendor.toString(16) + "/" + this.idVendor + " product 0x" + this.idProduct.toString(16) + "/" + this.idProduct + " on bus " + this.device.busNumber + " address " + this.device.deviceAddress);
 
-        self.emit(USBDevice.prototype.EVENT.LOG, "USB ANT device found vendor 0x" + self.idVendor.toString(16) + "/" + self.idVendor + " product 0x" + self.idProduct.toString(16) + "/" + self.idProduct + " on bus " + self.device.busNumber + " address " + self.device.deviceAddress);
-
-        //+ ", max packet size endpoint 0/control: " + self.device.deviceDescriptor.bMaxPacketSize0 + " bytes, default transfer timeout ms.: " + self.device.timeout + ", packet size endpoints in/out 64 bytes");
+        //+ ", max packet size endpoint 0/control: " + this.device.deviceDescriptor.bMaxPacketSize0 + " bytes, default transfer timeout ms.: " + this.device.timeout + ", packet size endpoints in/out 64 bytes");
 
         //console.log("Opening interface on device GARMIN USB2 ANT+ wireless/nRF24AP2 (Dynastream Innovations Inc.)");
-        //console.log("Vendor id: " + self.idVendor + " Product id: " + self.idProduct);
+        //console.log("Vendor id: " + this.idVendor + " Product id: " + this.idProduct);
 
-        self.device.open(); // Init/get interfaces of device
+        this.device.open(); // Init/get interfaces of device
         //console.log("Default timeout for native libusb transfer is :" + ant.timeout);
 
-        antInterface = self.device.interface();
+        antInterface = this.device.interface();
+    // TEST  antInterface = undefined;
         if (typeof antInterface === "undefined") {
             err = new Error("Could not get interface to ANT device, aborting");
-            self.emit(USBDevice.prototype.EVENT.ERROR, err);
-            throw err;
+            this.emit(USBDevice.prototype.EVENT.ERROR, err);
+            nextCB(err);
+            //throw err;
             //return;
             //errorCallback();
         }
         //else {
-        //   console.log("Found default interface, it has " + self.antInterface.endpoints.length + " endpoints ");
+        //   console.log("Found default interface, it has " + this.antInterface.endpoints.length + " endpoints ");
         //}
 
         if (antInterface.endpoints.length < 2) {
             err = new Error("Normal operation require 2 endpoints for in/out communication with ANT device");
-            self.emit(USBDevice.prototype.EVENT.ERROR, err);
-            throw err;
+            this.emit(USBDevice.prototype.EVENT.ERROR, err);
+            nextCB(err); // Let higher level API get a chance to deal with the error
+            //throw err;
             //return;
             //errorCallback();
         }
 
         // http://www.beyondlogic.org/usbnutshell/usb5.shtml
-        self.inEP = antInterface.endpoints[0]; // Control endpoint
-        //if (self.inEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
-        //    inTransferType = "BULK (" + self.inEP.transferType + ')';
+        this.inEP = antInterface.endpoints[0]; // Control endpoint
+        //if (this.inEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
+        //    inTransferType = "BULK (" + this.inEP.transferType + ')';
 
-        self.outEP = antInterface.endpoints[1];
-        //if (self.outEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
-        //    outTransferType = "BULK (" + self.outEP.transferType + ')';
+        this.outEP = antInterface.endpoints[1];
+        //if (this.outEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
+        //    outTransferType = "BULK (" + this.outEP.transferType + ')';
 
         // Shared endpoint number in/control and out
-        // console.log("Number for endpoint: " + (self.inEP.address & 0xF) + " Control/in " + inTransferType + " - " + (self.outEP.address & 0xF) + " " + self.outEP.direction + " " + outTransferType);
+        // console.log("Number for endpoint: " + (this.inEP.address & 0xF) + " Control/in " + inTransferType + " - " + (this.outEP.address & 0xF) + " " + this.outEP.direction + " " + outTransferType);
 
         // console.log("Claiming interface");
         antInterface.claim(); // Must call before attempting transfer on endpoints
 
-        //self.listen();
+        //this.listen();
 
         //  console.log("Cleaning LIBUSB in endpoint buffers....");
 
     //console.log("THIS IS NOW", this);
 
         //console.log(drainLIBUSB);
-        drainLIBUSB.bind(this)(function () { if (typeof callback === "function") callback(); });
+        drainLIBUSB.bind(this)(function _drainLIBUSBCB(error, totalBytesDrained) {
+
+            console.log("DRAINIG FINISHED");
+            if (totalBytesDrained > 0)
+                this.emit(USBDevice.prototype.EVENT.LOG, 'Drained ' + totalBytesDrained + ' from in endpoint');
+
+            if (typeof nextCB === "function") {
+                console.log("Calling nextCB!");
+                nextCB(error);
+            }
+
+        }.bind(this));
 
 }
 
 
 
-USBNode.prototype.exit = function (callback) {
+USBNode.prototype.exit = function (nextCB) {
+    //console.log(Date.now(), "Exiting USBNODE now.");
 
    // console.trace();
 
     function releaseInterfaceCloseDevice()  {
 
         this.device.interface().release(function (error) {
-            if (error) this.emit(USBDevice.prototype.EVENT.LOG_MESSAGE, "Problem with release of interface: " + error);
+            if (error)
+                this.emit(USBDevice.prototype.EVENT.ERROR, error);
             else {
                 //console.log("Closing device, removing interface, exiting...");
                 this.device.close();
-                if (typeof callback === "function")
-                    callback();
+                if (typeof nextCB === "function")
+                    nextCB();
             }
         });
     };
@@ -150,139 +171,84 @@ USBNode.prototype.exit = function (callback) {
 }
 
 // Private func. -> not accessible on USBNode.prototype
-function drainLIBUSB(callback) {
-    var totalBytesDrained = 0;
+function drainLIBUSB(nextCB) {
 
-    var successCB = function _scb(data) {
-        // TEST - "impossible to drain LIBUSB"
-        //data = {};
-        //data.length = 10;
+    var totalBytesDrained = 0,
+        drainAttempt = 0,
+        MaxDrainAttemps = 5;
 
-        if (typeof data !== "undefined") {
-            totalBytesDrained += data.length;
-            this.receive(successCB.bind(this)); // As long as there is data available just read it...
-        }
-            //else {
-            //    this.emit(USBDevice.prototype.EVENT.LOG, 'NO bytes drained from LIBUSB in endpoint');
-            //}
-        else {
-            delete this.drainLIBUSB;
-            if (totalBytesDrained > 0)
-                this.emit(USBDevice.prototype.EVENT.LOG, 'Drained LIBUSB endpoint for ' + totalBytesDrained+ ' bytes');
-            callback();
-        }
-    };
+    this.setDirectANTChipCommunicationTimeout();
 
-     this.drainLIBUSB = true; // Flag used to silent event handlers when draining....
-     this.setDirectANTChipCommunicationTimeout();
-     this.receive(successCB.bind(this));
-}
-
-USBNode.prototype.receive = function (successCallback) {
-   // console.trace();
-    console.log("Read timeout is : ", this.device.timeout);
-    //console.log("Success callback is : ", successCallback.toString());
-    
-    
-    var receiveAttempt = 1,
-        MAXATTEMPT = 5,
-        self = this,
-        validateSuccessCallback = function _validate(data) {
-            //console.log("Validated data", data);
-            if (typeof successCallback === "function")
-                successCallback(data);
-            else {
-                //self.emit(USBDevice.prototype.EVENT.LOG, "Success callback is not a function");
-                throw new Error("Success callback is not a function");
-            }
-        };
-
+    // In case we already are listening on in endpoint, cancel it please
+    if (this.inTransfer)
+        this.inTransfer.cancel();
 
     function retry() {
-        //console.trace();
 
-        function emitEvent(event,msg) {
-            if (!self.drainLIBUSB)
-                self.emit(event, msg);
-        }
-       
+        drainAttempt++;
+        //console.log("Drain attempt", drainAttempt);
+
+        this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
+
+            if (data.length > 0)
+                totalBytesDrained += data.length;
+
+            if (drainAttempt < MaxDrainAttemps) {
+
+                process.nextTick(retry.bind(this)); // Should be the highest priority
+            }
+            else {
+                //console.log("DRAINING FINISHED", totalBytesDrained);
+                nextCB(error, totalBytesDrained);
+            }
+        }.bind(this));
+    }
+
+    retry.bind(this)();
+
+};
+
+
+// "There is no flow control for data transmitted from ANT to host, therefore the Host controller must be able to receive data at any time" p. 8 of
+// Interfacing with ANT general purpose chipsets and modules rev 2.1 -> setup a read that never times out on in endpoint
+USBNode.prototype.listen = function (nextCB) {
+    var INFINITY = 0;
+    //console.log("USB LISTEN");
+    //console.trace();
+
+    this.setDeviceTimeout(INFINITY);
 
         try {
 
-            self.inTransfer = self.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
-        
-                // Test LIBUSB transfer error
-                //error = {};
-                //if (receiveAttempt === 2)
-                //    error.errno = usb.LIBUSB_TRANSFER_CANCELLED;
-                //else
-                //    error.errno = usb.LIBUSB_TRANSFER_ERROR;
-
-                if (error) { // LIBUSB errors
-
-                
-                    emitEvent(USBDevice.prototype.EVENT.ERROR, error);
-
-                    if (error.errno !== usb.LIBUSB_TRANSFER_CANCELLED) {
-                        if (receiveAttempt <= MAXATTEMPT) {
-                            setTimeout(function _retryTimeoutTX() {
-                                emitEvent(USBDevice.prototype.EVENT.LOG, "RX: Retry receiving " + receiveAttempt);
-                                receiveAttempt++;
-
-                                setImmediate(retry);
-                                //process.nextTick(retry);
-                                //retry();
-                            }, self.device.timeout);
-                        } else {
-                            emitEvent(USBDevice.prototype.EVENT.ERROR, 'RX: Max. retry attempts reached');
-
-                            //console.log(successCallback.toString());
-                            validateSuccessCallback(undefined); // Allow proceed...
-                        }
-                    } else {
-                        emitEvent(USBDevice.prototype.EVENT.ERROR, 'RX: Transfer cancelled');
-                        validateSuccessCallback(undefined);
-                    }
-
-                }
-                else
-                    validateSuccessCallback(data);
-            }.bind(self));
+            this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
+                //console.log("IN USB error,data", error, data);
+                nextCB(error,data);
+            });
         } catch (error) {
             //if (error.errno === -1) // LIBUSB_ERROR_IO 
             //    {
-                  delete self.drainLIBUSB;
-                  emitEvent(USBDevice.prototype.EVENT.ERROR, "I/O error - Attempt to read from USB ANT generated an serious input error " + error);
-              //  }
-            process.exit();
+            this.emit(USBDevice.prototype.EVENT.LOG, 'I/O error - Attempt to read from USB ANT generated an serious input error');
+            this.emit(USBDevice.prototype.EVENT.ERROR, error);
+            nextCB(error);
         }
-    }
+    //}
 
-    retry();
+    //retry.bind(this)();
 }
 
-USBNode.prototype.send = function (chunk, successCallback)
+USBNode.prototype.write = function (chunk, nextCB)
 {
     //console.trace();
 
     var sendAttempt = 1,
         MAXATTEMPT = 5,
-        self = this,
-        validateSuccessCallback = function _validate (data)
-        {
-            if (typeof successCallback === "function")
-                successCallback(data);
-            else {
-                //self.emit(USBDevice.prototype.EVENT.LOG, "Success callback is not a function");
-                throw new Error("Success callback is not a function");
-            }
-        };
+        err;
 
    
     function retry() {
         //console.trace();
         try {
-            self.outTransfer = self.outEP.transfer(chunk, function _outTransferCallback(error) {
+            this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
                  // Test LIBUSB transfer error
                 //error = {};
                 //if (sendAttempt === 3)
@@ -292,41 +258,39 @@ USBNode.prototype.send = function (chunk, successCallback)
 
                 if (error) { // LIBUSB errors
                
-                    self.emit(USBDevice.prototype.EVENT.ERROR, error);
+                    this.emit(USBDevice.prototype.EVENT.ERROR, error);
 
                     if (error.errno !== usb.LIBUSB_TRANSFER_CANCELLED) {
                         if (sendAttempt <= MAXATTEMPT) {
                             setTimeout(function _retryTimeoutTX() {
-                                self.emit(USBDevice.prototype.EVENT.LOG, "TX: Retry sending " + sendAttempt);
+                                this.emit(USBDevice.prototype.EVENT.LOG, new Error("TX: Retry sending " + sendAttempt));
                                 sendAttempt++;
 
                                 // http://stackoverflow.com/questions/15349733/setimmediate-vs-nexttick
-                                setImmediate(retry);  
-                                //process.nextTick(retry);
+                                //setImmediate(retry);  
+                                process.nextTick(retry.bind(this));
                                 //retry();
-                            }, self.device.timeout);
+                            }, this.device.timeout);
                         } else {
-                            self.emit(USBDevice.prototype.EVENT.ERROR, 'TX: Max. retry attempts reached');
+                            err = new Error('TX: Max. retry attempts reached');
+                            this.emit(USBDevice.prototype.EVENT.ERROR,err );
 
-                            //console.log(successCallback.toString());
-                            validateSuccessCallback(); // Allow proceed...
+                            nextCB(err); // Allow proceed...
                         }
-                    } else {
-                        self.emit(USBDevice.prototype.EVENT.ERROR, 'TX: Transfer cancelled');
-                        validateSuccessCallback();
-                    }
-
+                    } else 
+                        nextCB(error); // Transfer cancelled
                 }
                 else 
-                    validateSuccessCallback();
-            }.bind(self));
+                    nextCB();
+            }.bind(this));
         } catch (error) {
-            emitEvent(USBDevice.prototype.EVENT.ERROR, "I/O error - Attempt to write to USB ANT chip generated an serious output error " + error);
-            process.exit();
+            this.emit(USBDevice.prototype.EVENT.LOG, "I/O error - Attempt to write to USB ANT chip generated an serious output error ");
+            this.emit(USBDevice.prototype.EVENT.ERROR, error);
+            nextCB(error);
         }
     }
 
-    retry();
+    retry.bind(this)();
 }
 
 module.exports = USBNode;

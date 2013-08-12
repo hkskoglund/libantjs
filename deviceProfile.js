@@ -54,7 +54,7 @@ DeviceProfile.prototype = {
         // http://thomashunter.name/blog/gracefully-kill-node-js-app-from-ctrl-c/
 
         process.on('SIGINT', function sigint() {
-            //console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
+            console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
 
             // TO DO:  self.sendDisconnect(); // Disconnect
 
@@ -110,7 +110,7 @@ DeviceProfile.prototype = {
         return this._configuration;
     },
 
-    initANT: function (cb) {
+    initANT: function (nextCB) {
         var self = this;
 
         if (typeof this._configuration === "undefined") {
@@ -135,7 +135,13 @@ DeviceProfile.prototype = {
 
         this.ANT = new ANT();
 
-        this.ANT.init(this._configuration.usb.idVendor, this._configuration.usb.idProduct, self.start.bind(self, cb));
+        this.ANT.init(this._configuration.usb.idVendor, this._configuration.usb.idProduct, function _ANTinitCB(error) {
+
+            if (!error)
+                self.start.bind(self, nextCB)
+            else
+                nextCB(error);
+        });
     },
 };
 

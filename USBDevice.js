@@ -34,11 +34,11 @@ USBDevice.prototype.setDeviceTimeout = function (timeout) {
     throw new Error('Func. should be overridden in descendant objects');
 }
 
-USBDevice.prototype.receive = function (successCallback) {
+USBDevice.prototype.listen = function (successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
 }
 
-USBDevice.prototype.send = function (chunk, successCallback) {
+USBDevice.prototype.write = function (chunk, successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
 }
 
