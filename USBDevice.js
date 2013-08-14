@@ -3,9 +3,8 @@ var events = require('events'),
     util = require('util');
 
 function USBDevice() {
-    events.EventEmitter.call(this); // Call super constructor
-
-   
+    events.EventEmitter.call(this);
+    this._burstBuffer = new Buffer(0);
 }
 
 util.inherits(USBDevice, events.EventEmitter);
@@ -16,6 +15,14 @@ USBDevice.prototype.EVENT = {
     LOG: 'log',
     ERROR : 'error'
 }
+
+
+
+
+USBDevice.prototype.setBurstMode = function (value) {
+    this.burstMode = value;
+}
+
 
 USBDevice.prototype.init = function (idVendor, idProduct,callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');

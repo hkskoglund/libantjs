@@ -13,7 +13,7 @@
     "library",
     "wireless"
   ],
-  "main": "./ant.js",
+  "main": "./host.js",
   "dependencies": {
     "usb": " >=0.2.x"
   },

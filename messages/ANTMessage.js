@@ -1,10 +1,14 @@
 ﻿"use strict"
+
 /* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
- */
+*/
 
 function ANTMessage(data) {
     //console.log("DATA", data);
+   
+   // initStream.bind(this)();
+
     this.timestamp = Date.now();
     this.SYNC = ANTMessage.prototype.SYNC;
 
@@ -27,36 +31,6 @@ ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);
 }
 
-
-
-//ANTMessage.prototype.parse = function () {
-
-//    var msg;
-
-//    switch (this.id) {
-
-//        // Notifications
-
-//        case ANTMessage.prototype.ANT_MESSAGE.startup.id:
-
-//            msg = new NotificationStartup();
-
-//            break;
-
-//        case ANTMessage.prototype.ANT_MESSAGE.serial_error.id:
-
-            
-//            this.parseNotificationSerialError();
-
-//            break;
-
-//        default:
-
-//            console.log("Cannot parse message " + this.id);
-
-//            break;
-//    }
-//}
 
 ANTMessage.prototype.toString = function () {
     return "ANT message:" +
@@ -154,6 +128,8 @@ ANTMessage.prototype.create = function (content) {
     
     this.SYNC = ANTMessage.prototype.SYNC;
     this.length = content_len;
+
+    return this.buffer;
 
  
 };

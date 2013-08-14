@@ -1,12 +1,56 @@
 ﻿"use strict"
 var USBDevice = require('./USBDevice.js'),
     usb = require('usb'),
-    ANT = require('ant-lib');
+    ANT = require('ant-lib'),
+    Duplex = require('stream').Duplex;
 
+function initStream() {
+
+    var endpointPacketSize = this.getEndpointPacketSize();
+
+    this._stream = new Duplex();
+
+    // Rx: 
+    this._stream._read = function () {
+        //console.trace();
+        console.log("USBDevice _read", arguments);
+    }.bind(this);
+
+    // TX: Everything that should be written to the ANT chip goes via this stream
+    this._stream._write = function (payload, encoding, nextCB) {
+        var buf;
+
+        console.log("USBDevice _write", arguments);
+        // Loopback test : this._stream.push(new Buffer([1, 2, 3, 4]));
+        // node.js - wants to minimize internal buffer on streams (lower RAM usage)
+        // but now I want to maximize the amount of bytes written to the ANT chip  
+        // to saturate receive buffers in ANT CHIP for bursts, so it seems like I have to have a separate buffer here
+        if (this.burstMode &&  (this._burstBuffer.length + payload.length) < endpointPacketSize) {
+
+            this._burstBuffer = Buffer.concat([this._burstBuffer, payload]);
+            console.log("Buffering ", payload, " burst buffer is now:", this._burstBuffer);
+        }
+        else if (this.burstMode) {
+            console.log("Write burst to ANT chip now");
+            this.write(this._burstBuffer, nextCB);
+        }
+       
+
+        //nextCB();
+    }.bind(this);
+
+}
 function USBNode() {
     USBDevice.call(this);
+
     this.addListener(USBNode.prototype.EVENT.LOG, this.showLogMessage);
     this.addListener(USBNode.prototype.EVENT.ERROR, this.showLogMessage);
+
+  
+
+    this.setBurstMode(false);
+
+
 }
 
 USBNode.prototype = Object.create(USBDevice.prototype);
@@ -17,9 +61,13 @@ USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24A
 
 USBNode.prototype.ANT_DEVICE_TIMEOUT = 5; // Direct USB ANT communication  (normal 5-7 ms. processing time on device)
 
+USBNode.prototype.getStream = function () {
+    return this._stream;
+}
 
 USBNode.prototype.getEndpointPacketSize = function () {
-    return USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+    return this.device.deviceDescriptor.bMaxPacketSize0; // 32
+    //return USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
 },
 
 USBNode.prototype.setDirectANTChipCommunicationTimeout = function (timeout)
@@ -113,13 +161,19 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         // console.log("Claiming interface");
         antInterface.claim(); // Must call before attempting transfer on endpoints
 
+        this.emit(USBDevice.prototype.EVENT.LOG, "Endpoint 0 (bMaxPacketSize0 descriptor) packet size is "+this.device.deviceDescriptor.bMaxPacketSize0+" bytes");
+
+
         //this.listen();
 
         //  console.log("Cleaning LIBUSB in endpoint buffers....");
 
     //console.log("THIS IS NOW", this);
 
-        //console.log(drainLIBUSB);
+    //console.log(drainLIBUSB);
+
+        initStream.bind(this)();
+
         drainLIBUSB.bind(this)(function _drainLIBUSBCB(error, totalBytesDrained) {
 
             if (totalBytesDrained > 0)
@@ -219,9 +273,12 @@ USBNode.prototype.listen = function (nextCB) {
         try {
 
             this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
-                //console.log("IN USB error,data", error, data);
+                console.log("IN USB error,data", error, data);
+                if (data && data.length > 0)
+                    this._stream.push(data); // RX
+
                 nextCB(error,data);
-            });
+            }.bind(this));
         } catch (error) {
             //if (error.errno === -1) // LIBUSB_ERROR_IO 
             //    {
