@@ -6,6 +6,8 @@ var events = require('events'),
     util = require('util'),
     Channel = require('./channel.js'),
     ANTMessage = require('./messages/ANTMessage.js'),
+    //Readable = require('stream').Readable,
+    //Writable = require('stream').Writable,
     Duplex = require('stream').Duplex,
 
     // Notifications from ANT
@@ -738,31 +740,31 @@ Host.prototype.parse_response = function (data) {
 };
 
 
-// Starts a continous listening for data from the in endpoint of the ANT USB interface
-Host.prototype.listen = function (nextCB) {
+//// Starts a continous listening for data from the in endpoint of the ANT USB interface
+//Host.prototype.listen = function (nextCB) {
 
-    var internalbufferOverflow; // Indicates if the internal buffer is larger than or equal to the highWaterMark/"overflowed" by data thats not consumed (i.e a parser for ANT messages)
+//    var internalbufferOverflow; // Indicates if the internal buffer is larger than or equal to the highWaterMark/"overflowed" by data thats not consumed (i.e a parser for ANT messages)
 
-    function retry() {
+//    function retry() {
 
-        this.usb.listen(function _usbListenCB(error, data) {
-            if (!error) {
-                if (data && data.length > 0) {
-                    //console.log("Got data from listen", data);
-                    internalbufferOverflow = this._stream.push(data);
-                    process.nextTick(retry.bind(this));
-                }
-            } else {
-                // data is instanceof Buffer with length 0
-                //console.log("Got error from listen", error);
-                //console.log("NEXTCB", nextCB.toString());
-                nextCB(error);
-            }
-        }.bind(this));
-    }
+//        this.usb.listen(function _usbListenCB(error, data) {
+//            if (!error) {
+//                //if (data && data.length > 0) {
+//                //    //console.log("Got data from listen", data);
+//                //    internalbufferOverflow = this._stream.push(data);
+//                    process.nextTick(retry.bind(this));
+//                }
+//             else {
+//                // data is instanceof Buffer with length 0
+//                //console.log("Got error from listen", error);
+//                //console.log("NEXTCB", nextCB.toString());
+//                nextCB(error);
+//            }
+//        }.bind(this));
+//    }
 
-    retry.bind(this)();
-}
+//    retry.bind(this)();
+//}
 
 
 
@@ -774,7 +776,7 @@ Host.prototype.getCapabilities = function (nextCB) {
 
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
 
-    this._stream.write(msg.toBuffer(), nextCB);
+    this.write(msg.getBuffer(), nextCB);
 };
 
 // Get ANT device version
@@ -782,7 +784,8 @@ Host.prototype.getANTVersion = function (nextCB) {
   
     var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION);
 
-    this._stream.write(msg.toBuffer(), nextCB);
+    this.write(msg.getBuffer(), nextCB);
+   
 };
 
 // Get device serial number if available
@@ -943,11 +946,11 @@ Host.prototype.resetSystem = function (nextCB) {
 
     var msg = new ResetSystemMessage();
 
-    this.usb.setDirectANTChipCommunicationTimeout();
+   
 
     //console.log("RESET SYSTEM MSG:", msg);
 
-    this.write(msg.getBuffer(),'buffer',nextCB);
+    this.write(msg.getBuffer(),nextCB);
 };
 
     // Iterates from channelNrSeed and optionally closes channel
@@ -991,7 +994,7 @@ Host.prototype.resetSystem = function (nextCB) {
     };
 
     Host.prototype.exit = function (callback) {
-        console.log("Inside exit ANT");
+       // console.log("Inside exit ANT");
 
         // Finish RX stream
         this._stream.end(null) 
@@ -1013,6 +1016,7 @@ Host.prototype.resetSystem = function (nextCB) {
     function initStream() {
         // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
         this._stream = new Duplex(); // Default highWaterMark = 16384 bytes
+        //this._RXstream = new Writable();
 
         // Must be defined/overridden otherwise throws error "not implemented"
         // _read-function is used to generate data when the consumer wants to read them
@@ -1020,7 +1024,7 @@ Host.prototype.resetSystem = function (nextCB) {
         // https://github.com/joyent/node/blob/master/lib/_stream_readable.js
         this._stream._read = function (size) {
              //console.trace();
-             //console.log("Consumer wants to read %d bytes", size);
+             //console.log("Host read %d bytes", size);
              //console.log(this._stream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
             // this.readable.push('A');
         }.bind(this);
@@ -1039,55 +1043,40 @@ Host.prototype.resetSystem = function (nextCB) {
 
         // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
         
-        this._stream.addListener('readable', function () {
-            var buf;
-            // console.log("**************************readable", arguments);
-            console.log("Host TX stream buffer:",this._stream._readableState.buffer)
-            //buf = this._stream.read();
-           // console.log(Date.now(), 'Stream TX test:', buf);
+        //this._stream.addListener('readable', function () {
+        //    var buf;
+        //    // console.log("**************************readable", arguments);
+        //    console.log("Host TX stream buffer:",this._stream._readableState.buffer)
+        //    //buf = this._stream.read();
+        //   // console.log(Date.now(), 'Stream TX test:', buf);
            
-            //this.parse_response(buf);
-           // this._stream.unshift(buf);
-        }.bind(this));
+        //    //this.parse_response(buf);
+        //   // this._stream.unshift(buf);
+        //}.bind(this));
 
-        this._stream.addListener('error', function (msg, err) {
+        this._stream.on('error', function (msg, err) {
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
             if (typeof err !== "undefined")
                 this.emit(Host.prototype.EVENT.LOG_MESSAGE, err);
         }.bind(this));
 
-        this._stream.addListener('drain', function () { console.log(Date.now(), "Stream RX DRAIN",arguments); });
+        //this._stream.addListener('drain', function () { console.log(Date.now(), "Stream RX DRAIN",arguments); });
 
-        this._stream.addListener('finish', function () {
+        //this._stream.addListener('finish', function () {
 
-            console.log(Date.now(), "Stream RX FINISH", arguments);
+        //    console.log(Date.now(), "Stream RX FINISH", arguments);
 
-        }.bind(this));
+        //}.bind(this));
 
-        // Callback from doWrite-func. in module _stream_writable (internal node.js)
+        //// Callback from doWrite-func. in module _stream_writable (internal node.js)
         this._stream._write = function _write(ANTresponse, encoding, nextCB) {
             // console.trace();
             //console.log("_WRITE ARGS:", arguments);
-            console.log(Date.now(), "Stream RX:", ANTresponse);
-            //console.log("NEXTCB", nextCB.toString());
-           // this.write(ANTrequest, nextCB);
-
-            //self._stream.end();
-            //console.log("nextCB", nextCB.toString());
-            // default passed by node
-            // nextCB function (er) {
-            //   onwrite(stream, er);
-            //}
+            //console.log(Date.now(), "Host _write (Stream RX:)", ANTresponse);
+           
+            this.parse_response(ANTresponse);
             nextCB();
         }.bind(this);
-
-        // ANTMessage.transform - adds SYNC + MSG length + MSG ID + CRC ...
-        //antReadableStream.pipe(ANTMessage.transform).pipe(usb.writeableStream);
-        //usbReadableStream.pipe(ANTMessage.transform).pipe(ant.writeableStream);
-
-        
-
-        //this.usb.getStream().pipe(this._stream);
 
     }
 
@@ -1126,28 +1115,26 @@ Host.prototype.resetSystem = function (nextCB) {
             // Normally get a timeout after draining 
             if (this.usb.isTimeoutError(error)) {
               
-                //console.log("Frame transform stream", this.frameTransform.getStream());
-                //console.log("Usb stream", this.usb.getStream());
-
                 // TX: Wire outgoing pipes host -> frame transform -> usb
                 this._stream.pipe(this.frameTransform.getStream()).pipe(this.usb.getStream());
 
                 // RX: Wire incoming pipes usb -> deframe transf. -> host
                 this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._stream);
 
-                this.listen(function _listenFinished(error, data) {
-                    nextCB(error,data);
+                this.usb.listen(function _USBListenCB(error) {
+                    nextCB(error);
                 });
 
-                this.resetSystem(function _resetCB() {
-                    console.log("Inside reset CB");
-                    this.getCapabilities(function _capabilitiesCB() {
-                        console.log("Inside capabilities CB");
-                        this.getANTVersion(function _ANTVersionCB() {
-                            console.log("Inside ANT version CB");
+                this.resetSystem(function _resetCB(error) {
+                    //console.log("Inside reset CB");
+                    if (!error)
+                        this.getCapabilities(function _capabilitiesCB(error) {
+                           if (!error)
+                              this.getANTVersion(function _ANTVersionCB(error) {
+                                //console.log("Inside ANT version CB");
+                            }.bind(this));
                         }.bind(this));
-                    }.bind(this));
-                    //nextCB()
+                    nextCB()
                 }.bind(this));
             }
 
@@ -1736,34 +1723,20 @@ Host.prototype.resetSystem = function (nextCB) {
         sendBurst();
     };
 
-    //Host.prototype.read = function (successCallback) {
-      
-    //    //self.device.timeout = timeout;
-    //    var receiveCB = function _successCB(data) {
-           
-    //        // The sequence here is important since the RX stream _read handler callback on 'data'-events calls parse_response on everything
-
-    //        successCallback(data);
-
-    //        if (typeof data !== "undefined")
-    //            this._stream.push(data);
-            
-    //    };
-
-
-    //    this.usb.receive(receiveCB.bind(this));
-
-    //};
-
-// Writes a buffer to the out endpoint of USB
-    Host.prototype.write = function (chunk, nextCB) {
-       
-        if (Buffer.isBuffer(chunk))
-            //this.usb.write(chunk, nextCB);
-            this._stream.push(chunk); // Add to the TX/"readbale" stream for consumers
-            
-        else
-            this.emit(Host.prototype.EVENT.ERROR, 'Chunk ' + chunk + ' is not a buffer = byte stream.');
+    // TX: Stream a message to USB
+    Host.prototype.write = function (messageBuffer, nextCB) {
+        var err;
+        //console.trace();
+        //console.log("Host write", arguments);
+        if (Buffer.isBuffer(messageBuffer)) {
+            this._stream.push(messageBuffer); // TX -> generates a "readable" thats piped into FrameTransform
+            nextCB();
+        }
+        else {
+            err = new Error('Message ' + messageBuffer + ' is not a buffer. Cannot write it to USB without conversion.');
+            this.emit(Host.prototype.EVENT.ERROR, err);
+            nextCB(err);
+        }
     }
 
     module.exports = Host;

@@ -8,32 +8,42 @@ function initStream() {
 
     var endpointPacketSize = this.getEndpointPacketSize();
 
-    this._stream = new Duplex();
+    this._stream = new Duplex({ highWaterMark: endpointPacketSize });
 
     // Rx: 
     this._stream._read = function () {
         //console.trace();
-        console.log("USBDevice _read", arguments);
+        //console.log("USBDevice _read", arguments);
     }.bind(this);
 
     // TX: Everything that should be written to the ANT chip goes via this stream
     this._stream._write = function (payload, encoding, nextCB) {
-        var buf;
 
-        console.log("USBDevice _write", arguments);
+        var burstLen = this._burstBuffer.length + payload.length;
+
+        //console.log("USBDevice _write", payload, "burst mode", this.burstMode, "burst buffer", this._burstBuffer);
+        //console.trace();
         // Loopback test : this._stream.push(new Buffer([1, 2, 3, 4]));
         // node.js - wants to minimize internal buffer on streams (lower RAM usage)
         // but now I want to maximize the amount of bytes written to the ANT chip  
         // to saturate receive buffers in ANT CHIP for bursts, so it seems like I have to have a separate buffer here
-        if (this.burstMode &&  (this._burstBuffer.length + payload.length) < endpointPacketSize) {
+        if (this.burstMode && burstLen < endpointPacketSize) { // Available space in buffer
 
             this._burstBuffer = Buffer.concat([this._burstBuffer, payload]);
             console.log("Buffering ", payload, " burst buffer is now:", this._burstBuffer);
         }
-        else if (this.burstMode) {
-            console.log("Write burst to ANT chip now");
-            this.write(this._burstBuffer, nextCB);
-        }
+        else if (this.burstMode) { // Buffer is full
+            console.log("Write burst to ANT chip now",this._burstBuffer);
+            this.write(this._burstBuffer, function () { this._burstBuffer = payload; nextCB() }.bind(this));
+        } else // {
+
+            if (this._burstBuffer.length > 0) // Still a burst in burst buffer
+            {
+                console.log("Still a burst packet in buffer", this._burstBuffer);
+                this.write(Buffer.concat([this._burstBuffer, payload]), function () { this._burstBuffer = new Buffer(0); nextCB() }.bind(this));
+            }
+            else
+                this.write(payload, nextCB);
        
 
         //nextCB();
@@ -268,16 +278,21 @@ USBNode.prototype.listen = function (nextCB) {
     //console.log("USB LISTEN");
     //console.trace();
 
-    this.setDeviceTimeout(INFINITY);
+    
+
+    function retry () {
 
         try {
-
+            this.setDeviceTimeout(INFINITY);
             this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
-                console.log("IN USB error,data", error, data);
-                if (data && data.length > 0)
-                    this._stream.push(data); // RX
+               // console.log("IN USB error,data", error, data);
+                if (!error) {
 
-                nextCB(error,data);
+                    if (data && data.length > 0)
+                        this._stream.push(data); // RX -> (piped into DeFrameTransform writable stream)
+                    process.nextTick(retry.bind(this));
+                } else
+                    nextCB(error);
             }.bind(this));
         } catch (error) {
             //if (error.errno === -1) // LIBUSB_ERROR_IO 
@@ -286,13 +301,16 @@ USBNode.prototype.listen = function (nextCB) {
             this.emit(USBDevice.prototype.EVENT.ERROR, error);
             nextCB(error);
         }
-    //}
+    }
 
-    //retry.bind(this)();
+   retry.bind(this)();
 }
 
 USBNode.prototype.write = function (chunk, nextCB)
 {
+    //nextCB(); // Remove
+    //return;
+
     //console.trace();
 
     var sendAttempt = 1,
@@ -303,6 +321,7 @@ USBNode.prototype.write = function (chunk, nextCB)
     function retry() {
         //console.trace();
         try {
+            this.setDirectANTChipCommunicationTimeout();
             this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
                  // Test LIBUSB transfer error
                 //error = {};

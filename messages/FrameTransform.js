@@ -16,15 +16,15 @@ function initStream() {
         //console.log(this);
         //rawMsg = this.message.create(payload);
         //console.log("OUT Transforming ", payload, "to", rawMsg);
-        this._stream.push(new Buffer([1,2,3,4]));
+        this._stream.push(payload); // ECHO
         
         callback();
     }.bind(this);
 
-    this._stream.on('readable',function _readable()
-    {
-        console.log("Transform readable",arguments);
-    }.bind(this));
+    //this._stream.on('readable',function _readable()
+    //{
+    //    console.log("Transform readable",arguments);
+    //}.bind(this));
 
     
 

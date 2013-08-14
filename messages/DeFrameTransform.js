@@ -16,20 +16,29 @@ function initStream() {
         //console.log(this);
         //rawMsg = this.message.create(payload);
         console.log("Deframing ", payload);
-        this._stream.push(new Buffer([1, 2, 3, 4]));
+        console.log(this);
+        process.exit();
+        //this._stream.write(payload); // ECHO
 
-        callback();
+
+        // callback();
     }.bind(this);
 
-    this._stream.on('readable', function _readable() {
-        console.log("Transform readable", arguments);
-    }.bind(this));
+    this._stream._read = function () {
+        // console.log("Deframing _read");
+    }.bind(this);
 
+    this._stream._write = function (payload, encoding, nextCB) {
+        // console.log("Deframing _write", arguments);
+        this._stream.push(payload);
+        nextCB();
+    }.bind(this);
 
+    //this._stream.on('readable', function _readable() {
+    //    console.log("DeFrameTransform has readable", arguments);
+    //   // this._stream.read(); // SINK
+    //}.bind(this));
 
-    //this._outStream.on('end', function () {
-    //    console.log("ANTMESSAGE stream END", arguments);
-    //});
 }
 
 function DeFrameTransform() {
