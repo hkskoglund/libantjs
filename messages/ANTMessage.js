@@ -115,12 +115,13 @@ ANTMessage.prototype.create = function (content) {
     //console.log("Checksum  : " + checksum);
     //console.log("Raw message length : " + msg.length+", content length: "+content_len);
 
-    // Add trailing zeroes - seems to work ok without trailing zeros, but recommended
+    // Add trailing zeroes - seems to work ok without trailing zeros, but recommended, will delay ANT chip setting RTS for 50 microsec. after message is received
 
     if (content_len < 8) {
-        trailingZeroBuffer = new Buffer(8 - content_len - 1); // CRC included in payload
-        for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
-            trailingZeroBuffer.writeUInt8(0, byteNr);
+        trailingZeroBuffer = this.getPadZeroBuffer(8 - content_len - 1);
+        //trailingZeroBuffer = new Buffer(8 - content_len - 1); // CRC included in payload
+        //for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
+        //    trailingZeroBuffer.writeUInt8(0, byteNr);
 
         this.buffer = Buffer.concat([this.buffer, trailingZeroBuffer]);
     }
@@ -133,6 +134,17 @@ ANTMessage.prototype.create = function (content) {
 
  
 };
+
+// Create a buffer with zeros
+ANTMessage.prototype.getPadZeroBuffer = function (size) {
+
+        var buf = new Buffer(size), i, len = buf.length;
+        for (var i = 0; i < len; i++)
+            buf[i] = 0x00;
+    
+        return buf;
+    
+}
 
 ANTMessage.prototype.getBuffer = function () {
     return this.buffer;

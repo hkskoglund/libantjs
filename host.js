@@ -10,26 +10,26 @@ var events = require('events'),
     //Writable = require('stream').Writable,
     Duplex = require('stream').Duplex,
 
-    // Notifications from ANT
-
-    NotificationStartup = require('./messages/NotificationStartup.js'),
-    NotificationSerialError = require('./messages/NotificationSerialError.js'),
+   
 
     // Control ANT
     ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
 
     // Request -response
     RequestMessage = require('./messages/RequestMessage.js'),
-
     CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
     ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
+   
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
-    DeFrameTransform = require('./messages/DeFrameTransform.js');
+    DeFrameTransform = require('./messages/DeFrameTransform.js'),
+        
+    ParseANTResponse = require('./ParseANTResponse.js');
         
 // Low level API/interface to ANT chip
 function Host() {
     events.EventEmitter.call(this);
+    this.parseResponse = new ParseANTResponse();
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
@@ -207,9 +207,6 @@ Host.prototype.CHANNEL_STATUS = {
     TRACKING: 0x03
 };
 
-Host.prototype.getDuplex = function () {
-    return this._stream;
-}
 // From spec. p. 17 - "an 8-bit field used to define certain transmission characteristics of a device" - shared address, global data pages.
 // For ANT+/ANTFS :
 
@@ -439,352 +436,21 @@ Host.prototype.parse_extended_message = function (channelNr,data) {
     }
 };
 
-// Overview on p. 58 - ANT Message Protocol and Usage
-Host.prototype.parse_response = function (data) {
-    var ANTmsg = {
-        SYNC:   data[0],
-        length: data[1],
-        id:     data[2]
-    };
-
-    //var ANTmsg = new ANTMessage();
-    //ANTmsg.setMessage(data, true);
-    //if (ANTmsg.message)
-    //  this.emit(Host.prototype.EVENT.LOG_MESSAGE, ANTmsg.message.text);
-
-    var antInstance = this,
-        self = this,
-        firstSYNC = ANTmsg.SYNC,
-        msgLength = ANTmsg.length,
-       // msgID = ANTmsg.id,
-        msgFlag, // Indicates if extended message info. is available and what info. to expect
-        msgStr = "",
-        msgCode,
-        channelNr,
-        channelID,
-        sequenceNr,
-        payloadData,
-        resendMsg,
-        burstMsg,
-        burstParser,
-        msgCRC = data[3 + ANTmsg.length];
-    //    verifiedCRC = ANTmsg.getCRC(data),
-    //    SYNCOK = (ANTmsg.SYNC === ANTMessage.prototype.SYNC),
-    //    CRCOK = (msgCRC === verifiedCRC);
-
-    //if (typeof msgCRC === "undefined")
-    //    console.log("msgCRC undefined", "ANTmsg",ANTmsg, data);
-
-    //// Check for valid SYNC byte at start
-
-    //if (!SYNCOK) {
-    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Invalid SYNC byte "+ firstSYNC+ " expected "+ ANTMessage.prototype.SYNC+" cannot trust the integrety of data, thus discarding bytes:"+ data.length);
-    //    return;
-    //}
-
-    //// Check CRC
-
-    //if (!CRCOK) {
-    //    console.log("CRC failure - allow passthrough");
-    //    //self.emit(Host.prototype.EVENT.LOG_MESSAGE, "CRC failure - verified CRC " + verifiedCRC.toString(16) + " message CRC" + msgCRC.toString(16));
-    //    //return;
-    //}
-
-    switch (ANTmsg.id) {
-
-        //// Data
-
-        //case ANTMessage.prototype.MESSAGE.burst_transfer_data.id:
-            
-        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
-        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
-
-        //    if (ANTmsg.length >= 9) { // 1 byte for channel NR + 8 byte payload - standard message format
-
-        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
-        //        if (ANTmsg.sequenceNr & 0x04) // last packet
-        //            msgStr += " LAST";
-
-        //        payloadData = data.slice(4, 12);
-
-        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
-
-        //        // console.log(payloadData);
-
-        //        if (ANTmsg.sequenceNr === 0x00) // First packet 
-        //        {
-        //            // console.time('burst');
-        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
-
-        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
-
-        //            // Extended msg. only in the first packet
-        //            if (ANTmsg.length > 9) {
-        //                msgFlag = data[12];
-        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-        //                this.parse_extended_message(ANTmsg.channel, data);
-        //            }
-        //        }
-        //        else if (ANTmsg.sequenceNr > 0x00)
-
-        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
-
-        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet 
-        //        {
-        //            //console.timeEnd('burst');
-        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
-
-        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
-
-        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
-
-        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
-        //            if (typeof burstMsg !== "undefined")
-        //                burstParser = burstMsg.parser;
-
-        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
-        //                antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
-        //            else
-        //                antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
-
-        //            //antInstance.channelConfiguration[channelNr].parseBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
-        //        }
-        //    }
-        //    else {
-        //        console.trace();
-        //        console.log("Data", data);
-        //        antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
-        //    }
-
-        //    break;
-
-        //case ANTMessage.prototype.MESSAGE.broadcast_data.id:
-
-        //    msgStr += ANTMessage.prototype.MESSAGE.broadcast_data.friendly + " ";
-
-        //    channelNr = data[3];
-        //    msgStr += " on channel " + channelNr;
-
-        //    // Parse flagged extended message info. if neccessary
-        //    if (ANTmsg.length > 9) {
-        //        msgFlag = data[12];
-        //        //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-        //        this.parse_extended_message(channelNr, data); // i.e channel ID
-        //    }
-
-        //    // Check for updated channel ID to the connected device (ONLY FOR IF CHANNEL ID IS NOT ENABLED IN EXTENDED PACKET INFO)
-
-        //    if (typeof antInstance.channelConfiguration[channelNr].hasUpdatedChannelID === "undefined") {
-
-        //        antInstance.getUpdatedChannelID(channelNr,
-        //            function error() {
-        //                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to get updated channel ID");
-        //            },
-        //           function success(data) {
-        //               antInstance.channelConfiguration[channelNr].hasUpdatedChannelID = true;
-        //           });
-
-        //    }
-
-        //    // Call to broadcast handler for channel
-        //    if (!antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.BROADCAST, data))
-        //        antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Channel.prototype.EVENT.BROADCAST on channel "+channelNr);
-
-        //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
-
-        //    break;
-
-            // Notifications from ANT engine
-
-        case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
-            //console.trace();
-            //if (!antInstance.emit(antInstance.EVENT.STARTUP, data))
-            //    antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.STARTUP");
-
-            var notification = new NotificationStartup(data);
-          
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
-           // console.log("PARSER", this);
-           // this.notificationStartupCallback();
-
-            break;
-
-        case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
-
-        //    if (!antInstance.emit(antInstance.EVENT.SERIAL_ERROR, data))
-        //        antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.SERIAL_ERROR");
-
-            var notification = new NotificationSerialError(data);
-             
-            if (!self.emit(Host.prototype.EVENT.SERIAL_ERROR, notification.message.type + " " + notification.message.text))
-                self.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.message.type + " " + notification.message.text);
-
-            break;
-
-            // Channel event or responses
-
-        case ANTMessage.prototype.MESSAGE.channel_response.id:
-
-            var channelResponseMessage = antInstance.parseChannelResponse(data);
-
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, channelResponseMessage);
-            
-
-            msgStr += ANTMessage.prototype.MESSAGE.channel_response.friendly + " " + channelResponseMessage;
-            channelNr = data[3];
-
-            // Handle retry of acknowledged data
-            if (antInstance.isEvent(Host.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_COMPLETED, data)) {
-
-                if (antInstance.retryQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.retryQueue[channelNr].shift();
-                    clearTimeout(resendMsg.timeoutID); // No need to call timeout callback now
-                    if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-                        resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-                    else
-                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after acknowledged data");
-                    //console.log(Date.now() + " TRANSFER COMPLETE - removing from retry-queue",resendMsg);
-                }
-
-                if (antInstance.burstQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.burstQueue[channelNr].shift();
-                    if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-                        resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-                    else
-                        antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE," No transfer complete callback specified after burst");
-                }
-
-            } else if (antInstance.isEvent(Host.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_FAILED, data)) {
-                if (antInstance.retryQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.retryQueue[channelNr][0];
-                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Re-sending ACKNOWLEDGE message due to TX_FAILED, retry "+resendMsg.retry);
-                    resendMsg.retryCB();
-                }
-
-                if (antInstance.burstQueue[channelNr].length >= 1) {
-                    burstMsg = antInstance.burstQueue[channelNr][0];
-                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Re-sending BURST message due to TX_FAILED "+burstMsg.message.friendlyName+" retry "+burstMsg.retry);
-                    burstMsg.retryCB();
-                }
-            }
-
-            // Call channel event/response-handler for each channel
-
-           // OLD-way of calling callback antInstance.channelConfiguration[channelNr].channelResponseEvent(data);
-
-           // console.log("Channel response/EVENT", channelNr, channelResponseMessage,antInstance.channelConfiguration[channelNr]);
-            antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
-
-
-            break;
-
-            // Response messages to request 
-
-            // Channel specific 
-
-        case ANTMessage.prototype.MESSAGE.channel_status.id:
-            if (!antInstance.emit(Host.prototype.EVENT.CHANNEL_STATUS, data))
-                antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.CHANNEL_STATUS");
-
-            break;
-
-        case ANTMessage.prototype.MESSAGE.set_channel_id.id:
-            if (!antInstance.emit(Host.prototype.EVENT.SET_CHANNEL_ID, data))
-                antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for event Host.prototype.EVENT.SET_CHANNEL_ID");
-            break;
-
-            // ANT device specific, i.e nRF24AP2
-
-        case ANTMessage.prototype.MESSAGE.ANT_VERSION:
-            //if (!antInstance.emit(Host.prototype.EVENT.ANT_VERSION, data))
-            //    antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.ANT_VERSION");
-
-            var version = new ANTVersionMessage(data);
-
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
-
-            break;
-
-        case ANTMessage.prototype.MESSAGE.CAPABILITIES:
-
-            //if (!antInstance.emit(Host.prototype.EVENT.CAPABILITIES, data))
-            //    antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.CAPABILITIES");
-
-            var capabilities = new CapabilitiesMessage(data);
-
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
-
-
-            break;
-
-        case ANTMessage.prototype.MESSAGE.device_serial_number.id:
-            if (!antInstance.emit(Host.prototype.EVENT.DEVICE_SERIAL_NUMBER, data))
-                antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for event Host.prototype.EVENT.DEVICE_SERIAL_NUMBER");
-
-            break;
-
-        default:
-            //msgStr += "* NO parser specified *";
-            antInstance.emit(Host.prototype.EVENT.LOG_MESSAGE, "Unable to parse received data");
-            break;
-    }
-
-    // There might be more buffered data messages from ANT engine available (if commands/request are sent, but not read in awhile)
-
-    var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
-    if (data.length > nextExpectedSYNCIndex) {
-       // console.log(data.slice(nextExpectedSYNCIndex));
-        this.parse_response(data.slice(nextExpectedSYNCIndex));
-    }
-
-};
-
-
-//// Starts a continous listening for data from the in endpoint of the ANT USB interface
-//Host.prototype.listen = function (nextCB) {
-
-//    var internalbufferOverflow; // Indicates if the internal buffer is larger than or equal to the highWaterMark/"overflowed" by data thats not consumed (i.e a parser for ANT messages)
-
-//    function retry() {
-
-//        this.usb.listen(function _usbListenCB(error, data) {
-//            if (!error) {
-//                //if (data && data.length > 0) {
-//                //    //console.log("Got data from listen", data);
-//                //    internalbufferOverflow = this._stream.push(data);
-//                    process.nextTick(retry.bind(this));
-//                }
-//             else {
-//                // data is instanceof Buffer with length 0
-//                //console.log("Got error from listen", error);
-//                //console.log("NEXTCB", nextCB.toString());
-//                nextCB(error);
-//            }
-//        }.bind(this));
-//    }
-
-//    retry.bind(this)();
-//}
-
-
-
-
-
 
 // Get device capabilities
-Host.prototype.getCapabilities = function (nextCB) {
+Host.prototype.getCapabilities = function () {
 
-    var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES);
+    var msg = new CapabilitiesMessage();
 
-    this.write(msg.getBuffer(), nextCB);
+    this._TXstream.push(msg.getBuffer());
 };
 
 // Get ANT device version
-Host.prototype.getANTVersion = function (nextCB) {
+Host.prototype.getANTVersion = function () {
   
-    var msg = this.getRequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION);
+    var msg = new ANTVersionMessage();
 
-    this.write(msg.getBuffer(), nextCB);
+    this._TXstream.push(msg.getBuffer());
    
 };
 
@@ -939,18 +605,20 @@ function resetANTreceiveStateMachine(callback)
 
     //console.log("reset state machine", msg);
 
-     this._stream.write(msg.getBuffer(), 'buffer', callback); 
+     this._TXstream.write(msg.getBuffer(), 'buffer', callback); 
 }
 
-Host.prototype.resetSystem = function (nextCB) {
+Host.prototype.resetSystem = function () {
 
     var msg = new ResetSystemMessage();
 
-   
-
     //console.log("RESET SYSTEM MSG:", msg);
 
-    this.write(msg.getBuffer(),nextCB);
+    //this.write(msg.getBuffer(), function _waitPostResetState() {
+    //    setTimeout(nextCB, 500);
+    //});
+
+    this._TXstream.push(msg.getBuffer()); // TX -> generates a "readable" thats piped into FrameTransform
 };
 
     // Iterates from channelNrSeed and optionally closes channel
@@ -997,13 +665,13 @@ Host.prototype.resetSystem = function (nextCB) {
        // console.log("Inside exit ANT");
 
         // Finish RX stream
-        this._stream.end(null) 
+        this._TXstream.end(null) 
         // TEST : [Error: write after end]
-        //this._stream.write(new Buffer(10));
+        //this._TXstream.write(new Buffer(10));
 
         // Close TX stream
-        this._stream.push(null);
-        // TEST EOF readable stream : this._stream.push(new Buffer(10)); 
+        this._TXstream.push(null);
+        // TEST EOF readable stream : this._TXstream.push(new Buffer(10)); 
         //-> gives [Error: stream.push() after EOF]
 
         // Exit USB
@@ -1015,66 +683,75 @@ Host.prototype.resetSystem = function (nextCB) {
 
     function initStream() {
         // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
-        this._stream = new Duplex(); // Default highWaterMark = 16384 bytes
+        this._TXstream = new Duplex(); // Default highWaterMark = 16384 bytes
+        this._RXstream = new Duplex();
+
         //this._RXstream = new Writable();
 
         // Must be defined/overridden otherwise throws error "not implemented"
         // _read-function is used to generate data when the consumer wants to read them
         // https://github.com/substack/stream-handbook#creating-a-readable-stream
         // https://github.com/joyent/node/blob/master/lib/_stream_readable.js
-        this._stream._read = function (size) {
+        this._TXstream._read = function (size) {
              //console.trace();
              //console.log("Host read %d bytes", size);
-             //console.log(this._stream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
+             //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
             // this.readable.push('A');
         }.bind(this);
 
-        //this._stream.pipe(process.stdout);
+        this._RXstream._read = function (size) {
+            //console.trace();
+            //console.log("_RXstream._read read %d bytes", size);
+            //console.log(this._RXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
+        }.bind(this);
+
+        //this._TXstream.pipe(process.stdout);
 
         // http://nodejs.org/api/stream.html#stream_class_stream_readable
         // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
         // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
         // https://github.com/substack/stream-handbook
         //Note that whenever you register a "data" listener, you put the stream into compatability mode so you lose the benefits of the new streams2 api.
-        //this._stream.addListener('data', function _streamDataListener(response) {
+        //this._TXstream.addListener('data', function _streamDataListener(response) {
         //    console.log(Date.now(), 'Stream RX:', response);
         //    this.parse_response(response);
         //}.bind(this));
 
         // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
         
-        //this._stream.addListener('readable', function () {
-        //    var buf;
-        //    // console.log("**************************readable", arguments);
-        //    console.log("Host TX stream buffer:",this._stream._readableState.buffer)
-        //    //buf = this._stream.read();
-        //   // console.log(Date.now(), 'Stream TX test:', buf);
+        this._TXstream.addListener('readable', function () {
+            var buf;
+            // console.log("**************************readable", arguments);
+           // console.log("TX:",this._TXstream._readableState.buffer)
+            //buf = this._TXstream.read();
+           // console.log(Date.now(), 'Stream TX test:', buf);
            
-        //    //this.parse_response(buf);
-        //   // this._stream.unshift(buf);
-        //}.bind(this));
+            //this.parse_response(buf);
+           // this._TXstream.unshift(buf);
+        }.bind(this));
 
-        this._stream.on('error', function (msg, err) {
+        this._TXstream.on('error', function (msg, err) {
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
             if (typeof err !== "undefined")
                 this.emit(Host.prototype.EVENT.LOG_MESSAGE, err);
         }.bind(this));
 
-        //this._stream.addListener('drain', function () { console.log(Date.now(), "Stream RX DRAIN",arguments); });
+        //this._TXstream.addListener('drain', function () { console.log(Date.now(), "Stream RX DRAIN",arguments); });
 
-        //this._stream.addListener('finish', function () {
+        //this._TXstream.addListener('finish', function () {
 
         //    console.log(Date.now(), "Stream RX FINISH", arguments);
 
         //}.bind(this));
 
         //// Callback from doWrite-func. in module _stream_writable (internal node.js)
-        this._stream._write = function _write(ANTresponse, encoding, nextCB) {
+        this._RXstream._write = function _write(ANTresponse, encoding, nextCB) {
             // console.trace();
-            //console.log("_WRITE ARGS:", arguments);
+            //console.log("RX:", arguments[0]);
             //console.log(Date.now(), "Host _write (Stream RX:)", ANTresponse);
            
-            this.parse_response(ANTresponse);
+            //this.parseResponse.parse_response(ANTresponse);
+            this._RXstream.push(ANTresponse); // Send it on the pipes
             nextCB();
         }.bind(this);
 
@@ -1116,26 +793,22 @@ Host.prototype.resetSystem = function (nextCB) {
             if (this.usb.isTimeoutError(error)) {
               
                 // TX: Wire outgoing pipes host -> frame transform -> usb
-                this._stream.pipe(this.frameTransform.getStream()).pipe(this.usb.getStream());
+                this._TXstream.pipe(this.frameTransform.getStream()).pipe(this.usb.getStream());
 
                 // RX: Wire incoming pipes usb -> deframe transf. -> host
-                this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._stream);
+                this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._RXstream).pipe(this.parseResponse);
 
                 this.usb.listen(function _USBListenCB(error) {
                     nextCB(error);
                 });
 
-                this.resetSystem(function _resetCB(error) {
-                    //console.log("Inside reset CB");
-                    if (!error)
-                        this.getCapabilities(function _capabilitiesCB(error) {
-                           if (!error)
-                              this.getANTVersion(function _ANTVersionCB(error) {
-                                //console.log("Inside ANT version CB");
-                            }.bind(this));
-                        }.bind(this));
-                    nextCB()
-                }.bind(this));
+
+                this.resetSystem();
+                setTimeout(function _waitPostResetState() {
+                    this.getCapabilities();
+                    this.getANTVersion();
+                }.bind(this), 1000);
+                
             }
 
         }.bind(this));
@@ -1722,21 +1395,5 @@ Host.prototype.resetSystem = function (nextCB) {
 
         sendBurst();
     };
-
-    // TX: Stream a message to USB
-    Host.prototype.write = function (messageBuffer, nextCB) {
-        var err;
-        //console.trace();
-        //console.log("Host write", arguments);
-        if (Buffer.isBuffer(messageBuffer)) {
-            this._stream.push(messageBuffer); // TX -> generates a "readable" thats piped into FrameTransform
-            nextCB();
-        }
-        else {
-            err = new Error('Message ' + messageBuffer + ' is not a buffer. Cannot write it to USB without conversion.');
-            this.emit(Host.prototype.EVENT.ERROR, err);
-            nextCB(err);
-        }
-    }
 
     module.exports = Host;

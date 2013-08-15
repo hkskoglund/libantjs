@@ -1,5 +1,6 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('./ANTMessage.js'),
+    RequestMessage = require('./RequestMessage.js');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
 function CapabilitiesMessage(data) {
@@ -20,6 +21,18 @@ CapabilitiesMessage.prototype = Object.create(ANTMessage.prototype);
 
 CapabilitiesMessage.prototype.constructor = CapabilitiesMessage;
 
+
+CapabilitiesMessage.prototype.getBuffer = function () {
+    var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.CAPABILITIES)).getBuffer();
+    console.log("Cap msg.:", msg);
+  
+    //return Buffer.concat([msg, getZeroPadBuffer(64-msg.length)]);
+    // ANT chip tolerates 64 byte message padded with zeros, but 65 bytes gives "First byte of USB packet not SYNC" serial error notification
+
+    return msg;
+}
+
+CapabilitiesMessage.prototype.toBuffer = CapabilitiesMessage.prototype.getBuffer;
 
 // Inspired by Dynastream Android SDK 4.0.0
 CapabilitiesMessage.prototype.getNumberOfChannels = function ()

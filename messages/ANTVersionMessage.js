@@ -1,5 +1,6 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('./ANTMessage.js'),
+    RequestMessage = require('./RequestMessage.js');
 
 function ANTVersionMessage(data) {
 
@@ -26,6 +27,15 @@ ANTVersionMessage.prototype.parse = function () {
     return this.message;
 
 };
+
+ANTVersionMessage.prototype.getBuffer = function () {
+    var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.ANT_VERSION)).getBuffer();
+    //console.log("version msg", msg);
+    return Buffer.concat([msg, this.getPadZeroBuffer(64-msg.length+1)]);
+    //return msg;
+}
+
+ANTVersionMessage.prototype.toBuffer = ANTVersionMessage.prototype.getBuffer;
 
 ANTVersionMessage.prototype.toString = function () {
     return this.name + " 0x" + this.id.toString(16) + " " + this.length + " " + this.message;

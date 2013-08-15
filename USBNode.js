@@ -69,7 +69,7 @@ USBNode.prototype.constructor = USBNode; // Otherwise constructor = USBDevice ..
 
 USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
-USBNode.prototype.ANT_DEVICE_TIMEOUT = 5; // Direct USB ANT communication  (normal 5-7 ms. processing time on device)
+USBNode.prototype.ANT_DEVICE_TIMEOUT = 12; 
 
 USBNode.prototype.getStream = function () {
     return this._stream;
@@ -80,6 +80,13 @@ USBNode.prototype.getEndpointPacketSize = function () {
     //return USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
 },
 
+// ANT CHIP serial interface configured at 57600 baud (BR pins 1 2 3 = 111) = 57600 bit/s = 57.6 bit/ms
+// Sends : 1 start bit + 8 data bits + 1 stop bits = 10 bit/byte
+// 57.6 bit/ms / 10 bit/byte = 5.76 byte/ms
+// So, f.ex SYNC + MSG L. + MSG ID + 8 bytes payload + CRC = 12 bytes -> 12 bytes / 5.76 bytes/ms = 2.083 ms transfer time
+// 32 bytes transfer : 32 / 5.76 = 5.55 ms, 64 bytes : 2*5.55 = 11.11 ms
+// So a sensible timeout value could be >= 11.11 ms. It's possible to set a dynamic timeout based on how much bytes to transfer, but that needs some computations that takes time
+// dynamictimeout = parseInt(Math.Ceil(chunk/5.76),10)
 USBNode.prototype.setDirectANTChipCommunicationTimeout = function (timeout)
 {
     this.setDeviceTimeout(timeout || USBNode.prototype.ANT_DEVICE_TIMEOUT);
@@ -284,7 +291,11 @@ USBNode.prototype.listen = function (nextCB) {
 
         try {
             this.setDeviceTimeout(INFINITY);
+         
+            //console.time('RXtime');
             this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
+                //console.timeEnd('RXtime')
+                console.log('RX', data);
                // console.log("IN USB error,data", error, data);
                 if (!error) {
 
@@ -317,12 +328,17 @@ USBNode.prototype.write = function (chunk, nextCB)
         MAXATTEMPT = 5,
         err;
 
+  
+
    
     function retry() {
         //console.trace();
         try {
             this.setDirectANTChipCommunicationTimeout();
+            console.log('TX', chunk);
+            console.time('TXtime');
             this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
+                console.timeEnd('TXtime')
                  // Test LIBUSB transfer error
                 //error = {};
                 //if (sendAttempt === 3)
