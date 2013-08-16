@@ -13,26 +13,30 @@
 util.inherits(ParseANTResponse, Transform);
 
 function ParseANTResponse(options) {
-    Transform.call(this,options);
+    Transform.call(this, options);
+
+    this.on(ParseANTResponse.prototype.EVENT.LOG, this.showLog);
 }
 
 // for event emitter
 ParseANTResponse.prototype.EVENT = {
 
     //// Notifications
-    STARTUP: 'notificationStartup',
-    SERIAL_ERROR: 'notificationSerialError',
+    //STARTUP: 'notificationStartup',
+    //SERIAL_ERROR: 'notificationSerialError',
 
-    CHANNEL_STATUS: 'channelStatus',
+    //CHANNEL_STATUS: 'channelStatus',
 
-    LOG_MESSAGE: 'logMessage',
+    REPLY : 'reply',
+
+    LOG: 'log',
     ERROR: 'error',
 
-    SET_CHANNEL_ID: 'setChannelId',
+    //SET_CHANNEL_ID: 'setChannelId',
 
-    DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
-    ANT_VERSION: 'ANTVersion',
-    CAPABILITIES: 'deviceCapabilities',
+    //DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
+    //ANT_VERSION: 'ANTVersion',
+    //CAPABILITIES: 'deviceCapabilities',
 
     // Data
     BROADCAST: 'broadcast',
@@ -41,6 +45,12 @@ ParseANTResponse.prototype.EVENT = {
     CHANNEL_RESPONSE_EVENT: 'channelResponseEvent',
 
 };
+
+ParseANTResponse.prototype.showLog = function (msg)
+{
+   
+    console.log(Date.now(),msg);
+}
 
 
 // Overview on p. 58 - ANT Message Protocol and Usage
@@ -203,30 +213,20 @@ ParseANTResponse.prototype.parse_response = function (data) {
         // Notifications from ANT engine
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
-            //console.trace();
-            //if (!antInstance.emit(antInstance.EVENT.STARTUP, data))
-            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event ParseANTResponse.prototype.EVENT.STARTUP");
 
             var notification = new NotificationStartup(data);
-
-            console.log(notification.toString());
-
-            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, notification.toString());
-            // console.log("PARSER", this);
-            // this.notificationStartupCallback();
+           
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, notification))
+              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
 
             break;
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-            //    if (!antInstance.emit(antInstance.EVENT.SERIAL_ERROR, data))
-            //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event ParseANTResponse.prototype.EVENT.SERIAL_ERROR");
-
             var notification = new NotificationSerialError(data);
-            console.log(notification);
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.SERIAL_ERROR, notification.message.type + " " + notification.message.text))
-                this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, notification.message.type + " " + notification.message.text);
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY,notification))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
 
             break;
 
@@ -305,24 +305,20 @@ ParseANTResponse.prototype.parse_response = function (data) {
             // ANT device specific, i.e nRF24AP2
 
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
-            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.ANT_VERSION, data))
-            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event ParseANTResponse.prototype.EVENT.ANT_VERSION");
 
             var version = new ANTVersionMessage(data);
 
-            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, version.toString());
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, version))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + version.toString());
 
             break;
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.CAPABILITIES, data))
-            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event ParseANTResponse.prototype.EVENT.CAPABILITIES");
-
             var capabilities = new CapabilitiesMessage(data);
 
-            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
-
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, capabilities))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + capabilities.toString());
 
             break;
 

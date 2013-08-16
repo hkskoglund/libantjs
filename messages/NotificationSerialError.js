@@ -6,6 +6,9 @@ function NotificationSerialError(data) {
     
     console.log("Notification", data);
     this.parse();
+
+    this.name = "Notification: Serial Error";
+    this.id = ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR;
 }
 
 NotificationSerialError.prototype = Object.create(ANTMessage.prototype);
@@ -50,17 +53,13 @@ NotificationSerialError.prototype.parse = function () {
         faultMessage = serialErrorMessage.slice(1);
     }
 
-    //this.notificationSerialError = {
-    //    timestamp: Date.now(),
-    //    message: msg,
-    //    code: code
-    //};
-
-    //this.emit(ANT.prototype.EVENT.LOG_MESSAGE, NotificationSerialError.prototype.ANT_MESSAGE.serial_error.friendly + " " + msg);
-    //console.log("SERIAL ERROR ", msg);
-    this.message = { 'timestamp': Date.now(), 'class': 'Notifications', 'type': 'Serial Error Message', 'text': msg, 'code': code, 'faultMessage': faultMessage };
+    this.message = { 'text': msg, 'code': code, 'faultMessage': faultMessage };
 
     return this.message;
 };
+
+NotificationSerialError.prototype.toString = function () {
+    return this.name + " 0x" + this.id.toString(16) + " " + this.length + " " + this.message.text;
+}
 
 module.exports = NotificationSerialError

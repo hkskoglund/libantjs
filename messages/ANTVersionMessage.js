@@ -31,8 +31,8 @@ ANTVersionMessage.prototype.parse = function () {
 ANTVersionMessage.prototype.getBuffer = function () {
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.ANT_VERSION)).getBuffer();
     //console.log("version msg", msg);
-    return Buffer.concat([msg, this.getPadZeroBuffer(64-msg.length+1)]);
-    //return msg;
+    //return Buffer.concat([msg, this.getPadZeroBuffer(64-msg.length)]);
+    return msg;
 }
 
 ANTVersionMessage.prototype.toBuffer = ANTVersionMessage.prototype.getBuffer;

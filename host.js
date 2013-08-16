@@ -1,16 +1,12 @@
 "use strict";
 
 var events = require('events'),
-   // usb = require('usb'),
-   USBNode = require('./USBNode.js'),
     util = require('util'),
+    USBDevice = require('./USBNode.js'), // Change to appropiate device
     Channel = require('./channel.js'),
     ANTMessage = require('./messages/ANTMessage.js'),
-    //Readable = require('stream').Readable,
-    //Writable = require('stream').Writable,
+ 
     Duplex = require('stream').Duplex,
-
-   
 
     // Control ANT
     ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
@@ -38,7 +34,9 @@ function Host() {
 
     this._mutex = {};
 
-    //console.log("ANT instance instance of EventEmitter",this instanceof events.EventEmitter );
+    this.timeoutID = {};
+
+    
 }
 
 // Let ANT inherit from EventEmitter http://nodejs.org/api/util.html#util_util_inherits_constructor_superconstructor
@@ -437,22 +435,9 @@ Host.prototype.parse_extended_message = function (channelNr,data) {
 };
 
 
-// Get device capabilities
-Host.prototype.getCapabilities = function () {
 
-    var msg = new CapabilitiesMessage();
 
-    this._TXstream.push(msg.getBuffer());
-};
 
-// Get ANT device version
-Host.prototype.getANTVersion = function () {
-  
-    var msg = new ANTVersionMessage();
-
-    this._TXstream.push(msg.getBuffer());
-   
-};
 
 // Get device serial number if available
 Host.prototype.parseDeviceSerialNumber = function (data) {
@@ -608,18 +593,69 @@ function resetANTreceiveStateMachine(callback)
      this._TXstream.write(msg.getBuffer(), 'buffer', callback); 
 }
 
-Host.prototype.resetSystem = function () {
+// Reset device
+Host.prototype.resetSystem = function (callback) {
 
     var msg = new ResetSystemMessage();
 
-    //console.log("RESET SYSTEM MSG:", msg);
-
-    //this.write(msg.getBuffer(), function _waitPostResetState() {
-    //    setTimeout(nextCB, 500);
-    //});
-
-    this._TXstream.push(msg.getBuffer()); // TX -> generates a "readable" thats piped into FrameTransform
+    scheduleRetryMessage.bind(this)(msg.toBuffer(), callback, 'Failed to reset ANT device', Host.prototype.RESET_DELAY_TIMEOUT);
 };
+
+// Get device version
+Host.prototype.getANTVersion = function (callback) {
+
+    var msg = new ANTVersionMessage();
+
+    scheduleRetryMessage.bind(this)(msg.toBuffer(), callback, 'Failed to get version of ANT device');
+
+};
+
+// Get device capabilities
+Host.prototype.getCapabilities = function (callback) {
+
+    var msg = new CapabilitiesMessage();
+
+    scheduleRetryMessage.bind(this)(msg.toBuffer(), callback, 'Failed to get capabilities of ANT device');
+};
+
+function scheduleRetryMessage(buffer, callback, errorMsg, callbackDelay) {
+    //console.trace();
+    //console.log("ARGS", arguments);
+    var retryAttempt = 0,
+        maxRetry = 5,
+        timeoutID,
+        listener = function (message) {
+            this.parseResponse.removeListener(ParseANTResponse.prototype.EVENT.REPLY, listener);
+            //console.timeEnd('SEND');
+          
+            clearTimeout(timeoutID);
+            //console.log("Got reply", message);
+            if (callbackDelay)
+                setTimeout(function _delayedCallbackCB() { callback(undefined, message); }, callbackDelay);
+               else
+                callback(undefined, message);
+
+        }.bind(this);
+
+    
+    this.parseResponse.on(ParseANTResponse.prototype.EVENT.REPLY, listener);
+
+    function retry() {
+        this._TXstream.push(buffer); // TX -> generates a "readable" thats piped into FrameTransform
+
+        retryAttempt++;
+        if (retryAttempt < maxRetry) {
+            timeoutID = setTimeout(function () {
+                process.nextTick(retry.bind(this));
+            }.bind(this), 30);
+        }
+        else
+            callback(new Error(errorMsg));
+    }
+
+    retry.bind(this)();
+    
+}
 
     // Iterates from channelNrSeed and optionally closes channel
     Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
@@ -768,7 +804,7 @@ Host.prototype.resetSystem = function () {
 
         }.bind(this));
 
-        this.usb = new USBNode();
+        this.usb = new USBDevice();
 
         this.frameTransform = new FrameTransform(); // TX
         this.deframeTransform = new DeFrameTransform(); // RX
@@ -779,8 +815,15 @@ Host.prototype.resetSystem = function () {
         this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
         this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
 
+
+        this.parseResponse.addListener(ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR, function (notification) {
+            //nextCB(new Error(notification.toString()));
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
+        }.bind(this));
+
+
         //this.addListener(Host.prototype.EVENT.STARTUP, this.parseNotificationStartup);
-        //this.addListener(Host.prototype.EVENT.SERIAL_ERROR, this.parseNotificationSerialError);
+        
         this.addListener(Host.prototype.EVENT.CHANNEL_STATUS, this.parseChannelStatus);
         this.addListener(Host.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
         this.addListener(Host.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
@@ -803,12 +846,27 @@ Host.prototype.resetSystem = function () {
                 });
 
 
-                this.resetSystem();
-                setTimeout(function _waitPostResetState() {
-                    this.getCapabilities();
-                    this.getANTVersion();
-                }.bind(this), 1000);
-                
+                this.resetSystem(function (error, notification) {
+                    if (!error) {
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
+
+                        this.getCapabilities(function (error, capabilities) {
+                            if (!error) {
+                               this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
+
+                               this.getANTVersion(function (error, version) {
+                                    if (!error)
+                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
+                                    else
+                                        nextCB(error);
+                               }.bind(this));
+
+                            } else
+                                nextCB(error);
+                        }.bind(this));
+                     } else
+                         nextCB(error);
+                  }.bind(this));
             }
 
         }.bind(this));

@@ -6,7 +6,7 @@ var USBDevice = require('./USBDevice.js'),
 
 function initStream() {
 
-    var endpointPacketSize = this.getEndpointPacketSize();
+    var endpointPacketSize = this.getOUTEndpointPacketSize();
 
     this._stream = new Duplex({ highWaterMark: endpointPacketSize });
 
@@ -69,15 +69,18 @@ USBNode.prototype.constructor = USBNode; // Otherwise constructor = USBDevice ..
 
 USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
-USBNode.prototype.ANT_DEVICE_TIMEOUT = 12; 
+USBNode.prototype.ANT_DEVICE_TIMEOUT = 13; // 11.11 ms to transfer 64 bytes at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
 
 USBNode.prototype.getStream = function () {
     return this._stream;
 }
 
-USBNode.prototype.getEndpointPacketSize = function () {
-    return this.device.deviceDescriptor.bMaxPacketSize0; // 32
-    //return USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+USBNode.prototype.getINEndpointPacketSize = function () {
+    return this.inEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+},
+
+USBNode.prototype.getOUTEndpointPacketSize = function () {
+    return this.outEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
 },
 
 // ANT CHIP serial interface configured at 57600 baud (BR pins 1 2 3 = 111) = 57600 bit/s = 57.6 bit/ms
@@ -165,6 +168,7 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
 
         // http://www.beyondlogic.org/usbnutshell/usb5.shtml
         this.inEP = antInterface.endpoints[0]; // Control endpoint
+       
         //if (this.inEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
         //    inTransferType = "BULK (" + this.inEP.transferType + ')';
 
@@ -178,7 +182,8 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         // console.log("Claiming interface");
         antInterface.claim(); // Must call before attempting transfer on endpoints
 
-        this.emit(USBDevice.prototype.EVENT.LOG, "Endpoint 0 (bMaxPacketSize0 descriptor) packet size is "+this.device.deviceDescriptor.bMaxPacketSize0+" bytes");
+        this.emit(USBDevice.prototype.EVENT.LOG, "RX Endpoint IN (ANT -> HOST) wMaxPacketSize: " + this.inEP.descriptor.wMaxPacketSize + " bytes");
+        this.emit(USBDevice.prototype.EVENT.LOG, "TX Endpoint OUT(HOST -> ANT) wMaxPacketSize: " + this.outEP.descriptor.wMaxPacketSize + " bytes");
 
 
         //this.listen();

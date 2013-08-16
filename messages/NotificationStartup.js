@@ -85,14 +85,14 @@ NotificationStartup.prototype.parse = function () {
         //code = NotificationStartup.prototype.SUSPEND_RESET.CODE;
     }
 
-    this.message = msg;
+    this.message = { 'text': msg };
 
     return this.message;
 
 };
 
 NotificationStartup.prototype.toString = function () {
-    return this.name +" 0x"+this.id.toString(16)+" " + this.length+" "+this.message;
+    return this.name +" 0x"+this.id.toString(16)+" " + this.length+" "+this.message.text;
 }
 
 module.exports = NotificationStartup;
