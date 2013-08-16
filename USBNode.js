@@ -83,6 +83,10 @@ USBNode.prototype.getOUTEndpointPacketSize = function () {
     return this.outEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
 },
 
+USBNode.prototype.getDirectANTChipCommunicationTimeout = function () {
+    return USBNode.prototype.ANT_DEVICE_TIMEOUT;
+}
+
 // ANT CHIP serial interface configured at 57600 baud (BR pins 1 2 3 = 111) = 57600 bit/s = 57.6 bit/ms
 // Sends : 1 start bit + 8 data bits + 1 stop bits = 10 bit/byte
 // 57.6 bit/ms / 10 bit/byte = 5.76 byte/ms
@@ -262,7 +266,7 @@ function drainLIBUSB(nextCB) {
         drainAttempt++;
         //console.log("Drain attempt", drainAttempt);
 
-        this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
+        this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
 
             if (data.length > 0)
                 totalBytesDrained += data.length;
@@ -298,7 +302,7 @@ USBNode.prototype.listen = function (nextCB) {
             this.setDeviceTimeout(INFINITY);
          
             //console.time('RXtime');
-            this.inTransfer = this.inEP.transfer(USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, function (error, data) {
+            this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
                 //console.timeEnd('RXtime')
                 console.log('RX', data);
                // console.log("IN USB error,data", error, data);

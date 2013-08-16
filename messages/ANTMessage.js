@@ -212,8 +212,7 @@ ANTMessage.prototype.MESSAGE = {
     //0x54: "Capabilities",
     CAPABILITIES:  0x54,
 
-    0x61: "Device serial number",
-    device_serial_number: { id: 0x61, friendly: "Device Serial Number" },
+    DEVICE_SERIAL_NUMBER:  0x61,
 
     // Request/response
 

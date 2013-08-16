@@ -8,7 +8,8 @@
     NotificationSerialError = require('./messages/NotificationSerialError.js'),
 
      CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
-    ANTVersionMessage = require('./messages/ANTVersionMessage.js');
+    ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
+    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js');
 
 util.inherits(ParseANTResponse, Transform);
 
@@ -306,25 +307,28 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-            var version = new ANTVersionMessage(data);
+            var versionMsg = new ANTVersionMessage(data);
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, version))
-                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + version.toString());
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, versionMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + versionMsg.toString());
 
             break;
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            var capabilities = new CapabilitiesMessage(data);
+            var capabilitiesMsg = new CapabilitiesMessage(data);
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, capabilities))
-                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + capabilities.toString());
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, capabilitiesMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + capabilitiesMsg.toString());
 
             break;
 
-        case ANTMessage.prototype.MESSAGE.device_serial_number.id:
-            if (!antInstance.emit(ParseANTResponse.prototype.EVENT.DEVICE_SERIAL_NUMBER, data))
-                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.DEVICE_SERIAL_NUMBER");
+        case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
+           
+            var serialNumberMsg = new DeviceSerialNumberMessage(data);
+
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, serialNumberMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + serialNumberMsg.toString());
 
             break;
 

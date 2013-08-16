@@ -15,11 +15,12 @@ var events = require('events'),
     RequestMessage = require('./messages/RequestMessage.js'),
     CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
     ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
-   
+    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
     DeFrameTransform = require('./messages/DeFrameTransform.js'),
         
+    // Parsing of ANT messages received
     ParseANTResponse = require('./ParseANTResponse.js');
         
 // Low level API/interface to ANT chip
@@ -30,12 +31,7 @@ function Host() {
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
 
-    //this.CHIPQueue = {}; // Queue of request sent directly to the ANT chip
-
     this._mutex = {};
-
-    this.timeoutID = {};
-
     
 }
 
@@ -439,53 +435,8 @@ Host.prototype.parse_extended_message = function (channelNr,data) {
 
 
 
-// Get device serial number if available
-Host.prototype.parseDeviceSerialNumber = function (data) {
-    // SN 4 bytes Little Endian
-    var sn = data.readUInt32LE(3),
-      msg = "ANT device serial number: " + sn,
-        self = this;
 
-    if (typeof self.serialNumber === "undefined")
-        self.serialNumber = sn;
-    else {
-        this.emit(Host.prototype.EVENT.LOG_MESSAGE, "Overwriting previously defined serial number for device : "+ self.serialNumber+ "read new serial number:"+ sn);
-        self.serialNumber = sn;
-    }
 
-    this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
-
-    return sn;
-};
-
-Host.prototype.getDeviceSerialNumber = function (callback) {
-    var msgId;
-    var self = this;
-
-    if (typeof self.capabilities === "undefined") {
-        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "getCapabilities should be run first to determine if device supports serial number");
-    } else if (self.capabilities.options.CAPABILITIES_SERIAL_NUMBER_ENABLED)
-        self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.device_serial_number.id),
-            Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-            //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.device_serial_number.id); },
-            function error() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to get device serial number"); callback(); },
-            function success() {
-                self.read(Host.prototype.ANT_DEVICE_TIMEOUT, callback,
-               function success(data) {
-                   var msgId = data[2];
-                   if (msgId !== ANTMessage.prototype.MESSAGE.device_serial_number.id)
-                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected device serial number message response");
-
-                   self.parse_response(data);
-                   if (typeof callback === "function")
-                       callback.call(self);
-                   else
-                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no callback after getDeviceSerialNumber");
-               });
-            });
-    else
-        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not have a serial number");
-};
 
 Host.prototype.getChannelStatus = function (channelNr, errorCallback, successCallback) {
     var msgId, self = this;
@@ -604,19 +555,55 @@ Host.prototype.resetSystem = function (callback) {
 // Get device version
 Host.prototype.getANTVersion = function (callback) {
 
-    var msg = new ANTVersionMessage();
+    var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.ANT_VERSION)).getBuffer()
 
-    scheduleRetryMessage.bind(this)(msg.toBuffer(), callback, 'Failed to get version of ANT device');
+    scheduleRetryMessage.bind(this)(msg, callback, 'Failed to get version of ANT device');
 
 };
 
 // Get device capabilities
 Host.prototype.getCapabilities = function (callback) {
 
-    var msg = new CapabilitiesMessage();
+    var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.CAPABILITIES)).getBuffer()
 
-    scheduleRetryMessage.bind(this)(msg.toBuffer(), callback, 'Failed to get capabilities of ANT device');
+    scheduleRetryMessage.bind(this)(msg, callback, 'Failed to get capabilities of ANT device');
 };
+
+
+Host.prototype.getDeviceSerialNumber = function (callback) {
+
+
+    //if (typeof self.capabilities === "undefined") {
+    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "getCapabilities should be run first to determine if device supports serial number");
+    //} else if (self.capabilities.options.CAPABILITIES_SERIAL_NUMBER_ENABLED)
+    //    self.sendOnly(self.request(undefined, ANTMessage.prototype.MESSAGE.device_serial_number.id),
+    //        Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
+    //        //function validation(data) { msgId = data[2]; return (msgId === ANTMessage.prototype.MESSAGE.device_serial_number.id); },
+    //        function error() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to get device serial number"); callback(); },
+    //        function success() {
+    //            self.read(Host.prototype.ANT_DEVICE_TIMEOUT, callback,
+    //           function success(data) {
+    //               var msgId = data[2];
+    //               if (msgId !== ANTMessage.prototype.MESSAGE.device_serial_number.id)
+    //                   self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected device serial number message response");
+
+    //               self.parse_response(data);
+    //               if (typeof callback === "function")
+    //                   callback.call(self);
+    //               else
+    //                   self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no callback after getDeviceSerialNumber");
+    //           });
+    //        });
+    //else
+    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not have a serial number");
+
+    var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER)).getBuffer()
+    console.log("D", msg);
+
+    scheduleRetryMessage.bind(this)(msg, callback, 'Failed to get ANT device serial number');
+
+};
+
 
 function scheduleRetryMessage(buffer, callback, errorMsg, callbackDelay) {
     //console.trace();
@@ -647,7 +634,7 @@ function scheduleRetryMessage(buffer, callback, errorMsg, callbackDelay) {
         if (retryAttempt < maxRetry) {
             timeoutID = setTimeout(function () {
                 process.nextTick(retry.bind(this));
-            }.bind(this), 30);
+            }.bind(this), (this.usb.getDirectANTChipCommunicationTimeout()*2+5));
         }
         else
             callback(new Error(errorMsg));
@@ -826,7 +813,7 @@ function scheduleRetryMessage(buffer, callback, errorMsg, callbackDelay) {
         
         this.addListener(Host.prototype.EVENT.CHANNEL_STATUS, this.parseChannelStatus);
         this.addListener(Host.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
-        this.addListener(Host.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
+        //this.addListener(Host.prototype.EVENT.DEVICE_SERIAL_NUMBER, this.parseDeviceSerialNumber);
         //this.addListener(Host.prototype.EVENT.ANT_VERSION, this.parseANTVersion);
         //this.addListener(Host.prototype.EVENT.CAPABILITIES, this.parseCapabilities);
 
@@ -849,14 +836,27 @@ function scheduleRetryMessage(buffer, callback, errorMsg, callbackDelay) {
                 this.resetSystem(function (error, notification) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
-
+                        this.startupNotification = notification;
                         this.getCapabilities(function (error, capabilities) {
                             if (!error) {
+                                this.capabilities = capabilities;
+                                //console.log(capabilities);
                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
-
+                                // TO DO : setup max. channel configurations
                                this.getANTVersion(function (error, version) {
-                                    if (!error)
+                                    if (!error) {
                                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
+                                       
+                                        if (this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) {
+                                            this.getDeviceSerialNumber(function (error, serialNumberMsg) {
+                                                if (!error) {
+                                                    this.deviceSerialNumber = serialNumberMsg.serialNumber;
+                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
+                                                } else
+                                                    nextCB(error)
+                                            }.bind(this));
+                                        }
+                                    }
                                     else
                                         nextCB(error);
                                }.bind(this));

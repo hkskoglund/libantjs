@@ -1,4 +1,5 @@
 ﻿"use strict"
+
 var ANTMessage = require('./ANTMessage.js');
 
 // p.89 "ANT Message Protocol and Usage, rev 5.0b"
