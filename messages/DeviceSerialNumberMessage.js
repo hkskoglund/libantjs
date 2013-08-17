@@ -1,12 +1,12 @@
 ﻿"use strict"
 var  ANTMessage = require('./ANTMessage.js')
 
-function DeviceSerialNumberMessage(data) {
+function DeviceSerialNumberMessage() {
 
-    if (typeof data !== "undefined") {
-        ANTMessage.call(this, data);
-        this.parse();
-    } else 
+    //if (typeof data !== "undefined") {
+    //    ANTMessage.call(this, data);
+    //    this.parse();
+    //} else 
         ANTMessage.call(this);
 
     this.id = ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER;

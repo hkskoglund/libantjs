@@ -2,12 +2,12 @@
 var ANTMessage = require('./ANTMessage.js'),
     RequestMessage = require('./RequestMessage.js');
 
-function CapabilitiesMessage(data) {
+function CapabilitiesMessage() {
 
-    if (typeof data !== "undefined") {
-        ANTMessage.call(this, data);
-        this.parse();
-    } else
+    //if (typeof data !== "undefined") {
+    //    ANTMessage.call(this, data);
+    //    this.parse();
+    //} else
         ANTMessage.call(this);
 
     this.name = "Capabilities";

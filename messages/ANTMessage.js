@@ -9,8 +9,8 @@ function ANTMessage(data) {
    
    // initStream.bind(this)();
 
-    this.timestamp = Date.now();
-    this.SYNC = ANTMessage.prototype.SYNC;
+   // this.timestamp = Date.now();
+   // this.SYNC = ANTMessage.prototype.SYNC;
 
     if (data) {
         this.buffer = data;
@@ -25,7 +25,7 @@ function ANTMessage(data) {
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
-ANTMessage.prototype.FILLER_BYTE = new Buffer([0]);
+ANTMessage.prototype.FILLER_BYTE_BUFFER = new Buffer([0]);
 
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);
@@ -41,30 +41,37 @@ ANTMessage.prototype.toString = function () {
         " CRC 0x" + this.CRC.toString(16)+" = "+this.CRC;
 }
 
+ANTMessage.prototype.getContent = function () {
+    return this.content;
+}
+
+ANTMessage.prototype.setContent = function (content) {
+    this.content = content;
+}
 /*
 This function create a raw message 
-// Message format
-// SYNC MSG_LENGTH MSG_ID MSG_CONTENT (byte  0 - N -1) Checksum
-// SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
-// CheckSUM = XOR of all bytes in message
-Content = Buffer
-// Sending of LSB first = little endian NB!
-*/
+ Message format
+ SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
 
-ANTMessage.prototype.create = function (content) {
+ SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
+ CRC = XOR of all bytes in message
+ Sending of LSB first = little endian NB!
+*/
+ANTMessage.prototype.getRawMessage = function () {
     var
      headerBuffer = new Buffer(3),
      messageBuffer,
      trailingZeroBuffer,
+     content,
      content_len,
      byteNr;
     
-
+    
   //  console.log("args", arguments);
 
     // TEST 3 - provoke "ANT Message too large" 
     //content = new Buffer(200);
-    this.content = content;
+    content = this.content;
     if (content)
         content_len = content.length;
     else {
@@ -127,7 +134,7 @@ ANTMessage.prototype.create = function (content) {
     }
 
     
-    this.SYNC = ANTMessage.prototype.SYNC;
+    //this.SYNC = ANTMessage.prototype.SYNC;
     this.length = content_len;
 
     return this.buffer;
@@ -219,21 +226,19 @@ ANTMessage.prototype.MESSAGE = {
     //0x4d: "Request",
     REQUEST: 0x4D,
 
-    0x40: "Channel response/event",
-    channel_response: { id: 0x40, friendly: "Channel Response/Event" },
-
-    0x52: "Channel Status",
-    channel_status: { id: 0x52, friendly: "Channel Status" },
-
-   
+    //0x40: "Channel response/event",
+    CHANNEL_RESPONSE:  0x40,
+    
+    CHANNEL_STATUS: 0x52,
 
     // Config messages
     // All conf. commands receive a response
     0x41: "Unassign channel",
     unassign_channel: { id: 0x41, friendly: "Unassign channel" },
 
-    0x42: "Assign channel",
-    assign_channel: { id: 0x42, friendly: "Assign channel" }, // Also sets additional parameters to defaults
+   
+    0x42 : "Assign Channel",
+    ASSIGN_CHANNEL:  0x42,
 
     0x46: "Set network key",
     set_network_key: { id: 0x46, friendly: "Set network key" },

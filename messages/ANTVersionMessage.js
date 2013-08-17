@@ -2,12 +2,12 @@
 var ANTMessage = require('./ANTMessage.js'),
     RequestMessage = require('./RequestMessage.js');
 
-function ANTVersionMessage(data) {
+function ANTVersionMessage() {
 
-    if (typeof data !== "undefined") {
-        ANTMessage.call(this, data);
-        this.parse();
-    } else
+    //if (typeof data !== "undefined") {
+    //    ANTMessage.call(this, data);
+    //    this.parse();
+    //} else
         ANTMessage.call(this);
 
     this.name = "ANT Version";
@@ -21,8 +21,8 @@ ANTVersionMessage.prototype = Object.create(ANTMessage.prototype);
 ANTVersionMessage.prototype.constructor = ANTVersionMessage;
 
 ANTVersionMessage.prototype.parse = function () {
-
-    this.version = this.content.slice(0,-1).toString('utf8'); // Content is a 11 - bytes null terminated string - strip off the null
+   
+      this.version = this.content.slice(0,-1).toString('utf8'); // Content is a 11 - bytes null terminated string - strip off the null
 
    // return this.message;
 

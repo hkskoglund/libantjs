@@ -9,15 +9,13 @@ var Transform = require('stream').Transform,
  */
 
 function initStream() {
-    var rawMsg;
-    this._stream = new Transform();
+   
+    // Object mode is enabled to allow for passing message objects downstream/TX, from here the message is transformed into a buffer and sent down the pipe to usb
+    // Sending directly to the usb stream as a buffer would have been somewhat more performant
+    this._stream = new Transform({ objectMode: true });
 
-    this._stream._transform = function _transform(payload, encoding, callback) {
-        //console.log(this);
-        //rawMsg = this.message.create(payload);
-        //console.log("OUT Transforming ", payload, "to", rawMsg);
-        this._stream.push(payload); // ECHO
-        
+    this._stream._transform = function _transform(message, encoding, callback) {
+        this._stream.push(message.getRawMessage()); 
         callback();
     }.bind(this);
 
@@ -33,10 +31,10 @@ function initStream() {
     //});
 }
 
+// Adds SYNC LENGTH ... CRC
 function FrameTransform () {
     //console.log("ANTMESSAGE", ANTMessage);
     initStream.bind(this)();
-    this.message = new ANTMessage();
    
 }
 

@@ -304,7 +304,8 @@ USBNode.prototype.listen = function (nextCB) {
             //console.time('RXtime');
             this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
                 //console.timeEnd('RXtime')
-                console.log('RX', data);
+                if (data && data.length > 0)
+                 console.log(Date.now(),'RX', data);
                // console.log("IN USB error,data", error, data);
                 if (!error) {
 
@@ -337,17 +338,14 @@ USBNode.prototype.write = function (chunk, nextCB)
         MAXATTEMPT = 5,
         err;
 
-  
-
-   
     function retry() {
         //console.trace();
         try {
             this.setDirectANTChipCommunicationTimeout();
-            console.log('TX', chunk);
-            console.time('TXtime');
+            console.log(Date.now(),'TX', chunk);
+            //console.time('TXtime');
             this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
-                console.timeEnd('TXtime')
+                //console.timeEnd('TXtime')
                  // Test LIBUSB transfer error
                 //error = {};
                 //if (sendAttempt === 3)

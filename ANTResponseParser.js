@@ -9,7 +9,10 @@
 
      CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
     ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
-    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js');
+    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
+     ChannelStatusMessage = require('./messages/ChannelStatusMessage.js'),
+     
+     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js');
 
 util.inherits(ParseANTResponse, Transform);
 
@@ -55,7 +58,7 @@ ParseANTResponse.prototype.showLog = function (msg)
 
 
 // Overview on p. 58 - ANT Message Protocol and Usage
-ParseANTResponse.prototype.parse_response = function (data) {
+ParseANTResponse.prototype.parse = function (data) {
    
     var ANTmsg = {
         SYNC: data[0],
@@ -233,58 +236,66 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
             // Channel event or responses
 
-        case ANTMessage.prototype.MESSAGE.channel_response.id:
+        case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
-            var channelResponseMessage = antInstance.parseChannelResponse(data);
+            //var channelResponseMessage = antInstance.parseChannelResponse(data);
 
-            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, channelResponseMessage);
+            //this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, channelResponseMessage);
 
 
-            msgStr += ANTMessage.prototype.MESSAGE.channel_response.friendly + " " + channelResponseMessage;
-            channelNr = data[3];
+            //msgStr += ANTMessage.prototype.MESSAGE.channel_response.friendly + " " + channelResponseMessage;
+            //channelNr = data[3];
 
-            // Handle retry of acknowledged data
-            if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_COMPLETED, data)) {
+            //// Handle retry of acknowledged data
+            //if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_COMPLETED, data)) {
 
-                if (antInstance.retryQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.retryQueue[channelNr].shift();
-                    clearTimeout(resendMsg.timeoutID); // No need to call timeout callback now
-                    if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-                        resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-                    else
-                        this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after acknowledged data");
-                    //console.log(Date.now() + " TRANSFER COMPLETE - removing from retry-queue",resendMsg);
-                }
+            //    if (antInstance.retryQueue[channelNr].length >= 1) {
+            //        resendMsg = antInstance.retryQueue[channelNr].shift();
+            //        clearTimeout(resendMsg.timeoutID); // No need to call timeout callback now
+            //        if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
+            //            resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
+            //        else
+            //            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after acknowledged data");
+            //        //console.log(Date.now() + " TRANSFER COMPLETE - removing from retry-queue",resendMsg);
+            //    }
 
-                if (antInstance.burstQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.burstQueue[channelNr].shift();
-                    if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-                        resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-                    else
-                        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after burst");
-                }
+            //    if (antInstance.burstQueue[channelNr].length >= 1) {
+            //        resendMsg = antInstance.burstQueue[channelNr].shift();
+            //        if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
+            //            resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
+            //        else
+            //            antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after burst");
+            //    }
 
-            } else if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_FAILED, data)) {
-                if (antInstance.retryQueue[channelNr].length >= 1) {
-                    resendMsg = antInstance.retryQueue[channelNr][0];
-                    this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending ACKNOWLEDGE message due to TX_FAILED, retry " + resendMsg.retry);
-                    resendMsg.retryCB();
-                }
+            //} else if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_FAILED, data)) {
+            //    if (antInstance.retryQueue[channelNr].length >= 1) {
+            //        resendMsg = antInstance.retryQueue[channelNr][0];
+            //        this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending ACKNOWLEDGE message due to TX_FAILED, retry " + resendMsg.retry);
+            //        resendMsg.retryCB();
+            //    }
 
-                if (antInstance.burstQueue[channelNr].length >= 1) {
-                    burstMsg = antInstance.burstQueue[channelNr][0];
-                    this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending BURST message due to TX_FAILED " + burstMsg.message.friendlyName + " retry " + burstMsg.retry);
-                    burstMsg.retryCB();
-                }
-            }
+            //    if (antInstance.burstQueue[channelNr].length >= 1) {
+            //        burstMsg = antInstance.burstQueue[channelNr][0];
+            //        this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending BURST message due to TX_FAILED " + burstMsg.message.friendlyName + " retry " + burstMsg.retry);
+            //        burstMsg.retryCB();
+            //    }
+            //}
 
-            // Call channel event/response-handler for each channel
+            //// Call channel event/response-handler for each channel
 
-            // OLD-way of calling callback antInstance.channelConfiguration[channelNr].channelResponseEvent(data);
+            //// OLD-way of calling callback antInstance.channelConfiguration[channelNr].channelResponseEvent(data);
 
-            // console.log("Channel response/EVENT", channelNr, channelResponseMessage,antInstance.channelConfiguration[channelNr]);
-            antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
+            //// console.log("Channel response/EVENT", channelNr, channelResponseMessage,antInstance.channelConfiguration[channelNr]);
+            //antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
 
+            var channelResponseMsg = new ChannelResponseMessage();
+            channelResponseMsg.setContent(data.slice(3, 3 + data[1]));
+            channelResponseMsg.parse();
+            //console.log("resp", channelResponseMsg);
+
+            // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelResponseMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
 
             break;
 
@@ -292,9 +303,17 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
             // Channel specific 
 
-        case ANTMessage.prototype.MESSAGE.channel_status.id:
-            if (!antInstance.emit(ParseANTResponse.prototype.EVENT.CHANNEL_STATUS, data))
-                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.CHANNEL_STATUS");
+        case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
+            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.CHANNEL_STATUS, data))
+            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.CHANNEL_STATUS");
+
+            var channelStatusMsg = new ChannelStatusMessage();
+            channelStatusMsg.setContent(data.slice(3, 3 + data[1]));
+            channelStatusMsg.parse();
+            //console.log("status", channelStatusMsg);
+
+            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelStatusMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelStatus.toString());
 
             break;
 
@@ -307,7 +326,9 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-            var versionMsg = new ANTVersionMessage(data);
+            var versionMsg = new ANTVersionMessage();
+            versionMsg.setContent(data.slice(3, 3 + data[1]));
+            versionMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, versionMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + versionMsg.toString());
@@ -316,7 +337,9 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            var capabilitiesMsg = new CapabilitiesMessage(data);
+            var capabilitiesMsg = new CapabilitiesMessage();
+            capabilitiesMsg.setContent(data.slice(3, 3 + data[1]));
+            capabilitiesMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, capabilitiesMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + capabilitiesMsg.toString());
@@ -325,7 +348,9 @@ ParseANTResponse.prototype.parse_response = function (data) {
 
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
            
-            var serialNumberMsg = new DeviceSerialNumberMessage(data);
+            var serialNumberMsg = new DeviceSerialNumberMessage();
+            serialNumberMsg.setContent(data.slice(3, 3 + data[1]));
+            serialNumberMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, serialNumberMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + serialNumberMsg.toString());
@@ -343,14 +368,14 @@ ParseANTResponse.prototype.parse_response = function (data) {
     var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
     if (data.length > nextExpectedSYNCIndex) {
         // console.log(data.slice(nextExpectedSYNCIndex));
-        this.parse_response(data.slice(nextExpectedSYNCIndex));
+        this.parse(data.slice(nextExpectedSYNCIndex));
     }
 
 };
 
-ParseANTResponse.prototype._transform = function (chunk, encoding, nextCB) {
-    this.parse_response(chunk);
-    this.push(chunk); // Allows for more pipes
+ParseANTResponse.prototype._transform = function (response, encoding, nextCB) {
+    this.parse(response);
+    this.push(response); // Allows for more pipes
     nextCB();
 }
 

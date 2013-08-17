@@ -4,12 +4,12 @@ var ANTMessage = require('./ANTMessage.js');
 
 // p.89 "ANT Message Protocol and Usage, rev 5.0b"
 // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
-function RequestMessage(channel, requestMessageId, NVMaddr, NVMsize) {
+function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
 
-    if (!requestMessageId)
+    if (!requestedMessageId)
         throw new TypeError('no request message id. specified');
 
-    var msgBuffer = new Buffer([channel || 0, requestMessageId]);
+    var msgBuffer = new Buffer([channel || 0, requestedMessageId]);
 
     ANTMessage.call(this);
 
@@ -17,7 +17,7 @@ function RequestMessage(channel, requestMessageId, NVMaddr, NVMsize) {
     this.name = "Request";
 
 
-    // NVM
+    // Non Volatile Memory 
     if (typeof NVMaddr !== "undefined" && typeof NVMsize !== "undefined") {
         var NVM_Buffer;
 
@@ -29,7 +29,7 @@ function RequestMessage(channel, requestMessageId, NVMaddr, NVMsize) {
 
     } 
     
-    this.create(msgBuffer);
+    this.setContent(msgBuffer)
 
     // console.log("RequestMessage", this);
 
