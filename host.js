@@ -11,6 +11,8 @@ var events = require('events'),
     // Control ANT
     ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
 
+     NotificationStartup = require('./messages/NotificationStartup.js'),
+
     // Request -response
     RequestMessage = require('./messages/RequestMessage.js'),
     CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
@@ -20,12 +22,13 @@ var events = require('events'),
     // Configuration
 
     AssignChannelMessage = require('./messages/AssignChannelMessage.js'),
+    ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
     DeFrameTransform = require('./messages/DeFrameTransform.js'),
         
     // Parsing of ANT messages received
-    ResponseParser = require('./ParseANTResponse.js');
+    ResponseParser = require('./ANTResponseParser.js');
         
 // Low level API/interface to ANT chip
 function Host() {
@@ -311,9 +314,14 @@ Host.prototype.resetSystem = function (callback) {
     var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing with callbacks...
     var msg = new ResetSystemMessage();
 
-    scheduleRetryMessage.bind(this)(msg, function (error,message) { 
-        setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT,error,message);
-    }.bind(this), 'Failed to reset ANT device');
+    scheduleRetryMessage.bind(this)(msg, function (error, message) {
+        setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, message);
+    }.bind(this), function _validateResponseMessage(message) {
+        if (message instanceof NotificationStartup)
+            return true;
+        else
+            return false;
+    }.bind(this));
 };
 
 // Send a request for ANT version
@@ -386,35 +394,49 @@ Host.prototype.getChannelStatus = function (channelNr, callback) {
         }.bind(this));
 };
 
-// Send a message, if a reply is not received, it will try 5 more times
-function scheduleRetryMessage(message,callback) {
+// Send a message, if a reply is not received, it will retry for 500ms. Optionally runs a validator func. that returns true if the response is valid
+function scheduleRetryMessage(sendMessage,callback,validator) {
     //console.trace();
     //console.log("ARGS", arguments);
-    var retryAttempt = 0,
-        maxRetry = 5,
-        timeoutID,
-        listener = function (message) {
-            this._responseParser.removeListener(ResponseParser.prototype.EVENT.REPLY, listener);
-            //console.timeEnd('SEND');
-            clearTimeout(timeoutID);
-            //console.log("Got reply", message);
-            callback(undefined, message);
+    var timeoutID,
+        startTimestamp,
+        currentTimestamp,
+        MAX_TIMESTAMP_DIFF = 500, // Wait 500 ms before creating error for failed response f ANT
+        // Listener for responses
+        listener = function (responseMessage) {
+            var processCB = function () {
+                this._responseParser.removeListener(ResponseParser.prototype.EVENT.REPLY, listener);
+                //console.timeEnd('SEND');
+                clearTimeout(timeoutID);
+                //console.log("Got reply", message);
+                callback(undefined, responseMessage);
+            }.bind(this);
+
+            if (!validator)
+                processCB();
+            else if (typeof validator === "function" && validator(responseMessage))  // Run validator for response, i.e Reset system control command -> Notification startup response, conf. command Assign -> channel response NO error
+                processCB();
+            else
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed validation: '+ responseMessage.toString());
+                
         }.bind(this);
 
     this._responseParser.on(ResponseParser.prototype.EVENT.REPLY, listener);
 
     function retry() {
-        this._TXstream.push(message); // TX -> generates a "readable" thats piped into FrameTransform
-        if (retryAttempt < maxRetry) {
-            timeoutID = setTimeout(function () {
-                retryAttempt++;
-                process.nextTick(retry.bind(this));
-            }.bind(this), (this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5));
-        }
+
+        currentTimestamp = Date.now();
+
+        this._TXstream.push(sendMessage); // TX -> generates a "readable" thats piped into FrameTransform
+
+        if ((currentTimestamp - startTimestamp) <= MAX_TIMESTAMP_DIFF)
+            // http://nodejs.org/api/timers.html
+            timeoutID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)) }.bind(this), (this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5));
         else
-            callback(new Error('Failed to get reply for message'));
+            callback(new Error('Failed to get reply for message in '+MAX_TIMESTAMP_DIFF+" ms."));
     }
 
+    startTimestamp = Date.now();
     retry.bind(this)();
 
 }
@@ -845,6 +867,16 @@ function resetANTreceiveStateMachine(callback)
     
     };
 
+// Used to validate configuration commands 
+    function validateResponseNoError(message,msgRequestId) {
+        //console.log("args", arguments);
+        if (message instanceof ChannelResponseMessage && message.getRequestMessageId() === msgRequestId && message.getMessageCode() === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR)
+            return true;
+        else
+            return false;
+    }
+
+
 // Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
     Host.prototype.assignChannel = function (channelNr, channelType, networkNumber, extend, callback) {
 
@@ -864,7 +896,7 @@ function resetANTreceiveStateMachine(callback)
 
         verifyChannelNr.bind(this)(channelNr);
 
-        var msg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
+        var requestMsg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
 
         var cb;
         if (typeof extend === "function")
@@ -872,12 +904,14 @@ function resetANTreceiveStateMachine(callback)
         else
             cb = callback;
 
-        scheduleRetryMessage.bind(this)(msg, function (error, message) {
+        scheduleRetryMessage.bind(this)(requestMsg, function (error, responseMessage) {
             if (error)
                 cb('Failed to assign channel nr. ' + channelNr)
             else
-                cb(undefined, message);
-        }.bind(this));
+                cb(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, requestMsg.getMessageId());
+        });
         
     };
 

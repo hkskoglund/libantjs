@@ -289,13 +289,14 @@ ParseANTResponse.prototype.parse = function (data) {
             //antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
 
             var channelResponseMsg = new ChannelResponseMessage();
+            //TEST provoking EVENT_CHANNEL_ACTIVE
+            //data[5] = 0xF;
             channelResponseMsg.setContent(data.slice(3, 3 + data[1]));
             channelResponseMsg.parse();
-            //console.log("resp", channelResponseMsg);
 
             // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelResponseMsg))
-                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
+            //if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelResponseMsg))
+            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
 
             break;
 

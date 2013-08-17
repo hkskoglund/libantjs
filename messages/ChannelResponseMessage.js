@@ -52,6 +52,11 @@ ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES = {
     EVENT_TRANSFER_TX_START: 0x0A,
     0x0A: "EVENT_TRANSFER_TX_START",
 
+    // Found in antdefines.h of ANT-FS PC Tools SDK (ANTFS_PC_Tools_src\antfs_pc_tools_src_v1.3.0\ANTFSHostDemo\ANT_LIB\inc), not mentioned in rev 5.0b ANT Message Protocol and Usage
+    // Seen on testing multiple retries of assign channel command nRF24AP2 USB
+    EVENT_CHANNEL_ACTIVE: 0x0F,
+    0x0F : "EVENT_CHANNEL_ACTIVE",
+
     EVENT_TRANSFER_NEXT_DATA_BLOCK: 0x11,
     0x11 :"EVENT_TRANSFER_NEXT_DATA_BLOCK",
 
@@ -118,6 +123,14 @@ ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES = {
     ENCRYPT_NEGOTIATION_FAIL: 0x39,
     0x39:  "ENCRYPT_NEGOTIATION_FAIL" ,
 };
+
+ChannelResponseMessage.prototype.getRequestMessageId = function () {
+    return this.content[1];
+}
+
+ChannelResponseMessage.prototype.getMessageCode = function () {
+    return this.content[2];
+}
 
 ChannelResponseMessage.prototype.parse = function () {
    
