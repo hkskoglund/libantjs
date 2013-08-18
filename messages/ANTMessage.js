@@ -232,37 +232,37 @@ ANTMessage.prototype.MESSAGE = {
     CHANNEL_STATUS: 0x52,
 
     // Config messages
-    // All conf. commands receive a response
-    0x41: "Unassign channel",
-    unassign_channel: { id: 0x41, friendly: "Unassign channel" },
+    // All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
 
+    0x41: "UnAssign Channel",
+    UNASSIGN_CHANNEL: 0x41,
    
     0x42 : "Assign Channel",
-    ASSIGN_CHANNEL:  0x42,
+    ASSIGN_CHANNEL: 0x42,
+
+    0x51: "Set Channel ID",
+    SET_CHANNEL_ID: 0x51,
 
     0x46: "Set network key",
-    set_network_key: { id: 0x46, friendly: "Set network key" },
+    SET_NETWORK_KEY: 0x46,
 
-    0x47: "Transmit power",
-    transmit_power: { id: 0x47, friendly: "Transmit power" },
+    0x47: "Set transmit power",
+    SET_TRANSMIT_POWER:  0x47,
 
-    0x51: "Channel ID",
-    set_channel_id: { id: 0x51, friendly: "Set channel id" },
-
-    0x43: "Channel period (Tch)",
-    set_channel_messaging_period: { id: 0x43, friendly: "Set Channel Messaging Period" },
+    0x43: "Set channel period (Tch)",
+    SET_CHANNEL_MESSAGING_PERIOD:  0x43,
 
     0x63: "Low priority (LP) search timeout",
     set_low_priority_channel_search_timeout: { id: 0x63, friendly: "Set low priority (LP) Channel Search Timeout" },
 
     0x44: "High priority (HP) search timeout",
-    set_channel_search_timeout: { id: 0x44, friendly: "Set High priority (HP) Channel Search Timeout" },
+    SET_CHANNEL_SEARCH_TIMEOUT:  0x44,
 
     0x45: "Channel RF frequency",
-    set_channel_RFFreq: { id: 0x45, friendly: "Set Channel RF Frequency" },
+    SET_CHANNEL_RFFREQ:  0x45,
 
-    0x49: "Search waveform",
-    set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
+    //0x49: "Search waveform",
+    //set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
 
     0x75: "Channel Search Priority",
     set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },

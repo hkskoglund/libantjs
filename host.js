@@ -14,14 +14,24 @@ var events = require('events'),
      NotificationStartup = require('./messages/NotificationStartup.js'),
 
     // Request -response
+
     RequestMessage = require('./messages/RequestMessage.js'),
-    CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
-    ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
-    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
+
+        CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
+        ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
+        DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
 
     // Configuration
 
     AssignChannelMessage = require('./messages/AssignChannelMessage.js'),
+    UnAssignChannelMessage = require('./messages/UnAssignChannelMessage.js'),
+    SetChannelIDMessage = require('./messages/SetChannelIDMessage.js'),
+    SetChannelPeriodMessage = require('./messages/SetChannelPeriodMessage.js'),
+    SetChannelSearchTimeoutMessage = require('./messages/SetChannelSearchTimeoutMessage.js'),
+    SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage.js'),
+    SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage.js'),
+    SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage.js'),
+
     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
@@ -30,7 +40,6 @@ var events = require('events'),
     // Parsing of ANT messages received
     ResponseParser = require('./ANTResponseParser.js');
         
-// Low level API/interface to ANT chip
 function Host() {
     events.EventEmitter.call(this);
     this._responseParser = new ResponseParser();
@@ -75,13 +84,13 @@ Host.prototype.EVENT = {
     LOG_MESSAGE: 'logMessage',
     ERROR : 'error',
 
-    SET_CHANNEL_ID: 'setChannelId',
+    //SET_CHANNEL_ID: 'setChannelId',
 
     // Data
     BROADCAST: 'broadcast',
     BURST: 'burst',
 
-    CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
+    //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
 };
 
@@ -211,14 +220,14 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
     this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
 
 
-    this._responseParser.addListener(ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR, function (notification) {
+    this._responseParser.addListener(ResponseParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
         //nextCB(new Error(notification.toString()));
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
     }.bind(this));
 
 
     
-    this.addListener(Host.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
+    //this.addListener(Host.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
    
 
     this.usb.init(vendor, product, function _usbInitCB(error) {
@@ -262,6 +271,46 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                                 this.assignChannel(0,0x00,0,undefined, function (error, response) {
                                                     if (!error) {
                                                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+
+                                                            this.setChannelId(0,0,248,1, function (error, response) {
+                                                                if (!error) {
+                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+
+                                                                    this.setChannelPeriod(0, 8192, function (error, response) {
+                                                                        if (!error) {
+                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+
+                                                                            this.setChannelSearchTimeout(0, 24, function (error, response) {
+                                                                                if (!error) {
+                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+
+                                                                                    this.setChannelRFFreq(0, 57, function (error, response) {
+                                                                                        if (!error) {
+                                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+
+                                                                                            this.setTransmitPower(2, function (error, response) {
+                                                                                                if (!error) {
+                                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                                                                }
+                                                                                                else
+                                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                                                            }.bind(this));
+                                                                                        }
+                                                                                        else
+                                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                                                    }.bind(this));
+                                                                                }
+                                                                                else
+                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                                            }.bind(this));
+                                                                        }
+                                                                        else
+                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                                    }.bind(this));
+                                                                }
+                                                                else
+                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            }.bind(this));
                                                     }
                                                     else
                                                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
@@ -314,13 +363,8 @@ Host.prototype.resetSystem = function (callback) {
     var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing with callbacks...
     var msg = new ResetSystemMessage();
 
-    scheduleRetryMessage.bind(this)(msg, function (error, message) {
+    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.NOTIFICATION_STARTUP, function (error, message) {
         setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, message);
-    }.bind(this), function _validateResponseMessage(message) {
-        if (message instanceof NotificationStartup)
-            return true;
-        else
-            return false;
     }.bind(this));
 };
 
@@ -329,7 +373,7 @@ Host.prototype.getANTVersion = function (callback) {
 
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
-    scheduleRetryMessage.bind(this)(msg, function (error,message) {
+    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.ANT_VERSION, function (error,message) {
         if (error)
             callback('Failed to get version of ANT device')
         else
@@ -343,7 +387,7 @@ Host.prototype.getCapabilities = function (callback) {
 
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.CAPABILITIES));
 
-    scheduleRetryMessage.bind(this)(msg, function (error,message) {
+    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CAPABILITIES, function (error,message) {
         if (error)
             callback('Failed to get capabilities of ANT device')
         else
@@ -357,7 +401,8 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
 
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER))
 
-    scheduleRetryMessage.bind(this)(msg, 
+
+    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.DEVICE_SERIAL_NUMBER,
         function (error,message) {
             if (error)
                 callback('Failed to get ANT device serial number')
@@ -366,26 +411,46 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
         }.bind(this));
 };
 
-// Determine valid channel nr.
-function verifyChannelNr(channelNr) {
+// Determine valid channel/network
+function verifyRange(type,value,low,high) {
 
-    if (typeof channelNr === "undefined") 
-        throw new TypeError('Channel number specified is undefined');
+    if (typeof value === "undefined")
+        throw new TypeError('Number specified is undefined')
     
+    switch (type) {
+        case 'channel':
 
-    if (this.capabilities && (channelNr > (this.capabilities.MAX_CHAN - 1) || channelNr < 0)) 
-        throw new TypeError('Channel nr ' + channelNr + ' out of bounds');
-   
+            if (this.capabilities && (value > (this.capabilities.MAX_CHAN - 1) || value < 0))
+                throw new TypeError('Channel nr ' + value + ' out of bounds');
+
+            break;
+
+        case 'network':
+            if (this.capabilities && (value > (this.capabilities.MAX_NET - 1) || value < 0))
+                throw new TypeError('Network nr ' + value + ' out of bounds');
+
+            break;
+
+        case 'transmitPower':
+
+            if (value > high || value < low)
+                throw new TypeError('Transmit power out of bounds');
+
+            break;
+
+        default: throw new Error('Unknown type, cannot verify range');
+
+    }
 }
 
 // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
 Host.prototype.getChannelStatus = function (channelNr, callback) {
 
-    verifyChannelNr.bind(this)(channelNr);
+    verifyRange.bind(this)('channel',channelNr);
 
     var msg = (new RequestMessage(channelNr, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS))
 
-    scheduleRetryMessage.bind(this)(msg,
+    scheduleRetryMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,
         function (error, message) {
             if (error)
                 callback('Failed to get channel status for channel '+channelNr)
@@ -395,20 +460,23 @@ Host.prototype.getChannelStatus = function (channelNr, callback) {
 };
 
 // Send a message, if a reply is not received, it will retry for 500ms. Optionally runs a validator func. that returns true if the response is valid
-function scheduleRetryMessage(sendMessage,callback,validator) {
+function scheduleRetryMessage(sendMessage,event,callback,validator) {
     //console.trace();
     //console.log("ARGS", arguments);
     var timeoutID,
         startTimestamp,
         currentTimestamp,
-        MAX_TIMESTAMP_DIFF = 500, // Wait 500 ms before creating error for failed response f ANT
+        MAX_TIMESTAMP_DIFF = 500, // Wait 500 ms before creating error for failed response from ANT
+        listenerCalled = false,
         // Listener for responses
-        listener = function (responseMessage) {
-            var processCB = function () {
-                this._responseParser.removeListener(ResponseParser.prototype.EVENT.REPLY, listener);
-                //console.timeEnd('SEND');
+    listener = function (responseMessage) {
+           listenerCalled = true;
+            var processCB = function _processCB() {
+                //console.log(responseMessage.name);
+                this._responseParser.removeListener(event, listener);
+               
                 clearTimeout(timeoutID);
-                //console.log("Got reply", message);
+               
                 callback(undefined, responseMessage);
             }.bind(this);
 
@@ -416,12 +484,22 @@ function scheduleRetryMessage(sendMessage,callback,validator) {
                 processCB();
             else if (typeof validator === "function" && validator(responseMessage))  // Run validator for response, i.e Reset system control command -> Notification startup response, conf. command Assign -> channel response NO error
                 processCB();
-            else
-                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed validation: '+ responseMessage.toString());
+            else 
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed validation: ' + responseMessage.toString());
+            
                 
         }.bind(this);
+    
+    //console.log(this._responseParser._events);
 
-    this._responseParser.on(ResponseParser.prototype.EVENT.REPLY, listener);
+    this._responseParser.on(event, listener);
+    //var removeCB = function (type, listener) {
+    //    //console.trace();
+    //    console.log('Removed ' + type);
+    //    this._responseParser.removeListener('removeListener', removeCB);
+    //}.bind(this);
+
+    //this._responseParser.on('removeListener', removeCB);
 
     function retry() {
 
@@ -432,8 +510,35 @@ function scheduleRetryMessage(sendMessage,callback,validator) {
         if ((currentTimestamp - startTimestamp) <= MAX_TIMESTAMP_DIFF)
             // http://nodejs.org/api/timers.html
             timeoutID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)) }.bind(this), (this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5));
-        else
-            callback(new Error('Failed to get reply for message in '+MAX_TIMESTAMP_DIFF+" ms."));
+        else if (!listenerCalled) {
+            // This is mentioned in the spec., but probably occurs very rarely
+            // http://www.thisisant.com/forum/viewthread/4061/
+            // Flush ANT receive buffer - send 15 zero's
+            this._responseParser.removeListener(event, listener);
+
+            //var zeroMsg = new ANTMessage();
+            //zeroMsg.id = 0x00;
+            
+            var zeroBuffer = new Buffer(15);
+            
+            for (var i = 0; i < 15; i++)
+                zeroBuffer[i] = 0;
+            //zeroMsg.setContent(zeroBuffer);
+
+            // zeroMsg length is 24 bytes now
+            // NO SYNC gives Notification Serial Error - First byte not SYNC
+            // Longer than 24 bytes -> Notification Serial Error - ANT Message too long
+            this.usb.write(zeroBuffer, function (error) {
+                if (!error)
+                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Reset ANT receive state machine');
+                else
+                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed : Reset ANT receive state machine');
+            }.bind(this));
+
+            callback(new Error('No reply from ANT device'));
+
+        } else if (listenerCalled)
+            callback(new Error('Failed to validate reply for message '+sendMessage.name + MAX_TIMESTAMP_DIFF + " ms."));
     }
 
     startTimestamp = Date.now();
@@ -678,20 +783,6 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
         });
 };
 
-function resetANTreceiveStateMachine(callback)
-{
-// p.63 in spec; if a success/failure response is not received, the host should send ANT a series of 15 0' to reset ANT receive state machine
-    var resetStateMachineMsgContent = new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-        msg = new ResetSystemMessage();
-    msg.name = "Reset System - reset ANT receive state machine";
-    msg.create(resetStateMachineMsgContent);
-
-    //console.log("reset state machine", msg);
-
-     this._TXstream.write(msg.getBuffer(), 'buffer', callback); 
-}
-
-
 
     // Iterates from channelNrSeed and optionally closes channel
     Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
@@ -857,15 +948,6 @@ function resetANTreceiveStateMachine(callback)
 
     };
 
-    Host.prototype.setNetworkKey = function (channelNr, errorCallback, successCallback) {
-        var self = this;
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-
-        //console.log("Setting network key on net " + channel.network.number + " key: " + channel.network.key +" channel "+channel.number);
-
-        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.set_network_key, Buffer.concat([new Buffer([channel.network.number]), new Buffer(channel.network.key)])), ANTMessage.prototype.MESSAGE.set_network_key.id, errorCallback, successCallback);
-    
-    };
 
 // Used to validate configuration commands 
     function validateResponseNoError(message,msgRequestId) {
@@ -876,96 +958,137 @@ function resetANTreceiveStateMachine(callback)
             return false;
     }
 
+// Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
+    Host.prototype.unAssignChannel = function (channelNr, callback) {
 
-// Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel',channelNr);
+
+        configurationMsg = new UnAssignChannelMessage();
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to un-assign channel nr. ' + channelNr)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
+    }
+
+/* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
+ Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
+ also sets defaults values for RF, period, tx power, search timeout p.22 */
     Host.prototype.assignChannel = function (channelNr, channelType, networkNumber, extend, callback) {
+        var cb, configurationMsg;
 
-        //var channel = this.channelConfiguration[channelNr], self = this, message = new ANTMessage();
+        verifyRange.bind(this)('channel',channelNr);
 
-        ////console.log("Assign channel " + channel.number + " to channel type " + Channel.prototype.CHANNEL_TYPE[channel.channelType] + "(" +
-        ////    channel.channelType + ")" + " on network " + channel.network.number);
+        configurationMsg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
 
-        //// Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
-        //// also sets defaults values for RF, period, tx power, search timeout p.22
-        //if (typeof channel.extendedAssignment === "undefined") // i.e background scanning
-        //    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number])), ANTMessage.prototype.MESSAGE.assign_channel.id, errorCallback, successCallback);
-        //else if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_ASSIGN_ENABLED) {
-        //    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.assign_channel, new Buffer([channel.number, channel.channelType, channel.network.number, channel.extendedAssignment])), ANTMessage.prototype.MESSAGE.assign_channel.id, errorCallback, successCallback);
-        //} else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_ASSIGN_ENABLED)
-        //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended assignment");
-
-        verifyChannelNr.bind(this)(channelNr);
-
-        var requestMsg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
-
-        var cb;
+        
         if (typeof extend === "function")
             cb = extend; // If no extended assignment use parameter as callback
         else
             cb = callback;
 
-        scheduleRetryMessage.bind(this)(requestMsg, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
             if (error)
                 cb('Failed to assign channel nr. ' + channelNr)
             else
                 cb(undefined, responseMessage);
         }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, requestMsg.getMessageId());
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         });
         
     };
 
-    Host.prototype.setChannelId = function (channelNr, errorCallback, successCallback) {
 
-        //(false, 0, 0, 0, 0),  // Search, no pairing   
-        //                        DEFAULT_RETRY, ANT_DEVICE_TIMEOUT,
-        //                        function () { exit("Failed to set channel id.") },
-        // ANTWARE II - log file   1061.985 { 798221031} Tx - [A4][05][51][00][00][00][78][00][88][00][00]
+/* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
+"When the device number is fully known the pairing bit is ignored" (spec. p. 65)
+*/
+    Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
 
-        var set_channel_id_msg, self = this, message = new ANTMessage();
-        var channel = this.channelConfiguration[channelNr];
-        //console.log("Setting channel id. - channel number " + channel.number + " device type " + channel.deviceType + " transmission type " + channel.transmissionType);
+        ////(false, 0, 0, 0, 0),  // Search, no pairing   
+        ////                        DEFAULT_RETRY, ANT_DEVICE_TIMEOUT,
+        ////                        function () { exit("Failed to set channel id.") },
+        //// ANTWARE II - log file   1061.985 { 798221031} Tx - [A4][05][51][00][00][00][78][00][88][00][00]
 
-        var buf = new Buffer(5);
-        buf[0] = channel.number;
-        buf.writeUInt16LE(channel.channelID.deviceNumber, 1); // If slave 0 matches any device number / dev id.
-        // Seems like its not used at least for slave?  buf[3] = channel.deviceType & 0x80; // If bit 7 = 1 -> master = request pairing, slave = find pairing transmitter -> (pairing bit)
-        // Pairing bit-set in Channel object, if pairing requested deviceType = deviceType | 0x80;
-        buf[3] = channel.channelID.deviceType;
-        buf[4] = channel.channelID.transmissionType; // Can be set to zero (wildcard) on a slave device, spec. p. 18 ANT Message Protocol and Usage, rev 5.0
+        //var set_channel_id_msg, self = this, message = new ANTMessage();
+        //var channel = this.channelConfiguration[channelNr];
+        ////console.log("Setting channel id. - channel number " + channel.number + " device type " + channel.deviceType + " transmission type " + channel.transmissionType);
 
-        set_channel_id_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_id, buf);
+        //var buf = new Buffer(5);
+        //buf[0] = channel.number;
+        //buf.writeUInt16LE(channel.channelID.deviceNumber, 1); // If slave 0 matches any device number / dev id.
+        //// Seems like its not used at least for slave?  buf[3] = channel.deviceType & 0x80; // If bit 7 = 1 -> master = request pairing, slave = find pairing transmitter -> (pairing bit)
+        //// Pairing bit-set in Channel object, if pairing requested deviceType = deviceType | 0x80;
+        //buf[3] = channel.channelID.deviceType;
+        //buf[4] = channel.channelID.transmissionType; // Can be set to zero (wildcard) on a slave device, spec. p. 18 ANT Message Protocol and Usage, rev 5.0
 
-        this.sendAndVerifyResponseNoError(set_channel_id_msg, ANTMessage.prototype.MESSAGE.set_channel_id.id, errorCallback, successCallback);
+        //set_channel_id_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_id, buf);
+
+        //this.sendAndVerifyResponseNoError(set_channel_id_msg, ANTMessage.prototype.MESSAGE.set_channel_id.id, errorCallback, successCallback);
+
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel',channel);
+
+        configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set channel id for channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
 
     };
 
-    Host.prototype.setChannelPeriod = function (channelNr, errorCallback, successCallback) {
+    Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
 
-        var set_channel_period_msg, rate, self = this, message = new ANTMessage();
-        var channel = this.channelConfiguration[channelNr];
+        //var set_channel_period_msg, rate, self = this, message = new ANTMessage();
+        //var channel = this.channelConfiguration[channelNr];
    
-        var msg = "";
+        //var msg = "";
 
-        if (channel.isBackgroundSearchChannel())
-            msg = "(Background search channel)";
+        //if (channel.isBackgroundSearchChannel())
+        //    msg = "(Background search channel)";
 
-        //console.log("Set channel period for channel " + channel.number + " to " + channel.periodFriendly + " value: " + channel.period);
+        ////console.log("Set channel period for channel " + channel.number + " to " + channel.periodFriendly + " value: " + channel.period);
 
-        if (typeof channel.period !== "undefined") {
-            var buf = new Buffer(3);
-            buf[0] = channel.number;
-            buf.writeUInt16LE(channel.period, 1);
+        //if (typeof channel.period !== "undefined") {
+        //    var buf = new Buffer(3);
+        //    buf[0] = channel.number;
+        //    buf.writeUInt16LE(channel.period, 1);
 
-            set_channel_period_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_messaging_period, new Buffer(buf));
+        //    set_channel_period_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_messaging_period, new Buffer(buf));
 
-            this.sendAndVerifyResponseNoError(set_channel_period_msg, ANTMessage.prototype.MESSAGE.set_channel_messaging_period.id, errorCallback, successCallback);
-        } else {
+        //    this.sendAndVerifyResponseNoError(set_channel_period_msg, ANTMessage.prototype.MESSAGE.set_channel_messaging_period.id, errorCallback, successCallback);
+        //} else {
         
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel period not specified for channel "+channel.number+" "+msg);
-            successCallback(); // Continue with configuration
+        //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel period not specified for channel "+channel.number+" "+msg);
+        //    successCallback(); // Continue with configuration
 
-        }
+        //}
+
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel',channel);
+
+        configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set channel message period for channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
 
     };
 
@@ -994,60 +1117,107 @@ function resetANTreceiveStateMachine(callback)
             self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support setting low priority search");
     };
 
-    // High priority search mode
-    Host.prototype.setChannelSearchTimeout = function (channelNr, errorCallback, successCallback) {
+// Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
+    Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback) {
 
-        // Each count in ucSearchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
-        var channel_search_timeout_msg, self = this;
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+        var configurationMsg;
 
-        if (typeof channel.searchTimeout === "undefined") {
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No high priority search timeout specified for channel " + channel.number);
-            successCallback();
-        } else {
-            //console.log("Set channel search timeout channel " + channel.number + " timeout " + channel.searchTimeout);
-            var buf = new Buffer([channel.number, channel.searchTimeout]);
+        verifyRange.bind(this)('channel',channel);
 
-            channel_search_timeout_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_search_timeout, buf);
+        configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
-            this.sendAndVerifyResponseNoError(channel_search_timeout_msg, ANTMessage.prototype.MESSAGE.set_channel_search_timeout.id, errorCallback, successCallback);
-        }
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set channel search timeout for channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
+
 
     };
 
-    Host.prototype.setChannelRFFrequency = function (channelNr, errorCallback, successCallback) {
-        // ucRFFreq*1Mhz+2400 Mhz
-        var RFFreq_msg, self = this;
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+// Set the RF frequency, i.e 66 = 2466 MHz
+    Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback) {
 
-        console.log("Set channel RF frequency channel " + channel.number + " frequency " + channel.RFfrequency);
-        RFFreq_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_RFFreq, new Buffer([channel.number, channel.RFfrequency]));
-        this.sendAndVerifyResponseNoError(RFFreq_msg, ANTMessage.prototype.MESSAGE.set_channel_RFFreq.id, errorCallback, successCallback);
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel',channel);
+
+        configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set channel RF frequency for channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
     
     };
 
-    Host.prototype.setSearchWaveform = function (channelNr, errorCallback, successCallback) {
-        // waveform in little endian!
+// Set network key for specific net
+    Host.prototype.setNetworkKey = function (netNumber, key, callback) {
+      
+        var configurationMsg;
 
-        var set_search_waveform_msg, self = this,
-            buf = new Buffer(3);
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+        verifyRange.bind(this)('network',netNumber);
 
-        if (typeof channel.searchWaveform === "undefined") {
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No search waveform specified");
-            errorCallback();
-        }
+        configurationMsg = new SetNetworkKeyMessage(netNumber, key);
 
-        //console.log("Set channel search waveform channel " + channel.number + " waveform " + channel.searchWaveform);
-
-        buf[0] = channel.number;
-        buf[1] = channel.searchWaveform[0];
-        buf[2] = channel.searchWaveform[1];
-        set_search_waveform_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_search_waveform, new Buffer(buf));
-
-        this.sendAndVerifyResponseNoError(set_search_waveform_msg, ANTMessage.prototype.MESSAGE.set_search_waveform.id, errorCallback, successCallback);
-    
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set network key for network nr. ' + netNumber)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
     };
+
+    // Set transmit power for all channels
+    Host.prototype.setTransmitPower = function (transmitPower, callback) {
+
+        var configurationMsg;
+
+        verifyRange.bind(this)('transmitPower', transmitPower,0,4);
+
+        configurationMsg = new SetTransmitPowerMessage(transmitPower);
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to set transmit power for all channels');
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
+    };
+
+    //Host.prototype.setSearchWaveform = function (channelNr, errorCallback, successCallback) {
+    //    // waveform in little endian!
+
+    //    var set_search_waveform_msg, self = this,
+    //        buf = new Buffer(3);
+    //    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+
+    //    if (typeof channel.searchWaveform === "undefined") {
+    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No search waveform specified");
+    //        errorCallback();
+    //    }
+
+    //    //console.log("Set channel search waveform channel " + channel.number + " waveform " + channel.searchWaveform);
+
+    //    buf[0] = channel.number;
+    //    buf[1] = channel.searchWaveform[0];
+    //    buf[2] = channel.searchWaveform[1];
+    //    set_search_waveform_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_search_waveform, new Buffer(buf));
+
+    //    this.sendAndVerifyResponseNoError(set_search_waveform_msg, ANTMessage.prototype.MESSAGE.set_search_waveform.id, errorCallback, successCallback);
+    
+    //};
 
     Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
         var openRxScan_channel_msg, self = this, message = new ANTMessage();
@@ -1157,26 +1327,26 @@ function resetANTreceiveStateMachine(callback)
 
     //};
 
-    Host.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, successCB,noVerification) {
-        var self = this;
-        this.sendOnly(message, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
-        function success() {
+    //Host.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, successCB,noVerification) {
+    //    var self = this;
+    //    this.sendOnly(message, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
+    //    function success() {
        
-            //if (typeof noVerification === "undefined") {
-            //    self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
-            //         function success(data) {
-            //             if (!self.isResponseNoError(data, msgId))
-            //                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR"); // No retry
-            //             self.parse_response(data);
-            //             successCB();
-            //         });
-            //} else
-            successCB(); // Skip verification, will allow prototype.listen func. to continue parsing channel data without cancelling
-            // Drawback : will buffer unread RESPONSE_NO_ERROR -> can get multiple packets when starting listen after activateConfiguration...
-        }
-        );
+    //        //if (typeof noVerification === "undefined") {
+    //        //    self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
+    //        //         function success(data) {
+    //        //             if (!self.isResponseNoError(data, msgId))
+    //        //                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR"); // No retry
+    //        //             self.parse_response(data);
+    //        //             successCB();
+    //        //         });
+    //        //} else
+    //        successCB(); // Skip verification, will allow prototype.listen func. to continue parsing channel data without cancelling
+    //        // Drawback : will buffer unread RESPONSE_NO_ERROR -> can get multiple packets when starting listen after activateConfiguration...
+    //    }
+    //    );
 
-    };
+    //};
 
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry

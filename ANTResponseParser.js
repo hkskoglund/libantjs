@@ -26,27 +26,28 @@ function ParseANTResponse(options) {
 ParseANTResponse.prototype.EVENT = {
 
     //// Notifications
-    //STARTUP: 'notificationStartup',
-    //SERIAL_ERROR: 'notificationSerialError',
+    NOTIFICATION_STARTUP: 'notificationStartup',
+    NOTIFICATION_SERIAL_ERROR: 'notificationSerialError',
 
-    //CHANNEL_STATUS: 'channelStatus',
+    CHANNEL_STATUS: 'channelStatus',
+    CHANNEL_RESPONSE_RF_EVENT: 'channelResponseRFEvent',
 
-    REPLY : 'reply',
+    //REPLY : 'reply',
 
     LOG: 'log',
     ERROR: 'error',
 
     //SET_CHANNEL_ID: 'setChannelId',
 
-    //DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
-    //ANT_VERSION: 'ANTVersion',
-    //CAPABILITIES: 'deviceCapabilities',
+    DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
+    ANT_VERSION: 'ANTVersion',
+    CAPABILITIES: 'deviceCapabilities',
 
     // Data
     BROADCAST: 'broadcast',
     BURST: 'burst',
 
-    CHANNEL_RESPONSE_EVENT: 'channelResponseEvent',
+    
 
 };
 
@@ -71,7 +72,10 @@ ParseANTResponse.prototype.parse = function (data) {
     //if (ANTmsg.message)
     //  this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, ANTmsg.message.text);
 
-    var antInstance = this,
+    var OFFSET_CONTENT = 3,
+        OFFSET_LENGTH = 1,
+
+        antInstance = this,
        // self = this,
         firstSYNC = ANTmsg.SYNC,
         msgLength = ANTmsg.length,
@@ -220,7 +224,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
             var notification = new NotificationStartup(data);
            
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, notification))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_STARTUP, notification))
               this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
 
             break;
@@ -229,7 +233,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
             var notification = new NotificationSerialError(data);
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY,notification))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_SERIAL_ERROR,notification))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
 
             break;
@@ -295,8 +299,8 @@ ParseANTResponse.prototype.parse = function (data) {
             channelResponseMsg.parse();
 
             // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
-            //if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelResponseMsg))
-            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
+            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
 
             break;
 
@@ -313,12 +317,12 @@ ParseANTResponse.prototype.parse = function (data) {
             channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, channelStatusMsg))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_STATUS, channelStatusMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelStatus.toString());
 
             break;
 
-        case ANTMessage.prototype.MESSAGE.set_channel_id.id:
+        case ANTMessage.prototype.MESSAGE.SET_CHANNEL_ID:
             if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
                 antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
             break;
@@ -331,7 +335,7 @@ ParseANTResponse.prototype.parse = function (data) {
             versionMsg.setContent(data.slice(3, 3 + data[1]));
             versionMsg.parse();
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, versionMsg))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.ANT_VERSION, versionMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + versionMsg.toString());
 
             break;
@@ -342,7 +346,7 @@ ParseANTResponse.prototype.parse = function (data) {
             capabilitiesMsg.setContent(data.slice(3, 3 + data[1]));
             capabilitiesMsg.parse();
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, capabilitiesMsg))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.CAPABILITIES, capabilitiesMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + capabilitiesMsg.toString());
 
             break;
@@ -353,7 +357,7 @@ ParseANTResponse.prototype.parse = function (data) {
             serialNumberMsg.setContent(data.slice(3, 3 + data[1]));
             serialNumberMsg.parse();
 
-            if (!this.emit(ParseANTResponse.prototype.EVENT.REPLY, serialNumberMsg))
+            if (!this.emit(ParseANTResponse.prototype.EVENT.DEVICE_SERIAL_NUMBER, serialNumberMsg))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + serialNumberMsg.toString());
 
             break;

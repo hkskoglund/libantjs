@@ -124,6 +124,10 @@ ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES = {
     0x39:  "ENCRYPT_NEGOTIATION_FAIL" ,
 };
 
+ChannelResponseMessage.prototype.getChannelNumber = function () {
+    return this.content[0];
+}
+
 ChannelResponseMessage.prototype.getRequestMessageId = function () {
     return this.content[1];
 }
@@ -133,18 +137,18 @@ ChannelResponseMessage.prototype.getMessageCode = function () {
 }
 
 ChannelResponseMessage.prototype.parse = function () {
-   
-            var channel = this.content[0],
-                msgId = this.content[1],
-                msgCode = this.content[2],
-                    msg;
+    var msg;
 
-            if (msgId === 1) // Set to 1 for RF event
-                msg = "EVENT on channel " + channel + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[msgCode]+" ";
-            else
-                msg = "RESPONSE on channel " + channel + " to msg. id 0x" + msgId.toString(16) + "  " + ANTMessage.prototype.MESSAGE[msgId] + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[msgCode];
+    this.channelNumber = this.content[0];
+    this.messageId = this.content[1];
+    this.messageCode = this.content[2];
 
-            this.message = { text: msg };
+    if (this.messageId === 1) // Set to 1 for RF event
+        msg = "RF EVENT channel " + this.channelNumber + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.messageCode]+" ";
+    else
+        msg = "RESPONSE channel " + this.channelNumber + " to msg. id 0x" + this.messageId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.messageId] + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.messageCode];
+
+    this.message = { text: msg };
     
 }
 
