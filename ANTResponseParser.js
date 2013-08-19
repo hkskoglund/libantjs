@@ -299,8 +299,15 @@ ParseANTResponse.prototype.parse = function (data) {
             channelResponseMsg.parse();
 
             // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
-            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
-                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
+            //if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
+            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
+
+            var type = channelResponseMsg.getResponseOrEventMessage();
+
+            console.log("event type", type);
+
+            this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
+            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
 
             break;
 

@@ -190,41 +190,41 @@ ANTMessage.prototype.MESSAGE = {
 
     // Control messages
 
-    //0x4A: "Reset system",
-    RESET_SYSTEM:  0x4A,
+        0x4A: "Reset system",
+        RESET_SYSTEM:  0x4A,
 
-    0x4b: "Open channel",
-    open_channel: { id: 0x4b, friendly: "Open channel" },
+        0x4B: "Open channel",
+        OPEN_CHANNEL:  0x4B,
 
-    0x4c: "Close channel",
-    close_channel: { id: 0x4c, friendly: "Close channel" },
+        0x4C: "Close channel",
+        CLOSE_CHANNEL:  0x4C,
 
-    0x5b: "Open RX scan mode",
-    open_rx_scan_mode: { id: 0x5b, friendly: "Open RX scan mode" },
+        0x5b: "Open RX scan mode",
+        open_rx_scan_mode: { id: 0x5b, friendly: "Open RX scan mode" },
 
-    0xc5: "Sleep message",
-    sleep_message: { id: 0xc5, friendly: "Sleep message" },
+        0xc5: "Sleep message",
+        sleep_message: { id: 0xc5, friendly: "Sleep message" },
 
     // Notification messages 
-    //0x6f: "Notification: Start up",
-    NOTIFICATION_STARTUP: 0x6F,
+        //0x6f: "Notification: Start up",
+        NOTIFICATION_STARTUP: 0x6F,
 
-   // 0xae: "Notification: Serial error",
-    NOTIFICATION_SERIAL_ERROR: 0xAE,
+       // 0xae: "Notification: Serial error",
+        NOTIFICATION_SERIAL_ERROR: 0xAE,
 
     // Requested messages with REQUEST 0x4D 
     
-    ANT_VERSION:  0x3E,
+        ANT_VERSION:  0x3E,
 
-    //0x54: "Capabilities",
-    CAPABILITIES:  0x54,
+        //0x54: "Capabilities",
+        CAPABILITIES:  0x54,
 
-    DEVICE_SERIAL_NUMBER:  0x61,
+        DEVICE_SERIAL_NUMBER:  0x61,
 
-    // Request/response
+        // Request/response
 
-    //0x4d: "Request",
-    REQUEST: 0x4D,
+        //0x4d: "Request",
+        REQUEST: 0x4D,
 
     //0x40: "Channel response/event",
     CHANNEL_RESPONSE:  0x40,
@@ -234,58 +234,58 @@ ANTMessage.prototype.MESSAGE = {
     // Config messages
     // All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
 
-    0x41: "UnAssign Channel",
-    UNASSIGN_CHANNEL: 0x41,
+        0x41: "UnAssign Channel",
+        UNASSIGN_CHANNEL: 0x41,
    
-    0x42 : "Assign Channel",
-    ASSIGN_CHANNEL: 0x42,
+        0x42 : "Assign Channel",
+        ASSIGN_CHANNEL: 0x42,
 
-    0x51: "Set Channel ID",
-    SET_CHANNEL_ID: 0x51,
+        0x51: "Set Channel ID",
+        SET_CHANNEL_ID: 0x51,
 
-    0x46: "Set network key",
-    SET_NETWORK_KEY: 0x46,
+        0x46: "Set network key",
+        SET_NETWORK_KEY: 0x46,
 
-    0x47: "Set transmit power",
-    SET_TRANSMIT_POWER:  0x47,
+        0x47: "Set transmit power",
+        SET_TRANSMIT_POWER:  0x47,
 
-    0x43: "Set channel period (Tch)",
-    SET_CHANNEL_MESSAGING_PERIOD:  0x43,
+        0x43: "Set channel period (Tch)",
+        SET_CHANNEL_MESSAGING_PERIOD:  0x43,
 
-    0x63: "Low priority (LP) search timeout",
-    set_low_priority_channel_search_timeout: { id: 0x63, friendly: "Set low priority (LP) Channel Search Timeout" },
+        0x63: "Low priority (LP) search timeout",
+        set_low_priority_channel_search_timeout: { id: 0x63, friendly: "Set low priority (LP) Channel Search Timeout" },
 
-    0x44: "High priority (HP) search timeout",
-    SET_CHANNEL_SEARCH_TIMEOUT:  0x44,
+        0x44: "High priority (HP) search timeout",
+        SET_CHANNEL_SEARCH_TIMEOUT:  0x44,
 
-    0x45: "Channel RF frequency",
-    SET_CHANNEL_RFFREQ:  0x45,
+        0x45: "Channel RF frequency",
+        SET_CHANNEL_RFFREQ:  0x45,
 
-    //0x49: "Search waveform",
-    //set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
+        //0x49: "Search waveform",
+        //set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
 
-    0x75: "Channel Search Priority",
-    set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },
+        0x75: "Channel Search Priority",
+        set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },
 
-    0x6E: "Lib Config",
-    libConfig: { id: 0x6E, friendly: "Lib Config" },
+        0x6E: "Lib Config",
+        libConfig: { id: 0x6E, friendly: "Lib Config" },
 
-    0x66: "Enable Extended Messages",
-    RxExtMesgsEnable: { id: 0x66, friendly: "Enable Extended Messages" },
+        0x66: "Enable Extended Messages",
+        RxExtMesgsEnable: { id: 0x66, friendly: "Enable Extended Messages" },
 
     // Data message
 
-    0x4E: "Broadcast Data",
-    broadcast_data: { id: 0x4e, friendly: "Broadcast data" },
+        0x4E: "Broadcast Data",
+        broadcast_data: { id: 0x4e, friendly: "Broadcast data" },
 
-    0x4F: "Acknowledged Data",
-    acknowledged_data: { id: 0x4f, friendly: "Acknowledged data" },
+        0x4F: "Acknowledged Data",
+        acknowledged_data: { id: 0x4f, friendly: "Acknowledged data" },
 
-    0x50: "Burst Transfer Data",
-    burst_transfer_data: { id: 0x50, friendly: "Burst transfer data" },
+        0x50: "Burst Transfer Data",
+        burst_transfer_data: { id: 0x50, friendly: "Burst transfer data" },
 
-    0x72: "Advanced Burst Transfer Data",
-    advanced_burst_transfer_data: { id: 0x72, friendly: "Advanced burst transfer data" },
+        0x72: "Advanced Burst Transfer Data",
+        advanced_burst_transfer_data: { id: 0x72, friendly: "Advanced burst transfer data" },
 
 };
 

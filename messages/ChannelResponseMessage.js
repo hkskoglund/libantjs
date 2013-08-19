@@ -124,10 +124,18 @@ ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES = {
     0x39:  "ENCRYPT_NEGOTIATION_FAIL" ,
 };
 
-ChannelResponseMessage.prototype.getChannelNumber = function () {
+ChannelResponseMessage.prototype.getResponseOrEventMessage = function (messageId) {
+    if (typeof messageId === "undefined")
+        return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.content[2]];
+    else
+        return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[messageId];
+}
+
+ChannelResponseMessage.prototype.getChannel = function () {
     return this.content[0];
 }
 
+// Gets the initiating request message id
 ChannelResponseMessage.prototype.getRequestMessageId = function () {
     return this.content[1];
 }
@@ -136,17 +144,27 @@ ChannelResponseMessage.prototype.getMessageCode = function () {
     return this.content[2];
 }
 
+ChannelResponseMessage.prototype.isRFEvent = function () {
+    return (this.content[1] === 1);
+}
+
+ChannelResponseMessage.prototype.isResponse = function () {
+    return !this.isRFEvent();
+}
+
 ChannelResponseMessage.prototype.parse = function () {
     var msg;
 
-    this.channelNumber = this.content[0];
+    this.channel = this.content[0];
     this.messageId = this.content[1];
     this.messageCode = this.content[2];
+    this.RFEvent = (this.content[1] === 1);
+    this.responseEvent = this.getResponseOrEventMessage();
 
-    if (this.messageId === 1) // Set to 1 for RF event
-        msg = "RF EVENT channel " + this.channelNumber + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.messageCode]+" ";
+    if (this.RFEvent) // Set to 1 for RF event
+        msg = "RF EVENT channel " + this.channel + " " + this.responseEvent + " ";
     else
-        msg = "RESPONSE channel " + this.channelNumber + " to msg. id 0x" + this.messageId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.messageId] + " " + ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.messageCode];
+        msg = "RESPONSE channel " + this.channel + " to msg. id 0x" + this.messageId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.messageId] + " " + this.responseEvent;
 
     this.message = { text: msg };
     

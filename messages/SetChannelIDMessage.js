@@ -19,6 +19,7 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_ID;
     this.name = "Set channel id";
 
+
     this.setContent(msgBuffer)
 
     //console.log("SetChannelIDMessage", this);

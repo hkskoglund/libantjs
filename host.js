@@ -10,8 +10,11 @@ var events = require('events'),
 
     // Control ANT
     ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
+    OpenChannelMessage = require('./messages/OpenChannelMessage.js'),
 
-     NotificationStartup = require('./messages/NotificationStartup.js'),
+    // Notifications
+
+    NotificationStartup = require('./messages/NotificationStartup.js'),
 
     // Request -response
 
@@ -31,6 +34,7 @@ var events = require('events'),
     SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage.js'),
     SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage.js'),
     SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage.js'),
+   
 
     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
 
@@ -41,8 +45,12 @@ var events = require('events'),
     ResponseParser = require('./ANTResponseParser.js');
         
 function Host() {
+
     events.EventEmitter.call(this);
+
     this._responseParser = new ResponseParser();
+
+    
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
@@ -225,11 +233,6 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
     }.bind(this));
 
-
-    
-    //this.addListener(Host.prototype.EVENT.SET_CHANNEL_ID, this.parseChannelID);
-   
-
     this.usb.init(vendor, product, function _usbInitCB(error) {
 
         // Normally get a timeout after draining 
@@ -272,45 +275,45 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                                     if (!error) {
                                                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
 
-                                                            this.setChannelId(0,0,248,1, function (error, response) {
-                                                                if (!error) {
-                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                            //this.setChannelId(0,0,248,1, function (error, response) {
+                                                            //    if (!error) {
+                                                            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
 
-                                                                    this.setChannelPeriod(0, 8192, function (error, response) {
-                                                                        if (!error) {
-                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                            //        this.setChannelPeriod(0, 8192, function (error, response) {
+                                                            //            if (!error) {
+                                                            //                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
 
-                                                                            this.setChannelSearchTimeout(0, 24, function (error, response) {
-                                                                                if (!error) {
-                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                            //                this.setChannelSearchTimeout(0, 24, function (error, response) {
+                                                            //                    if (!error) {
+                                                            //                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
 
-                                                                                    this.setChannelRFFreq(0, 57, function (error, response) {
-                                                                                        if (!error) {
-                                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                            //                        this.setChannelRFFreq(0, 57, function (error, response) {
+                                                            //                            if (!error) {
+                                                            //                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
 
-                                                                                            this.setTransmitPower(2, function (error, response) {
-                                                                                                if (!error) {
-                                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                                                                                                }
-                                                                                                else
-                                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                                                            }.bind(this));
-                                                                                        }
-                                                                                        else
-                                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                                                    }.bind(this));
-                                                                                }
-                                                                                else
-                                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                                            }.bind(this));
-                                                                        }
-                                                                        else
-                                                                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                                    }.bind(this));
-                                                                }
-                                                                else
-                                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            }.bind(this));
+                                                            //                                this.setTransmitPower(2, function (error, response) {
+                                                            //                                    if (!error) {
+                                                            //                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                                            //                                    }
+                                                            //                                    else
+                                                            //                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            //                                }.bind(this));
+                                                            //                            }
+                                                            //                            else
+                                                            //                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            //                        }.bind(this));
+                                                            //                    }
+                                                            //                    else
+                                                            //                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            //                }.bind(this));
+                                                            //            }
+                                                            //            else
+                                                            //                this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            //        }.bind(this));
+                                                            //    }
+                                                            //    else
+                                                            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                                                            //}.bind(this));
                                                     }
                                                     else
                                                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
@@ -462,14 +465,14 @@ Host.prototype.getChannelStatus = function (channelNr, callback) {
 // Send a message, if a reply is not received, it will retry for 500ms. Optionally runs a validator func. that returns true if the response is valid
 function scheduleRetryMessage(sendMessage,event,callback,validator) {
     //console.trace();
-    //console.log("ARGS", arguments);
+    console.log("ARGS", arguments);
     var timeoutID,
         startTimestamp,
         currentTimestamp,
         MAX_TIMESTAMP_DIFF = 500, // Wait 500 ms before creating error for failed response from ANT
         listenerCalled = false,
         // Listener for responses
-    listener = function (responseMessage) {
+    listener = function (responseMessage,channel,requestMsgId,msgCode) {
            listenerCalled = true;
             var processCB = function _processCB() {
                 //console.log(responseMessage.name);
@@ -480,19 +483,29 @@ function scheduleRetryMessage(sendMessage,event,callback,validator) {
                 callback(undefined, responseMessage);
             }.bind(this);
 
-            if (!validator)
+            //if (!validator)
+            //    processCB();
+            //else if (typeof validator === "function" && validator(responseMessage))  // Run validator for response, i.e Reset system control command -> Notification startup response, conf. command Assign -> channel response NO error
+            //    processCB();
+            //else 
+        //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed validation: ' + responseMessage.toString());
+
+           
+            if (typeof channel !== "undefined" && typeof requestMsgId !== "undefined" && typeof msgCode !== "undefined"
+                && sendMessage.channel === channel && sendMessage.id === requestMsgId) {
+                //console.log("RESPONSE NO ERROR TEST",channel,requestMsgId,msgCode);
                 processCB();
-            else if (typeof validator === "function" && validator(responseMessage))  // Run validator for response, i.e Reset system control command -> Notification startup response, conf. command Assign -> channel response NO error
-                processCB();
+            }
             else 
-                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed validation: ' + responseMessage.toString());
-            
+                processCB();
+          
                 
         }.bind(this);
     
     //console.log(this._responseParser._events);
-
+    //console.log(typeof event);
     this._responseParser.on(event, listener);
+   // console.log(this._responseParser._events);
     //var removeCB = function (type, listener) {
     //    //console.trace();
     //    console.log('Removed ' + type);
@@ -993,7 +1006,16 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
         else
             cb = callback;
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        //scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        //    if (error)
+        //        cb('Failed to assign channel nr. ' + channelNr)
+        //    else
+        //        cb(undefined, responseMessage);
+        //}.bind(this), function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
+
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 cb('Failed to assign channel nr. ' + channelNr)
             else
@@ -1001,6 +1023,7 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
         }.bind(this), function _validationCB(responseMessage) {
             return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         });
+
         
     };
 
@@ -1228,125 +1251,166 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
         this.sendAndVerifyResponseNoError(openRxScan_channel_msg, ANTMessage.prototype.MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
     },
 
-    Host.prototype.open = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
-        //console.log("Opening channel "+ucChannel);
-        var open_channel_msg, self = this;
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-        //self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-        open_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_channel, new Buffer([channel.number]));
+    // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
+    Host.prototype.openChannel = function (channel, callback) {
+        ////console.log("Opening channel "+ucChannel);
+        //var open_channel_msg, self = this;
+        //var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+        ////self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
+        //open_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_channel, new Buffer([channel.number]));
 
-        this.sendAndVerifyResponseNoError(open_channel_msg, ANTMessage.prototype.MESSAGE.open_channel.id, errorCallback, successCallback,noVerifyResponseNoError);
+        //this.sendAndVerifyResponseNoError(open_channel_msg, ANTMessage.prototype.MESSAGE.open_channel.id, errorCallback, successCallback,noVerifyResponseNoError);
+
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel', channel);
+
+        configurationMsg = new OpenChannelMessage(channel);
+
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to open channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
     };
 
-    // Closing first gives a response no error, then an event channel closed
-    Host.prototype.close = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
-        //console.log("Closing channel "+ucChannel);
-        var close_channel_msg, self = this;
-        var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-        //console.log("Closing channel " + channel.number);
-        close_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.close_channel, new Buffer([channel.number]));
+    // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
+    Host.prototype.closeChannel = function (channel, callback) {
+        ////console.log("Closing channel "+ucChannel);
+        //var close_channel_msg, self = this;
+        //var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
+        ////console.log("Closing channel " + channel.number);
+        //close_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.close_channel, new Buffer([channel.number]));
 
-        this.sendOnly(close_channel_msg, Host.prototype.ANT_DEFAULT_RETRY, 500, errorCallback,
-            function success() {
-                var retryNr = 0;
+        //this.sendOnly(close_channel_msg, Host.prototype.ANT_DEFAULT_RETRY, 500, errorCallback,
+        //    function success() {
+        //        var retryNr = 0;
 
-                function retryEventChannelClosed() {
+        //        function retryEventChannelClosed() {
 
-                    self.read(500, errorCallback,
-                        function success(data) {
-                            retryNr = 0;
+        //            self.read(500, errorCallback,
+        //                function success(data) {
+        //                    retryNr = 0;
 
-                            if (!self.isEvent(Host.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
-                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected event CHANNEL_CLOSED");
-                                retryNr++;
-                                if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
-                                    self.emit(Host.prototype.EVENT.LOG_MESSAGE,"Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get EVENT CHANNEL CLOSED from ANT device");
-                                    retryEventChannelClosed();
-                                }
-                                else {
-                                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
-                                    errorCallback();
-                                }
-                            }
-                            else
-                                successCallback();
-                        });
-                }
+        //                    if (!self.isEvent(Host.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
+        //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected event CHANNEL_CLOSED");
+        //                        retryNr++;
+        //                        if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
+        //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE,"Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get EVENT CHANNEL CLOSED from ANT device");
+        //                            retryEventChannelClosed();
+        //                        }
+        //                        else {
+        //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
+        //                            errorCallback();
+        //                        }
+        //                    }
+        //                    else
+        //                        successCallback();
+        //                });
+        //        }
 
-                function retryResponseNoError() {
-                    self.read(500, errorCallback,
-                                 function success(data) {
-                                     if (!self.isResponseNoError(data, ANTMessage.prototype.MESSAGE.close_channel.id)) {
-                                         self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR for close channel");
-                                         retryNr++;
-                                         if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
-                                             self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get NO ERROR response from ANT device");
-                                             retryResponseNoError();
-                                         }
-                                         else {
-                                             self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
-                                             errorCallback();
-                                         }
-                                     }
-                                     else 
-                                         //self.parse_response(data);
+        //        function retryResponseNoError() {
+        //            self.read(500, errorCallback,
+        //                         function success(data) {
+        //                             if (!self.isResponseNoError(data, ANTMessage.prototype.MESSAGE.close_channel.id)) {
+        //                                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR for close channel");
+        //                                 retryNr++;
+        //                                 if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
+        //                                     self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get NO ERROR response from ANT device");
+        //                                     retryResponseNoError();
+        //                                 }
+        //                                 else {
+        //                                     self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
+        //                                     errorCallback();
+        //                                 }
+        //                             }
+        //                             else 
+        //                                 //self.parse_response(data);
 
-                                         // Wait for EVENT_CHANNEL_CLOSED
-                                         // If channel status is tracking -> can get broadcast data packet before channel close packet
+        //                                 // Wait for EVENT_CHANNEL_CLOSED
+        //                                 // If channel status is tracking -> can get broadcast data packet before channel close packet
 
-                                         retryEventChannelClosed();
-                                 
-                                 });
-                }
+        //                                 retryEventChannelClosed();
 
-                if (typeof noVerifyResponseNoError === "undefined")
-                    retryResponseNoError();
-                else
-                    successCallback();
-            });
-    };
+        //                         });
+        //        }
 
-    //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
-    //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
+        //        if (typeof noVerifyResponseNoError === "undefined")
+        //            retryResponseNoError();
+        //        else
+        //            successCallback();
+        //    });
 
-    // Check for specific event code
-    //Host.prototype.isEvent = function (code, data) {
-    //    var msgId = data[2], channelNr = data[3], eventOrResponse = data[4], eventCode = data[5], EVENT = 1;
 
-    //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && eventOrResponse === EVENT && code === eventCode);
-    //};
+        //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
+        //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
 
-    // Check if channel response is a no error for a specific requested message id
-    //Host.prototype.isResponseNoError = function (data, requestedMsgId) {
-    //    var msgId = data[2], msgRequested = data[4], msgCode = data[5];
+        // Check for specific event code
+        //Host.prototype.isEvent = function (code, data) {
+        //    var msgId = data[2], channelNr = data[3], eventOrResponse = data[4], eventCode = data[5], EVENT = 1;
 
-    //    //console.log(Date.now() + " Validation");
-    //    //console.log(data, requestedMsgId);
+        //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && eventOrResponse === EVENT && code === eventCode);
+        //};
 
-    //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && msgCode === Host.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR && msgRequested === requestedMsgId);
+        // Check if channel response is a no error for a specific requested message id
+        //Host.prototype.isResponseNoError = function (data, requestedMsgId) {
+        //    var msgId = data[2], msgRequested = data[4], msgCode = data[5];
 
-    //};
+        //    //console.log(Date.now() + " Validation");
+        //    //console.log(data, requestedMsgId);
 
-    //Host.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, successCB,noVerification) {
-    //    var self = this;
-    //    this.sendOnly(message, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
-    //    function success() {
-       
-    //        //if (typeof noVerification === "undefined") {
-    //        //    self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
-    //        //         function success(data) {
-    //        //             if (!self.isResponseNoError(data, msgId))
-    //        //                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR"); // No retry
-    //        //             self.parse_response(data);
-    //        //             successCB();
-    //        //         });
-    //        //} else
-    //        successCB(); // Skip verification, will allow prototype.listen func. to continue parsing channel data without cancelling
-    //        // Drawback : will buffer unread RESPONSE_NO_ERROR -> can get multiple packets when starting listen after activateConfiguration...
-    //    }
-    //    );
+        //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && msgCode === Host.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR && msgRequested === requestedMsgId);
 
-    //};
+        //};
+
+        //Host.prototype.sendAndVerifyResponseNoError = function (message, msgId, errorCB, successCB,noVerification) {
+        //    var self = this;
+        //    this.sendOnly(message, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
+        //    function success() {
+
+        //        //if (typeof noVerification === "undefined") {
+        //        //    self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCB,
+        //        //         function success(data) {
+        //        //             if (!self.isResponseNoError(data, msgId))
+        //        //                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR"); // No retry
+        //        //             self.parse_response(data);
+        //        //             successCB();
+        //        //         });
+        //        //} else
+        //        successCB(); // Skip verification, will allow prototype.listen func. to continue parsing channel data without cancelling
+        //        // Drawback : will buffer unread RESPONSE_NO_ERROR -> can get multiple packets when starting listen after activateConfiguration...
+        //    }
+        //    );
+
+        //};
+
+        var configurationMsg;
+
+        verifyRange.bind(this)('channel', channel);
+
+        configurationMsg = new CloseChannelMessage(channel);
+
+        // To DO: register event handler for EVENT_CHANNEL_CLOSED before calling callback !!!
+
+        // this._
+        // TO DO : create a single function for configuration/control commands that receive RESPONSE_NO_ERROR ?
+
+        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+            if (error)
+                callback('Failed to close channel nr. ' + channel)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this), function _validationCB(responseMessage) {
+            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        });
+
+
+    }
+
 
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry

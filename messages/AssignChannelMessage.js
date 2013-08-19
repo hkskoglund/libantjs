@@ -14,6 +14,7 @@ function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignme
 
     this.id = ANTMessage.prototype.MESSAGE.ASSIGN_CHANNEL;
     this.name = "Assign Channel";
+    this.channel = channel;
 
     this.setContent(msgBuffer)
 
