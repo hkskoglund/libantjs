@@ -171,31 +171,20 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
                 callback(new Error(msg));
             }
 
-            // Choose to run configuration commands in sequence, otherwise the control flow will be (very) complex and we get a "callback hell"
-            // Configuration command tends to go very smoothly, no need for retransmissions -> can afford using timeouts here
-            // It's not a optimal solution, but it works most of the time
-
-            // Optional
-
-            if (options.networkKey)
-
-                this.setNetworkKey(networkNumber, options.networkKey, function _setNetworkKeyCB(error, response) {
-                    if (!error)
-                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                    else
-                        callback(error);
-                }.bind(this));
-
             // MUST have - assign channel + set channel ID
 
-            setTimeout(function () {
+            var assignChannelSetChannelId = function _setNetworkKeyCB() {
                 this.assignChannel(channelNumber, options.channelType, networkNumber, options.extendedAssignment, function _assignCB(error, response) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                         //setTimeout(function () {
                         this.setChannelId(channelNumber, options.channelID.deviceNumber, options.channelID.deviceType, options.channelID.transmissionType, function (error, response) {
-                            if (!error)
+                            if (!error) {
+                                //this.once("assignChannelSetChannelId");
+
                                 this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                setChannelRFFreq();
+                            }
                             else
                                 callback(error);
                         }.bind(this));
@@ -204,76 +193,110 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
                     else
                         callback(error);
                 }.bind(this));
-            }.bind(this), 50);
+            }.bind(this);
 
-           
+            
 
-            // Optional
+            ////// Default 8192 = 4 Hz
+            var setChannelPeriod = function () {
+                if (options.channelPeriod)
+                    this.setChannelPeriod(channelNumber, options.channelPeriod, function (error, response) {
+                        if (!error) {
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            setTransmitPower();
+                        }
+                        else
+                            callback(error);
+                    });
+                else
+                    setTransmitPower();
+            }.bind(this);
 
             // Default 66 = 2466 MHz
-            setTimeout(function () {
+
+            var setChannelRFFreq =  function () {
                 if (options.RFfrequency)
                     this.setChannelRFFreq(channelNumber, options.RFfrequency, function (error, response) {
-                        if (!error) 
+                        if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            setChannelPeriod();
+                        }
                         else
                             callback(error);
                     }.bind(this));
-            }.bind(this), 150);
-
-            //// Default 8192 = 4 Hz
-            setTimeout(function () {
-                if (options.channelPeriod)
-                    this.setChannelPeriod(channelNumber, options.channelPeriod, function (error, response) {
-                        if (!error) 
-                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                         else
-                            callback(error);
-                        });
-            }.bind(this), 150);
+                else
+                    setChannelPeriod();
+               
+            }.bind(this);
 
             //// Default 3 = 0bDm
-            setTimeout(function () {
+
+            var setTransmitPower = function () {
                 if (options.transmitPower)
                     this.setTransmitPower(options.transmitPower, function (error, response) {
-                        if (!error) 
+                        if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            setChannelSearchTimeout();
+                        }
                         else
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
                     }.bind(this));
-            }.bind(this), 200);
+                else
+                    setChannelSearchTimeout();
+            }.bind(this);
 
-            // SLAVE SEARCH TIMEOUTS : high priority and low priority
-            if (!channel.isMaster()) {
+            // Optional
 
-                this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Channel "+channelNumber+" type "+ Channel.prototype.TYPE[options.channelType]);
+            if (options.networkKey)
 
-                // Default HP = 10 -> 25 seconds
-                if (options.HPsearchTimeout) {
-                    setTimeout(function () {
-                        this.setChannelSearchTimeout(channelNumber, options.HPsearchTimeout, function (error, response) {
-                            if (!error)
-                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                            else
-                                callback(error);
-                        }.bind(this));
-                    }.bind(this), 250);
-                }
-
-                    if (options.LPsearchTimeout) {
-                      
-                        setTimeout(function () {
-                            this.setLowPriorityChannelSearchTimeout(channelNumber, options.LPsearchTimeout, function (error, response) {
-                                if (!error)
-                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                                else
-                                    callback(error);
-                            }.bind(this));
-                        }.bind(this), 300);
+                this.setNetworkKey(networkNumber, options.networkKey, function _setNetworkKeyCB(error, response) {
+                    if (!error) {
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                        assignChannelSetChannelId();
                     }
-            }
+                    else
+                        callback(error);
+                }.bind(this));
+            else
+                assignChannelSetChannelId();
 
-            setTimeout(callback,350);
+           
+
+            //// Optional
+
+            //// SLAVE SEARCH TIMEOUTS : high priority and low priority
+            
+            //    this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Channel "+channelNumber+" type "+ Channel.prototype.TYPE[options.channelType]);
+
+            var setChannelSearchTimeout = function () {
+                // Default HP = 10 -> 25 seconds
+                if (!channel.isMaster() && options.HPsearchTimeout) 
+                    this.setChannelSearchTimeout(channelNumber, options.HPsearchTimeout, function (error, response) {
+                        if (!error) {
+                            setLowPriorityChannelSearchTimeout();
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                        }
+                        else
+                            callback(error);
+                    }.bind(this));
+                else
+                    setLowPriorityChannelSearchTimeout();
+            }.bind(this);
+        
+            var setLowPriorityChannelSearchTimeout = function () {
+
+                if (!channel.isMaster() && options.LPsearchTimeout) 
+                    this.setLowPriorityChannelSearchTimeout(channelNumber, options.LPsearchTimeout, function (error, response) {
+                        if (!error) {
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            callback();
+                        }
+                        else
+                            callback(error);
+                    }.bind(this));
+                else
+                    callback();
+            }.bind(this);
         }
         else
             callback(error);
@@ -399,7 +422,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
             this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._RXstream).pipe(this._responseParser);
 
 
-            var resetAndGetDeviceInfo = function _resetSystem(callback) {
+            var resetSystemGetCapabilities = function _resetSystem(callback) {
                 this.resetSystem(function (error, notification) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
@@ -443,7 +466,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                 if (error)
                     nextCB(error);
                 else
-                    resetAndGetDeviceInfo(function (error) {
+                    resetSystemGetCapabilities(function (error) {
                         if (!error) {
                             var testChannel = new Channel({
                                 channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
@@ -453,7 +476,8 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                     transmissionType: Channel.prototype.WILDCARD
                                 },
                                 RFfrequency : 66,     // 2466 Mhz
-                                LPsearchTimeout : 24, // 60 seconds
+                                LPsearchTimeout: 24,// 60 seconds
+                                transmitPower : 3 
                             });
                             console.log("Test channel", testChannel);
                             this.establishChannel(0, 0, testChannel, function (error) {
@@ -466,26 +490,6 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                             nextCB(error);
                     }.bind(this));
             }.bind(this));
-
-
-            //this.getChannelStatus(0,function (error, statusMsg) {
-            //    if (!error) {
-
-            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, statusMsg.toString());
-
-           
-
-
-            //                    } else
-            //                        nextCB(error);
-            //                }.bind(this));
-            //            } else
-            //                nextCB(error);
-            //        }.bind(this));
-            //    }
-
-            //}.bind(this));
-
         }
     }.bind(this));
 
@@ -1304,9 +1308,10 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
                 callback('Failed to set network key for network nr. ' + netNumber)
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
     };
 
     // Set transmit power for all channels
@@ -1318,14 +1323,15 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetTransmitPowerMessage(transmitPower);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to set transmit power for all channels');
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
     };
 
     //Host.prototype.setSearchWaveform = function (channelNr, errorCallback, successCallback) {
