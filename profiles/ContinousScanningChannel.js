@@ -4,8 +4,8 @@ var DeviceProfile = require('./deviceProfile.js');
 var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
 var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
 var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
-var Channel = require('./channel.js');
-var Network = require('./network.js');
+var Channel = require('../channel.js');
+var Network = require('../network.js');
 
 
 function ContinousScanningChannel(nodeInstance) {

@@ -1,5 +1,5 @@
 var ANT = require('ant-lib'),
-    Channel = require('./channel.js');
+    Channel = require('../channel.js');
 // Based on https://developer.mozilla.org/en-US/docs/JavaScript/Introduction_to_Object-Oriented_JavaScript
 function DeviceProfile(configuration) {
     this._configuration = configuration;

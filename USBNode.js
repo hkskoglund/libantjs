@@ -324,7 +324,9 @@ USBNode.prototype.listen = function (nextCB) {
         }
     }
 
-   retry.bind(this)();
+    retry.bind(this)();
+
+    nextCB();
 }
 
 USBNode.prototype.write = function (chunk, nextCB)

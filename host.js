@@ -5,6 +5,7 @@ var events = require('events'),
     USBDevice = require('./USBNode.js'), // Change to appropiate device
     Channel = require('./channel.js'),
     ANTMessage = require('./messages/ANTMessage.js'),
+    Channel = require('./channel.js'),
 
     Duplex = require('stream').Duplex,
 
@@ -31,12 +32,14 @@ var events = require('events'),
     SetChannelIDMessage = require('./messages/SetChannelIDMessage.js'),
     SetChannelPeriodMessage = require('./messages/SetChannelPeriodMessage.js'),
     SetChannelSearchTimeoutMessage = require('./messages/SetChannelSearchTimeoutMessage.js'),
+    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/SetLowPriorityChannelSearchTimeoutMessage.js'),
     SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage.js'),
     SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage.js'),
     SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage.js'),
    
 
     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
+    ChannelStatusMessage = require('./messages/ChannelStatusMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
     DeFrameTransform = require('./messages/DeFrameTransform.js'),
@@ -49,8 +52,9 @@ function Host() {
     events.EventEmitter.call(this);
 
     this._responseParser = new ResponseParser();
+    this._channelDictionary = {};
 
-    
+   
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
@@ -125,6 +129,155 @@ Host.prototype.RSSI =
 // Log message to console
 Host.prototype.showLogMessage = function (msg) {
     console.log(Date.now(), msg);
+};
+
+// Add a channel, not tied to a channel number
+Host.prototype.addChannel = function (channel) {
+   
+    this._channelDictionary[channel.channelName] = channel;
+}
+
+
+Host.prototype.removeChannel = function (channel) {
+
+    delete this._channelDictionary[channel.channelName];
+   
+}
+
+// Spec. p. 21 sec. 5.3 Establishing a channel
+// Assign channel and set channel ID MUST be set before opening
+Host.prototype.establishChannel = function (channelNumber, networkNumber, channel, callback) {
+    var options = channel.options,
+        msg;
+
+    console.log("Options", options);
+
+    verifyRange.bind(this)('channel', channelNumber);
+    verifyRange.bind(this)('network', networkNumber);
+
+    if (typeof options.channelType === "undefined" || typeof Channel.prototype.TYPE[options.channelType] === "undefined")
+        callback(new Error('No channel type specified/or unknown channel type'));
+
+
+    if (!options.channelID)
+        callback(new Error('No channel ID specified'));
+
+    this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
+        if (!error) {
+
+            if (statusMsg.channelStatus.state !== ChannelStatusMessage.prototype.STATE.UN_ASSIGNED) {
+                msg = 'Channel ' + channelNumber + ' on network ' + networkNumber + 'is ' + statusMsg.channelStatus.stateMessage;
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
+                callback(new Error(msg));
+            }
+
+            // Choose to run configuration commands in sequence, otherwise the control flow will be (very) complex and we get a "callback hell"
+            // Configuration command tends to go very smoothly, no need for retransmissions -> can afford using timeouts here
+            // It's not a optimal solution, but it works most of the time
+
+            // Optional
+
+            if (options.networkKey)
+
+                this.setNetworkKey(networkNumber, options.networkKey, function _setNetworkKeyCB(error, response) {
+                    if (!error)
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                    else
+                        callback(error);
+                }.bind(this));
+
+            // MUST have - assign channel + set channel ID
+
+            setTimeout(function () {
+                this.assignChannel(channelNumber, options.channelType, networkNumber, options.extendedAssignment, function _assignCB(error, response) {
+                    if (!error) {
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                        //setTimeout(function () {
+                        this.setChannelId(channelNumber, options.channelID.deviceNumber, options.channelID.deviceType, options.channelID.transmissionType, function (error, response) {
+                            if (!error)
+                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            else
+                                callback(error);
+                        }.bind(this));
+                        //}.bind(this), 100);
+                    }
+                    else
+                        callback(error);
+                }.bind(this));
+            }.bind(this), 50);
+
+           
+
+            // Optional
+
+            // Default 66 = 2466 MHz
+            setTimeout(function () {
+                if (options.RFfrequency)
+                    this.setChannelRFFreq(channelNumber, options.RFfrequency, function (error, response) {
+                        if (!error) 
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                        else
+                            callback(error);
+                    }.bind(this));
+            }.bind(this), 150);
+
+            //// Default 8192 = 4 Hz
+            setTimeout(function () {
+                if (options.channelPeriod)
+                    this.setChannelPeriod(channelNumber, options.channelPeriod, function (error, response) {
+                        if (!error) 
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                         else
+                            callback(error);
+                        });
+            }.bind(this), 150);
+
+            //// Default 3 = 0bDm
+            setTimeout(function () {
+                if (options.transmitPower)
+                    this.setTransmitPower(options.transmitPower, function (error, response) {
+                        if (!error) 
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                        else
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
+                    }.bind(this));
+            }.bind(this), 200);
+
+            // SLAVE SEARCH TIMEOUTS : high priority and low priority
+            if (!channel.isMaster()) {
+
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Channel "+channelNumber+" type "+ Channel.prototype.TYPE[options.channelType]);
+
+                // Default HP = 10 -> 25 seconds
+                if (options.HPsearchTimeout) {
+                    setTimeout(function () {
+                        this.setChannelSearchTimeout(channelNumber, options.HPsearchTimeout, function (error, response) {
+                            if (!error)
+                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                            else
+                                callback(error);
+                        }.bind(this));
+                    }.bind(this), 250);
+                }
+
+                    if (options.LPsearchTimeout) {
+                      
+                        setTimeout(function () {
+                            this.setLowPriorityChannelSearchTimeout(channelNumber, options.LPsearchTimeout, function (error, response) {
+                                if (!error)
+                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
+                                else
+                                    callback(error);
+                            }.bind(this));
+                        }.bind(this), 300);
+                    }
+            }
+
+            setTimeout(callback,350);
+        }
+        else
+            callback(error);
+    }.bind(this));
 };
 
 // Initializes TX/RX streams
@@ -206,6 +359,7 @@ function initStream() {
 
 // Initializes USB device and set up of TX/RX stream pipes
 Host.prototype.init = function (idVendor, idProduct, nextCB) {
+    console.trace();
 
     var vendor = idVendor || 4047,
         product = idProduct || 4104;
@@ -244,97 +398,95 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
             // RX: Wire incoming pipes usb -> deframe transf. -> host
             this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._RXstream).pipe(this._responseParser);
 
+
+            var resetAndGetDeviceInfo = function _resetSystem(callback) {
+                this.resetSystem(function (error, notification) {
+                    if (!error) {
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
+                        this.startupNotification = notification;
+                        this.getCapabilities(function (error, capabilities) {
+                            if (!error) {
+                                this.capabilities = capabilities;
+                                //console.log(capabilities);
+                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
+                                // TO DO : setup max. channel configurations
+                                this.getANTVersion(function (error, version) {
+                                    if (!error) {
+                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
+
+                                        if (this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) {
+
+                                            this.getDeviceSerialNumber(function (error, serialNumberMsg) {
+                                                if (!error) {
+                                                    this.deviceSerialNumber = serialNumberMsg.serialNumber;
+                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
+                                                    callback();
+                                                } else
+                                                    nextCB(error)
+                                            }.bind(this));
+                                        }
+                                    } else
+                                        nextCB(error);
+                                }.bind(this));
+                            } else
+                                nextCB(error);
+                        }.bind(this));
+                    } else
+                        nextCB(error);
+                }.bind(this));
+            }.bind(this);
+
+
+
+
             this.usb.listen(function _USBListenCB(error) {
-                nextCB(error);
-            });
-
-
-            this.resetSystem(function (error, notification) {
-                if (!error) {
-                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
-                    this.startupNotification = notification;
-                    this.getCapabilities(function (error, capabilities) {
+                if (error)
+                    nextCB(error);
+                else
+                    resetAndGetDeviceInfo(function (error) {
                         if (!error) {
-                            this.capabilities = capabilities;
-                            //console.log(capabilities);
-                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
-                            // TO DO : setup max. channel configurations
-                            this.getANTVersion(function (error, version) {
-                                if (!error) {
-                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
-
-                                    if (this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) {
-
-                                        this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                                            if (!error) {
-                                                this.deviceSerialNumber = serialNumberMsg.serialNumber;
-                                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
-  
-                                                
-                                                this.assignChannel(0,0x00,0,undefined, function (error, response) {
-                                                    if (!error) {
-                                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-
-                                                            //this.setChannelId(0,0,248,1, function (error, response) {
-                                                            //    if (!error) {
-                                                            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-
-                                                            //        this.setChannelPeriod(0, 8192, function (error, response) {
-                                                            //            if (!error) {
-                                                            //                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-
-                                                            //                this.setChannelSearchTimeout(0, 24, function (error, response) {
-                                                            //                    if (!error) {
-                                                            //                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-
-                                                            //                        this.setChannelRFFreq(0, 57, function (error, response) {
-                                                            //                            if (!error) {
-                                                            //                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-
-                                                            //                                this.setTransmitPower(2, function (error, response) {
-                                                            //                                    if (!error) {
-                                                            //                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
-                                                            //                                    }
-                                                            //                                    else
-                                                            //                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            //                                }.bind(this));
-                                                            //                            }
-                                                            //                            else
-                                                            //                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            //                        }.bind(this));
-                                                            //                    }
-                                                            //                    else
-                                                            //                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            //                }.bind(this));
-                                                            //            }
-                                                            //            else
-                                                            //                this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            //        }.bind(this));
-                                                            //    }
-                                                            //    else
-                                                            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                            //}.bind(this));
-                                                    }
-                                                    else
-                                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, error);
-                                                }.bind(this));
-                                            } else
-                                                nextCB(error)
-                                        }.bind(this));
-                                    }
-                                }
+                            var testChannel = new Channel({
+                                channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+                                channelID: {
+                                    deviceNumber: Channel.prototype.WILDCARD, // Any
+                                    deviceType: Channel.prototype.WILDCARD,
+                                    transmissionType: Channel.prototype.WILDCARD
+                                },
+                                RFfrequency : 66,     // 2466 Mhz
+                                LPsearchTimeout : 24, // 60 seconds
+                            });
+                            console.log("Test channel", testChannel);
+                            this.establishChannel(0, 0, testChannel, function (error) {
+                                if (!error)
+                                    nextCB();
                                 else
                                     nextCB(error);
                             }.bind(this));
-
                         } else
                             nextCB(error);
                     }.bind(this));
-                } else
-                    nextCB(error);
             }.bind(this));
-        }
 
+
+            //this.getChannelStatus(0,function (error, statusMsg) {
+            //    if (!error) {
+
+            //        this.emit(Host.prototype.EVENT.LOG_MESSAGE, statusMsg.toString());
+
+           
+
+
+            //                    } else
+            //                        nextCB(error);
+            //                }.bind(this));
+            //            } else
+            //                nextCB(error);
+            //        }.bind(this));
+            //    }
+
+            //}.bind(this));
+
+        }
     }.bind(this));
 
 };
@@ -424,20 +576,20 @@ function verifyRange(type,value,low,high) {
         case 'channel':
 
             if (this.capabilities && (value > (this.capabilities.MAX_CHAN - 1) || value < 0))
-                throw new TypeError('Channel nr ' + value + ' out of bounds');
+                throw new RangeError('Channel nr ' + value + ' out of bounds');
 
             break;
 
         case 'network':
             if (this.capabilities && (value > (this.capabilities.MAX_NET - 1) || value < 0))
-                throw new TypeError('Network nr ' + value + ' out of bounds');
+                throw new RangeError('Network nr ' + value + ' out of bounds');
 
             break;
 
         case 'transmitPower':
 
             if (value > high || value < low)
-                throw new TypeError('Transmit power out of bounds');
+                throw new RangeError('Transmit power out of bounds');
 
             break;
 
@@ -447,16 +599,16 @@ function verifyRange(type,value,low,high) {
 }
 
 // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
-Host.prototype.getChannelStatus = function (channelNr, callback) {
+Host.prototype.getChannelStatus = function (channel, callback) {
 
-    verifyRange.bind(this)('channel',channelNr);
+    verifyRange.bind(this)('channel',channel);
 
-    var msg = (new RequestMessage(channelNr, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS))
+    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS))
 
     scheduleRetryMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,
         function (error, message) {
             if (error)
-                callback('Failed to get channel status for channel '+channelNr)
+                callback('Failed to get channel status for channel '+channel)
             else
                 callback(undefined, message);
         }.bind(this));
@@ -465,7 +617,7 @@ Host.prototype.getChannelStatus = function (channelNr, callback) {
 // Send a message, if a reply is not received, it will retry for 500ms. Optionally runs a validator func. that returns true if the response is valid
 function scheduleRetryMessage(sendMessage,event,callback,validator) {
     //console.trace();
-    console.log("ARGS", arguments);
+    //console.log("ARGS", arguments);
     var timeoutID,
         startTimestamp,
         currentTimestamp,
@@ -675,44 +827,44 @@ Host.prototype.parseChannelID = function (data,relIndex) {
 //    return msg;
 //};
 
-Host.prototype.parse_extended_RSSI = function (channelNr,data,startIndex) {
-    //console.log("CHANNEL NR: ",channelNr,"startIndex",startIndex,"data:",data);
+Host.prototype.parse_extended_RSSI = function (channel,data,startIndex) {
+    //console.log("CHANNEL NR: ",channel,"startIndex",startIndex,"data:",data);
     // http://www.thisisant.com/forum/viewthread/3841 -> not supported on nRF24AP2....
     // Create new RSSI object if not available
     var self = this;
-    if (typeof this.channelConfiguration[channelNr].RSSI === "undefined")
-        this.channelConfiguration[channelNr].RSSI = {};
+    if (typeof this.channelConfiguration[channel].RSSI === "undefined")
+        this.channelConfiguration[channel].RSSI = {};
 
-    this.channelConfiguration[channelNr].RSSI.measurementType = data[startIndex];
+    this.channelConfiguration[channel].RSSI.measurementType = data[startIndex];
 
-    if (this.channelConfiguration[channelNr].RSSI.measurementType === Host.prototype.RSSI.MEASUREMENT_TYPE.DBM) {
-        this.channelConfiguration[channelNr].RSSI.value = data[startIndex + 1];
-        this.channelConfiguration[channelNr].RSSI.thresholdConfigurationValue = data[startIndex + 2];
+    if (this.channelConfiguration[channel].RSSI.measurementType === Host.prototype.RSSI.MEASUREMENT_TYPE.DBM) {
+        this.channelConfiguration[channel].RSSI.value = data[startIndex + 1];
+        this.channelConfiguration[channel].RSSI.thresholdConfigurationValue = data[startIndex + 2];
     }
     //else
-    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, " Cannot decode RSSI, unknown measurement type " + this.channelConfiguration[channelNr].RSSI.measurementType);
+    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, " Cannot decode RSSI, unknown measurement type " + this.channelConfiguration[channel].RSSI.measurementType);
 
-    //console.log(this.channelConfiguration[channelNr].RSSI);
-    this.channelConfiguration[channelNr].RSSI.toString = function () {
+    //console.log(this.channelConfiguration[channel].RSSI);
+    this.channelConfiguration[channel].RSSI.toString = function () {
         var str;
 
-        str = "Measurement type 0x" + self.channelConfiguration[channelNr].RSSI.measurementType.toString(16);
+        str = "Measurement type 0x" + self.channelConfiguration[channel].RSSI.measurementType.toString(16);
 
-        if (self.channelConfiguration[channelNr].RSSI.value)
-            str += " RSSI value " + self.channelConfiguration[channelNr].RSSI.value;
+        if (self.channelConfiguration[channel].RSSI.value)
+            str += " RSSI value " + self.channelConfiguration[channel].RSSI.value;
 
-        if (self.channelConfiguration[channelNr].RSSI.thresholdConfigurationValue)
-            str += " Threshold conf. value " + self.channelConfiguration[channelNr].RSSI.thresholdConfigurationValue;
+        if (self.channelConfiguration[channel].RSSI.thresholdConfigurationValue)
+            str += " Threshold conf. value " + self.channelConfiguration[channel].RSSI.thresholdConfigurationValue;
 
         return str;
     };
 
-    return this.channelConfiguration[channelNr].RSSI;
+    return this.channelConfiguration[channel].RSSI;
 
 };
 
 // Parsing of the "flagged extended data message format"
-Host.prototype.parse_extended_message = function (channelNr,data) {
+Host.prototype.parse_extended_message = function (channel,data) {
     var msgLength = data[1], msgFlag,
         self = this,
         relativeIndex = 9,
@@ -737,22 +889,22 @@ Host.prototype.parse_extended_message = function (channelNr,data) {
     }
 
     if (msgFlag & Host.prototype.LIB_CONFIG.ENABLE_RSSI) {
-        this.parse_extended_RSSI(channelNr,data, relativeIndex);
+        this.parse_extended_RSSI(channel,data, relativeIndex);
         relativeIndex = relativeIndex + 4;
     }
 
     if (msgFlag & Host.prototype.LIB_CONFIG.ENABLE_RX_TIMESTAMP) {
         // console.log(data,relativeIndex);
-        if (typeof this.channelConfiguration[channelNr].RX_Timestamp)
-            previous_RX_Timestamp = this.channelConfiguration[channelNr].RX_Timestamp;
+        if (typeof this.channelConfiguration[channel].RX_Timestamp)
+            previous_RX_Timestamp = this.channelConfiguration[channel].RX_Timestamp;
         // Some times RangeError is generated during SIGINT
         try {
             //if (relativeIndex <= data.length -2) {
-                this.channelConfiguration[channelNr].RX_Timestamp = data.readUInt16LE(relativeIndex);
+                this.channelConfiguration[channel].RX_Timestamp = data.readUInt16LE(relativeIndex);
                 if (typeof previous_RX_Timestamp !== "undefined") {
-                    this.channelConfiguration[channelNr].RX_Timestamp_Difference = this.channelConfiguration[channelNr].RX_Timestamp - previous_RX_Timestamp;
-                    if (this.channelConfiguration[channelNr].RX_Timestamp_Difference < 0) // Roll over
-                        this.channelConfiguration[channelNr].RX_Timestamp_Difference += 0xFFFF;
+                    this.channelConfiguration[channel].RX_Timestamp_Difference = this.channelConfiguration[channel].RX_Timestamp - previous_RX_Timestamp;
+                    if (this.channelConfiguration[channel].RX_Timestamp_Difference < 0) // Roll over
+                        this.channelConfiguration[channel].RX_Timestamp_Difference += 0xFFFF;
                 }
            // } else
            //     console.log(Date.now(), "Attempt to UInt16LE read RX_Timestamp buffer data length :", data.length, "at index", relativeIndex,data);
@@ -762,17 +914,17 @@ Host.prototype.parse_extended_message = function (channelNr,data) {
         }
 
        
-        //console.log("Timestamp", this.channelConfiguration[channelNr].RX_Timestamp);
+        //console.log("Timestamp", this.channelConfiguration[channel].RX_Timestamp);
     }
 };
 
 
 
 // Called on first receive of broadcast from device/master
-Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, successCallback) {
+Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCallback) {
     var msgId, self = this;
 
-    self.sendOnly(self.request(channelNr, ANTMessage.prototype.MESSAGE.set_channel_id.id),
+    self.sendOnly(self.request(channel, ANTMessage.prototype.MESSAGE.set_channel_id.id),
         Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
         //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
         function error(err) {
@@ -852,72 +1004,6 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
         self.channelConfiguration[channel.number] = channel;
         //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
     },
-
-    // Configures a channel
-    Host.prototype.activateChannelConfiguration = function (desiredChannel, errorCallback, successCallback) {
-        //console.log("DESIRED CHANNEL", desiredChannel);
-        var self = this, channelNr = desiredChannel.number;
-        var channel = self.channelConfiguration[channelNr];
-
-        var continueConfiguration = function () {
-
-            self.setChannelSearchTimeout(channelNr,
-                   function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not channel searchtimeout " + channel); errorCallback(err); },
-                    function (data) {
-                        //console.log(Date.now() + " Set channel search timeout OK");
-
-                        self.setChannelRFFrequency(channelNr,
-                               function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not set RF frequency " + channel); errorCallback(err); },
-                                function (data) {
-                                    // console.log(Date.now() + " Set channel RF frequency OK");
-                                    if (typeof channel.searchWaveform !== "undefined") {
-                                        self.setSearchWaveform(channelNr,
-                                           function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not channel search waveform " + channel); errorCallback(err); },
-                                           function (data) {
-                                               // console.log(Date.now() + " Set channel search waveform OK");
-                                               successCallback();
-                                           });
-                                    } else
-                                        successCallback();
-                                });
-                    });
-        };
-
-        //console.log("Configuring : ", channelNr);
-
-    
-        self.setNetworkKey(channelNr,
-                                   function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to set network key." + channel.network); errorCallback(err); },
-                                   function (data) {
-                                       // console.log("Set network key OK ");
-                                       self.assignChannel(channelNr,
-                                           function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not assign channel "+channel); errorCallback(err); },
-                                           function (data) {
-                       
-                                               //console.log(Date.now() + " Assign channel OK");
-                                               self.setChannelId(channelNr,
-                                                   function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not set channel id "+ channel); errorCallback(err); },
-                                                    function (data) {
-                                                        //console.log(Date.now() + " Set channel id OK ");
-                                                        self.setChannelPeriod(channelNr,
-                                                           function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not set period "+ channel); errorCallback(err); },
-                                                            function (data) {
-                                                                //console.log(Date.now() + " Set channel period OK ");
-                                                                if (typeof channel.lowPrioritySearchTimeout !== "undefined")
-                                                                    self.setLowPriorityChannelSearchTimeout(channelNr,
-                                                                        function error(err) { self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Could not set low priority search timeout" + channel); errorCallback(err); },
-                                                                        function success() {
-                                                                            continueConfiguration();
-                                                                        });
-                                                                else
-                                                                    continueConfiguration();
-                                                      
-                                                            });
-                                                    });
-                                           });
-                                   });
-
-    };
 
     Host.prototype.LIB_CONFIG = {
         DISABLED: 0x00,
@@ -1020,9 +1106,10 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
                 cb('Failed to assign channel nr. ' + channelNr)
             else
                 cb(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
 
         
     };
@@ -1060,14 +1147,15 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
 
         configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to set channel id for channel nr. ' + channel)
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
 
     };
 
@@ -1118,26 +1206,46 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
     // Low priority search mode
     // Spec. p. 72 : "...a low priority search will not interrupt other open channels on the device while searching",
     // "If the low priority search times out, the module will switch to high priority mode"
-    Host.prototype.setLowPriorityChannelSearchTimeout = function (channelNr, errorCallback, successCallback) {
+    Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback) {
 
         // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
 
-        var channel_low_priority_search_timeout_msg, 
-            self = this,
-            channel = this.channelConfiguration[channelNr], 
-                message = new ANTMessage();
+        //var channel_low_priority_search_timeout_msg, 
+        //    self = this,
+        //    channel = this.channelConfiguration[channelNr], 
+        //        message = new ANTMessage();
 
-        if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED) {
-            //channel.lowPrioritySearchTimeout = ucSearchTimeout;
+        if (typeof this.capabilities !== "undefined" && this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED) {
+            ////channel.lowPrioritySearchTimeout = ucSearchTimeout;
 
-            //console.log("Set channel low priority search timeout channel " + channel.number + " timeout " + channel.lowPrioritysearchTimeout);
-            var buf = new Buffer([channel.number, channel.lowPrioritySearchTimeout]);
+            ////console.log("Set channel low priority search timeout channel " + channel.number + " timeout " + channel.lowPrioritysearchTimeout);
+            //var buf = new Buffer([channel.number, channel.lowPrioritySearchTimeout]);
 
-            channel_low_priority_search_timeout_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout, buf);
+            //channel_low_priority_search_timeout_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout, buf);
 
-            this.sendAndVerifyResponseNoError(channel_low_priority_search_timeout_msg, ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout.id, errorCallback, successCallback);
+            //this.sendAndVerifyResponseNoError(channel_low_priority_search_timeout_msg, ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout.id, errorCallback, successCallback);
+
+            var configurationMsg;
+
+            verifyRange.bind(this)('channel', channel);
+
+            configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
+
+            scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
+                if (error)
+                    callback('Failed to set low priority search timeout for channel nr. ' + channel)
+                else
+                    callback(undefined, responseMessage);
+            }.bind(this));
+
+            //}.bind(this), function _validationCB(responseMessage) {
+            //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+            //});
+
+
+
         } else
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support setting low priority search");
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support setting low priority search");
     };
 
 // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
@@ -1170,14 +1278,15 @@ Host.prototype.getUpdatedChannelID = function (channelNr, errorCallback, success
 
         configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to set channel RF frequency for channel nr. ' + channel)
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this))
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
     
     };
 

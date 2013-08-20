@@ -253,7 +253,7 @@ ANTMessage.prototype.MESSAGE = {
         SET_CHANNEL_MESSAGING_PERIOD:  0x43,
 
         0x63: "Low priority (LP) search timeout",
-        set_low_priority_channel_search_timeout: { id: 0x63, friendly: "Set low priority (LP) Channel Search Timeout" },
+        SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT:  0x63,
 
         0x44: "High priority (HP) search timeout",
         SET_CHANNEL_SEARCH_TIMEOUT:  0x44,

@@ -37,8 +37,6 @@ ParseANTResponse.prototype.EVENT = {
     LOG: 'log',
     ERROR: 'error',
 
-    //SET_CHANNEL_ID: 'setChannelId',
-
     DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
     ANT_VERSION: 'ANTVersion',
     CAPABILITIES: 'deviceCapabilities',
@@ -46,8 +44,6 @@ ParseANTResponse.prototype.EVENT = {
     // Data
     BROADCAST: 'broadcast',
     BURST: 'burst',
-
-    
 
 };
 
@@ -308,6 +304,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
             this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
             //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
+            //this.emit(ParseANTResponse.prototype.EVENT.LOG, channelResponseMsg.toString());
 
             break;
 

@@ -1,6 +1,6 @@
 var DeviceProfile = require('./deviceProfile.js');
-var Channel = require('./channel.js');
-var Network = require('./network.js');
+var Channel = require('../channel.js');
+var Network = require('../network.js');
 var ANT = require('ant-lib');
 
 function DeviceProfile_HRM(configuration) {

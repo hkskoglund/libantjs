@@ -1,10 +1,11 @@
-var events = require('events');
-var util = require('util');
-var Network = require('./network.js');
+var events = require('events'),
+   util = require('util');
+//var Network = require('./network.js');
 
 /*
 Options
 {
+name : (unique)
 number :
 type :
 networkNumber:
@@ -21,31 +22,39 @@ RFfrequency:
 transmitPower:
 }
 */
+// Inheritance: deviceprofile inherits channel
 function Channel(options) {
    
-    this.number = options.number;
-    this.type = options.type;
-    this.networkNumber = options.networkNumber;
-    this.networkKey = options.networkKey;
+    if (options) 
+        this.options = options;
+        //this.channelName = options.channelName;
+        //this.channelNumber = options.channelNumber;
+        //this.channelType = options.channelType;
+        //this.networkNumber = options.networkNumber;
+        //this.networkKey = options.networkKey;
 
-    this.extendedAssignment = options.extendedAssignment;
+        //this.channelID = options.channelID;
+      
 
-    this.channelID = options.channelID;
-    this.messagePeriod = options.period;
-    this.LPsearchTimeout = options.LPsearchTimeout;
-    this.RFfrequency = options.RFfrequency;
-    this.transmitPower = options.transmitPower;
+       //this.channelPeriod = options.channelPeriod;
+       //this.RFfrequency = options.RFfrequency;
+        //this.LPsearchTimeout = options.LPsearchTimeout;
+        //this.extendedAssignment = options.extendedAssignment;
+        //this.transmitPower = options.transmitPower;
   
 }
 
 util.inherits(Channel, events.EventEmitter);
 
+Channel.prototype.setChannelNumer = function (channel) {
+    this.channelNumber = channel;
+}
 
 Channel.prototype.EXTENDED_ASSIGNMENT = {
-    //0x01: "Background Scanning Enable",
-    //0x04: "Frequency Agility Enable",
-    //0x10: "Fast Channel Initiation Enable",
-    //0x20: "Asynchronous Transmission Enable",
+    0x01: "Background Scanning Enable",
+    0x04: "Frequency Agility Enable",
+    0x10: "Fast Channel Initiation Enable",
+    0x20: "Asynchronous Transmission Enable",
     BACKGROUND_SCANNING_ENABLE: 0x01,
     FREQUENCY_AGILITY_ENABLE: 0x04,
     FAST_CHANNEL_INITIATION_ENABLE: 0x10,
@@ -63,36 +72,38 @@ Channel.prototype.EXTENDED_ASSIGNMENT = {
 //    BURST : "burst"
 //},
 
+Channel.prototype.isMaster = function () {
+    return (this.channelType === Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL ||
+        this.channelType === Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL ||
+        this.channelType === Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL);
+}
+
 Channel.prototype.TYPE = {
 
     // Bidirectional
-    //0x00: "Bidirectional Slave Channel",
-    RECEIVE_CHANNEL: 0x00, // slave
+    0x00: "Bidirectional SLAVE",
+    BIDIRECTIONAL_SLAVE_CHANNEL: 0x00, // slave
 
-    //0x10: "Bidirectional Master Channel",
-    TRANSMIT_CHANNEL: 0x10, // master
+    0x10: "Bidirectional MASTER",
+    BIDIRECTIONAL_MASTER_CHANNEL: 0x10, // master
 
     // Unidirectional
-    //0x50: "Master Transmit Only Channel (legacy)",
-    TRANSMIT_ONLY_CHANNEL: 0x50,
+    0x50: "MASTER Transmit Only(legacy)",
+    MASTER_TRANSMIT_ONLY_CHANNEL: 0x50,
 
-    //0x40: "Slave Receive Only Channel (diagnostic)",
-    RECEIVE_ONLY_CHANNEL: 0x40,
+    0x40: "SLAVE Receive Only (diagnostic)",
+    SLAVE_RECEIVE_ONLY_CHANNEL: 0x40,
 
     // Shared channels
 
-    //0x20: "Shared bidirectional Slave channel",
-    SHARED_BIDIRECTIONAL_RECEIVE_CHANNEL: 0x20,
+    0x20: "Shared bidirectional SLAVE",
+    SHARED_BIDIRECTIONAL_SLAVE_CHANNEL: 0x20,
 
-    //0x30: "Shared bidirectional Master channel",
-    SHARED_BIDIRECTIONAL_TRANSMIT_CHANNEL: 0x30
+    0x30: "Shared bidirectional MASTER",
+    SHARED_BIDIRECTIONAL_MASTER_CHANNEL: 0x30
 };
 
-Channel.prototype.CHANNELID = {
-    DEVICE_NUMBER_WILDCARD: 0x00,
-    DEVICE_TYPE_WILDCARD: 0x00,
-    TRANSMISSION_TYPE_WILDCARD : 0x00
-};
+Channel.prototype.WILDCARD = 0x00
 
 //Channel.prototype.isBackgroundSearchChannel = function ()
 //{
