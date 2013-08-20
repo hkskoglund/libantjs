@@ -42,7 +42,7 @@ var events = require('events'),
     ChannelStatusMessage = require('./messages/ChannelStatusMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
-    DeFrameTransform = require('./messages/DeFrameTransform.js'),
+    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now just echo
         
     // Parsing of ANT messages received
     ResponseParser = require('./ANTResponseParser.js');
@@ -106,19 +106,6 @@ Host.prototype.EVENT = {
 
 };
 
-
-
-//Host.prototype.CHANNEL_STATUS = {
-//    0x00: "Un-Assigned",
-//    0x01: "Assigned",
-//    0x02: "Searching",
-//    0x03: "Tracking",
-//    UN_ASSIGNED: 0x00,
-//    ASSIGNED: 0x01,
-//    SEARCHING: 0x02,
-//    TRACKING: 0x03
-//};
-
 Host.prototype.RSSI =
     {
         MEASUREMENT_TYPE: {
@@ -148,6 +135,7 @@ Host.prototype.removeChannel = function (channel) {
 // Assign channel and set channel ID MUST be set before opening
 Host.prototype.establishChannel = function (channelNumber, networkNumber, channel, callback) {
     var options = channel.options,
+        masterChannel = channel.isMaster(),
         msg;
 
     console.log("Options", options);
@@ -194,8 +182,6 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
                         callback(error);
                 }.bind(this));
             }.bind(this);
-
-            
 
             ////// Default 8192 = 4 Hz
             var setChannelPeriod = function () {
@@ -260,8 +246,6 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
             else
                 assignChannelSetChannelId();
 
-           
-
             //// Optional
 
             //// SLAVE SEARCH TIMEOUTS : high priority and low priority
@@ -270,7 +254,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
 
             var setChannelSearchTimeout = function () {
                 // Default HP = 10 -> 25 seconds
-                if (!channel.isMaster() && options.HPsearchTimeout) 
+                if (masterChannel && options.HPsearchTimeout) 
                     this.setChannelSearchTimeout(channelNumber, options.HPsearchTimeout, function (error, response) {
                         if (!error) {
                             setLowPriorityChannelSearchTimeout();
@@ -284,8 +268,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
             }.bind(this);
         
             var setLowPriorityChannelSearchTimeout = function () {
-
-                if (!channel.isMaster() && options.LPsearchTimeout) 
+                // Default LP = 2 -> 5 seconds
+                if (masterChannel && options.LPsearchTimeout) 
                     this.setLowPriorityChannelSearchTimeout(channelNumber, options.LPsearchTimeout, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
@@ -307,7 +291,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, channe
 function initStream() {
     // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
     this._TXstream = new Duplex({objectMode : true}); // Default highWaterMark = 16384 bytes
-    this._RXstream = new Duplex();
+    this._RXstream = new Duplex(); // Cannot pipe into ._TXstream -> will create a loop, must have separate stream to pipe into
 
     //this._RXstream = new Writable();
 
@@ -476,7 +460,8 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                     transmissionType: Channel.prototype.WILDCARD
                                 },
                                 RFfrequency : 66,     // 2466 Mhz
-                                LPsearchTimeout: 24,// 60 seconds
+                                LPsearchTimeout: 24, // 60 seconds
+                                HPsearchTimeout : 10, // 25 seconds n*2.5 s
                                 transmitPower : 3 
                             });
                             console.log("Test channel", testChannel);
@@ -512,7 +497,6 @@ Host.prototype.exit = function (callback) {
     // Exit USB
 
     this.usb.exit(callback);
-
 
 };
 
@@ -781,55 +765,6 @@ Host.prototype.parseChannelID = function (data,relIndex) {
     //console.log(channelID.toString());
     return channelID;
 };
-
-//Host.prototype.parseChannelStatus = function (data) {
-
-//    //console.log("THIS", this);
-
-//    var channelStatus = {
-//        channelNumber: data[3],
-//        channelType: (data[4] & 0xF0) >> 4,  // Bit 4:7
-//        networkNumber: (data[4] & 0x0C) >> 2, // Bit 2:3
-//        channelState: data[4] & 0x03, // Bit 0:1
-
-//    };
-
-//    channelStatus.channelStateFriendly = Host.prototype.CHANNEL_STATUS[channelStatus.channelState];
-
-//    channelStatus.toString = function () {
-//        return "Channel status " + channelStatus.channelNumber + " type " + Channel.prototype.CHANNEL_TYPE[channelStatus.channelType] + " (" + channelStatus.channelType + " ) network " + channelStatus.networkNumber + " " + channelStatus.channelStateFriendly;
-//    };
-
-//    // Update channel configuration
-//    if (typeof this.channelConfiguration[channelStatus.channelNumber] === "undefined") {
-//        //this.emit(Host.prototype.EVENT.LOG_MESSAGE, "Creating new channel configuration for channel to hold channel status for channel " + channelStatus.channelNumber);
-//        this.channelConfiguration[channelStatus.channelNumber] = { number: channelStatus.channelNumber };
-//    }
-
-//    this.channelConfiguration[channelStatus.channelNumber].channelStatus = channelStatus;
-
-//    //this.emit(Host.prototype.EVENT.LOG_MESSAGE, channelStatus.toString());
-
-//    return channelStatus;
-//};
-
-//Host.prototype.parseChannelResponse = function (data) {
-//    var channel = data[3],
-//        msgId = data[4],
-//        msgCode = data[5],
-//            msg;
-
-//    //console.log("CHANNEL RESPONSE RAW", data);
-//    if (msgId === 1) // Set to 1 for RF event
-//        msg = "EVENT on channel " + channel + " " + Host.prototype.RESPONSE_EVENT_CODES[msgCode].friendly+" ";
-//    else
-//        msg = "RESPONSE on channel " + channel + " to msg. id 0x" + msgId.toString(16) + "  " + ANTMessage.prototype.MESSAGE[msgId] + " " + Host.prototype.RESPONSE_EVENT_CODES[msgCode].friendly;
-
-    
-//    //this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
-
-//    return msg;
-//};
 
 Host.prototype.parse_extended_RSSI = function (channel,data,startIndex) {
     //console.log("CHANNEL NR: ",channel,"startIndex",startIndex,"data:",data);
@@ -1124,27 +1059,6 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 */
     Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
 
-        ////(false, 0, 0, 0, 0),  // Search, no pairing   
-        ////                        DEFAULT_RETRY, ANT_DEVICE_TIMEOUT,
-        ////                        function () { exit("Failed to set channel id.") },
-        //// ANTWARE II - log file   1061.985 { 798221031} Tx - [A4][05][51][00][00][00][78][00][88][00][00]
-
-        //var set_channel_id_msg, self = this, message = new ANTMessage();
-        //var channel = this.channelConfiguration[channelNr];
-        ////console.log("Setting channel id. - channel number " + channel.number + " device type " + channel.deviceType + " transmission type " + channel.transmissionType);
-
-        //var buf = new Buffer(5);
-        //buf[0] = channel.number;
-        //buf.writeUInt16LE(channel.channelID.deviceNumber, 1); // If slave 0 matches any device number / dev id.
-        //// Seems like its not used at least for slave?  buf[3] = channel.deviceType & 0x80; // If bit 7 = 1 -> master = request pairing, slave = find pairing transmitter -> (pairing bit)
-        //// Pairing bit-set in Channel object, if pairing requested deviceType = deviceType | 0x80;
-        //buf[3] = channel.channelID.deviceType;
-        //buf[4] = channel.channelID.transmissionType; // Can be set to zero (wildcard) on a slave device, spec. p. 18 ANT Message Protocol and Usage, rev 5.0
-
-        //set_channel_id_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_id, buf);
-
-        //this.sendAndVerifyResponseNoError(set_channel_id_msg, ANTMessage.prototype.MESSAGE.set_channel_id.id, errorCallback, successCallback);
-
         var configurationMsg;
 
         verifyRange.bind(this)('channel',channel);
@@ -1165,30 +1079,9 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
     Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
 
-        //var set_channel_period_msg, rate, self = this, message = new ANTMessage();
-        //var channel = this.channelConfiguration[channelNr];
-   
-        //var msg = "";
-
         //if (channel.isBackgroundSearchChannel())
         //    msg = "(Background search channel)";
 
-        ////console.log("Set channel period for channel " + channel.number + " to " + channel.periodFriendly + " value: " + channel.period);
-
-        //if (typeof channel.period !== "undefined") {
-        //    var buf = new Buffer(3);
-        //    buf[0] = channel.number;
-        //    buf.writeUInt16LE(channel.period, 1);
-
-        //    set_channel_period_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_channel_messaging_period, new Buffer(buf));
-
-        //    this.sendAndVerifyResponseNoError(set_channel_period_msg, ANTMessage.prototype.MESSAGE.set_channel_messaging_period.id, errorCallback, successCallback);
-        //} else {
-        
-        //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel period not specified for channel "+channel.number+" "+msg);
-        //    successCallback(); // Continue with configuration
-
-        //}
 
         var configurationMsg;
 
@@ -1220,15 +1113,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //        message = new ANTMessage();
 
         if (typeof this.capabilities !== "undefined" && this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED) {
-            ////channel.lowPrioritySearchTimeout = ucSearchTimeout;
-
-            ////console.log("Set channel low priority search timeout channel " + channel.number + " timeout " + channel.lowPrioritysearchTimeout);
-            //var buf = new Buffer([channel.number, channel.lowPrioritySearchTimeout]);
-
-            //channel_low_priority_search_timeout_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout, buf);
-
-            //this.sendAndVerifyResponseNoError(channel_low_priority_search_timeout_msg, ANTMessage.prototype.MESSAGE.set_low_priority_channel_search_timeout.id, errorCallback, successCallback);
-
+       
             var configurationMsg;
 
             verifyRange.bind(this)('channel', channel);
@@ -1261,14 +1146,15 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to set channel search timeout for channel nr. ' + channel)
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+        //, function _validationCB(responseMessage) {
+        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //});
 
 
     };
@@ -1334,28 +1220,6 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //});
     };
 
-    //Host.prototype.setSearchWaveform = function (channelNr, errorCallback, successCallback) {
-    //    // waveform in little endian!
-
-    //    var set_search_waveform_msg, self = this,
-    //        buf = new Buffer(3);
-    //    var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-
-    //    if (typeof channel.searchWaveform === "undefined") {
-    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No search waveform specified");
-    //        errorCallback();
-    //    }
-
-    //    //console.log("Set channel search waveform channel " + channel.number + " waveform " + channel.searchWaveform);
-
-    //    buf[0] = channel.number;
-    //    buf[1] = channel.searchWaveform[0];
-    //    buf[2] = channel.searchWaveform[1];
-    //    set_search_waveform_msg = message.create_message(ANTMessage.prototype.MESSAGE.set_search_waveform, new Buffer(buf));
-
-    //    this.sendAndVerifyResponseNoError(set_search_waveform_msg, ANTMessage.prototype.MESSAGE.set_search_waveform.id, errorCallback, successCallback);
-    
-    //};
 
     Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
         var openRxScan_channel_msg, self = this, message = new ANTMessage();
@@ -1368,14 +1232,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
     Host.prototype.openChannel = function (channel, callback) {
-        ////console.log("Opening channel "+ucChannel);
-        //var open_channel_msg, self = this;
-        //var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-        ////self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-        //open_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_channel, new Buffer([channel.number]));
-
-        //this.sendAndVerifyResponseNoError(open_channel_msg, ANTMessage.prototype.MESSAGE.open_channel.id, errorCallback, successCallback,noVerifyResponseNoError);
-
+     
         var configurationMsg;
 
         verifyRange.bind(this)('channel', channel);
