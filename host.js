@@ -36,6 +36,8 @@ var events = require('events'),
     SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage.js'),
     SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage.js'),
     SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage.js'),
+
+    LibConfigMessage = require('./messages/LibConfigMessage.js'),
    
 
     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
@@ -71,9 +73,6 @@ util.inherits(Host, events.EventEmitter);
 //    CONTINOUS: 0x00,
 //    BACKGROUND: 0x01
 //};
-
-
-
 
 //Host.prototype.ANT_DEFAULT_RETRY = 2;
 
@@ -944,17 +943,17 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
     },
 
-    Host.prototype.LIB_CONFIG = {
+    /* Host.prototype.LIB_CONFIG = {
         DISABLED: 0x00,
         ENABLE_RX_TIMESTAMP: 0x20, // Bit 6
         ENABLE_RSSI: 0x40, // Bit 7 
         ENABLE_CHANNEL_ID: 0x80 // Bit 8
-    };
+    }; */
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
-    Host.prototype.libConfig = function (ucLibConfig, errorCallback, successCallback) {
-        var self = this,
+    Host.prototype.libConfig = function (libConfig, callback) {
+       /* var self = this,
             filler = 0,
             libConfigMsg = new ANTMessage();
 
@@ -962,8 +961,21 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
             this.sendAndVerifyResponseNoError(libConfigMsg.create_message(ANTMessage.prototype.MESSAGE.libConfig, new Buffer([filler, ucLibConfig])), ANTMessage.prototype.MESSAGE.libConfig.id, errorCallback, successCallback);
         else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via LibConfig API call");
-    };
+            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via LibConfig API call"); */
+
+     var configurationMsg;
+
+        configurationMsg = new LibConfigMessage();
+
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
+            if (error)
+                callback('Failed to set lib config ' + libConfig)
+            else
+                callback(undefined, responseMessage);
+        }.bind(this));
+     
+   
+ };
 
     // Only enables Channel ID extension of messages
     Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
@@ -1005,14 +1017,15 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new UnAssignChannelMessage();
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to un-assign channel nr. ' + channelNr)
             else
                 callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        }.bind(this));
+//, function _validationCB(responseMessage) {
+//            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+//        });
     }
 
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.

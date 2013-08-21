@@ -268,10 +268,10 @@ ANTMessage.prototype.MESSAGE = {
         set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },
 
         0x6E: "Lib Config",
-        libConfig: { id: 0x6E, friendly: "Lib Config" },
+        LIBCONFIG:  0x6E,
 
         0x66: "Enable Extended Messages",
-        RxExtMesgsEnable: { id: 0x66, friendly: "Enable Extended Messages" },
+        RXEXTMESGSENABLE: { id: 0x66, friendly: "Enable Extended Messages" },
 
     // Data message
 

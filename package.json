@@ -31,8 +31,8 @@
   "readme": "ERROR: No README data found!",
   "_id": "ant-lib@0.1.0",
   "dist": {
-    "shasum": "893d9de1adb667e00366c5ea62a98860c73680e8"
+    "shasum": "f0a0edcb37c1bd3898b1c2d6eb906599cce6adc7"
   },
-  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#07a894cfe4c7cdcb9568a924793f589145e4f46c",
+  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#1f47370af6418f8d05214dfb6e9b8231aae8ad04",
   "_from": "ant-lib@git://github.com/hkskoglund/ANT-lib.git"
 }
