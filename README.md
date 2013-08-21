@@ -1,7 +1,7 @@
 libant
 ======
 
-Library for the ANT protocol over USB
+Library for the ANT protocol over USB for node.js
 
 <h1>Usage</h1>
 
