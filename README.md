@@ -17,7 +17,7 @@ API is in <b>unstable</b> alpha stage. It is based on the ANT message protocol a
   
 <h3>host.resetSystem(callback)</h3>
 
-   reset ANT device
+   reset ANT device. A timeout is set on 500ms before callback is executed to allow for post-reset-state.
    
 <h3>host.getANTVersion(callback)</h3>
 
