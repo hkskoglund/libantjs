@@ -7,7 +7,7 @@ Library for the ANT protocol over USB
 
 var host = require('./host.js');
 
-<h1>host.init(idVendor, idProduct, callback)</h1>
+<h3>host.init(idVendor, idProduct, callback)</h3>
 
   initializes usb device, reset ANT and get ANT capabilities and device information
   
