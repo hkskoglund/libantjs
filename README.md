@@ -9,7 +9,7 @@ var host = require('./host.js');
 
 Callback follows the pattern for callback(error,message)
 
-API is in <b>unstable</b> alpha stage.
+API is in <b>unstable</b> alpha stage. It is based on the ANT message protocol and usage document http://www.thisisant.com/resources/ant-message-protocol-and-usage/
 
 <h3>host.init(idVendor, idProduct, callback)</h3>
 
