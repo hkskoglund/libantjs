@@ -3,6 +3,10 @@ libant
 
 Library for the ANT protocol over USB for node.js
 
+<h1>Installation</h1>
+
+Requires that a libusb-driver/library is installed (see README https://github.com/nonolith/node-usb/blob/master/Readme.md)
+
 <h1>Usage</h1>
 
 var host = require('./host.js');
