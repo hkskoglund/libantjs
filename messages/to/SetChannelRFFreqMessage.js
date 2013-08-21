@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelRFFreqMessage(channel, RFFreq) {
@@ -15,6 +15,9 @@ function SetChannelRFFreqMessage(channel, RFFreq) {
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_RFFREQ;
     this.name = "Set channel RF frequency";
 
+    this.channel = channel;
+    this.RFFreq = RFFreq;
+
     this.setContent(msgBuffer)
 
     //console.log("SetChannelRFFreqMessage", this);
@@ -26,7 +29,7 @@ SetChannelRFFreqMessage.prototype.constructor = SetChannelRFFreqMessage;
 
 
 SetChannelRFFreqMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " RF freq. " + this.RFFreq;
 }
 
 module.exports = SetChannelRFFreqMessage;

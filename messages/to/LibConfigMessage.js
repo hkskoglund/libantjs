@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function LibConfigMessage(libConfig) {
@@ -14,6 +14,8 @@ function LibConfigMessage(libConfig) {
 
     this.id = ANTMessage.prototype.MESSAGE.LIBCONFIG;
     this.name = "Lib Config";
+    
+    this.libConfig = libConfig;
 
     this.setContent(msgBuffer)
 
@@ -32,7 +34,7 @@ LibConfigMessage.prototype.LIBCONFIG = {
 }
 
 LibConfigMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16) + " lib config " + this.libConfig;
 }
 
 module.exports = LibConfigMessage;

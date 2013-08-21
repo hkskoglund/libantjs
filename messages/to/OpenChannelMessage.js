@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 function OpenChannelMessage(channel) {
 
@@ -11,6 +11,7 @@ function OpenChannelMessage(channel) {
     this.id = ANTMessage.prototype.MESSAGE.OPEN_CHANNEL;
     this.name = "Open channel";
 
+    this.channel = channel;
 
     this.setContent(msgBuffer)
 

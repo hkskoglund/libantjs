@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 // p.89 "ANT Message Protocol and Usage, rev 5.0b"
 // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
@@ -15,6 +15,11 @@ function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
 
     this.id = ANTMessage.prototype.MESSAGE.REQUEST;
     this.name = "Request";
+
+    this.channel = channel;
+    this.requestedMessageId = requestedMessageId;
+    this.NVMaddr = NVMaddr;
+    this.NVMsize = NVMsize;
 
 
     // Non Volatile Memory 
@@ -40,7 +45,7 @@ RequestMessage.prototype = Object.create(ANTMessage.prototype);
 RequestMessage.prototype.constructor = RequestMessage;
 
 RequestMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " " + this.length + " " + this.message;
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " requested msg. id " + this.requestedMessageId + " NVMaddr " + this.NVMaddr + "NVMsize" + this.NVMsize;
 }
 
 module.exports = RequestMessage;

@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function UnAssignChannelMessage(channel) {
@@ -11,6 +11,10 @@ function UnAssignChannelMessage(channel) {
 
     this.id = ANTMessage.prototype.MESSAGE.UNASSIGN_CHANNEL;
     this.name = "UnAssign Channel";
+
+    // Parameters
+
+    this.channel = channel;
 
     this.setContent(msgBuffer)
 
@@ -23,7 +27,7 @@ UnAssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
 UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
 UnAssignChannelMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + this.message;
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel;
 }
 
 module.exports = UnAssignChannelMessage;

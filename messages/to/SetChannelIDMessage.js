@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
@@ -19,6 +19,10 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_ID;
     this.name = "Set channel id";
 
+    this.channel = channel;
+    this.deviceNumber = deviceNum;
+    this.deviceType = deviceType;
+    this.transmissionType = transmissionType;
 
     this.setContent(msgBuffer)
 
@@ -34,7 +38,7 @@ SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit
 SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
 
 SetChannelIDMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
 }
 
 module.exports = SetChannelIDMessage;

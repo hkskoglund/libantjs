@@ -1,5 +1,5 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
 function NotificationStartup(data) {

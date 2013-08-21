@@ -1,6 +1,7 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js'),
+    Channel = require('../../channel.js');
 
 
 function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment) {
@@ -14,7 +15,11 @@ function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignme
 
     this.id = ANTMessage.prototype.MESSAGE.ASSIGN_CHANNEL;
     this.name = "Assign Channel";
+
     this.channel = channel;
+    this.channelType = channelType;
+    this.networkNumber = networkNumber;
+    this.extendedAssignment = extendedAssignment;
 
     this.setContent(msgBuffer)
 
@@ -27,7 +32,7 @@ AssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
 AssignChannelMessage.prototype.constructor = AssignChannelMessage;
 
 AssignChannelMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + this.message;
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " network " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType] + " extended assignment " + this.extendedAssignment;
 }
 
 module.exports = AssignChannelMessage;

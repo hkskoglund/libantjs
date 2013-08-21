@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelPeriodMessage(channel, messagePeriod) {
@@ -15,6 +15,9 @@ function SetChannelPeriodMessage(channel, messagePeriod) {
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_MESSAGING_PERIOD;
     this.name = "Set channel period";
 
+    this.channel = channel;
+    this.messagePeriod = messagePeriod;
+
     this.setContent(msgBuffer)
 
     //console.log("SetChannelPeriodMessage", this);
@@ -26,7 +29,7 @@ SetChannelPeriodMessage.prototype.constructor = SetChannelPeriodMessage;
 
 
 SetChannelPeriodMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " message period " + this.messagePeriod;
 }
 
 module.exports = SetChannelPeriodMessage;

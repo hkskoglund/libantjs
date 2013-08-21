@@ -29,10 +29,10 @@
     "node": ">=0.10.x"
   },
   "readme": "ERROR: No README data found!",
-  "_id": "ant-lib@0.1.0",
+  "_id": "libant@0.1.0",
   "dist": {
-    "shasum": "f0a0edcb37c1bd3898b1c2d6eb906599cce6adc7"
+    "shasum": "dc527175fc286259116f248724d7e3a6272105d0"
   },
-  "_resolved": "git://github.com/hkskoglund/ANT-lib.git#1f47370af6418f8d05214dfb6e9b8231aae8ad04",
+  "_resolved": "git://github.com/hkskoglund/libant.git#2e054de5b71cabb9309edb28e51c06548243712a",
   "_from": "ant-lib@git://github.com/hkskoglund/ANT-lib.git"
 }

@@ -1,6 +1,6 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js'),
-    Channel = require('../channel.js');
+var ANTMessage = require('../ANTMessage.js'),
+    Channel = require('../../channel.js');
 
 
 function ChannelStatusMessage() {

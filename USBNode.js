@@ -1,7 +1,7 @@
 ﻿"use strict"
 var USBDevice = require('./USBDevice.js'),
     usb = require('usb'),
-    ANT = require('ant-lib'),
+    ANT = require('libant'),
     Duplex = require('stream').Duplex;
 
 function initStream() {

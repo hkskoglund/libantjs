@@ -1,5 +1,5 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 function NotificationSerialError(data) {
     ANTMessage.call(this, data);

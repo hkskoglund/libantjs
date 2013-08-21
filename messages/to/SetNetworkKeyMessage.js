@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function SetNetworkKeyMessage(channel, key) {
@@ -14,6 +14,9 @@ function SetNetworkKeyMessage(channel, key) {
     this.id = ANTMessage.prototype.MESSAGE.SET_NETWORK_KEY;
     this.name = "Set network key";
 
+    this.channel = channel;
+    this.key = key;
+
     this.setContent(msgBuffer)
 
     //console.log("SetNetworkKeyMessage", this);
@@ -25,7 +28,7 @@ SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
 
 
 SetNetworkKeyMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " key " + this.key;
 }
 
 module.exports = SetNetworkKeyMessage;

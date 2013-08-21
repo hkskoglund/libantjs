@@ -4,7 +4,7 @@
 var DeviceProfile = require('./deviceProfile.js');
 var CRC = require('../crc.js');
 //console.log("Resolved ant-lib",require.resolve('ant-lib'));
-var ANT = require('ant-lib');
+var ANT = require('libant');
 var fs = require('fs');
 var Channel = require('../channel.js');
 var PathSeparator = require('path').sep; // Win32 = \\, *nix = /

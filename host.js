@@ -10,38 +10,38 @@ var events = require('events'),
     Duplex = require('stream').Duplex,
 
     // Control ANT
-    ResetSystemMessage = require('./messages/ResetSystemMessage.js'),
-    OpenChannelMessage = require('./messages/OpenChannelMessage.js'),
+    ResetSystemMessage = require('./messages/to//ResetSystemMessage.js'),
+    OpenChannelMessage = require('./messages/to/OpenChannelMessage.js'),
 
     // Notifications
 
-    NotificationStartup = require('./messages/NotificationStartup.js'),
+    NotificationStartup = require('./messages/from/NotificationStartup.js'),
 
     // Request -response
 
-    RequestMessage = require('./messages/RequestMessage.js'),
+    RequestMessage = require('./messages/to/RequestMessage.js'),
 
-        CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
-        ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
-        DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
+        CapabilitiesMessage = require('./messages/from/CapabilitiesMessage.js'),
+        ANTVersionMessage = require('./messages/from/ANTVersionMessage.js'),
+        DeviceSerialNumberMessage = require('./messages/from/DeviceSerialNumberMessage.js'),
 
     // Configuration
 
-    AssignChannelMessage = require('./messages/AssignChannelMessage.js'),
-    UnAssignChannelMessage = require('./messages/UnAssignChannelMessage.js'),
-    SetChannelIDMessage = require('./messages/SetChannelIDMessage.js'),
-    SetChannelPeriodMessage = require('./messages/SetChannelPeriodMessage.js'),
-    SetChannelSearchTimeoutMessage = require('./messages/SetChannelSearchTimeoutMessage.js'),
-    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/SetLowPriorityChannelSearchTimeoutMessage.js'),
-    SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage.js'),
-    SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage.js'),
-    SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage.js'),
+    AssignChannelMessage = require('./messages/to/AssignChannelMessage.js'),
+    UnAssignChannelMessage = require('./messages/to/UnAssignChannelMessage.js'),
+    SetChannelIDMessage = require('./messages/to/SetChannelIDMessage.js'),
+    SetChannelPeriodMessage = require('./messages/to/SetChannelPeriodMessage.js'),
+    SetChannelSearchTimeoutMessage = require('./messages/to/SetChannelSearchTimeoutMessage.js'),
+    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/to/SetLowPriorityChannelSearchTimeoutMessage.js'),
+    SetChannelRFFreqMessage = require('./messages/to/SetChannelRFFreqMessage.js'),
+    SetNetworkKeyMessage = require('./messages/to/SetNetworkKeyMessage.js'),
+    SetTransmitPowerMessage = require('./messages/to/SetTransmitPowerMessage.js'),
 
-    LibConfigMessage = require('./messages/LibConfigMessage.js'),
+    LibConfigMessage = require('./messages/to/LibConfigMessage.js'),
    
 
-    ChannelResponseMessage = require('./messages/ChannelResponseMessage.js'),
-    ChannelStatusMessage = require('./messages/ChannelStatusMessage.js'),
+    ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js'),
+    ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
     DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now just echo
@@ -480,6 +480,8 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
 };
 
 // Exit USB device and closes/end TX/RX stream
+
+
 Host.prototype.exit = function (callback) {
     // console.log("Inside exit ANT");
 
@@ -505,7 +507,7 @@ Host.prototype.resetSystem = function (callback) {
     var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing with callbacks...
     var msg = new ResetSystemMessage();
 
-    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.NOTIFICATION_STARTUP, function (error, message) {
+    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.NOTIFICATION_STARTUP, function (error, message) {
         setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, message);
     }.bind(this));
 };
@@ -515,12 +517,7 @@ Host.prototype.getANTVersion = function (callback) {
 
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
-    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.ANT_VERSION, function (error,message) {
-        if (error)
-            callback('Failed to get version of ANT device')
-        else
-            callback(undefined,message);
-    }.bind(this));
+    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.ANT_VERSION, callback);
        
 };
 
@@ -529,12 +526,7 @@ Host.prototype.getCapabilities = function (callback) {
 
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.CAPABILITIES));
 
-    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CAPABILITIES, function (error,message) {
-        if (error)
-            callback('Failed to get capabilities of ANT device')
-        else
-            callback(undefined,message);
-    }.bind(this));
+    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CAPABILITIES, callback);
         
 };
 
@@ -544,13 +536,8 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
     var msg = (new RequestMessage(0, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER))
 
 
-    scheduleRetryMessage.bind(this)(msg, ResponseParser.prototype.EVENT.DEVICE_SERIAL_NUMBER,
-        function (error,message) {
-            if (error)
-                callback('Failed to get ANT device serial number')
-            else
-                callback(undefined,message);
-        }.bind(this));
+    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.DEVICE_SERIAL_NUMBER,callback);
+    
 };
 
 // Determine valid channel/network
@@ -592,17 +579,12 @@ Host.prototype.getChannelStatus = function (channel, callback) {
 
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS))
 
-    scheduleRetryMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,
-        function (error, message) {
-            if (error)
-                callback('Failed to get channel status for channel '+channel)
-            else
-                callback(undefined, message);
-        }.bind(this));
+    sendMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,callback);
+       
 };
 
 // Send a message, if a reply is not received, it will retry for 500ms. Optionally runs a validator func. that returns true if the response is valid
-function scheduleRetryMessage(sendMessage,event,callback,validator) {
+function sendMessage(sendMessage,event,callback,validator) {
     //console.trace();
     //console.log("ARGS", arguments);
     var timeoutID,
@@ -687,10 +669,10 @@ function scheduleRetryMessage(sendMessage,event,callback,validator) {
                     this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Failed : Reset ANT receive state machine');
             }.bind(this));
 
-            callback(new Error('No reply from ANT device'));
+            callback(new Error('No reply received for message '+sendMessage.toString()));
 
         } else if (listenerCalled)
-            callback(new Error('Failed to validate reply for message '+sendMessage.name + MAX_TIMESTAMP_DIFF + " ms."));
+            callback(new Error('Got no '+event+' for message '+sendMessage.name + " in "+ MAX_TIMESTAMP_DIFF + " ms."));
     }
 
     startTimestamp = Date.now();
@@ -965,14 +947,9 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
      var configurationMsg;
 
-        configurationMsg = new LibConfigMessage();
+        configurationMsg = new LibConfigMessage(libConfig);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to set lib config ' + libConfig)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
      
    
  };
@@ -1017,12 +994,13 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new UnAssignChannelMessage();
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to un-assign channel nr. ' + channelNr)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
+        //function (error, responseMessage) {
+        //    if (error)
+        //        callback(error)
+        //    else
+        //        callback(undefined, responseMessage);
+        //}.bind(this));
 //, function _validationCB(responseMessage) {
 //            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
 //        });
@@ -1038,13 +1016,12 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
 
-        
         if (typeof extend === "function")
             cb = extend; // If no extended assignment use parameter as callback
         else
             cb = callback;
 
-        //scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        //sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
         //    if (error)
         //        cb('Failed to assign channel nr. ' + channelNr)
         //    else
@@ -1053,12 +1030,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         //});
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                cb('Failed to assign channel nr. ' + channelNr)
-            else
-                cb(undefined, responseMessage);
-        }.bind(this));
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", cb);
         //, function _validationCB(responseMessage) {
         //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         //});
@@ -1078,15 +1050,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to set channel id for channel nr. ' + channel)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
 
     };
 
@@ -1102,14 +1066,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
-            if (error)
-                callback('Failed to set channel message period for channel nr. ' + channel)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
 
     };
 
@@ -1133,18 +1090,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
             configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
 
-            scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-                if (error)
-                    callback('Failed to set low priority search timeout for channel nr. ' + channel)
-                else
-                    callback(undefined, responseMessage);
-            }.bind(this));
-
-            //}.bind(this), function _validationCB(responseMessage) {
-            //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-            //});
-
-
+            sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
 
         } else
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support setting low priority search");
@@ -1159,15 +1105,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to set channel search timeout for channel nr. ' + channel)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
 
 
     };
@@ -1181,15 +1119,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to set channel RF frequency for channel nr. ' + channel)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this))
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
     
     };
 
@@ -1202,15 +1132,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetNetworkKeyMessage(netNumber, key);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
-            if (error)
-                callback('Failed to set network key for network nr. ' + netNumber)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
     };
 
     // Set transmit power for all channels
@@ -1222,15 +1144,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         configurationMsg = new SetTransmitPowerMessage(transmitPower);
 
-        scheduleRetryMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
-            if (error)
-                callback('Failed to set transmit power for all channels');
-            else
-                callback(undefined, responseMessage);
-        }.bind(this));
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
     };
 
 
@@ -1253,14 +1167,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         configurationMsg = new OpenChannelMessage(channel);
 
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
-            if (error)
-                callback('Failed to open channel nr. ' + channel)
-            else
-                callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", callback);
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
@@ -1384,7 +1291,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         // this._
         // TO DO : create a single function for configuration/control commands that receive RESPONSE_NO_ERROR ?
 
-        scheduleRetryMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        sendMessage.bind(this)(configurationMsg, "RESPONSE_NO_ERROR", function (error, responseMessage) {
             if (error)
                 callback('Failed to close channel nr. ' + channel)
             else

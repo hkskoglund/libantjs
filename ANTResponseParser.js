@@ -4,15 +4,15 @@
 
     // Notifications from ANT
 
-    NotificationStartup = require('./messages/NotificationStartup.js'),
-    NotificationSerialError = require('./messages/NotificationSerialError.js'),
+    NotificationStartup = require('./messages/from/NotificationStartup.js'),
+    NotificationSerialError = require('./messages/from/NotificationSerialError.js'),
 
-     CapabilitiesMessage = require('./messages/CapabilitiesMessage.js'),
-    ANTVersionMessage = require('./messages/ANTVersionMessage.js'),
-    DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage.js'),
-     ChannelStatusMessage = require('./messages/ChannelStatusMessage.js'),
+     CapabilitiesMessage = require('./messages/from/CapabilitiesMessage.js'),
+    ANTVersionMessage = require('./messages/from/ANTVersionMessage.js'),
+    DeviceSerialNumberMessage = require('./messages/from/DeviceSerialNumberMessage.js'),
+     ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
      
-     ChannelResponseMessage = require('./messages/ChannelResponseMessage.js');
+     ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js');
 
 util.inherits(ParseANTResponse, Transform);
 
@@ -302,7 +302,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
             console.log("event type", type);
 
-            this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
+            //this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
             //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
             //this.emit(ParseANTResponse.prototype.EVENT.LOG, channelResponseMsg.toString());
 

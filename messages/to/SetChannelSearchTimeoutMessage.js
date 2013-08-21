@@ -1,6 +1,6 @@
 ﻿"use strict"
 
-var ANTMessage = require('./ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
@@ -15,6 +15,9 @@ function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT;
     this.name = "Set channel search timeout";
 
+    this.channel = channel;
+    this.HPsearchTimeout = searchTimeout;
+
     this.setContent(msgBuffer)
 
     //console.log("SetChannelSearchTimeoutMessage", this);
@@ -26,7 +29,7 @@ SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMe
 
 
 SetChannelSearchTimeoutMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " 0x" + this.id.toString(16)+ "channel "+this.channel+" HP search timeout" +this.HPsearchTimeout;
 }
 
 module.exports = SetChannelSearchTimeoutMessage;

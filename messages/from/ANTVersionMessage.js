@@ -1,6 +1,6 @@
 ﻿"use strict"
-var ANTMessage = require('./ANTMessage.js'),
-    RequestMessage = require('./RequestMessage.js');
+var ANTMessage = require('../ANTMessage.js');
+  
 
 function ANTVersionMessage() {
 

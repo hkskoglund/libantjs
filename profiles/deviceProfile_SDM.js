@@ -1,7 +1,7 @@
 var DeviceProfile = require('./deviceProfile.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
-var ANT = require('ant-lib');
+var ANT = require('libant');
 
 function DeviceProfile_SDM(nodeInstance) {
     DeviceProfile.call(this); // Call parent
