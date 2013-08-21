@@ -19,7 +19,7 @@ API is in <b>unstable</b> alpha stage.
 
    reset ANT device
    
-<h3>host.getANTVersion(callback)</b>
+<h3>host.getANTVersion(callback)</h3>
 
    request for ANT version
    
