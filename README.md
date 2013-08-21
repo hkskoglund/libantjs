@@ -13,7 +13,7 @@ API is in <b>unstable</b> alpha stage. It is based on the ANT message protocol a
 
 <h3>host.init(idVendor, idProduct, callback)</h3>
 
-  initializes usb device, reset ANT and get ANT capabilities and device information
+  initializes usb device, reset ANT and get ANT capabilities and device information (version/serial number)
   
 <h3>host.resetSystem(callback)</h3>
 
