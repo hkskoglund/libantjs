@@ -3,17 +3,19 @@ libant
 
 Library for the ANT protocol over USB
 
-Host ANT API
+<h1>Usage</h1>
 
-<b>init(idVendor, idProduct, callback)</b>
+var host = require('./host.js');
+
+<h1>host.init(idVendor, idProduct, callback)</h1>
 
   initializes usb device, reset ANT and get ANT capabilities and device information
   
-<b>resetSystem(callback)</b>
+<b>host.resetSystem(callback)</b>
 
    reset ANT device
    
-<b>getANTVersion(callback)</b>
+<b>host.getANTVersion(callback)</b>
 
    request for ANT version
    
