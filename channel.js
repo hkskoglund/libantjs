@@ -92,7 +92,7 @@ Channel.prototype.showConfiguration = function (name) {
                     friendlyFormat = "Disabled";
                     break;
                 case 255:
-                    friendlyFormat = "Infinite";
+                    friendlyFormat = "Infinity";
                     break;
                 default:
                     friendlyFormat = searchTimeout * 2.5 + "s";

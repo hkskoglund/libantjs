@@ -2,6 +2,7 @@ var DeviceProfile = require('./deviceProfile.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
 var ANT = require('libant');
+var util = require('util');
 
 function DeviceProfile_SDM(nodeInstance) {
     DeviceProfile.call(this); // Call parent
@@ -9,9 +10,10 @@ function DeviceProfile_SDM(nodeInstance) {
     
 }
 
-DeviceProfile_SDM.protype = DeviceProfile.prototype;  // Inherit properties/methods
+//DeviceProfile_SDM.protype = DeviceProfile.prototype;  // Inherit properties/methods
 
-DeviceProfile_SDM.constructor = DeviceProfile_SDM;  // Update constructor
+//DeviceProfile_SDM.constructor = DeviceProfile_SDM;  // Update constructor
+util.inherits(DeviceProfile_SDM, DeviceProfile);
 
 DeviceProfile_SDM.prototype = {
 

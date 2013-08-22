@@ -1,9 +1,13 @@
 var ANT = require('libant'),
-    Channel = require('../channel.js');
+    Channel = require('../channel.js'),
+    util = require('util');
 // Based on https://developer.mozilla.org/en-US/docs/JavaScript/Introduction_to_Object-Oriented_JavaScript
 function DeviceProfile(configuration) {
     this._configuration = configuration;
 }
+
+util.inherits(DeviceProfile, Channel);
+console.log("Devprofile", DeviceProfile);
 
 DeviceProfile.prototype = {
 
@@ -144,5 +148,7 @@ DeviceProfile.prototype = {
         });
     },
 };
+
+
 
 module.exports = DeviceProfile;

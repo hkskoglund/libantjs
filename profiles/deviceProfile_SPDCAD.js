@@ -2,15 +2,18 @@ var DeviceProfile = require('./deviceProfile.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
 var ANT = require('libant');
+var util =  require('util');
 
 function DeviceProfile_SPDCAD(nodeInstance) {
     DeviceProfile.call(this, nodeInstance); // Call parent
     this.nodeInstance = nodeInstance;
 }
 
-DeviceProfile_SPDCAD.protype = DeviceProfile.prototype;  // Inherit properties/methods
+//DeviceProfile_SPDCAD.protype = DeviceProfile.prototype;  // Inherit properties/methods
 
-DeviceProfile_SPDCAD.constructor = DeviceProfile_SPDCAD;  // Update constructor
+//DeviceProfile_SPDCAD.constructor = DeviceProfile_SPDCAD;  // Update constructor
+
+util.inherits(DeviceProfile_SPDCAD, DeviceProfile);
 
 DeviceProfile_SPDCAD.prototype = {
 

@@ -8,6 +8,7 @@ var ANT = require('libant');
 var fs = require('fs');
 var Channel = require('../channel.js');
 var PathSeparator = require('path').sep; // Win32 = \\, *nix = /
+var util = require('util');
 
 function DeviceProfile_ANTFS(configuration) {
     DeviceProfile.call(this,configuration); // Call parent
@@ -41,9 +42,11 @@ function DeviceProfile_ANTFS(configuration) {
 
 }
 
-DeviceProfile_ANTFS.prototype = Object.create(DeviceProfile.prototype);  
+util.inherits(DeviceProfile_ANTFS, DeviceProfile);
 
-DeviceProfile_ANTFS.prototype.constructor = DeviceProfile_ANTFS;  
+//DeviceProfile_ANTFS.prototype = Object.create(DeviceProfile.prototype);  
+
+//DeviceProfile_ANTFS.prototype.constructor = DeviceProfile_ANTFS;  
 
 DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD = 4096;
 

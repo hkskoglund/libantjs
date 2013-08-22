@@ -6,7 +6,7 @@ var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
 var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
-
+var util = require('util');
 
 function ContinousScanningChannel(nodeInstance) {
     DeviceProfile.call(this);
@@ -17,9 +17,10 @@ function ContinousScanningChannel(nodeInstance) {
     
 }
 
-ContinousScanningChannel.prototype = DeviceProfile.prototype;
+//ContinousScanningChannel.prototype = DeviceProfile.prototype;
 
-ContinousScanningChannel.constructor = ContinousScanningChannel;
+//ContinousScanningChannel.constructor = ContinousScanningChannel;
+util.inherits(ContinousScanningChannel, DeviceProfile);
 
 ContinousScanningChannel.prototype = {
 

@@ -9,6 +9,7 @@ var ANT = require('libant');
 var fs = require('fs');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
+var util = require('util');
 
 
 function BackgroundScanningChannel(configuration) {
@@ -16,9 +17,11 @@ function BackgroundScanningChannel(configuration) {
     this._configuration = configuration;
 }
 
-BackgroundScanningChannel.prototype = Object.create(DeviceProfile.prototype);  
+//BackgroundScanningChannel.prototype = Object.create(DeviceProfile.prototype);  
 
-BackgroundScanningChannel.prototype.constructor = BackgroundScanningChannel;  
+//BackgroundScanningChannel.prototype.constructor = BackgroundScanningChannel;  
+
+util.inherits(BackgroundScanningChannel, DeviceProfile);
 
 BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (config) {
     // networkNr, channelNr, deviceNr, deviceType, transmissionType, lowPrioritySearchTimeout

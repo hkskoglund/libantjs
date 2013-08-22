@@ -2,15 +2,17 @@ var DeviceProfile = require('./deviceProfile.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
 var ANT = require('libant');
+var util = require('util');
 
 function DeviceProfile_HRM(configuration) {
     console.log("HRM configuration", configuration);
     DeviceProfile.call(this,configuration); 
 }
 
-DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
+//DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
 
-DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
+//DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
+util.inherits(DeviceProfile_HRM, DeviceProfile);
 
 DeviceProfile_HRM.prototype.NAME = 'HRM';
 
