@@ -23,10 +23,11 @@ transmitPower:
 }
 */
 // Inheritance: deviceprofile inherits channel
-function Channel(options) {
+function Channel() {
+    this.options = {};
    
-    if (options) 
-        this.options = options;
+    //if (options) 
+    //    this.options = options;
         //this.channelName = options.channelName;
         //this.channelNumber = options.channelNumber;
         //this.channelType = options.channelType;
@@ -46,9 +47,71 @@ function Channel(options) {
 
 util.inherits(Channel, events.EventEmitter);
 
-Channel.prototype.setChannelNumer = function (channel) {
-    this.channelNumber = channel;
+
+Channel.prototype.addConfiguration = function (name, options)
+{
+    this.options[name] = options;
 }
+
+Channel.prototype.showConfiguration = function (name) {
+    var options = this.options[name];
+
+    function format(number) {
+        if (number === 0x00)
+            return "*";
+        else
+            return '' + number;
+    }
+
+    function formatMessagePeriod(messagePeriod)
+    {
+        var rate;
+        if (typeof messagePeriod !== "undefined") 
+            switch (messagePeriod) {
+                case 65535: rate = "0.5 Hz (65535)"; break;
+                case 32768: rate = "1 Hz (32768)"; break;
+                case 16384: rate = "2 Hz (16384)"; break;
+                case 8192: rate = "4 Hz (8192)"; break;
+                case 8070: rate = (32768 / 8070).toFixed(2) + "Hz (8070)"; break; // HRM
+                case 4096: rate = "8 Hz (4096)"; break;
+                default: rate = usMessagePeriod + " " + (32768 / usMessagePeriod).toFixed(2) + "Hz"; break;
+            } 
+        else
+            rate = "Default";
+
+           return rate;
+    }
+
+    function formatSearchTimeout(searchTimeout) {
+        var friendlyFormat;
+        if (typeof searchTimeout === "undefined")
+            return 'undefined';
+
+            switch (searchTimeout) {
+                case 0:
+                    friendlyFormat = "Disabled";
+                    break;
+                case 255:
+                    friendlyFormat = "Infinite";
+                    break;
+                default:
+                    friendlyFormat = searchTimeout * 2.5 + "s";
+                    break;
+          }
+
+            return friendlyFormat;
+
+    }
+
+    return name + ' ID ' + format(options.channelID.deviceNumber) + ' ' + format(options.channelID.deviceType) + ' ' + format(options.channelID.transmissionType) +
+        ' RF ' + (options.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(options.channelPeriod)+ ' HP '+formatSearchTimeout(options.HPsearchTimeout)+' LP '+
+        formatSearchTimeout(options.LPsearchTimeout);
+}
+
+
+//Channel.prototype.setChannelNumer = function (channel) {
+//    this.channelNumber = channel;
+//}
 
 Channel.prototype.EXTENDED_ASSIGNMENT = {
     0x01: "Background Scanning Enable",
@@ -214,5 +277,7 @@ Channel.prototype.WILDCARD = 0x00
 //Channel.prototype.setChannelSearchWaveform = function (waveform) {
 //    this.searchWaveform = waveform;
 //};
+
+
 
 module.exports = Channel;

@@ -294,7 +294,7 @@ function drainLIBUSB(nextCB) {
 // "There is no flow control for data transmitted from ANT to host, therefore the Host controller must be able to receive data at any time" p. 8 of
 // Interfacing with ANT general purpose chipsets and modules rev 2.1 -> setup a read that never times out on in endpoint
 USBNode.prototype.listen = function (nextCB) {
-    var INFINITY = 0;
+    var INFINITY = 0, LISTEN_TIMEOUT=30000;
     //console.log("USB LISTEN");
     //console.trace();
 
@@ -303,26 +303,29 @@ USBNode.prototype.listen = function (nextCB) {
     function retry () {
 
         try {
-            this.setDeviceTimeout(INFINITY);
+            this.setDeviceTimeout(LISTEN_TIMEOUT);
          
             //console.time('RXtime');
             this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
                 //console.timeEnd('RXtime')
                 if (data && data.length > 0)
                  console.log(Date.now(),'RX', data);
-               // console.log("IN USB error,data", error, data);
+                //console.log("IN USB error,data", error, data);
                 if (!error) {
 
                     if (data && data.length > 0)
                         this._stream.push(data); // RX -> (piped into DeFrameTransform writable stream)
-                    process.nextTick(retry.bind(this));
+                    setImmediate(retry.bind(this));
+                } else if (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
+                    this.emit(USBDevice.prototype.EVENT.LOG, 'USB: No ANT responses in ' + LISTEN_TIMEOUT + " ms.");
+                    setImmediate(retry.bind(this));
                 } else
                     nextCB(error);
             }.bind(this));
         } catch (error) {
             //if (error.errno === -1) // LIBUSB_ERROR_IO 
             //    {
-            this.emit(USBDevice.prototype.EVENT.LOG, 'I/O error - Attempt to read from USB ANT generated an serious input error');
+            this.emit(USBDevice.prototype.EVENT.LOG, 'USB: I/O error - Attempt to read from USB ANT generated an serious input error');
             this.emit(USBDevice.prototype.EVENT.ERROR, error);
             nextCB(error);
         }

@@ -120,10 +120,14 @@ Host.prototype.showLogMessage = function (msg) {
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
-Host.prototype.establishChannel = function (channelNumber, networkNumber, channel, callback) {
-    var options = channel.options,
+Host.prototype.establishChannel = function (channelNumber, networkNumber, configurationName, channel, callback) {
+    var options = channel.options[configurationName],
         masterChannel = channel.isMaster(),
         msg;
+
+    //console.log("Conf.name", configurationName,options);
+
+    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Establishing ' + channel.showConfiguration(configurationName) + ' on channel ' + channelNumber + ' network ' + networkNumber);
 
     //console.log("Options", options);
 
@@ -458,7 +462,8 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                 else
                     resetSystemGetCapabilities(function (error) {
                         if (!error) {
-                            var testChannel = new Channel({
+                            var testChannel = new Channel();
+                            testChannel.addConfiguration("slave",{
                                 networkKey : ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
                                 channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
                                 channelID: {
@@ -473,7 +478,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                 channelPeriod: 8070, // HRM
                             });
                             //console.log("Test channel", testChannel);
-                            this.establishChannel(0, 0, testChannel, function (error) {
+                            this.establishChannel(1, 1, "slave", testChannel, function (error) {
                                 if (!error)
                                     nextCB();
                                 else
