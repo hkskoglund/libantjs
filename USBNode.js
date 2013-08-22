@@ -129,7 +129,7 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
     //var idVendor = 4047, idProduct = 4104; // Garmin USB2 Wireless ANT+
 
     this.device = usb.findByIds(idVendor, idProduct);
-   // TEST this.device = undefined;
+    // TEST this.device = undefined;
 
     if (typeof this.device === "undefined") {
         err = new Error("Could not find USB ANT device vendor id:" + this.idVendor + " product id.:" + this.idProduct);
@@ -138,20 +138,35 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         //throw err; 
         //return;
         //errorCallback();
-    } 
+    }
 
-        this.emit(USBDevice.prototype.EVENT.LOG, "USB ANT device found vendor 0x" + this.idVendor.toString(16) + "/" + this.idVendor + " product 0x" + this.idProduct.toString(16) + "/" + this.idProduct + " on bus " + this.device.busNumber + " address " + this.device.deviceAddress);
+   
+    // http://www.usbmadesimple.co.uk/ums_4.htm
+    // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
-        //+ ", max packet size endpoint 0/control: " + this.device.deviceDescriptor.bMaxPacketSize0 + " bytes, default transfer timeout ms.: " + this.device.timeout + ", packet size endpoints in/out 64 bytes");
+    this.emit(USBDevice.prototype.EVENT.LOG, "USB ANT device found vendor 0x" + this.idVendor.toString(16) + "/" + this.idVendor + " product 0x" + this.idProduct.toString(16) + "/" + this.idProduct + " on bus " + this.device.busNumber + " address " + this.device.deviceAddress +
+        " USB v" + ((this.device.deviceDescriptor.bcdUSB & 0xFF00) >> 8) + '.' + (this.device.deviceDescriptor.bcdUSB & 0xFF) +
+        " Device v" + ((this.device.deviceDescriptor.bcdDevice & 0xFF00) >> 8) + '.' + (this.device.deviceDescriptor.bcdDevice & 0xFF) + ' Max. power '+this.device.configDescriptor.MaxPower*2+'mA');
 
-        //console.log("Opening interface on device GARMIN USB2 ANT+ wireless/nRF24AP2 (Dynastream Innovations Inc.)");
-        //console.log("Vendor id: " + this.idVendor + " Product id: " + this.idProduct);
 
-        this.device.open(); // Init/get interfaces of device
-        //console.log("Default timeout for native libusb transfer is :" + ant.timeout);
+    //+ ", max packet size endpoint 0/control: " + this.device.deviceDescriptor.bMaxPacketSize0 + " bytes, default transfer timeout ms.: " + this.device.timeout + ", packet size endpoints in/out 64 bytes");
+
+    //console.log("Opening interface on device GARMIN USB2 ANT+ wireless/nRF24AP2 (Dynastream Innovations Inc.)");
+    //console.log("Vendor id: " + this.idVendor + " Product id: " + this.idProduct);
+
+    this.device.open(); // Init/get interfaces of device
+    //console.log("Default timeout for native libusb transfer is :" + ant.timeout);
+
+
+    //http://www.beyondlogic.org/usbnutshell/usb6.shtml
+    getManufacturerProductSerialNumber.bind(this)(configureInterfaceAndEndpoints.bind(this));
+    //    usb.Device.prototype.controlTransfer =
+    //function(bmRequestType, bRequest, wValue, wIndex, data_or_length, callback){
+
+    function configureInterfaceAndEndpoints() {
 
         antInterface = this.device.interface();
-    // TEST  antInterface = undefined;
+        // TEST  antInterface = undefined;
         if (typeof antInterface === "undefined") {
             err = new Error("Could not get interface to ANT device, aborting");
             this.emit(USBDevice.prototype.EVENT.ERROR, err);
@@ -175,7 +190,7 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
 
         // http://www.beyondlogic.org/usbnutshell/usb5.shtml
         this.inEP = antInterface.endpoints[0]; // Control endpoint
-       
+
         //if (this.inEP.transferType === usb.LIBUSB_TRANSFER_TYPE_BULK)
         //    inTransferType = "BULK (" + this.inEP.transferType + ')';
 
@@ -189,17 +204,9 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         // console.log("Claiming interface");
         antInterface.claim(); // Must call before attempting transfer on endpoints
 
+
         this.emit(USBDevice.prototype.EVENT.LOG, "RX Endpoint IN (ANT -> HOST) wMaxPacketSize: " + this.inEP.descriptor.wMaxPacketSize + " bytes");
         this.emit(USBDevice.prototype.EVENT.LOG, "TX Endpoint OUT(HOST -> ANT) wMaxPacketSize: " + this.outEP.descriptor.wMaxPacketSize + " bytes");
-
-
-        //this.listen();
-
-        //  console.log("Cleaning LIBUSB in endpoint buffers....");
-
-    //console.log("THIS IS NOW", this);
-
-    //console.log(drainLIBUSB);
 
         initStream.bind(this)();
 
@@ -213,7 +220,43 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
             }
 
         }.bind(this));
+    }
 
+    function getDescriptorString(index, callback) {
+        // Found the wValue (LIBUSB_DT_STRING << 8 | index) tip at  http://libusb.6.n5.nabble.com/Getting-basic-descriptors-without-control-transfer-td4524892.html
+        this.device.controlTransfer(parseInt("10000000", 2), usb.LIBUSB_REQUEST_GET_DESCRIPTOR, (usb.LIBUSB_DT_STRING << 8) | index, 0, 255, callback);
+    }
+
+        function getManufacturerProductSerialNumber(callback) {
+
+            var vManufaturer, vProduct, vSerialNumber;
+
+            // Format of returned data string descriptor bLength bContenttype (0x03) unicode string  http://www.usbmadesimple.co.uk/ums_4.htm
+
+            if (typeof this.device.deviceDescriptor.iManufacturer !== "undefined")
+                getDescriptorString.bind(this)(this.device.deviceDescriptor.iManufacturer,
+                    function (error, manufacturer) {
+                        if (!error)
+                            vManufaturer = manufacturer.slice(2, manufacturer[0] - 1).toString("utf16le");
+                        if (typeof this.device.deviceDescriptor.iProduct !== "undefined")
+                            getDescriptorString.bind(this)(this.device.deviceDescriptor.iProduct, function (error, product) {
+                                if (!error)
+                                    vProduct = product.slice(2, product[0] - 1).toString("utf16le");
+                                if (typeof this.device.deviceDescriptor.iSerialNumber !== "undefined")
+                                    getDescriptorString.bind(this)(this.device.deviceDescriptor.iSerialNumber, function (error, serialNumber) {
+                                        if (!error)
+                                            vSerialNumber = serialNumber.slice(2, serialNumber[0] - 1).toString("utf16le");
+
+                                        this.emit(USBDevice.prototype.EVENT.LOG, vManufaturer + " " + vProduct);
+
+                                        callback();
+
+                                    }.bind(this));
+                            }.bind(this));
+                    }.bind(this));
+        }
+
+    
 }
 
 
