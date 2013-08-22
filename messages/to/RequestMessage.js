@@ -16,7 +16,7 @@ function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
     this.id = ANTMessage.prototype.MESSAGE.REQUEST;
     this.name = "Request";
 
-    this.channel = channel;
+    this.channel = channel || 0;
     this.requestedMessageId = requestedMessageId;
     this.NVMaddr = NVMaddr;
     this.NVMsize = NVMsize;

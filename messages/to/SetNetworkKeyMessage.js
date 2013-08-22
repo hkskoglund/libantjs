@@ -5,9 +5,16 @@ var ANTMessage = require('../ANTMessage.js');
 
 function SetNetworkKeyMessage(channel, key) {
 
+    if (key.length !== 8)
+        throw new TypeError("Key does not have length of 8 bytes");
+
     var msgBuffer = new Buffer(9);
 
-    msgBuffer = Buffer.concat([new Buffer([channel]), key]);
+    // Be flexible, try to create a buffer if an array is used
+    if (Buffer.isBuffer(key))
+      msgBuffer = Buffer.concat([new Buffer([channel]), key]);
+    else
+        msgBuffer = Buffer.concat([new Buffer([channel]), new Buffer(key)]);
 
     ANTMessage.call(this);
 

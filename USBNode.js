@@ -69,7 +69,7 @@ USBNode.prototype.constructor = USBNode; // Otherwise constructor = USBDevice ..
 
 USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
-USBNode.prototype.ANT_DEVICE_TIMEOUT = 13; // 11.11 ms to transfer 64 bytes at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
+USBNode.prototype.ANT_DEVICE_TIMEOUT = 6; // 11.11 ms to transfer 64 (max. endpoint size) bytes at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
 
 USBNode.prototype.getStream = function () {
     return this._stream;
@@ -104,7 +104,10 @@ USBNode.prototype.setDeviceTimeout = function (timeout) {
 }
 
 USBNode.prototype.isTimeoutError = function (error) {
-    return (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT);
+    //if (typeof error !== "undefined")
+        return (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT);
+    //else
+    //    return false;
 }
 
 USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
@@ -252,8 +255,8 @@ USBNode.prototype.exit = function (nextCB) {
 function drainLIBUSB(nextCB) {
 
     var totalBytesDrained = 0,
-        drainAttempt = 0,
-        MaxDrainAttemps = 5;
+        drainAttempt = 0;
+       // MaxDrainAttemps = 10;
 
     this.setDirectANTChipCommunicationTimeout();
 
@@ -271,14 +274,15 @@ function drainLIBUSB(nextCB) {
             if (data.length > 0)
                 totalBytesDrained += data.length;
 
-            if (drainAttempt < MaxDrainAttemps) {
+           // if (drainAttempt < MaxDrainAttemps) 
 
-                process.nextTick(retry.bind(this)); // Should be the highest priority
-            }
+            if (!error)
+                setImmediate(retry.bind(this)); // Should be the highest priority
             else {
-                //console.log("DRAINING FINISHED", totalBytesDrained);
+               // console.log("DRAINING FINISHED", totalBytesDrained, error);
                 nextCB(error, totalBytesDrained);
             }
+            
         }.bind(this));
     }
 

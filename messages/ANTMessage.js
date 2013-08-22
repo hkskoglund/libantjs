@@ -276,7 +276,7 @@ ANTMessage.prototype.MESSAGE = {
     // Data message
 
         0x4E: "Broadcast Data",
-        broadcast_data: { id: 0x4e, friendly: "Broadcast data" },
+        BROADCAST_DATA:  0x4e,
 
         0x4F: "Acknowledged Data",
         acknowledged_data: { id: 0x4f, friendly: "Acknowledged data" },

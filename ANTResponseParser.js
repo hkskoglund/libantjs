@@ -18,6 +18,7 @@ util.inherits(ParseANTResponse, Transform);
 
 function ParseANTResponse(options) {
     Transform.call(this, options);
+   
 
     this.on(ParseANTResponse.prototype.EVENT.LOG, this.showLog);
 }
@@ -178,7 +179,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
         //    break;
 
-        //case ANTMessage.prototype.MESSAGE.broadcast_data.id:
+        case ANTMessage.prototype.MESSAGE.BROADCAST_DATA:
 
         //    msgStr += ANTMessage.prototype.MESSAGE.broadcast_data.friendly + " ";
 
@@ -212,7 +213,9 @@ ParseANTResponse.prototype.parse = function (data) {
 
         //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
 
-        //    break;
+            console.log("BROADCAST", data);
+
+            break;
 
         // Notifications from ANT engine
 
@@ -298,10 +301,14 @@ ParseANTResponse.prototype.parse = function (data) {
             //if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
             //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
 
-            var type = channelResponseMsg.getResponseOrEventMessage();
+           // var type = channelResponseMsg.getResponseOrEventMessage();
 
-            console.log("event type", type);
+            //console.log("event type", type);
 
+            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode())) {
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT);
+                console.log("resp", channelResponseMsg);
+            }
             //this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
             //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
             //this.emit(ParseANTResponse.prototype.EVENT.LOG, channelResponseMsg.toString());
