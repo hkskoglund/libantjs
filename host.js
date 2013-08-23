@@ -46,8 +46,10 @@ var events = require('events'),
     DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now just echo
         
     // Parsing of ANT messages received
-    ResponseParser = require('./ANTResponseParser.js');
+    ResponseParser = require('./ANTResponseParser.js'),
         
+    ChannelId = require('./channelId.js');
+
 function Host() {
 
     events.EventEmitter.call(this);
@@ -134,9 +136,9 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         masterChannel = channel.isMaster(),
         msg;
 
-    //console.log("Conf.name", configurationName,options);
+    console.log("Conf.name", configurationName,options);
 
-    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Establishing ' + channel.showConfiguration(configurationName) + ' on channel ' + channelNumber + ' network ' + networkNumber);
+    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
 
     //console.log("Options", options);
 
@@ -147,7 +149,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         callback(new Error('No channel type specified/or unknown channel type'));
 
 
-    if (!options.channelID)
+    if (!options.channelId)
         callback(new Error('No channel ID specified'));
 
     this._channel[channelNumber] = channel; // Associate channel with particular channel number on host
@@ -168,7 +170,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                         //setTimeout(function () {
-                        this.setChannelId(channelNumber, options.channelID.deviceNumber, options.channelID.deviceType, options.channelID.transmissionType, function (error, response) {
+                        this.setChannelId(channelNumber, options.channelId.deviceNumber, options.channelId.deviceType, options.channelId.transmissionType, function (error, response) {
                             if (!error) {
                                 //this.once("assignChannelSetChannelId");
 
@@ -481,11 +483,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                             testChannel.addConfiguration("slave",{
                                 networkKey : ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
                                 channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-                                channelID: {
-                                    deviceNumber: Channel.prototype.WILDCARD, // Any
-                                    deviceType: Channel.prototype.WILDCARD,
-                                    transmissionType: Channel.prototype.WILDCARD
-                                },
+                                channelId: new ChannelId(ChannelId.prototype.ANY_DEVICE_NUMBER,ChannelId.prototype.ANY_DEVICE_TYPE,ChannelId.prototype.ANY_TRANSMISSION_TYPE),
                                 RFfrequency : 57,     // 2457 Mhz ANT +
                                 LPsearchTimeout: 24, // 60 seconds
                                 HPsearchTimeout : 10, // 25 seconds n*2.5 s

@@ -103,7 +103,7 @@ Channel.prototype.showConfiguration = function (name) {
 
     }
 
-    return name + ' ID ' + format(options.channelID.deviceNumber) + ' ' + format(options.channelID.deviceType) + ' ' + format(options.channelID.transmissionType) +
+    return name +" "+ options.channelId.toString()+
         ' RF ' + (options.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(options.channelPeriod)+ ' HP '+formatSearchTimeout(options.HPsearchTimeout)+' LP '+
         formatSearchTimeout(options.LPsearchTimeout);
 }
