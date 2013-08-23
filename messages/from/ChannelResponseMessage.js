@@ -171,7 +171,7 @@ ChannelResponseMessage.prototype.parse = function () {
 }
 
 ChannelResponseMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " "+this.message.text;
+    return this.name + " ID 0x" + this.id.toString(16) + " "+this.message.text;
 }
 
 module.exports = ChannelResponseMessage;

@@ -87,7 +87,7 @@ CapabilitiesMessage.prototype.parse = function () {
 };
 
 CapabilitiesMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " " + "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
+    return this.name + " ID 0x" + this.id.toString(16) + " " + "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
 }
 
 module.exports = CapabilitiesMessage;

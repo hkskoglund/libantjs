@@ -23,7 +23,7 @@ OpenChannelMessage.prototype = Object.create(ANTMessage.prototype);
 OpenChannelMessage.prototype.constructor = OpenChannelMessage;
 
 OpenChannelMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " ID 0x" + this.id.toString(16);
 }
 
 module.exports = OpenChannelMessage;

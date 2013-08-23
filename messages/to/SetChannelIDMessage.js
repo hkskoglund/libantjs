@@ -38,7 +38,7 @@ SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit
 SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
 
 SetChannelIDMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
 }
 
 module.exports = SetChannelIDMessage;

@@ -29,7 +29,7 @@ SetChannelPeriodMessage.prototype.constructor = SetChannelPeriodMessage;
 
 
 SetChannelPeriodMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " message period " + this.messagePeriod;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " message period " + this.messagePeriod;
 }
 
 module.exports = SetChannelPeriodMessage;

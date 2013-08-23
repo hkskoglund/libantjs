@@ -45,7 +45,7 @@ RequestMessage.prototype = Object.create(ANTMessage.prototype);
 RequestMessage.prototype.constructor = RequestMessage;
 
 RequestMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " requested msg. id " + this.requestedMessageId + " NVMaddr " + this.NVMaddr + "NVMsize" + this.NVMsize;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id " + this.requestedMessageId + " NVMaddr " + this.NVMaddr + "NVMsize" + this.NVMsize;
 }
 
 module.exports = RequestMessage;

@@ -60,7 +60,7 @@ ChannelStatusMessage.prototype.parse = function () {
 };
 
 ChannelStatusMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " Channel " + this.channelNumber + " Network " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
+    return this.name + " ID 0x" + this.id.toString(16) + " Channel " + this.channelNumber + " Network " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
 }
 
 module.exports = ChannelStatusMessage;

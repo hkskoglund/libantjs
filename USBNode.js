@@ -237,17 +237,17 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
                 getDescriptorString.bind(this)(this.device.deviceDescriptor.iManufacturer,
                     function (error, manufacturer) {
                         if (!error)
-                            vManufaturer = manufacturer.slice(2, manufacturer[0] - 1).toString("utf16le");
+                            vManufaturer = manufacturer.toString("utf16le", 2, manufacturer[0] - 1);
                         if (typeof this.device.deviceDescriptor.iProduct !== "undefined")
                             getDescriptorString.bind(this)(this.device.deviceDescriptor.iProduct, function (error, product) {
                                 if (!error)
-                                    vProduct = product.slice(2, product[0] - 1).toString("utf16le");
+                                    vProduct = product.toString("utf16le",2, product[0] - 1);
                                 if (typeof this.device.deviceDescriptor.iSerialNumber !== "undefined")
                                     getDescriptorString.bind(this)(this.device.deviceDescriptor.iSerialNumber, function (error, serialNumber) {
                                         if (!error)
-                                            vSerialNumber = serialNumber.slice(2, serialNumber[0] - 1).toString("utf16le");
-
-                                        this.emit(USBDevice.prototype.EVENT.LOG, vManufaturer + " " + vProduct);
+                                            vSerialNumber = serialNumber.toString("utf16le",2,8)+' '+serialNumber.toString("utf16le",34,42); // Many nulls in string (this way of decoding is not generic)
+                                       
+                                        this.emit(USBDevice.prototype.EVENT.LOG, vManufaturer + " " + vProduct+" "+vSerialNumber);
 
                                         callback();
 

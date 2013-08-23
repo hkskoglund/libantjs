@@ -26,7 +26,7 @@ setLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = setLowPrioriyCh
 
 
 setLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " ID 0x" + this.id.toString(16);
 }
 
 module.exports = setLowPrioriyChannelSearchTimeoutMessage;

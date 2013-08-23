@@ -29,7 +29,7 @@ ANTVersionMessage.prototype.parse = function () {
 };
 
 ANTVersionMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " " + this.length + " " + this.version;
+    return this.name + " ID 0x" + this.id.toString(16) + " " + this.length + " " + this.version;
 }
 
 module.exports = ANTVersionMessage;

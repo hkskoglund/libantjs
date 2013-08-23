@@ -59,7 +59,7 @@ NotificationSerialError.prototype.parse = function () {
 };
 
 NotificationSerialError.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " " + this.length + " " + this.message.text;
+    return this.name + " ID 0x" + this.id.toString(16) + " " + this.length + " " + this.message.text;
 }
 
 module.exports = NotificationSerialError

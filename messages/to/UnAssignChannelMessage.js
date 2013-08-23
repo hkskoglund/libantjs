@@ -27,7 +27,7 @@ UnAssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
 UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
 UnAssignChannelMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel;
 }
 
 module.exports = UnAssignChannelMessage;

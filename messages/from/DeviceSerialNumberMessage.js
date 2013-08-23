@@ -24,7 +24,7 @@ DeviceSerialNumberMessage.prototype.parse = function () {
 }
 
 DeviceSerialNumberMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " " + this.serialNumber;
+    return this.name + " ID 0x" + this.id.toString(16) + " " + this.serialNumber;
 }
 
 module.exports = DeviceSerialNumberMessage;

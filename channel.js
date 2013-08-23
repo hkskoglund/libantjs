@@ -278,6 +278,4 @@ Channel.prototype.WILDCARD = 0x00
 //    this.searchWaveform = waveform;
 //};
 
-
-
 module.exports = Channel;

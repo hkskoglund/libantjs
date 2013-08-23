@@ -32,7 +32,7 @@ AssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
 AssignChannelMessage.prototype.constructor = AssignChannelMessage;
 
 AssignChannelMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " network " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType] + " extended assignment " + this.extendedAssignment;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType] + " extended assignment " + this.extendedAssignment;
 }
 
 module.exports = AssignChannelMessage;

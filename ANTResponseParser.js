@@ -11,8 +11,12 @@
     ANTVersionMessage = require('./messages/from/ANTVersionMessage.js'),
     DeviceSerialNumberMessage = require('./messages/from/DeviceSerialNumberMessage.js'),
      ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
-     
-     ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js');
+
+     ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js'),
+
+// Data
+
+     BroadcastDataMessage = require('./messages/from/BroadcastDataMessage.js');
 
 util.inherits(ParseANTResponse, Transform);
 
@@ -211,9 +215,16 @@ ParseANTResponse.prototype.parse = function (data) {
         //    if (!antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.BROADCAST, data))
         //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event Channel.prototype.EVENT.BROADCAST on channel "+channelNr);
 
-        //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
+            //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
 
-            console.log("BROADCAST", data);
+            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
+            var broadcast = new BroadcastDataMessage();
+            broadcast.parse(data.slice(3,3+ANTmsg.length));
+
+            console.log(Date.now(),broadcast.toString(), broadcast.data);
+
+            if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, broadcast))
+              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + broadcast.toString());
 
             break;
 
@@ -294,7 +305,7 @@ ParseANTResponse.prototype.parse = function (data) {
             var channelResponseMsg = new ChannelResponseMessage();
             //TEST provoking EVENT_CHANNEL_ACTIVE
             //data[5] = 0xF;
-            channelResponseMsg.setContent(data.slice(3, 3 + data[1]));
+            channelResponseMsg.setContent(data.slice(3, 3 + ANTmsg.length));
             channelResponseMsg.parse();
 
             // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
@@ -324,7 +335,7 @@ ParseANTResponse.prototype.parse = function (data) {
             //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.CHANNEL_STATUS");
 
             var channelStatusMsg = new ChannelStatusMessage();
-            channelStatusMsg.setContent(data.slice(3, 3 + data[1]));
+            channelStatusMsg.setContent(data.slice(3, 3 + ANTmsg.length));
             channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
 
@@ -343,7 +354,7 @@ ParseANTResponse.prototype.parse = function (data) {
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
             var versionMsg = new ANTVersionMessage();
-            versionMsg.setContent(data.slice(3, 3 + data[1]));
+            versionMsg.setContent(data.slice(3, 3 + ANTmsg.length));
             versionMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.ANT_VERSION, versionMsg))
@@ -354,7 +365,7 @@ ParseANTResponse.prototype.parse = function (data) {
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
             var capabilitiesMsg = new CapabilitiesMessage();
-            capabilitiesMsg.setContent(data.slice(3, 3 + data[1]));
+            capabilitiesMsg.setContent(data.slice(3, 3 + ANTmsg.length));
             capabilitiesMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.CAPABILITIES, capabilitiesMsg))
@@ -365,7 +376,7 @@ ParseANTResponse.prototype.parse = function (data) {
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
            
             var serialNumberMsg = new DeviceSerialNumberMessage();
-            serialNumberMsg.setContent(data.slice(3, 3 + data[1]));
+            serialNumberMsg.setContent(data.slice(3, 3 + ANTmsg.length));
             serialNumberMsg.parse();
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.DEVICE_SERIAL_NUMBER, serialNumberMsg))

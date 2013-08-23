@@ -182,7 +182,7 @@ ANTMessage.prototype.getMessageId = function ()
 }
 
 ANTMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16);
+    return this.name + " ID 0x" + this.id.toString(16);
 }
 
 // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50

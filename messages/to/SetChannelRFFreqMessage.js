@@ -29,7 +29,7 @@ SetChannelRFFreqMessage.prototype.constructor = SetChannelRFFreqMessage;
 
 
 SetChannelRFFreqMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16) + " channel " + this.channel + " RF freq. " + this.RFFreq;
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " RF freq. " + this.RFFreq;
 }
 
 module.exports = SetChannelRFFreqMessage;

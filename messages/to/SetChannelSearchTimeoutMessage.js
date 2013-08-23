@@ -29,7 +29,7 @@ SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMe
 
 
 SetChannelSearchTimeoutMessage.prototype.toString = function () {
-    return this.name + " 0x" + this.id.toString(16)+ "channel "+this.channel+" HP search timeout" +this.HPsearchTimeout;
+    return this.name + " ID 0x" + this.id.toString(16)+ "channel "+this.channel+" HP search timeout" +this.HPsearchTimeout;
 }
 
 module.exports = SetChannelSearchTimeoutMessage;
