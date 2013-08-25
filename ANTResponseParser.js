@@ -25,6 +25,9 @@ function ParseANTResponse(options) {
    
 
     this.on(ParseANTResponse.prototype.EVENT.LOG, this.showLog);
+
+    this.broadcast = new BroadcastDataMessage(); // Only use one instance for parsing - don't use any time to create instance
+
 }
 
 // for event emitter
@@ -61,6 +64,7 @@ ParseANTResponse.prototype.showLog = function (msg)
 
 // Overview on p. 58 - ANT Message Protocol and Usage
 ParseANTResponse.prototype.parse = function (data) {
+   
    
     var ANTmsg = {
         SYNC: data[0],
@@ -218,13 +222,14 @@ ParseANTResponse.prototype.parse = function (data) {
             //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
 
             // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
-            var broadcast = new BroadcastDataMessage();
-            broadcast.parse(data.slice(3,3+ANTmsg.length));
+           
+           
+            this.broadcast.parse(data.slice(3,3+ANTmsg.length));
 
-            console.log(Date.now(),broadcast.toString(), broadcast.data);
+            console.log(Date.now(),this.broadcast.toString(), "Payload",this.broadcast.data);
 
-            if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, broadcast))
-              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + broadcast.toString());
+            if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, this.broadcast))
+              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + this.broadcast.toString());
 
             break;
 

@@ -1,11 +1,20 @@
 ﻿"use strict"
-var ANTMessage = require('../ANTMessage.js');
+var ANTMessage = require('../ANTMessage.js'),
+    LibConfig = require('../../libConfig.js'),
+    ChannelId = require('../../channelId.js'),
+    RSSI = require('../../rssi.js'),
+    RXTimestamp = require('../../RXTimestamp.js')
 
 function BroadcastDataMessage() {
     ANTMessage.call(this);
 
     this.name = "Broadcast Data";
     this.id = ANTMessage.prototype.MESSAGE.BROADCAST_DATA;
+
+    // Pre-create for fast access
+    this.channelId = new ChannelId();
+    this.RSSI = new RSSI();
+    this.RXTimestamp = new RXTimestamp();
 }
 
 BroadcastDataMessage.prototype = Object.create(ANTMessage.prototype);
@@ -14,15 +23,38 @@ BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
 // Spec. p. 91
 BroadcastDataMessage.prototype.parse = function (content) {
+
     if (typeof content !== "undefined" && Buffer.isBuffer(content))
         this.setContent(content);
 
     this.channel = this.content[0];
     this.data = this.content.slice(1, 9); // Date 0 .. 7
-    this.extended = (content.length > 9) ? true : false;
-    if (this.extended)
-        this.flag = content[9];
 
+    // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
+    // 'Broadcast Data ID 0x4e C# 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
+    this.extendedDataMessage = (content.length > 9) ? true : false;
+    if (this.extendedDataMessage) {
+        this.flagsByte = content[9];
+        this.extendedData = this.content.slice(10);
+
+        // Check for channel ID
+        // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
+        if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) 
+            this.channelId.parse(this.extendedData.slice(0, 4));
+        
+        if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) 
+            this.RXTimestamp.parse(this.extendedData.slice(-2));
+        
+        if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            this.RSSI.parse(this.extendedData.slice(0, 2));
+            console.log(this.RSSI.toString());
+        }
+
+        if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            this.RSSI.parse(this.extendedData.slice(4, 7));
+            console.log(this.RSSI.toString());
+        }
+    }
 
 };
 
@@ -43,8 +75,7 @@ BroadcastDataMessage.prototype.parse = function (content) {
 
 //    msgFlag = data[12];
 
-//    // Check for channel ID
-//    // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
+//    
 
 //    if (msgFlag & Host.prototype.LIB_CONFIG.ENABLE_CHANNEL_ID) {
 //        this.parseChannelID(data, relativeIndex);
@@ -158,15 +189,13 @@ BroadcastDataMessage.prototype.parse = function (content) {
 //};
 
 //BroadcastDataMessage.prototype.RSSI =
-//    {
-//        MEASUREMENT_TYPE: {
-//            DBM: 0x20
-//        }
-//    };
+//    
 
 
 BroadcastDataMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16)+" C# "+this.channel+" "+ "ext. "+this.extended+" Flag "+this.flag;
+    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " " + "ext. " + this.extendedDataMessage + " Flags 0x" + this.flagsByte.toString(16);
+
+    return msg;
 }
 
 module.exports = BroadcastDataMessage

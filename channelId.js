@@ -1,4 +1,5 @@
-﻿function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
+﻿// Function names based on Dynastram Android SDK v 4.00 documentation
+function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
     
     this.deviceNumber = deviceNumber;
     this.deviceType = deviceType;
@@ -7,6 +8,11 @@
     if (pair) // Set bit 7 high if pairing is wanted
         this.deviceType = this.deviceType | ChannelId.prototype.BITMASK_PAIR;
 
+    determinePair.bind(this)();
+    
+}
+
+function determinePair() {
     this.pair = (this.deviceType & ChannelId.prototype.BITMASK_PAIR > 0) ? true : false;
 }
 
@@ -24,6 +30,17 @@ ChannelId.prototype.getTransmissionType = function () {
 
 ChannelId.prototype.getPair = function () {
     return this.pair;
+}
+
+// Parse channel ID if enabled via LIBConfig
+ChannelId.prototype.parse = function (extendedData) {
+    // | DN # af 41 | DT # 78 |T# 01
+
+    this.deviceNumber = extendedData.readUInt16LE(0);
+    this.deviceType = extendedData[2];
+    this.transmissionType = extendedData[3];
+
+    determinePair.bind(this)();
 }
 
 // Inline with Android Dynastream SDK

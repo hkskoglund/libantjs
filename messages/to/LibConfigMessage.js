@@ -26,12 +26,6 @@ LibConfigMessage.prototype = Object.create(ANTMessage.prototype);
 
 LibConfigMessage.prototype.constructor = LibConfigMessage;
 
-LibConfigMessage.prototype.LIBCONFIG = {
-   DISABLED : 0x00,
-   RX_TIMESTAMP : 0x20,
-   RSSI : 0x40,
-   CHANNEL_ID : 0x80
-}
 
 LibConfigMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " lib config " + this.libConfig;

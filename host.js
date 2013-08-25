@@ -2,6 +2,7 @@
 
 var events = require('events'),
     util = require('util'),
+    assert = require('assert'),
     USBDevice = require('./USBNode.js'), // Change to appropiate device
     Channel = require('./channel.js'),
     ANTMessage = require('./messages/ANTMessage.js'),
@@ -37,6 +38,7 @@ var events = require('events'),
     SetTransmitPowerMessage = require('./messages/to/SetTransmitPowerMessage.js'),
 
     LibConfigMessage = require('./messages/to/LibConfigMessage.js'),
+    LibConfig = require('./libConfig.js'),
    
 
     ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js'),
@@ -426,7 +428,9 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
             this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._RXstream).pipe(this._responseParser);
 
 
-            var resetSystemGetCapabilities = function _resetSystem(callback) {
+            var resetCapabilitiesLibConfig = function _resetSystem(callback) {
+                var libConfig;
+
                 this.resetSystem(function (error, notification) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
@@ -448,7 +452,18 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                                 if (!error) {
                                                     this.deviceSerialNumber = serialNumberMsg.serialNumber;
                                                     this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
-                                                    callback();
+
+                                                    libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
+                                                    this.libConfig(libConfig.getFlagsByte(),
+                                                        function (error, serialNumberMsg) {
+                                                            if (!error) {
+                                                                this.libConfig = libConfig;
+                                                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
+                                                                callback()
+                                                            }
+                                                            else
+                                                                nextCB(error)
+                                                        }.bind(this));
                                                 } else
                                                     nextCB(error)
                                             }.bind(this));
@@ -471,7 +486,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                 if (error)
                     nextCB(error);
                 else
-                    resetSystemGetCapabilities(function (error) {
+                    resetCapabilitiesLibConfig(function (error) {
                         if (!error) {
                             var testChannel = new Channel();
                           
@@ -489,6 +504,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                 HPsearchTimeout : 10, // 25 seconds n*2.5 s
                                 transmitPower: 3,
                                 channelPeriod: 8070, // HRM
+                                
                             });
                             //console.log("Test channel", testChannel);
                             this.establishChannel(1, 1, "slave", testChannel, function (error) {
@@ -812,25 +828,12 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
     },
 
-    /* Host.prototype.LIB_CONFIG = {
-        DISABLED: 0x00,
-        ENABLE_RX_TIMESTAMP: 0x20, // Bit 6
-        ENABLE_RSSI: 0x40, // Bit 7 
-        ENABLE_CHANNEL_ID: 0x80 // Bit 8
-    }; */
-
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
     Host.prototype.libConfig = function (libConfig, callback) {
-       /* var self = this,
-            filler = 0,
-            libConfigMsg = new ANTMessage();
-
-        //console.log("libConfig hex = ", Number(ucLibConfig).toString(16),"binary=",Number(ucLibConfig).toString(2));
-        if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            this.sendAndVerifyResponseNoError(libConfigMsg.create_message(ANTMessage.prototype.MESSAGE.libConfig, new Buffer([filler, ucLibConfig])), ANTMessage.prototype.MESSAGE.libConfig.id, errorCallback, successCallback);
-        else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via LibConfig API call"); */
+      
+        assert.equal(typeof this.capabilities, "object", "Capabilities not available");
+        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED,"Extended messaging not supported on device")
 
      var configurationMsg;
 
@@ -841,17 +844,17 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
    
  };
 
-    // Only enables Channel ID extension of messages
-    Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
-        var self = this, filler = 0, message = new ANTMessage();
+    //// Only enables Channel ID extension of messages
+    //Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
+    //    var self = this, filler = 0, message = new ANTMessage();
 
-        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
+    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
 
-        if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), ANTMessage.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
-        else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
-    };
+    //    if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
+    //        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), ANTMessage.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
+    //    else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
+    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
+    //};
 
     // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
     // This is the case for ANT-FS and ANT+ device profile like i.e HRM
