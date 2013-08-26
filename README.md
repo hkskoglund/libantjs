@@ -15,7 +15,11 @@ Callback follows the pattern for callback(error,message)
 
 API is in <b>unstable</b> alpha stage. It is based on the ANT message protocol and usage document http://www.thisisant.com/resources/ant-message-protocol-and-usage/
 
-<h3>host.init(idVendor, idProduct, callback)</h3>
+<h3>host.init({
+vid : idVendor,
+pid : idProduct,
+libconfig : "channelid,rssi,rxtimestamp"
+}, callback)</h3>
 
   initializes usb device, reset ANT and get ANT capabilities and device information (version/serial number)
   

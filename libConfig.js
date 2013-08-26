@@ -6,6 +6,10 @@ function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp) {
     this.enableRSSI = (enableRSSI > 0);
     this.enableRXTimestamp = (enableRXTimestamp > 0);
     
+    updateFlags.bind(this)();
+}
+
+function updateFlags() {
     if (this.enableChannelId)
         this.flagsByte = LibConfig.prototype.Flag.CHANNEL_ID_ENABLED;
 
@@ -47,16 +51,19 @@ LibConfig.prototype.getEnableRSSI = function () {
     return this.enableRXTimestamp;
 }
 
-LibConfig.prototype.setEnableChannelId = function (value) {
-    this.enableChannelID = value;
+LibConfig.prototype.setEnableChannelId = function () {
+    this.enableChannelId = true;
+    updateFlags.bind(this)();
 }
 
-LibConfig.prototype.setEnableRSSI = function (value) {
-    this.enableRSSI = value;
+LibConfig.prototype.setEnableRSSI = function () {
+    this.enableRSSI = true;
+    updateFlags.bind(this)();
 }
 
-LibConfig.prototype.getEnableRSSI = function (value) {
-    this.enableRXTimestamp = value;
+LibConfig.prototype.setEnableRXTimestamp = function () {
+    this.enableRXTimestamp = true;
+    updateFlags.bind(this)();
 }
 
 LibConfig.prototype.Flag = {

@@ -139,7 +139,11 @@ DeviceProfile.prototype = {
 
         this.ANT = new ANT();
 
-        this.ANT.init(this._configuration.usb.idVendor, this._configuration.usb.idProduct, function _ANTinitCB(error) {
+        this.ANT.init({
+            vid: this._configuration.usb.idVendor,
+            pid: this._configuration.usb.idProduct,
+            libconfig: "channelid,rxtimestamp" // RSSI not available on USB 2
+        }, function _ANTinitCB(error) {
 
             if (!error)
                 self.start.bind(self, nextCB)

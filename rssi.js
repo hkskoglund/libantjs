@@ -16,7 +16,7 @@ function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
 RSSI.prototype.parse = function (extendedData) {
     this.measurementType = extendedData[0];
 
-    if (this.measurementType !== RSSI.prototype.MEASUREMENT_TYPE.DBM) // Stop decoding according to spec.
+    if (this.measurementType !== RSSI.prototype.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
         return;
 
     this.RSSIValue = extendedData[1];
@@ -37,13 +37,15 @@ RSSI.prototype.getThresholdConfigDB = function () {
 }
 
 RSSI.prototype.toString = function () {
-    return "RSSI " + this.RSSIValue +" "+RSSI.prototype[this.measurementType] + " Threshold " + this.thresholdConfigurationValue+" dB"
+    return "RSSI " + this.RSSIValue +" "+RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Threshold " + this.thresholdConfigurationValue+" dB"
 }
 
+// http://en.wikipedia.org/wiki/DBm 
+// 0dBm = 1mW
 RSSI.prototype.MEASUREMENT_TYPE = 
 {
     0x20 : "dBm",
-    DBM: 0x20 // Units of dBm
+    dBm: 0x20 // Units of dBm
 }
 
 module.exports = RSSI;

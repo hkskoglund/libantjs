@@ -37,6 +37,7 @@ var events = require('events'),
     SetNetworkKeyMessage = require('./messages/to/SetNetworkKeyMessage.js'),
     SetTransmitPowerMessage = require('./messages/to/SetTransmitPowerMessage.js'),
 
+    // Extended messaging information (channel ID, RSSI and RX timestamp)
     LibConfigMessage = require('./messages/to/LibConfigMessage.js'),
     LibConfig = require('./libConfig.js'),
    
@@ -45,7 +46,7 @@ var events = require('events'),
     ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
 
     FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
-    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now just echo
+    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now  -> just echo
         
     // Parsing of ANT messages received
     ResponseParser = require('./ANTResponseParser.js'),
@@ -57,8 +58,8 @@ function Host() {
     events.EventEmitter.call(this);
 
     this._channel = new Array();
-    this._responseParser = new ResponseParser();
 
+    this._responseParser = new ResponseParser();
     this._responseParser.on(ResponseParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
    
 
@@ -112,7 +113,6 @@ Host.prototype.EVENT = {
 };
 
 
-
 // Log message to console
 Host.prototype.showLogMessage = function (msg) {
     console.log(Date.now(), msg);
@@ -129,7 +129,6 @@ Host.prototype.broadcastData = function (broadcast)
     } else
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + broadcast.toString());
 }
-
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
@@ -387,11 +386,17 @@ function initStream() {
 }
 
 // Initializes USB device and set up of TX/RX stream pipes
-Host.prototype.init = function (idVendor, idProduct, nextCB) {
-    console.trace();
+Host.prototype.init = function (options, nextCB) {
+    //console.trace();
+    // options : {
+    //   vid : 4047,
+    //   pid : 4104,
+    //   libconfig : "channelId,rxtimestamp" or number
+    // }
+    this.options = options;
 
-    var vendor = idVendor || 4047,
-        product = idProduct || 4104;
+    var vendor = options.vid || 4047, // Default to USB 2
+        product = options.pid || 4104;
 
     process.on('SIGINT', function sigint() {
         //console.log("ANT SIGINT");
@@ -429,12 +434,57 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
 
 
             var resetCapabilitiesLibConfig = function _resetSystem(callback) {
-                var libConfig;
+               
+
+                var doLibConfig = function () {
+
+                    var libConfigOptions = this.options.libconfig, 
+                        libConfig, libConfigOptionsSplit;
+
+                    if (typeof libConfigOptions === "undefined" || !this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
+                        return;
+
+                    var libConfig = new LibConfig();
+
+                    
+                    if (typeof libConfigOptions === 'number')
+                        libConfig.setFlagsByte(libConfigOptions);
+
+                    else if (typeof libConfigOptions === 'string') {
+
+                        libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
+
+                        if (libConfigOptionsSplit.indexOf("channelid") !== -1)
+                            libConfig.setEnableChannelId();
+
+                        if (libConfigOptionsSplit.indexOf("rssi") !== -1)
+                            libConfig.setEnableRSSI();
+
+                        if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
+                            libConfig.setEnableRXTimestamp();
+                    }
+
+                    else  return;
+
+                    console.log("libConfig",libConfig);
+                    //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
+                    this.libConfig(libConfig.getFlagsByte(),
+                        function (error, serialNumberMsg) {
+                            if (!error) {
+                                this.libConfig = libConfig;
+                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
+                                callback()
+                            }
+                            else
+                                nextCB(error)
+                        }.bind(this));
+                }.bind(this);
 
                 this.resetSystem(function (error, notification) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
                         this.startupNotification = notification;
+
                         this.getCapabilities(function (error, capabilities) {
                             if (!error) {
                                 this.capabilities = capabilities;
@@ -452,18 +502,7 @@ Host.prototype.init = function (idVendor, idProduct, nextCB) {
                                                 if (!error) {
                                                     this.deviceSerialNumber = serialNumberMsg.serialNumber;
                                                     this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
-
-                                                    libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-                                                    this.libConfig(libConfig.getFlagsByte(),
-                                                        function (error, serialNumberMsg) {
-                                                            if (!error) {
-                                                                this.libConfig = libConfig;
-                                                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
-                                                                callback()
-                                                            }
-                                                            else
-                                                                nextCB(error)
-                                                        }.bind(this));
+                                                    doLibConfig.bind(this)();
                                                 } else
                                                     nextCB(error)
                                             }.bind(this));
