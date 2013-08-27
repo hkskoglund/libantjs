@@ -136,7 +136,7 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         this.emit(USBDevice.prototype.EVENT.ERROR, err);
         nextCB(err);
         //throw err; 
-        //return;
+        return;
         //errorCallback();
     }
 
@@ -262,6 +262,13 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
 
 
 USBNode.prototype.exit = function (nextCB) {
+   // console.trace();
+   
+    if (typeof this.device === "undefined") {
+        nextCB(new Error("No USB device"));
+        return;
+    }
+
     //console.log(Date.now(), "Exiting USBNODE now.");
 
    // console.trace();

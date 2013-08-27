@@ -243,11 +243,17 @@ ANTMessage.prototype.MESSAGE = {
         0x51: "Set Channel ID",
         SET_CHANNEL_ID: 0x51,
 
+        0x65: "Set Serial Num Channel ID",
+        SET_SERIAL_NUM_CHANNEL_ID : 0x65,
+
         0x46: "Set network key",
         SET_NETWORK_KEY: 0x46,
 
         0x47: "Set transmit power",
-        SET_TRANSMIT_POWER:  0x47,
+        SET_TRANSMIT_POWER: 0x47,
+
+        0x60: "Set Channel Tx Power",
+        SET_CHANNEL_TX_POWER : 0x60,
 
         0x43: "Set channel period (Tch)",
         SET_CHANNEL_MESSAGING_PERIOD:  0x43,
@@ -273,6 +279,9 @@ ANTMessage.prototype.MESSAGE = {
         0x66: "Enable Extended Messages",
         RXEXTMESGSENABLE: { id: 0x66, friendly: "Enable Extended Messages" },
 
+        0x71: "Set Proximity Search",
+        SET_PROXIMITY_SEARCH : 0x71,
+
     // Data message
 
         0x4E: "Broadcast Data",
@@ -286,6 +295,8 @@ ANTMessage.prototype.MESSAGE = {
 
         0x72: "Advanced Burst Transfer Data",
         advanced_burst_transfer_data: { id: 0x72, friendly: "Advanced burst transfer data" },
+
+
 
 };
 

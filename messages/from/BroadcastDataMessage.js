@@ -23,12 +23,13 @@ BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
 // Spec. p. 91
 BroadcastDataMessage.prototype.parse = function (content) {
+    var sharedAddress;
 
     if (typeof content !== "undefined" && Buffer.isBuffer(content))
         this.setContent(content);
 
     this.channel = this.content[0];
-    this.data = this.content.slice(1, 9); // Date 0 .. 7
+    this.data = this.content.slice(1, 9); // Data 0 .. 7 - assume independent channel
 
     // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
     // 'Broadcast Data ID 0x4e C# 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
@@ -39,20 +40,32 @@ BroadcastDataMessage.prototype.parse = function (content) {
 
         // Check for channel ID
         // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
-        if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) 
+        if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
             this.channelId.parse(this.extendedData.slice(0, 4));
-        
+            console.log(this.channelId.toString());
+
+            // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
+            sharedAddress = this.channelId.getSharedAddressType();
+
+            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) {
+                this.sharedAddress = this.content[0]; // 1 byte is the shared address 0 = broadcast to all slaves
+                this.data = this.content.slice(2, 9);
+
+            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
+                this.sharedAddress = this.content.readUInt16LE(0); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
+                this.data = this.content.slice(3, 9);
+            }
+        }
+
         if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) 
             this.RXTimestamp.parse(this.extendedData.slice(-2));
         
         if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
             this.RSSI.parse(this.extendedData.slice(0, 2));
-            console.log(this.RSSI.toString());
         }
 
         if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
             this.RSSI.parse(this.extendedData.slice(4, 7));
-            console.log(this.RSSI.toString());
         }
     }
 

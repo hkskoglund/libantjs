@@ -1,27 +1,28 @@
 libant
 ======
 
-Library for the ANT protocol over USB for node.js
+node.js library for the ANT protocol over USB.
 
 <h1>Installation</h1>
 
-Requires that a libusb-driver/library is installed (see README https://github.com/nonolith/node-usb/blob/master/Readme.md)
+Requires that a libusb-driver is installed (see README https://github.com/nonolith/node-usb/blob/master/Readme.md)
 
 <h1>Usage</h1>
 
-var host = require('./host.js');
+var Host = require('./host.js'),
+host = new Host();
 
 Callback follows the pattern for callback(error,message)
 
 API is in <b>unstable</b> alpha stage. It is based on the ANT message protocol and usage document http://www.thisisant.com/resources/ant-message-protocol-and-usage/
 
 <h3>host.init({
-vid : idVendor,
-pid : idProduct,
-libconfig : "channelid,rssi,rxtimestamp"
+	vid : {number},
+	pid : {number},
+	libconfig : "channelid,rssi,rxtimestamp"
 }, callback)</h3>
 
-  initializes usb device, reset ANT and get ANT capabilities and device information (version/serial number)
+  initializes usb device, reset ANT, get capabilities and device version/serial number, optionally adds extra data to payload if libconfig options are specified
   
 <h3>host.resetSystem(callback)</h3>
 

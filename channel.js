@@ -74,7 +74,7 @@ Channel.prototype.showConfiguration = function (name) {
                 case 8192: rate = "4 Hz (8192)"; break;
                 case 8070: rate = (32768 / 8070).toFixed(2) + "Hz (8070)"; break; // HRM
                 case 4096: rate = "8 Hz (4096)"; break;
-                default: rate = usMessagePeriod + " " + (32768 / usMessagePeriod).toFixed(2) + "Hz"; break;
+                default: rate = messagePeriod + " " + (32768 / messagePeriod).toFixed(2) + "Hz"; break;
             } 
         else
             rate = "Default";
@@ -103,9 +103,20 @@ Channel.prototype.showConfiguration = function (name) {
 
     }
 
+    function formatExtendedAssignment(extendedAssignment) {
+        if (typeof extendedAssignment === "undefined")
+            return 'undefined';
+
+        if (typeof extendedAssignment === "string") // Parsing/validation is done when host establish channel
+            return extendedAssignment;
+
+        if (typeof extendedAssignment === "number")
+            return Channel.prototype.EXTENDED_ASSIGNMENT[extendedAssignment];
+    }
+
     return name +" "+ options.channelId.toString()+
-        ' RF ' + (options.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(options.channelPeriod)+ ' HP '+formatSearchTimeout(options.HPsearchTimeout)+' LP '+
-        formatSearchTimeout(options.LPsearchTimeout);
+        ' RF ' + (options.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(options.channelPeriod)+ ' LP '+
+        formatSearchTimeout(options.LPsearchTimeout) + ' HP ' + formatSearchTimeout(options.HPsearchTimeout) + ' ext.Assign ' + formatExtendedAssignment(options.extendedAssignment);
 }
 
 
@@ -114,10 +125,10 @@ Channel.prototype.showConfiguration = function (name) {
 //}
 
 Channel.prototype.EXTENDED_ASSIGNMENT = {
-    0x01: "Background Scanning Enable",
-    0x04: "Frequency Agility Enable",
-    0x10: "Fast Channel Initiation Enable",
-    0x20: "Asynchronous Transmission Enable",
+    0x01: "Background Scanning",
+    0x04: "Frequency Agility",
+    0x10: "Fast Channel Initiation",
+    0x20: "Asynchronous Transmission",
     BACKGROUND_SCANNING_ENABLE: 0x01,
     FREQUENCY_AGILITY_ENABLE: 0x04,
     FAST_CHANNEL_INITIATION_ENABLE: 0x10,

@@ -21,10 +21,11 @@ DeviceSerialNumberMessage.prototype.parse = function () {
     // SN 4 bytes Little Endian
     
     this.serialNumber = this.content.readUInt32LE(0);
+    this.serialNumberAsChannelId = this.serialNumber & 0xFFFF; // Lower 2-bytes
 }
 
 DeviceSerialNumberMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " " + this.serialNumber;
+    return this.name + " ID 0x" + this.id.toString(16) + " " + this.serialNumber+" lower 2-bytes "+this.serialNumberAsChannelId;
 }
 
 module.exports = DeviceSerialNumberMessage;
