@@ -5,7 +5,8 @@ var ANTMessage = require('../ANTMessage.js'),
 
 
 function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment) {
-    
+    console.log("Assign channel msg args", arguments);
+
     var msgBuffer = new Buffer([channel, channelType, networkNumber]);
 
     if (extendedAssignment)

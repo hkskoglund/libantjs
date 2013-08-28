@@ -6,7 +6,44 @@ var util = require('util');
 
 function DeviceProfile_HRM(configuration) {
     console.log("HRM configuration", configuration);
-    DeviceProfile.call(this,configuration); 
+    DeviceProfile.call(this, configuration);
+
+    this.addConfiguration("slave", {
+        networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
+        //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+        channelType: "slave",
+        channelId: { deviceNumber: '*', deviceType: '*', transmissionType: '*' },
+        RFfrequency: 57,     // 2457 Mhz ANT +
+        LPsearchTimeout: 24, // 60 seconds
+        HPsearchTimeout: 10, // 25 seconds n*2.5 s
+        //transmitPower: 3,
+        //channelTxPower : 3,
+        channelPeriod: 8070, // HRM
+        //channelPeriod : 8086, //SPDCAD
+        proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+
+    });
+
+    this.addConfiguration("master", {
+        networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
+        //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+        channelType: "master",
+        channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: 0x01 }, // Independent channel
+        RFfrequency: 57,     // 2457 Mhz ANT +
+        //LPsearchTimeout: 24, // 60 seconds
+        //HPsearchTimeout: 10, // 25 seconds n*2.5 s
+        //transmitPower: 3,
+        //channelTxPower : 3,
+        channelPeriod: 8070, // HRM
+        //channelPeriod : 8086, //SPDCAD
+        //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+
+    });
+
+
+    this.on(DeviceProfile_HRM.prototype.EVENT.BROADCAST, this.broadCastDataParser);
+    this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent)
+
 }
 
 //DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
@@ -17,68 +54,79 @@ util.inherits(DeviceProfile_HRM, DeviceProfile);
 DeviceProfile_HRM.prototype.NAME = 'HRM';
 
 DeviceProfile_HRM.prototype.DEVICE_TYPE = 0x78;
-
+// Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
 DeviceProfile_HRM.prototype.CHANNEL_PERIOD = 8070;
 
-DeviceProfile_HRM.prototype.getSlaveChannelConfiguration = function (config) {
-    console.log("HRM slave channel config", config);
-    // networkNr, channelNr, deviceNr, transmissionType, searchTimeout
-        // ANT+ Managed Network Document – Heart Rate Monitor Device Profile  , p . 9  - 4 channel configuration
-    var channelResponseEventFunc,
-        broadCastDataParserFunc;
+DeviceProfile_HRM.prototype.EVENT = {
+    BROADCAST: 'broadcast',
+    CHANNEL_RESPONSE_RF_EVENT: 'channelResponseRFEvent'
+}
 
-        this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, config.networkNr, new Buffer(this._configuration.network_keys.ANT_PLUS));
+//DeviceProfile_HRM.prototype.getSlaveChannelConfiguration = function (config) {
+//    console.log("HRM slave channel config", config);
+//    // networkNr, channelNr, deviceNr, transmissionType, searchTimeout
+//        // ANT+ Managed Network Document – Heart Rate Monitor Device Profile  , p . 9  - 4 channel configuration
+//    var channelResponseEventFunc,
+//        broadCastDataParserFunc;
 
-        this.channel.setChannelId(config.deviceNr, DeviceProfile_HRM.prototype.DEVICE_TYPE, config.transmissionType, false);
+//        this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, config.networkNr, new Buffer(this._configuration.network_keys.ANT_PLUS));
 
-        this.channel.setChannelPeriod(DeviceProfile_HRM.prototype.CHANNEL_PERIOD); // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
-        this.channel.setChannelSearchTimeout(config.searchTimeout);
-        this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
+//        this.channel.setChannelId(config.deviceNr, DeviceProfile_HRM.prototype.DEVICE_TYPE, config.transmissionType, false);
 
-        broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser; // Called on received broadcast data
-        channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
+//        this.channel.setChannelPeriod(DeviceProfile_HRM.prototype.CHANNEL_PERIOD); 
+//        this.channel.setChannelSearchTimeout(config.searchTimeout);
+//        this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
 
-        this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
-        this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
+//        broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser; // Called on received broadcast data
+//        channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
-        return channel;
-    }
+//        this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+//        this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
 
-DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
-    {
-        var self = this, antInstance = this.ANT, reOpeningTimeout = 5000;
+//        return channel;
+//    }
 
-        if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data)) {
-            console.log(Date.now() + " Channel " + self.channel.number + " search timed out.");
-            //setTimeout(function handler() {
-            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
-            //        function successCB() { });
-            //}, reOpeningTimeout);
-        }
+DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) {
+    console.log(Date.now(),"HRM got channel response/RF event", channelResponse);
+}
 
-        else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
-           // console.log(Date.now() + " Channel " + self.number + " is closed.");
+//DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
+//    {
+//        var self = this, antInstance = this.ANT, reOpeningTimeout = 5000;
+
+//        if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data)) {
+//            console.log(Date.now() + " Channel " + self.channel.number + " search timed out.");
+//            //setTimeout(function handler() {
+//            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
+//            //        function successCB() { });
+//            //}, reOpeningTimeout);
+//        }
+
+//        else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
+//           // console.log(Date.now() + " Channel " + self.number + " is closed.");
            
-            //if (antInstance.inTransfer) {
-            //    console.log("Cancelling transfer");
-            //    antInstance.inTransfer.cancel(); // Cancel listener on inendpoint
-            //}
-            //setTimeout(function handler() {
-            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
-            //        function successCB() { });
-            //}, reOpeningTimeout);
-        }
-    }
+//            //if (antInstance.inTransfer) {
+//            //    console.log("Cancelling transfer");
+//            //    antInstance.inTransfer.cancel(); // Cancel listener on inendpoint
+//            //}
+//            //setTimeout(function handler() {
+//            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
+//            //        function successCB() { });
+//            //}, reOpeningTimeout);
+//        }
+//    }
 
-DeviceProfile_HRM.prototype.broadCastDataParser = function (data) {
-        var receivedTimestamp = Date.now(),
-            self = this;
+DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
+    console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
+    var data = broadcast.data;
+        //var receivedTimestamp = Date.now(),
+        //    self = this;
 
-        // 0 = SYNC, 1= Msg.length, 2 = Msg. id (broadcast), 3 = channel nr , 4= start of page  ...
-        var startOfPageIndex = 4;
+        //// 0 = SYNC, 1= Msg.length, 2 = Msg. id (broadcast), 3 = channel nr , 4= start of page  ...
+        //var startOfPageIndex = 0;
         // console.log(Date.now() + " HRM broadcast data ", data);
-        var pageChangeToggle = data[startOfPageIndex] & 0x80,
-             dataPageNumber = data[startOfPageIndex] & 0x7F;
+        var pageChangeToggle = data[0] & 0x80,
+             dataPageNumber = data[0] & 0x7F;
 
         //heart
         var page = {
@@ -86,24 +134,24 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (data) {
 
             timestamp: receivedTimestamp,
             //deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE,  // Should make it possible to classify which sensors data comes from
-            channelID : this.channel.channelID,  // Channel ID is already contained in data, but its already parsed in the ANT library (parse_response func.)
+          //  channelID : this.channel.channelID,  // Channel ID is already contained in data, but its already parsed in the ANT library (parse_response func.)
 
             pageChangeToggle: pageChangeToggle,
             dataPageNumber: dataPageNumber,
 
-            heartBeatEventTime: data.readUInt16LE(startOfPageIndex + 4),
-            heartBeatCount: data[startOfPageIndex + 6],
-            computedHeartRate: data[startOfPageIndex + 7],
+            heartBeatEventTime: data.readUInt16LE(4),
+            heartBeatCount: data[6],
+            computedHeartRate: data[7],
 
         };
 
-        if (typeof this.channel.channelID === "undefined")
-            console.log(Date.now(), "No channel ID found for this master, every master has a channel ID, verify that channel ID is set (should be set during parse_response in ANT lib.)");
+        //if (typeof this.channel.channelID === "undefined")
+        //    console.log(Date.now(), "No channel ID found for this master, every master has a channel ID, verify that channel ID is set (should be set during parse_response in ANT lib.)");
 
-        if (typeof this.channel.channelIDCache[this.channel.channelID.toProperty] === "undefined") {
-            console.log(Date.now(), "Creating object in channelIDCache to store i.e previousHeartBeatEventTime for master with channel Id", this.channel.channelID);
-            this.channelIDCache[this.channel.channelID.toProperty] = {};
-        }
+        //if (typeof this.channel.channelIDCache[this.channel.channelID.toProperty] === "undefined") {
+        //    console.log(Date.now(), "Creating object in channelIDCache to store i.e previousHeartBeatEventTime for master with channel Id", this.channel.channelID);
+        //    this.channelIDCache[this.channel.channelID.toProperty] = {};
+        //}
 
         switch (dataPageNumber) {
 

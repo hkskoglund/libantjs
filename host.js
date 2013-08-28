@@ -54,6 +54,8 @@ var events = require('events'),
     ResponseParser = require('./ANTResponseParser.js'),
         
     ChannelId = require('./channelId.js'),
+
+    DeviceProfile_HRM = require('./profiles/deviceProfile_HRM.js'),
         
     runFromCommandLine = (require.main === module) ? true : false;
 
@@ -66,7 +68,9 @@ function Host() {
     this._channel = new Array();
 
     this._responseParser = new ResponseParser();
+
     this._responseParser.on(ResponseParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
+    this._responseParser.on(ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent.bind(this));
    
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
@@ -126,11 +130,19 @@ Host.prototype.showLogMessage = function (msg) {
     console.log(Date.now(), msg);
 };
 
+Host.prototype.channelResponseRFevent = function (channelResponse) {
+    if (typeof this._channel[channelResponse.channel] !== "undefined") {
+        if (!this._channel[channelResponse.channel].emit(ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
+    } else
+        this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + channelResponse.toString());
+}
+
 Host.prototype.broadcastData = function (broadcast)
 {
     // Send event to specific channel handler
 
-    if (this._channel[broadcast.channel] !== "undefined") {
+    if (typeof this._channel[broadcast.channel] !== "undefined") {
 
         if (!this._channel[broadcast.channel].emit(ResponseParser.prototype.EVENT.BROADCAST, broadcast))
             this.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for : " + ResponseParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
@@ -142,8 +154,8 @@ Host.prototype.broadcastData = function (broadcast)
 // Assign channel and set channel ID MUST be set before opening
 Host.prototype.establishChannel = function (channelNumber, networkNumber, configurationName, channel, callback) {
     var options = channel.options[configurationName],
-        channelType,
-        masterChannel = channel.isMaster(),
+        //channelType,
+        masterChannel = channel.isMaster(configurationName),
         msg;
 
     console.log("Conf.name", configurationName,options);
@@ -162,27 +174,27 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     if (typeof options.channelType === "string")
         switch (options.channelType.toLowerCase()) {
             case 'slave':
-                channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
+                options.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
                 break;
 
             case 'master':
-                channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
+                options.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
                 break;
 
             case 'shared slave':
-                channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
+                options.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
                 break;
 
             case 'shared master':
-                channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
+                options.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
                 break;
 
             case 'slave only':
-                channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
+                options.channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
                 break;
 
             case 'master only':
-                channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
+                options.channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
                 break;
 
             default:
@@ -201,7 +213,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         return;
     }
 
-    if (!(options.channelId instanceof ChannelId)) { // Allow for channel Id. object literal with '*' as 0x00
+    // Slave - convert declarative syntax to channelId object
+    if (!(options.channelId instanceof ChannelId) && !masterChannel) { // Allow for channel Id. object literal with '*' as 0x00
 
         if (typeof options.channelId.deviceNumber === "undefined" || options.channelId.deviceNumber === '*' || typeof options.channelId.deviceNumber !== 'number')
             options.channelId.deviceNumber = 0x00;
@@ -213,6 +226,36 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             options.channelId.transmissionType = 0x00;
 
         options.channelId = new ChannelId(options.channelId.deviceNumber, options.channelId.deviceType, options.channelId.transmissionType);
+    }
+
+    console.log("Master channel", masterChannel);
+
+    // Master - convert declarative syntax to channelId object
+    if (!(options.channelId instanceof ChannelId) && masterChannel) {
+
+        if (typeof options.channelId.deviceNumber === "undefined") {
+            callback(new Error('No device number specified in channel Id'));
+            return;
+        }
+
+        if (typeof options.channelId.deviceType === "undefined") {
+            callback(new Error('No device type specified in channel Id'));
+            return;
+        }
+
+        if (typeof options.channelId.transmissionType === "undefined") {
+            callback(new Error('No transmission type specified in channel Id'));
+            return;
+        }
+
+        if (options.channelId.deviceNumber === 'serial number' && (typeof this.deviceSerialNumber === "undefined" || (this.deviceSerialNumber & 0xFFFF) === 0x00))
+            {
+                callback(new Error('No ANT device serial number available or the 2 least significant bytes of serial number is 0, device serial number 0x'+this.deviceSerialNumber.toString(16)));
+                return;
+            }
+
+        options.channelId = new ChannelId(this.deviceSerialNumber & 0xFFFF, options.channelId.deviceType, options.channelId.transmissionType);
+
     }
 
     if (options.extendedAssignment && typeof options.extendedAssignment === 'string')
@@ -638,32 +681,37 @@ Host.prototype.init = function (options, nextCB) {
                 else
                     resetCapabilitiesLibConfig(function (error) {
                         if (!error) {
-                            var testChannel = new Channel();
+                            var HRMChannel = new DeviceProfile_HRM();
 
-                            testChannel.broadcastHandler = function (broadcast) {
-                                console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
-                            }
-                            testChannel.on(ResponseParser.prototype.EVENT.BROADCAST, testChannel.broadcastHandler);
+                            //HRMChannel.broadcastHandler = function (broadcast) {
+                               
+                            //}
+                            
 
-                            testChannel.addConfiguration("slave", {
-                                networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
-                                //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-                                channelType: "slave",
-                                channelId:  { deviceNumber : '*', deviceType : '*', transmissionType : '*' },
-                                RFfrequency: 57,     // 2457 Mhz ANT +
-                                LPsearchTimeout: 24, // 60 seconds
-                                HPsearchTimeout: 10, // 25 seconds n*2.5 s
-                                //transmitPower: 3,
-                                //channelTxPower : 3,
-                                channelPeriod: 8070, // HRM
-                                //channelPeriod : 8086, //SPDCAD
-                                proximitySearch : 10
+                            //HRMChannel.addConfiguration("slave", {
+                            //    networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
+                            //    //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+                            //    channelType: "slave",
+                            //    channelId:  { deviceNumber : '*', deviceType : '*', transmissionType : '*' },
+                            //    RFfrequency: 57,     // 2457 Mhz ANT +
+                            //    LPsearchTimeout: 24, // 60 seconds
+                            //    HPsearchTimeout: 10, // 25 seconds n*2.5 s
+                            //    //transmitPower: 3,
+                            //    //channelTxPower : 3,
+                            //    channelPeriod: 8070, // HRM
+                            //    //channelPeriod : 8086, //SPDCAD
+                            //    proximitySearch : 10   // 0 - disabled 1 (nearest) - 10 (farthest)
 
-                            });
-                            //console.log("Test channel", testChannel);
-                            this.establishChannel(1, 1, "slave", testChannel, function (error) {
+                            //});
+                            //console.log("Test channel", HRMChannel);
+                            this.establishChannel(1, 1, "master", HRMChannel, function (error) {
                                 if (!error)
-                                    nextCB();
+                                    //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
+                                    //    if (!error)
+                                            nextCB();
+                                    //    else
+                                    //        nextCB(error);
+                                    //}.bind(this));
                                 else
                                     nextCB(error);
                             }.bind(this));

@@ -19,10 +19,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hkskoglund/ANT-lib.git"
+    "url": "https://github.com/hkskoglund/libant.git"
   },
   "bugs": {
-    "url": "https://github.com/hkskoglund/ANT-lib/issues"
+    "url": "https://github.com/hkskoglund/libant/issues"
   },
   "license": "MIT",
   "engines": {

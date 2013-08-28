@@ -42,7 +42,6 @@ BroadcastDataMessage.prototype.parse = function (content) {
         // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
         if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
             this.channelId.parse(this.extendedData.slice(0, 4));
-            console.log(this.channelId.toString());
 
             // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
             sharedAddress = this.channelId.getSharedAddressType();
