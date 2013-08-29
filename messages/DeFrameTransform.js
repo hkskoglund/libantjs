@@ -1,55 +1,31 @@
 ﻿"use strict"
 
 var Transform = require('stream').Transform,
-    ANTMessage = require('./ANTMessage.js');
+    ANTMessage = require('./ANTMessage.js'),
+    util = require('util');
 
 
 /* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
  */
 
-function initStream() {
-    var rawMsg;
-    this._stream = new Transform();
+util.inherits(DeFrameTransform, Transform);
 
-    this._stream._transform = function _transform(payload, encoding, callback) {
-        //console.log(this);
-        //rawMsg = this.message.create(payload);
-        console.log("Deframing ", payload);
-        console.log(this);
-        process.exit();
-        //this._stream.write(payload); // ECHO
-
-
-        // callback();
-    }.bind(this);
-
-    this._stream._read = function () {
-        // console.log("Deframing _read");
-    }.bind(this);
-
-    this._stream._write = function (payload, encoding, nextCB) {
-        // console.log("Deframing _write", arguments);
-        this._stream.push(payload);
-        nextCB();
-    }.bind(this);
-
-    //this._stream.on('readable', function _readable() {
-    //    console.log("DeFrameTransform has readable", arguments);
-    //   // this._stream.read(); // SINK
-    //}.bind(this));
-
-}
-
-function DeFrameTransform() {
+function DeFrameTransform(options) {
+    Transform.call(this, options);
     //console.log("ANTMESSAGE", ANTMessage);
-    initStream.bind(this)();
-    this.message = new ANTMessage();
+    //initStream.bind(this)();
+    //this.message = new ANTMessage();
 
 }
 
-DeFrameTransform.prototype.getStream = function () {
-    return this._stream;
+// CB from node.js stream API
+DeFrameTransform.prototype._transform = function _transform(payload, encoding, callback) {
+   // console.log("Deframing ", payload);
+   
+    this.push(payload); // ECHO into readable stream for more piping
+    callback();
 }
+
 
 module.exports = DeFrameTransform;

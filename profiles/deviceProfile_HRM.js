@@ -42,7 +42,13 @@ function DeviceProfile_HRM(configuration) {
 
 
     this.on(DeviceProfile_HRM.prototype.EVENT.BROADCAST, this.broadCastDataParser);
-    this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent)
+    this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent);
+
+    this.previousReceivedTimestamp = {}; // Timestamp for last reception of broadcast for specific channel Id device number
+    this.previousHeartBeatCount = {}; // Heart Beat Count of previous reception for specific channel Id device number
+    this.previousBroadcastData = {};
+
+
 
 }
 
@@ -117,33 +123,42 @@ DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) 
 //    }
 
 DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
-    console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
-    var data = broadcast.data;
-        //var receivedTimestamp = Date.now(),
-        //    self = this;
+    //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
+    var data = broadcast.data,
+        receivedTimestamp = Date.now(),
+        deviceId = "DN_" + broadcast.channelId.deviceNumber + "DT_" + broadcast.channelId.deviceType + "T_" + broadcast.channelId.transmissionType,
+        heartBeatCountDiff,
+        heartBeatEventTimeDiff;
 
-        //// 0 = SYNC, 1= Msg.length, 2 = Msg. id (broadcast), 3 = channel nr , 4= start of page  ...
-        //var startOfPageIndex = 0;
-        // console.log(Date.now() + " HRM broadcast data ", data);
-        var pageChangeToggle = data[0] & 0x80,
-             dataPageNumber = data[0] & 0x7F;
+    // FILTER - Skip duplicate messages from same master (disregard page toogle bit + dataPageNumber -> slice off first byte in comparison)
+    if (this.previousBroadcastData[deviceId] && this.previousBroadcastData[deviceId].slice(1).toString() === data.slice(1).toString())
+        return;
 
-        //heart
-        var page = {
-            // Header
+        page = {
 
-            timestamp: receivedTimestamp,
-            //deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE,  // Should make it possible to classify which sensors data comes from
-          //  channelID : this.channel.channelID,  // Channel ID is already contained in data, but its already parsed in the ANT library (parse_response func.)
+            // "The transmitter toggles the state of the toggle bit every fourth message (~1Hz) if the transmitter is using any 
+            // of the page formats other than the page 0 data format". (ANT Device Profile HRM, p. 14)
+            pageChangeToggle: (data[0] & 0x80) >> 7, // Bit 7    MSB,
 
-            pageChangeToggle: pageChangeToggle,
-            dataPageNumber: dataPageNumber,
+            dataPageNumber: data[0] & 0x7F,  // Bit 6-0,
 
+            // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
             heartBeatEventTime: data.readUInt16LE(4),
+            
+            // Counter for each heart beat event, rollover 255 counts
             heartBeatCount: data[6],
+
+            // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
             computedHeartRate: data[7],
 
         };
+
+       
+
+        page.timestamp = receivedTimestamp;
+        page.channelId = broadcast.channelId;
+
+       // console.log("page", page);
 
         //if (typeof this.channel.channelID === "undefined")
         //    console.log(Date.now(), "No channel ID found for this master, every master has a channel ID, verify that channel ID is set (should be set during parse_response in ANT lib.)");
@@ -151,80 +166,94 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
         //if (typeof this.channel.channelIDCache[this.channel.channelID.toProperty] === "undefined") {
         //    console.log(Date.now(), "Creating object in channelIDCache to store i.e previousHeartBeatEventTime for master with channel Id", this.channel.channelID);
         //    this.channelIDCache[this.channel.channelID.toProperty] = {};
-        //}
+    //}
+        console.log("pagenr", page.dataPageNumber);
 
-        switch (dataPageNumber) {
+        switch (page.dataPageNumber) {
 
             case 4: // Main data page
 
                 page.pageType = "Main";
-                page.previousHeartBeatEventTime = data.readUInt16LE(startOfPageIndex + 2);
 
-                var rollOver = (page.previousHeartBeatEventTime > page.heartBeatEventTime) ? true : false;
+                page.previousHeartBeatEventTime = data.readUInt16LE(2);
 
-                if (rollOver)
-                    page.RRInterval = (0xFFFF - page.previousHeartBeatEventTime) + page.heartBeatEventTime;
-                else
-                    page.RRInterval = page.heartBeatEventTime - page.previousHeartBeatEventTime;
+                // Only calculate RR if there is less than 64 seconds between data pages and 1 beat difference between last reception of page
+                if (this.previousReceivedTimestamp[deviceId] && (receivedTimestamp - this.previousReceivedTimestamp[deviceId]) < 64000) {
 
-                // Must index channel = this by channelID to handle multiple masters
-                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {  // Filter out identical messages
-                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
-                    var msg = page.pageType + " " + page.dataPageNumber + " HR " + page.computedHeartRate + " heart beat count " + page.heartBeatCount + " RR " + page.RRInterval;
-                    console.log(msg);
-                    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
+                    
+                    var heartBeatCountDiff = page.heartBeatCount-this.previousHeartBeatCount[deviceId];
+                    if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
+                        heartBeatCountDiff += 256;
 
+                    if (heartBeatCountDiff === 1) {
+                        heartBeatEventTimeDiff = page.heartBeatEventTime - page.previousHeartBeatEventTime;
+                        
+                        if (heartBeatEventTimeDiff < 0) // Roll over
+                            heartBeatEventTimeDiff += 0xFFFF;
 
-                    if (this.channelIDCache[this.channel.channelID.toProperty].timeout) {
-                        clearTimeout(this.channelIDCache[this.channel.channelID.toProperty].timeout);
-                        //console.log("After clearing", this.timeout);
-                        delete this.channelIDCache[this.channel.channelID.toProperty].timeout;
+                        page.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
                     }
-
-                    this.channelIDCache[this.channel.channelID.toProperty].timeout = setTimeout(function () { console.log(Date.now() + " Lost broadcast data from HRM"); }, 3000);
                 }
+
+               
+                var msg = page.pageType + " " + page.dataPageNumber + " Toggle " + page.pageChangeToggle + " HR " +
+                    page.computedHeartRate + " C " + page.heartBeatCount +
+                    " T " + page.heartBeatEventTime + " Tp " + page.previousHeartBeatEventTime + " T-Tp " + (page.heartBeatEventTime - page.previousHeartBeatEventTime);
+                if (page.RRInterval)
+                    msg += " RR (ms) " + page.RRInterval.toFixed(1);
+
+                console.log(msg);
+                //    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
+
+                
+
+                break;
+
+           
+
+            case 3: // Background data page
+                page.pageType = "Background";
+                page.hardwareVersion = data[ 1];
+                page.softwareVersion = data[ 2];
+                page.modelNumber = data[3];
+
+                //if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                //    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                    console.log(page.pageType + " " + page.dataPageNumber + " HW version " + page.hardwareVersion + " SW version " + page.softwareVersion + " Model " + page.modelNumber);
+                //    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
+                //}
+
                 break;
 
             case 2: // Background data page - sent every 65'th message
                 page.pageType = "Background";
-                page.manufacturerID = data[startOfPageIndex + 1];
-                page.serialNumber = data.readUInt16LE(startOfPageIndex + 2);
+                page.manufacturerID = data[1];
+                page.serialNumber = data.readUInt16LE(2); // Upper 16-bits of a 32 bit serial number, lower 2-bytes is device number as part of channel id.
+                if (typeof broadcast.channelId !== "undefined" && typeof broadcast.channelId.deviceNumber !== "undefined")
+                    page.serialNumber = (page.serialNumber << 16) & broadcast.channelId.deviceNumber;
 
-                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
-                    console.log(page.pageType + " " + page.dataPageNumber + " Manufacturer " + page.manufacturerID + " serial number : " + page.serialNumber);
-                    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
-                }
-
-                break;
-
-            case 3: // Background data page
-                page.pageType = "Background";
-                page.hardwareVersion = data[startOfPageIndex + 1];
-                page.softwareVersion = data[startOfPageIndex + 2];
-                page.modelNumber = data[startOfPageIndex + 3];
-
-                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
-                    console.log(page.pageType + " " + page.dataPageNumber + " HW version " + page.hardwareVersion + " SW version " + page.softwareVersion + " Model " + page.modelNumber);
-                    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
-                }
+                //if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                //    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                //    console.log(page.pageType + " " + page.dataPageNumber + " Manufacturer " + page.manufacturerID + " serial number : " + page.serialNumber);
+                //    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
+                //}
 
                 break;
 
             case 1: // Background data page
                 page.pageType = "Background";
-                page.cumulativeOperatingTime = (data.readUInt32LE(startOfPageIndex + 1) & 0x00FFFFFF) / 2; // Seconds since reset/battery replacement
-                if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
-                    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
-                    console.log(page.pageType+" "+page.dataPageNumber+ " Cumulative operating time (s) " + page.cumulativeOperatingTime + " hours: " + page.cumulativeOperatingTime / 3600);
-                    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
-                }
+                page.cumulativeOperatingTime = (data.readUInt32LE(1) & 0x00FFFFFF) / 2; // Seconds since reset/battery replacement
+
+                //if (this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime !== page.heartBeatEventTime) {
+                //    this.channelIDCache[this.channel.channelID.toProperty].previousHeartBeatEventTime = page.heartBeatEventTime;
+                //    console.log(page.pageType+" "+page.dataPageNumber+ " Cumulative operating time (s) " + page.cumulativeOperatingTime + " hours: " + page.cumulativeOperatingTime / 3600);
+                //    this.nodeInstance.broadCastOnWebSocket(JSON.stringify(page)); // Send to all connected clients
+                //}
 
                 break;
 
-            case 0: // Background - unknown data format
-                page.pageType = "Background";
+            case 0: // Main - unknown data format
+                page.pageType = "Main";
                 break;
 
             default:
@@ -232,6 +261,10 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
                 console.log("Page ", dataPageNumber, " not implemented.");
                 break;
         }
+
+        this.previousReceivedTimestamp[deviceId] = receivedTimestamp;
+        this.previousBroadcastData[deviceId] = data;
+        this.previousHeartBeatCount[deviceId] = page.heartBeatCount;
 
         
     }

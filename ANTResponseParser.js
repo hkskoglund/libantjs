@@ -226,7 +226,10 @@ ParseANTResponse.prototype.parse = function (data) {
            
             this.broadcast.parse(data.slice(3,3+ANTmsg.length));
 
-            console.log(Date.now(),this.broadcast.toString(), "Payload",this.broadcast.data);
+            // console.log(Date.now(),this.broadcast.toString(), "Payload",this.broadcast.data);
+
+            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
+            // The number of function calls can be limited if filtering is done here....
 
             if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, this.broadcast))
               this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + this.broadcast.toString());
@@ -407,7 +410,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
 ParseANTResponse.prototype._transform = function (response, encoding, nextCB) {
     this.parse(response);
-    this.push(response); // Allows for more pipes
+    //console.log("Need more data", this.push(response),"Highwatermark", this._readableState.highWaterMark, this._readableState.buffer.length);
     nextCB();
 }
 

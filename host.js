@@ -141,7 +141,6 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
 Host.prototype.broadcastData = function (broadcast)
 {
     // Send event to specific channel handler
-
     if (typeof this._channel[broadcast.channel] !== "undefined") {
 
         if (!this._channel[broadcast.channel].emit(ResponseParser.prototype.EVENT.BROADCAST, broadcast))
@@ -566,7 +565,10 @@ Host.prototype.init = function (options, nextCB) {
 
     this.usb = new USBDevice();
 
-    this.frameTransform = new FrameTransform(); // TX
+    // Object mode is enabled to allow for passing message objects downstream/TX, from here the message is transformed into a buffer and sent down the pipe to usb
+    // Sending directly to the usb stream as a buffer would have been somewhat more performant
+    this.frameTransform = new FrameTransform({ objectMode: true }); // TX
+
     this.deframeTransform = new DeFrameTransform(); // RX
 
     initStream.bind(this)();
@@ -585,10 +587,10 @@ Host.prototype.init = function (options, nextCB) {
         if (this.usb.isTimeoutError(error)) {
 
             // TX: Wire outgoing pipes host -> frame transform -> usb
-            this._TXstream.pipe(this.frameTransform.getStream()).pipe(this.usb.getStream());
+            this._TXstream.pipe(this.frameTransform).pipe(this.usb.getStream());
 
             // RX: Wire incoming pipes usb -> deframe transf. -> host
-            this.usb.getStream().pipe(this.deframeTransform.getStream()).pipe(this._RXstream).pipe(this._responseParser);
+            this.usb.getStream().pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
 
             var resetCapabilitiesLibConfig = function _resetSystem(callback) {
 
@@ -704,7 +706,7 @@ Host.prototype.init = function (options, nextCB) {
 
                             //});
                             //console.log("Test channel", HRMChannel);
-                            this.establishChannel(1, 1, "master", HRMChannel, function (error) {
+                            this.establishChannel(1, 1, "slave", HRMChannel, function (error) {
                                 if (!error)
                                     //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
                                     //    if (!error)
