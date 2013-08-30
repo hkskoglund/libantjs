@@ -2,14 +2,18 @@ var DeviceProfile = require('./deviceProfile.js'),
     util = require('util');
 
 function DeviceProfile_HRM(configuration) {
-    console.log("HRM configuration", configuration);
+    //console.log("HRM configuration", configuration);
     DeviceProfile.call(this, configuration);
-
+    // networkkey : {
+    // "ANTPlus" : ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"]
+    // "public" : ["0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00", "0x00"]
+    // }
     this.addConfiguration("slave", {
+        // networkKey : "ANTPlus"
         networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
         //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
         channelType: "slave",
-        channelId: { deviceNumber: '*', deviceType: '*', transmissionType: '*' },
+        channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
         RFfrequency: 57,     // 2457 Mhz ANT +
         LPsearchTimeout: 24, // 60 seconds
         HPsearchTimeout: 10, // 25 seconds n*2.5 s
@@ -17,7 +21,8 @@ function DeviceProfile_HRM(configuration) {
         //channelTxPower : 3,
         channelPeriod: 8070, // HRM
         //channelPeriod : 8086, //SPDCAD
-        proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+        proximitySearch: 10,   // 0 - disabled 1 (nearest) - 10 (farthest)
+        broadcastScriptFileName : './deviceProfile/deviceProfileHRM.js'
 
     });
 
@@ -25,13 +30,13 @@ function DeviceProfile_HRM(configuration) {
         networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
         //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
         channelType: "slave",
-        channelId: { deviceNumber: '*', deviceType: '*', transmissionType: '*' },
+        channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
         RFfrequency: 57,     // 2457 Mhz ANT +
         LPsearchTimeout: 24, // 60 seconds
         HPsearchTimeout: 10, // 25 seconds n*2.5 s
         //transmitPower: 3,
         //channelTxPower : 3,
-        channelPeriod: 8070*2, // HRM
+        channelPeriod: 8070 * 2, // HRM
         //channelPeriod : 8086, //SPDCAD
         proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
 
@@ -41,7 +46,7 @@ function DeviceProfile_HRM(configuration) {
         networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
         //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
         channelType: "slave",
-        channelId: { deviceNumber: '*', deviceType: '*', transmissionType: '*' },
+        channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
         RFfrequency: 57,     // 2457 Mhz ANT +
         LPsearchTimeout: 24, // 60 seconds
         HPsearchTimeout: 10, // 25 seconds n*2.5 s
@@ -71,6 +76,7 @@ function DeviceProfile_HRM(configuration) {
 
     this.on(DeviceProfile_HRM.prototype.EVENT.BROADCAST, this.broadCastDataParser);
     this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent);
+    this.on(DeviceProfile_HRM.prototype.EVENT.LOG, this.showLog);
 
     this.previousReceivedTimestamp = {}; // Timestamp for last reception of broadcast for specific channel Id device number
     this.previousHeartBeatCount = {}; // Heart Beat Count of previous reception for specific channel Id device number
@@ -97,10 +103,16 @@ DeviceProfile_HRM.prototype.CHANNEL_PERIOD = 8070;
 DeviceProfile_HRM.prototype.EVENT = {
     BROADCAST: 'broadcast',
     CHANNEL_RESPONSE_RF_EVENT: 'channelResponseRFEvent',
-    RESPONSE: 'response',
-    RF_EVENT: 'RFevent'
+    WEBSOCKET_BROADCAST : 'broadcast websocket',
+    LOG : 'log'
+    //RESPONSE: 'response',
+    //RF_EVENT: 'RFevent'
 };
 
+DeviceProfile_HRM.prototype.showLog = function (msg)
+{
+    console.log(Date.now(),msg);
+}
 
 DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) {
     console.log(Date.now(), "HRM got channel response/RF event", channelResponse);
@@ -185,14 +197,13 @@ DeviceProfile_HRM.prototype.STATE = {
 // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
 
 DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
-    if (broadcast.channelId.deviceType !== DeviceProfile_HRM.prototype.DEVICE_TYPE)
-    {
-        console.log(Date.now(), "Received broadcast from non HRM device type 0x", broadcast.channelId.deviceType.toString(16), " routing of broadcast is wrong!");
+    if (broadcast.channelId.deviceType !== DeviceProfile_HRM.prototype.DEVICE_TYPE) {
+        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,"Received broadcast from non HRM device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
         return;
     }
 
-    if (broadcast.channelId.usesANTPLUSGlobalDataPages()) 
-        console.log(Date.now(), "Seems like ANT+ global data pages are used, but no support for intepretation here.");
+    if (broadcast.channelId.usesANTPLUSGlobalDataPages())
+        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,"Seems like ANT+ global data pages are used, but no support for intepretation here.");
 
     this.broadcast = broadcast;
     //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
@@ -203,41 +214,8 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
         heartBeatEventTimeDiff,
         TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000;
 
-    // Filter ONE - page toogle bit -> can only receive from toggeling master
 
-    // "The transmitter toggles the state of the toggle bit every fourth message (~1Hz) if the transmitter is using any 
-    // of the page formats other than the page 0 data format -> page 4 format". (ANT Device Profile HRM, p. 14) 
-    // Holds toggle for approx. 1 second -> 1 Hz message period enough to register toggle
-    // "The receiver may not interpret bytes 0-3 until it has seen this bit set to both a 0 and a 1" (ANT+ HRM spec, p. 15) -> can be used to skip duplicates
-
-    this.page.changeToggle = (data[0] & 0x80) >> 7; // Bit 7    MSB
-    if (this.page.changeToggle === this.previousPageChangeToggle[deviceId] || typeof this.previousPageChangeToggle[deviceId] === 'undefined') // Filter
-    {
-        if (typeof this.previousPageChangeToggle[deviceId] === 'undefined')
-            this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
-
-        return;
-    }
-
-    this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
-
-    // FILTER TWO
-
-    // Skip duplicate messages from same master (disregard page toogle bit + number -> slice off first byte in comparison)
-    if (this.previousBroadcastData[deviceId] && this.previousBroadcastData[deviceId].slice(1).toString() === data.slice(1).toString()) {
-        this.duplicateMessageCounter++;
-        return;
-    } 
-
-    if (this.duplicateMessageCounter > 0) {
-        console.log("Skipped " + this.duplicateMessageCounter + " duplicate messages from "+broadcast.channelId.toString());
-        this.duplicateMessageCounter = 0;
-    }
-
-    this.page.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
-        
-
-    // Next 3 bytesis the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
+    // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
 
     // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
     this.page.heartBeatEventTime = data.readUInt16LE(4);
@@ -248,6 +226,39 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
     this.page.computedHeartRate = data[7];
 
+    // Filter ONE - page toggle bit observation for page format other than 0
+
+    // "The transmitter toggles the state of the toggle bit every fourth message (~1Hz) if the transmitter is using any 
+    // of the page formats other than the page 0 data format -> page 4 format". (ANT Device Profile HRM, p. 14) 
+    // Holds toggle for approx. 1 second -> 1 Hz message period enough to register toggle
+    // "The receiver may not interpret bytes 0-3 until it has seen this bit set to both a 0 and a 1" (ANT+ HRM spec, p. 15) -> can be used to skip duplicates
+
+    this.page.changeToggle = (data[0] & 0x80) >> 7; // Bit 7    MSB
+    this.page.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
+
+    // Will let page 0 fallthrough, check page toggle for pages > 0
+    if (this.page.number && (this.page.changeToggle === this.previousPageChangeToggle[deviceId] || typeof this.previousPageChangeToggle[deviceId] === 'undefined')) // Filter
+    {
+        if (typeof this.previousPageChangeToggle[deviceId] === 'undefined')
+            this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
+
+        return;
+    }
+
+    this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
+
+    // FILTER TWO - Skip duplicate messages from same master (disregard page toogle bit + number -> slice off first byte in comparison)
+
+    if (this.previousBroadcastData[deviceId] && this.previousBroadcastData[deviceId].slice(1).toString() === data.slice(1).toString()) {
+        this.duplicateMessageCounter++;
+
+        return;
+    }
+
+    if (this.duplicateMessageCounter > 0) {
+        // console.log("Skipped " + this.duplicateMessageCounter + " duplicate messages from "+broadcast.channelId.toString());
+        this.duplicateMessageCounter = 0;
+    }
 
     if (this.page.heartBeatCount === this.previousHeartBeatCount[deviceId]) {
         //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
@@ -326,7 +337,7 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
 
             break;
 
-        case 0: // Main - unknown data format, transmitter shall set the value to 0xFF
+        case 0: // Main - unknown data format, transmitter shall set the value to 0xFF for bytes 1,2,3
             this.page.type = "Main";
             break;
 
@@ -335,7 +346,10 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
             //break;
     }
 
-    console.log(this.toString());
+    if (!this.emit(DeviceProfile_HRM.prototype.EVENT.WEBSOCKET_BROADCAST, JSON.stringify(this.page))) // Let host take care of sending message on websocket
+        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,'No listener for event '+DeviceProfile_HRM.prototype.EVENT.WEBSOCKET_BROADCAST);
+
+    this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,this.toString()); 
 
     this.previousReceivedTimestamp[deviceId] = receivedTimestamp;
     this.previousBroadcastData[deviceId] = data;

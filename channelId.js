@@ -2,6 +2,7 @@
 
 // Function names based on Dynastram Android SDK v 4.00 documentation
 function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
+    console.log("Creating channel id", arguments);
     
     this.deviceNumber = deviceNumber;
     this.deviceType = deviceType;
