@@ -22,8 +22,10 @@ function DeFrameTransform(options) {
 // CB from node.js stream API
 DeFrameTransform.prototype._transform = function _transform(payload, encoding, callback) {
    // console.log("Deframing ", payload);
-   
-    this.push(payload); // ECHO into readable stream for more piping
+    var overflow;
+    overflow = !this.push(payload); // ECHO into readable stream for more piping
+    if (overflow)
+        console.log("DeFrameTransform: Stream indicate overflow, pushing data beyond highWaterMark");
     callback();
 }
 

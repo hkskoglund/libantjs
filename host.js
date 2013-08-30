@@ -12,6 +12,7 @@ var events = require('events'),
     // Control ANT
     ResetSystemMessage = require('./messages/to//ResetSystemMessage.js'),
     OpenChannelMessage = require('./messages/to/OpenChannelMessage.js'),
+    CloseChannelMessage = require('./messages/to/CloseChannelMessage.js'),
 
     // Notifications
 
@@ -38,6 +39,7 @@ var events = require('events'),
     SetTransmitPowerMessage = require('./messages/to/SetTransmitPowerMessage.js'),
     SetChannelTxPowerMessage = require('./messages/to/SetChannelTxPowerMessage.js'),
     SetProximitySearchMessage = require('./messages/to/SetProximitySearchMessage.js'),
+    SetSerialNumChannelIdMessage = require('./messages/to/SetSerialNumChannelIdMessage.js'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
     LibConfigMessage = require('./messages/to/LibConfigMessage.js'),
@@ -65,7 +67,8 @@ function Host() {
 
     events.EventEmitter.call(this);
 
-    this._channel = new Array();
+    
+    this._channel = []; // Alternative new Array(), jshint recommends []
 
     this._responseParser = new ResponseParser();
 
@@ -136,18 +139,17 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
     } else
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + channelResponse.toString());
-}
+};
 
-Host.prototype.broadcastData = function (broadcast)
-{
+Host.prototype.broadcastData = function (broadcast) {
     // Send event to specific channel handler
     if (typeof this._channel[broadcast.channel] !== "undefined") {
 
         if (!this._channel[broadcast.channel].emit(ResponseParser.prototype.EVENT.BROADCAST, broadcast))
-            this.emit(Host.prototype.EVENT.LOG_MESSAGE,"No listener for : " + ResponseParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
     } else
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + broadcast.toString());
-}
+};
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
@@ -502,16 +504,16 @@ function initStream() {
 
     // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
 
-    this._TXstream.addListener('readable', function () {
-        var buf;
-        // console.log("**************************readable", arguments);
-        // console.log("TX:",this._TXstream._readableState.buffer)
-        //buf = this._TXstream.read();
-        // console.log(Date.now(), 'Stream TX test:', buf);
+    //this._TXstream.addListener('readable', function () {
+    //    var buf;
+    //    // console.log("**************************readable", arguments);
+    //    // console.log("TX:",this._TXstream._readableState.buffer)
+    //    //buf = this._TXstream.read();
+    //    // console.log(Date.now(), 'Stream TX test:', buf);
 
-        //this.parse_response(buf);
-        // this._TXstream.unshift(buf);
-    }.bind(this));
+    //    //this.parse_response(buf);
+    //    // this._TXstream.unshift(buf);
+    //}.bind(this));
 
     this._TXstream.on('error', function (msg, err) {
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
@@ -569,7 +571,7 @@ Host.prototype.init = function (options, nextCB) {
     // Sending directly to the usb stream as a buffer would have been somewhat more performant
     this.frameTransform = new FrameTransform({ objectMode: true }); // TX
 
-    this.deframeTransform = new DeFrameTransform(); // RX
+    this.deframeTransform = new DeFrameTransform({ highWaterMark: 0 }); // RX, don't want any buffer on reception -> highWaterMark = 0
 
     initStream.bind(this)();
 
@@ -603,7 +605,7 @@ Host.prototype.init = function (options, nextCB) {
                     if (typeof libConfigOptions === "undefined" || !this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
                         return;
 
-                    var libConfig = new LibConfig();
+                      libConfig = new LibConfig();
 
 
                     if (typeof libConfigOptions === 'number')
@@ -632,10 +634,10 @@ Host.prototype.init = function (options, nextCB) {
                             if (!error) {
                                 this.libConfig = libConfig;
                                 this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
-                                callback()
+                                callback();
                             }
                             else
-                                nextCB(error)
+                                nextCB(error);
                         }.bind(this));
                 }.bind(this);
 
@@ -663,7 +665,7 @@ Host.prototype.init = function (options, nextCB) {
                                                     this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
                                                     doLibConfig.bind(this)();
                                                 } else
-                                                    nextCB(error)
+                                                    nextCB(error);
                                             }.bind(this));
                                         }
                                     } else
@@ -788,8 +790,7 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
     if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) 
         callback(new Error('Device does not have capability to determine serial number'));
 
-        var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER))
-
+    var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
 
         sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.DEVICE_SERIAL_NUMBER, callback);
     
@@ -842,7 +843,7 @@ Host.prototype.getChannelStatus = function (channel, callback) {
 
     verifyRange.bind(this)('channel',channel);
 
-    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS))
+    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS));
 
     sendMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,callback);
        
@@ -929,7 +930,7 @@ function sendMessage(sendMessage,event,callback) {
         this._TXstream.push(sendMessage); // TX -> generates a "readable" thats piped into FrameTransform
        
             // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
-        timeoutRetryMessageID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)) }.bind(this), estimatedRoundtripDelayForMessage);
+        timeoutRetryMessageID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)); }.bind(this), estimatedRoundtripDelayForMessage);
        
     }
 
@@ -940,96 +941,96 @@ function sendMessage(sendMessage,event,callback) {
 
 
 // Called on first receive of broadcast from device/master
-Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCallback) {
-    var msgId, self = this;
+//Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCallback) {
+//    var msgId, self = this;
 
-    self.sendOnly(self.request(channel, ANTMessage.prototype.MESSAGE.set_channel_id.id),
-        Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-        //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
-        function error(err) {
-            if (typeof errorCallback === "function")
-                errorCallback(err);
-            else
-                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no error callback");
-        },
-        function success() {
-            self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
-               function success(data) {
-                   var msgId = data[2];
-                   if (msgId !== ANTMessage.prototype.MESSAGE.set_channel_id.id)
-                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected set channel id message response");
-                   self.parse_response(data);
-                   if (typeof successCallback === "function")
-                       successCallback(data);
-                   else
-                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no success callback");
-               });
-        });
-};
+//    self.sendOnly(self.request(channel, ANTMessage.prototype.MESSAGE.set_channel_id.id),
+//        Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
+//        //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
+//        function error(err) {
+//            if (typeof errorCallback === "function")
+//                errorCallback(err);
+//            else
+//                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no error callback");
+//        },
+//        function success() {
+//            self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
+//               function success(data) {
+//                   var msgId = data[2];
+//                   if (msgId !== ANTMessage.prototype.MESSAGE.set_channel_id.id)
+//                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected set channel id message response");
+//                   self.parse_response(data);
+//                   if (typeof successCallback === "function")
+//                       successCallback(data);
+//                   else
+//                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no success callback");
+//               });
+//        });
+//};
 
 
     // Iterates from channelNrSeed and optionally closes channel
-    Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
-        var self = this;
+    //Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
+    //    var self = this;
 
-        self.getChannelStatus(channelNrSeed, function error() {
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not retrive channel status");
-        },
-            function success() {
+    //    self.getChannelStatus(channelNrSeed, function error() {
+    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not retrive channel status");
+    //    },
+    //        function success() {
 
-                //if (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
-                //    self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING)
-                //    console.log(self.channelConfiguration[channelNrSeed].channelStatus.toString());
+    //            //if (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
+    //            //    self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING)
+    //            //    console.log(self.channelConfiguration[channelNrSeed].channelStatus.toString());
 
-                function reIterate() {
-                    ++channelNrSeed;
-                    if (channelNrSeed < self.capabilities.MAX_CHAN)
-                        self.iterateChannelStatus(channelNrSeed, closeChannel, iterationFinishedCB);
-                    else {
-                        if (typeof iterationFinishedCB === "function")
-                            iterationFinishedCB();
-                        else
-                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No iteration on channel status callback specified");
-                    }
-                }
+    //            function reIterate() {
+    //                ++channelNrSeed;
+    //                if (channelNrSeed < self.capabilities.MAX_CHAN)
+    //                    self.iterateChannelStatus(channelNrSeed, closeChannel, iterationFinishedCB);
+    //                else {
+    //                    if (typeof iterationFinishedCB === "function")
+    //                        iterationFinishedCB();
+    //                    else
+    //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No iteration on channel status callback specified");
+    //                }
+    //            }
 
-                if (closeChannel && (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
-                       self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING))
-                    self.close(channelNrSeed, function error(err) {
-                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not close channel "+ err);
-                    },
-                        function success() {
-                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel " + channelNrSeed + " CLOSED.");
-                            reIterate();
-                        });
-                else
-                    reIterate();
-            });
+    //            if (closeChannel && (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
+    //                   self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING))
+    //                self.close(channelNrSeed, function error(err) {
+    //                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not close channel "+ err);
+    //                },
+    //                    function success() {
+    //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel " + channelNrSeed + " CLOSED.");
+    //                        reIterate();
+    //                    });
+    //            else
+    //                reIterate();
+    //        });
 
-    };
+    //};
 
     // Associates a channel with a channel configuration
-    Host.prototype.setChannelConfiguration = function (channel) {
-        var self = this;
-        //console.trace();
+    //Host.prototype.setChannelConfiguration = function (channel) {
+    //    var self = this;
+    //    //console.trace();
 
-        //console.log(Date.now() + "Configuration of channel nr ", channel.number);
+    //    //console.log(Date.now() + "Configuration of channel nr ", channel.number);
 
-        if (typeof self.channelConfiguration === "undefined") {
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No channel configuration object available to attach channel to. getCapabilities should be run beforehand to get max. available channels for device");
-            return;
-        }
+    //    if (typeof self.channelConfiguration === "undefined") {
+    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No channel configuration object available to attach channel to. getCapabilities should be run beforehand to get max. available channels for device");
+    //        return;
+    //    }
 
-        self.channelConfiguration[channel.number] = channel;
-        //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
-    },
+    //    self.channelConfiguration[channel.number] = channel;
+    //    //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
+    //},
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
     Host.prototype.libConfig = function (libConfig, callback) {
       
         assert.equal(typeof this.capabilities, "object", "Capabilities not available");
-        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED,"Extended messaging not supported on device")
+        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED, "Extended messaging not supported on device");
 
      var configurationMsg;
 
@@ -1054,12 +1055,12 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
     // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
     // This is the case for ANT-FS and ANT+ device profile like i.e HRM
-    Host.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
-        var self = this, message = new ANTMessage();
+    //Host.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
+    //    var self = this, message = new ANTMessage();
 
-        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), ANTMessage.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
+    //    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), ANTMessage.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
 
-    };
+    //};
 
 
 // Used to validate configuration commands 
@@ -1076,7 +1077,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         var configurationMsg;
 
-        verifyRange.bind(this)('channel',channelNr);
+        verifyRange.bind(this)('channel', channelNr);
 
         configurationMsg = new UnAssignChannelMessage();
 
@@ -1087,14 +1088,14 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
         //    else
         //        callback(undefined, responseMessage);
         //}.bind(this));
-//, function _validationCB(responseMessage) {
-//            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-//        });
-    }
+        //, function _validationCB(responseMessage) {
+        //            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
+        //        });
+    };
 
     Host.prototype.setChannel = function (channelNumber, channel) {
         this._channel[channelNumber] = channel;
-    }
+    };
 
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
  Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
@@ -1157,7 +1158,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
             verifyRange.bind(this)('channel', channel);
 
-            configurationMsg = new SetSerialNumChannelIDMessage(channel, deviceType, transmissionType);
+            configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
 
             sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
@@ -1294,14 +1295,14 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
            
     };
 
-    Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
-        var openRxScan_channel_msg, self = this, message = new ANTMessage();
-        var channel = this.channelConfiguration[channelNr];
-        //self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-        openRxScan_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_rx_scan_mode, new Buffer([0]));
+    //Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
+    //    var openRxScan_channel_msg, self = this, message = new ANTMessage();
+    //    var channel = this.channelConfiguration[channelNr];
+    //    //self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
+    //    openRxScan_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_rx_scan_mode, new Buffer([0]));
 
-        this.sendAndVerifyResponseNoError(openRxScan_channel_msg, ANTMessage.prototype.MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
-    };
+    //    this.sendAndVerifyResponseNoError(openRxScan_channel_msg, ANTMessage.prototype.MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
+    //};
 
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
     Host.prototype.openChannel = function (channel, callback) {
@@ -1404,7 +1405,7 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         //};
 
-      
+
 
         var configurationMsg;
 
@@ -1419,14 +1420,14 @@ Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCa
 
         sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
             if (error)
-                callback('Failed to close channel nr. ' + channel)
+                callback('Failed to close channel nr. ' + channel);
             else
                 callback(undefined, responseMessage);
         }.bind(this), function _validationCB(responseMessage) {
             return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         });
 
-    }
+    };
 
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry

@@ -12,7 +12,15 @@ function FrameTransform (options) {
 
 // Callback from node.js stream API convert message object to byte stream for further processing by libusb
 FrameTransform.prototype._transform = function _transform(message, encoding, callback) {
-    this.push(message.getRawMessage()); 
+    var overflow;
+    if (typeof message.getRawMessage === "function") {
+        overflow = !this.push(message.getRawMessage());
+        if (overflow)
+            console.log("FrameTransform: Stream indicate overflow, pushing data beyond highWaterMark");
+    }
+    else
+        throw new Error('Message object has no getRawMessage function to convert message into bytes');
+
     callback();
 };
 

@@ -86,28 +86,36 @@ function formatTransmissionType() {
     // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
     switch (this.transmissionType & 0x03) {
        // case 0x00: msg += "Reserved"; break;
-        case 0x01: msg += "Independed"; break; // Only one master and one slave participating
+        case 0x01: msg += "Independent"; break; // Only one master and one slave participating
         case 0x02: msg += "Shared 1 byte address (if supported)"; break;
         case 0x03: msg += "Shared 2 byte address"; break;
        // default: msg += "?"; break;
     }
 
     // Bit 2
-    switch ((this.transmissionType & parseInt("100",2))>>2) {
+    if (this.usesANTPLUSGlobalDataPages()) {
        // case 0: msg += " | ANT+ Global data pages not used"; break;
-        case 1: msg += " | ANT+ Global data pages used"; break;
+         msg += " | ANT+ Global data pages used"; 
        // default: msg += " | ?"; break;
     }
 
-    if ((this.transmissionType & 0xF0) >> 4)
+    if (this.has20BitDeviceNumber())
         msg += " | 20-bit D#";
 
     return msg;
 };
 
+ChannelId.prototype.has20BitDeviceNumber = function () {
+    return (this.transmissionType & 0xF0) >> 4
+}
+
+ChannelId.prototype.usesANTPLUSGlobalDataPages = function () {
+    return (this.transmissionType & parseInt("100",2))>>2;
+}
+
 ChannelId.prototype.toString = function () {
     
-    return "ChannelID (D#,DT#,T#,pair) 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType.bind(this)()
+    return "ChannelID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType.bind(this)()
 }
 
 module.exports = ChannelId;

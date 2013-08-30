@@ -55,16 +55,15 @@ ParseANTResponse.prototype.EVENT = {
 
 };
 
-ParseANTResponse.prototype.showLog = function (msg)
-{
-   
-    console.log(Date.now(),msg);
-}
+ParseANTResponse.prototype.showLog = function (msg) {
+    console.log(Date.now(), msg);
+};
 
 
 // Overview on p. 58 - ANT Message Protocol and Usage
 ParseANTResponse.prototype.parse = function (data) {
    
+    var notification;
    
     var ANTmsg = {
         SYNC: data[0],
@@ -240,7 +239,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
-            var notification = new NotificationStartup(data);
+            notification = new NotificationStartup(data);
            
             if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_STARTUP, notification))
               this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
@@ -249,7 +248,7 @@ ParseANTResponse.prototype.parse = function (data) {
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-            var notification = new NotificationSerialError(data);
+            notification = new NotificationSerialError(data);
 
             if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_SERIAL_ERROR,notification))
                 this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());

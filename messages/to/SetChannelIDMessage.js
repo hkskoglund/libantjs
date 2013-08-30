@@ -1,4 +1,4 @@
-﻿"use strict"
+﻿"use strict";
 
 var ANTMessage = require('../ANTMessage.js');
 
@@ -11,7 +11,7 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     msgBuffer[0] = channel;
     msgBuffer.writeUInt16LE(deviceNum, 1);
     msgBuffer[3] = pairingRequest;
-    msgBuffer[4] = deviceType & SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK // Slave: 0 = match any device type - Range 0 .. 127
+    msgBuffer[4] = deviceType & SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK; // Slave: 0 = match any device type - Range 0 .. 127
     msgBuffer[5] = transmissionType; // Slave: 0 = match any transmission type
 
     ANTMessage.call(this);
@@ -24,7 +24,7 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     this.deviceType = deviceType;
     this.transmissionType = transmissionType;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer);
 
     //console.log("SetChannelIDMessage", this);
 }
@@ -39,6 +39,6 @@ SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2);
 
 SetChannelIDMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
-}
+};
 
 module.exports = SetChannelIDMessage;
