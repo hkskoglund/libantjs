@@ -103,7 +103,7 @@ DeviceProfile_HRM.prototype.CHANNEL_PERIOD = 8070;
 DeviceProfile_HRM.prototype.EVENT = {
     BROADCAST: 'broadcast',
     CHANNEL_RESPONSE_RF_EVENT: 'channelResponseRFEvent',
-    WEBSOCKET_BROADCAST : 'broadcast websocket',
+    PAGE : 'page',
     LOG : 'log'
     //RESPONSE: 'response',
     //RF_EVENT: 'RFevent'
@@ -209,10 +209,12 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
     var data = broadcast.data,
         receivedTimestamp = Date.now(),
-        deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
+        //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
         heartBeatCountDiff,
         heartBeatEventTimeDiff,
-        TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000;
+        TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
+        previousBroadcastDataCopy ,
+        dataCopy = new Buffer(data.length);
 
 
     // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
@@ -237,22 +239,29 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     this.page.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
 
     // Will let page 0 fallthrough, check page toggle for pages > 0
-    if (this.page.number && (this.page.changeToggle === this.previousPageChangeToggle[deviceId] || typeof this.previousPageChangeToggle[deviceId] === 'undefined')) // Filter
+
+
+    if (this.page.number && (this.page.changeToggle === this.previousPageChangeToggle|| typeof this.previousPageChangeToggle === 'undefined')) // Filter
     {
-        if (typeof this.previousPageChangeToggle[deviceId] === 'undefined')
-            this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
+        if (typeof this.previousPageChangeToggle === 'undefined')
+            this.previousPageChangeToggle = this.page.changeToggle;
 
         return;
     }
 
-    this.previousPageChangeToggle[deviceId] = this.page.changeToggle;
+    this.previousPageChangeToggle = this.page.changeToggle;
 
-    // FILTER TWO - Skip duplicate messages from same master (disregard page toogle bit + number -> slice off first byte in comparison)
+    // FILTER TWO - Skip duplicate messages from same master 
 
-    if (this.previousBroadcastData[deviceId] && this.previousBroadcastData[deviceId].slice(1).toString() === data.slice(1).toString()) {
-        this.duplicateMessageCounter++;
-
-        return;
+    if (this.previousBroadcastData) {
+        previousBroadcastDataCopy= new Buffer(this.previousBroadcastData);
+        previousBroadcastDataCopy[0] = previousBroadcastDataCopy[0] & 0x7F; // Don't let page toggle bit obscure string comparison  - mask it please
+        dataCopy = new Buffer(data);
+        dataCopy[0] = dataCopy[0] & 0x7F;
+        if (previousBroadcastDataCopy.toString() === dataCopy.toString()) {
+            this.duplicateMessageCounter++;
+            return;
+        }
     }
 
     if (this.duplicateMessageCounter > 0) {
@@ -260,7 +269,7 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
         this.duplicateMessageCounter = 0;
     }
 
-    if (this.page.heartBeatCount === this.previousHeartBeatCount[deviceId]) {
+    if (this.page.heartBeatCount === this.previousHeartBeatCount) {
         //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
 
         if (this.state === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
@@ -290,10 +299,10 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
             this.page.previousHeartBeatEventTime = data.readUInt16LE(2);
 
             // Only calculate RR if there is less than 64 seconds between data pages and 1 beat difference between last reception of page
-            if (this.previousReceivedTimestamp[deviceId] && (receivedTimestamp - this.previousReceivedTimestamp[deviceId]) < 64000) {
+            if (this.previousReceivedTimestamp && (receivedTimestamp - this.previousReceivedTimestamp) < 64000) {
 
 
-                heartBeatCountDiff = this.page.heartBeatCount - this.previousHeartBeatCount[deviceId];
+                heartBeatCountDiff = this.page.heartBeatCount - this.previousHeartBeatCount;
                 if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
                     heartBeatCountDiff += 256;
 
@@ -346,14 +355,14 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
             //break;
     }
 
-    if (!this.emit(DeviceProfile_HRM.prototype.EVENT.WEBSOCKET_BROADCAST, JSON.stringify(this.page))) // Let host take care of sending message on websocket
-        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,'No listener for event '+DeviceProfile_HRM.prototype.EVENT.WEBSOCKET_BROADCAST);
+    if (!this.emit(DeviceProfile_HRM.prototype.EVENT.PAGE, JSON.stringify(this.page))) // Let host take care of sending message on websocket
+        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,'No listener for event '+DeviceProfile_HRM.prototype.EVENT.PAGE);
 
     this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,this.toString()); 
 
-    this.previousReceivedTimestamp[deviceId] = receivedTimestamp;
-    this.previousBroadcastData[deviceId] = data;
-    this.previousHeartBeatCount[deviceId] = this.page.heartBeatCount;
+    this.previousReceivedTimestamp = receivedTimestamp;
+    this.previousBroadcastData = data;
+    this.previousHeartBeatCount = this.page.heartBeatCount;
 };
 
 module.exports = DeviceProfile_HRM;

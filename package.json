@@ -31,8 +31,8 @@
   "readme": "ERROR: No README data found!",
   "_id": "libant@0.1.0",
   "dist": {
-    "shasum": "dc527175fc286259116f248724d7e3a6272105d0"
+    "shasum": "512eca1440b3743698e4f2bb61cdf6339e5d2a1e"
   },
-  "_resolved": "git://github.com/hkskoglund/libant.git#2e054de5b71cabb9309edb28e51c06548243712a",
+  "_resolved": "git://github.com/hkskoglund/libant.git#d822471cc5b4b34f0c8c642b51eb36aaad96a488",
   "_from": "ant-lib@git://github.com/hkskoglund/ANT-lib.git"
 }

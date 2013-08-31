@@ -3,8 +3,6 @@ var ANT = require('libant'),
     
     util = require('util');
 
-console.log("Channel", Channel)
-
 // Based on https://developer.mozilla.org/en-US/docs/JavaScript/Introduction_to_Object-Oriented_JavaScript
 function DeviceProfile(configuration) {
     Channel.call(this);
@@ -76,35 +74,35 @@ DeviceProfile.prototype = {
             console.log(Date.now(), "No callback specified after start");
     },
 
-    enableChannelConfiguration: function (channel) {
-        var self = this;
-        //console.log("ENABLING CHANNEL", channel);
+    //enableChannelConfiguration: function (channel) {
+    //    var self = this;
+    //    //console.log("ENABLING CHANNEL", channel);
 
-        var openChannel = function () {
-            self.ANT.libConfig(ANT.prototype.LIB_CONFIG.ENABLE_RX_TIMESTAMP | ANT.prototype.LIB_CONFIG.ENABLE_RSSI | ANT.prototype.LIB_CONFIG.ENABLE_CHANNEL_ID,
-               function _errorCB(err) { console.log(Date.now() + " Could not configure ANT for extended info. RX Timestamp/RSSI/ChannelID", err); },
-                function _successCB() {
+    //    var openChannel = function () {
+    //        self.ANT.libConfig(ANT.prototype.LIB_CONFIG.ENABLE_RX_TIMESTAMP | ANT.prototype.LIB_CONFIG.ENABLE_RSSI | ANT.prototype.LIB_CONFIG.ENABLE_CHANNEL_ID,
+    //           function _errorCB(err) { console.log(Date.now() + " Could not configure ANT for extended info. RX Timestamp/RSSI/ChannelID", err); },
+    //            function _successCB() {
 
-                    var listenFunc = function () {
-                        //    console.log(Date.now() + " Background scanning channel ANT+ OPEN");
-                        self.ANT.listen(function transferCancelCB() {
-                            self.ANT.iterateChannelStatus(0, true, function _clean() {
-                                self.ANT.tryCleaningBuffers(function _releaseInterfaceCloseDevice() {
-                                    self.ANT.releaseInterfaceCloseDevice();
-                                });
-                            });
-                        });
-                    };
+    //                var listenFunc = function () {
+    //                    //    console.log(Date.now() + " Background scanning channel ANT+ OPEN");
+    //                    self.ANT.listen(function transferCancelCB() {
+    //                        self.ANT.iterateChannelStatus(0, true, function _clean() {
+    //                            self.ANT.tryCleaningBuffers(function _releaseInterfaceCloseDevice() {
+    //                                self.ANT.releaseInterfaceCloseDevice();
+    //                            });
+    //                        });
+    //                    });
+    //                };
 
-                    //console.trace();
+    //                //console.trace();
 
-                    //if (self._configuration.scanningChannel === ANT.prototype.SCANNING_CHANNEL_TYPE.CONTINOUS)
-                    //    self.ANT.openRxScanMode(0, function (err) { console.log("Could not open Rx Scan Mode channel", err); }, listenFunc);
-                    //else
-                    self.ANT.open(channel.number, function (err) { console.log("Could not open channel", err); }, listenFunc);
+    //                //if (self._configuration.scanningChannel === ANT.prototype.SCANNING_CHANNEL_TYPE.CONTINOUS)
+    //                //    self.ANT.openRxScanMode(0, function (err) { console.log("Could not open Rx Scan Mode channel", err); }, listenFunc);
+    //                //else
+    //                self.ANT.open(channel.number, function (err) { console.log("Could not open channel", err); }, listenFunc);
 
-                });
-        };
+    //            });
+    //    };
 
         //this.ANT.setChannelConfiguration(channel);
 
@@ -112,7 +110,7 @@ DeviceProfile.prototype = {
         //                                                       function _successCB() {
         //                                                           openChannel();
         //                                                       });
-    },
+    //},
 
     getConfiguration : function () {
         return this._configuration;

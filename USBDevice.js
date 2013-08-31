@@ -1,13 +1,16 @@
 ﻿"use strict"
-var events = require('events'),
-    util = require('util');
-
-function USBDevice() {
-    events.EventEmitter.call(this);
+var
+    util = require('util'),
+    Duplex = require('stream').Duplex;
+  
+function USBDevice(options) {
+    //events.EventEmitter.call(this);
+    // Stream inherits from event emitter
+    Duplex.call(this, options);
     this._burstBuffer = new Buffer(0);
 }
 
-util.inherits(USBDevice, events.EventEmitter);
+util.inherits(USBDevice, Duplex);
 
 // for event emitter
 USBDevice.prototype.EVENT = {
@@ -15,8 +18,6 @@ USBDevice.prototype.EVENT = {
     LOG: 'log',
     ERROR : 'error'
 }
-
-
 
 
 USBDevice.prototype.setBurstMode = function (value) {
@@ -45,7 +46,7 @@ USBDevice.prototype.listen = function (successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
 }
 
-USBDevice.prototype.write = function (chunk, successCallback) {
+USBDevice.prototype.transfer = function (chunk, successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
 }
 

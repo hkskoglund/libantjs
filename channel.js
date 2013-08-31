@@ -1,23 +1,20 @@
 var events = require('events'),
    util = require('util');
-//var Network = require('./network.js');
 
-// Inheritance: deviceprofile inherits channel
 function Channel() {
     events.EventEmitter.call(this);
-    this.options = {};
+    this.parameters = {};
 }
 
 util.inherits(Channel, events.EventEmitter);
 
-
-Channel.prototype.addConfiguration = function (name, options)
+Channel.prototype.addConfiguration = function (name, parameters)
 {
-    this.options[name] = options;
+    this.parameters[name] = parameters;
 }
 
 Channel.prototype.showConfiguration = function (name) {
-    var options = this.options[name];
+    var parameters = this.parameters[name];
 
     function format(number) {
         if (number === 0x00)
@@ -29,16 +26,8 @@ Channel.prototype.showConfiguration = function (name) {
     function formatMessagePeriod(messagePeriod)
     {
         var rate;
-        if (typeof messagePeriod !== "undefined") 
-            switch (messagePeriod) {
-                case 65535: rate = "0.5 Hz (65535)"; break;
-                case 32768: rate = "1 Hz (32768)"; break;
-                case 16384: rate = "2 Hz (16384)"; break;
-                case 8192: rate = "4 Hz (8192)"; break;
-                case 8070: rate = (32768 / 8070).toFixed(2) + "Hz (8070)"; break; // HRM
-                case 4096: rate = "8 Hz (4096)"; break;
-                default: rate = messagePeriod + " " + (32768 / messagePeriod).toFixed(2) + "Hz"; break;
-            } 
+        if (typeof messagePeriod === "number") 
+            rate = messagePeriod + " " + (32768 / messagePeriod).toFixed(2) + "Hz"; 
         else
             rate = "Default";
 
@@ -47,6 +36,7 @@ Channel.prototype.showConfiguration = function (name) {
 
     function formatSearchTimeout(searchTimeout) {
         var friendlyFormat;
+
         if (typeof searchTimeout === "undefined")
             return 'undefined';
 
@@ -77,9 +67,9 @@ Channel.prototype.showConfiguration = function (name) {
             return Channel.prototype.EXTENDED_ASSIGNMENT[extendedAssignment];
     }
 
-    return name +" "+ options.channelId.toString()+
-        ' RF ' + (options.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(options.channelPeriod)+ ' LP '+
-        formatSearchTimeout(options.LPsearchTimeout) + ' HP ' + formatSearchTimeout(options.HPsearchTimeout) + ' ext.Assign ' + formatExtendedAssignment(options.extendedAssignment);
+    return name +" "+ parameters.channelId.toString()+
+        ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod)+ ' LP '+
+        formatSearchTimeout(parameters.LPsearchTimeout) + ' HP ' + formatSearchTimeout(parameters.HPsearchTimeout) + ' ext.Assign ' + formatExtendedAssignment(parameters.extendedAssignment);
 }
 
 
@@ -111,8 +101,8 @@ Channel.prototype.EXTENDED_ASSIGNMENT = {
 
 // Check for a bidirectional master channel
 Channel.prototype.isMaster = function (configurationName) {
-    var options = this.options[configurationName],
-        channelType = options.channelType;
+    var parameters = this.parameters[configurationName],
+        channelType = parameters.channelType;
 
     if (typeof channelType === "undefined")
         return false;

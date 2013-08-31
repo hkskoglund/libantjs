@@ -18,8 +18,6 @@
 
      BroadcastDataMessage = require('./messages/from/BroadcastDataMessage.js');
 
-util.inherits(ParseANTResponse, Transform);
-
 function ParseANTResponse(options) {
     Transform.call(this, options);
    
@@ -29,6 +27,8 @@ function ParseANTResponse(options) {
     this.broadcast = new BroadcastDataMessage(); // Only use one instance for parsing - don't use any time to create instance
 
 }
+
+util.inherits(ParseANTResponse, Transform);
 
 // for event emitter
 ParseANTResponse.prototype.EVENT = {

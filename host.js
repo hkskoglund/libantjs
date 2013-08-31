@@ -154,128 +154,128 @@ Host.prototype.broadcastData = function (broadcast) {
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
 Host.prototype.establishChannel = function (channelNumber, networkNumber, configurationName, channel, callback) {
-    var options = channel.options[configurationName],
+    var parameters = channel.parameters[configurationName],
         //channelType,
         masterChannel = channel.isMaster(configurationName),
         msg;
 
-    console.log("Conf.name", configurationName,options);
+    console.log("Conf.name", configurationName,parameters);
 
    
-    //console.log("Options", options);
+    //console.log("Options", parameters);
 
     verifyRange.bind(this)('channel', channelNumber);
     verifyRange.bind(this)('network', networkNumber);
 
-    if (typeof options.channelType === "undefined") {
+    if (typeof parameters.channelType === "undefined") {
         callback(new Error('No channel type specified'));
         return;
     }
 
-    if (typeof options.channelType === "string")
-        switch (options.channelType.toLowerCase()) {
+    if (typeof parameters.channelType === "string")
+        switch (parameters.channelType.toLowerCase()) {
             case 'slave':
-                options.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
+                parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
                 break;
 
             case 'master':
-                options.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
+                parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
                 break;
 
             case 'shared slave':
-                options.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
+                parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
                 break;
 
             case 'shared master':
-                options.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
+                parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
                 break;
 
             case 'slave only':
-                options.channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
+                parameters.channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
                 break;
 
             case 'master only':
-                options.channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
+                parameters.channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
                 break;
 
             default:
-                callback(new Error('Unknown channel type specified ' + options.channelType));
+                callback(new Error('Unknown channel type specified ' + parameters.channelType));
                 return;
                 break;
 
         }
-    else if (typeof Channel.prototype.TYPE[options.channelType] === "undefined") {
-        callback(new Error('Unknown channel type specified ' + options.channelType));
+    else if (typeof Channel.prototype.TYPE[parameters.channelType] === "undefined") {
+        callback(new Error('Unknown channel type specified ' + parameters.channelType));
         return;
     }
 
-    if (!options.channelId) {
+    if (!parameters.channelId) {
         callback(new Error('No channel ID specified'));
         return;
     }
 
     // Slave - convert declarative syntax to channelId object
-    if (!(options.channelId instanceof ChannelId) && !masterChannel) { // Allow for channel Id. object literal with '*' as 0x00
+    if (!(parameters.channelId instanceof ChannelId) && !masterChannel) { // Allow for channel Id. object literal with '*' as 0x00
 
-        if (typeof options.channelId.deviceNumber === "undefined" || options.channelId.deviceNumber === '*' || typeof options.channelId.deviceNumber !== 'number')
-            options.channelId.deviceNumber = 0x00;
+        if (typeof parameters.channelId.deviceNumber === "undefined" || parameters.channelId.deviceNumber === '*' || typeof parameters.channelId.deviceNumber !== 'number')
+            parameters.channelId.deviceNumber = 0x00;
 
-        if (typeof options.channelId.deviceType === "undefined" || options.channelId.deviceType === '*' || typeof options.channelId.deviceType !== 'number')
-            options.channelId.deviceType = 0x00;
+        if (typeof parameters.channelId.deviceType === "undefined" || parameters.channelId.deviceType === '*' || typeof parameters.channelId.deviceType !== 'number')
+            parameters.channelId.deviceType = 0x00;
 
-        if (typeof options.channelId.transmissionType === "undefined" || options.channelId.transmissionType === '*' || typeof options.channelId.transmissionType !== 'number')
-            options.channelId.transmissionType = 0x00;
+        if (typeof parameters.channelId.transmissionType === "undefined" || parameters.channelId.transmissionType === '*' || typeof parameters.channelId.transmissionType !== 'number')
+            parameters.channelId.transmissionType = 0x00;
 
-        options.channelId = new ChannelId(options.channelId.deviceNumber, options.channelId.deviceType, options.channelId.transmissionType);
+        parameters.channelId = new ChannelId(parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType);
     }
 
     console.log("Master channel", masterChannel);
 
     // Master - convert declarative syntax to channelId object
-    if (!(options.channelId instanceof ChannelId) && masterChannel) {
+    if (!(parameters.channelId instanceof ChannelId) && masterChannel) {
 
-        if (typeof options.channelId.deviceNumber === "undefined") {
+        if (typeof parameters.channelId.deviceNumber === "undefined") {
             callback(new Error('No device number specified in channel Id'));
             return;
         }
 
-        if (typeof options.channelId.deviceType === "undefined") {
+        if (typeof parameters.channelId.deviceType === "undefined") {
             callback(new Error('No device type specified in channel Id'));
             return;
         }
 
-        if (typeof options.channelId.transmissionType === "undefined") {
+        if (typeof parameters.channelId.transmissionType === "undefined") {
             callback(new Error('No transmission type specified in channel Id'));
             return;
         }
 
-        if (options.channelId.deviceNumber === 'serial number' && (typeof this.deviceSerialNumber === "undefined" || (this.deviceSerialNumber & 0xFFFF) === 0x00))
+        if (parameters.channelId.deviceNumber === 'serial number' && (typeof this.deviceSerialNumber === "undefined" || (this.deviceSerialNumber & 0xFFFF) === 0x00))
             {
                 callback(new Error('No ANT device serial number available or the 2 least significant bytes of serial number is 0, device serial number 0x'+this.deviceSerialNumber.toString(16)));
                 return;
             }
 
-        options.channelId = new ChannelId(this.deviceSerialNumber & 0xFFFF, options.channelId.deviceType, options.channelId.transmissionType);
+        parameters.channelId = new ChannelId(this.deviceSerialNumber & 0xFFFF, parameters.channelId.deviceType, parameters.channelId.transmissionType);
 
     }
 
-    if (options.extendedAssignment && typeof options.extendedAssignment === 'string')
-        switch (options.extendedAssignment.toLowerCase()) {
+    if (parameters.extendedAssignment && typeof parameters.extendedAssignment === 'string')
+        switch (parameters.extendedAssignment.toLowerCase()) {
             case 'background scanning':
-                options.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE;
+                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE;
                 break;
             case 'frequency agility':
-                options.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FREQUENCY_AGILITY_ENABLE;
+                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FREQUENCY_AGILITY_ENABLE;
                 break;
             case 'fast channel initiation':
-                options.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FAST_CHANNEL_INITIATION_ENABLE; // Skips search window check, reduce latency between open and transmission
+                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FAST_CHANNEL_INITIATION_ENABLE; // Skips search window check, reduce latency between open and transmission
                 break;
             case 'asynchronous transmission':
-                options.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.ASYNCHRONOUS_TRANSMISSION_ENABLE;
+                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.ASYNCHRONOUS_TRANSMISSION_ENABLE;
                 break;
             default:
-                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Unknown extended assignment ' + options.extendedAssignment);
-                options.extendedAssignment = undefined;
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Unknown extended assignment ' + parameters.extendedAssignment);
+                parameters.extendedAssignment = undefined;
                 break;
         }
 
@@ -296,11 +296,11 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             // MUST have - assign channel + set channel ID
 
             var assignChannelSetChannelId = function _setNetworkKeyCB() {
-                this.assignChannel(channelNumber, options.channelType, networkNumber, options.extendedAssignment, function _assignCB(error, response) {
+                this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                         //setTimeout(function () {
-                        this.setChannelId(channelNumber, options.channelId.deviceNumber, options.channelId.deviceType, options.channelId.transmissionType, function (error, response) {
+                        this.setChannelId(channelNumber, parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType, function (error, response) {
                             if (!error) {
                                 //this.once("assignChannelSetChannelId");
 
@@ -319,8 +319,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             ////// Default 8192 = 4 Hz
             var setChannelPeriod = function () {
-                if (options.channelPeriod)
-                    this.setChannelPeriod(channelNumber, options.channelPeriod, function (error, response) {
+                if (parameters.channelPeriod)
+                    this.setChannelPeriod(channelNumber, parameters.channelPeriod, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             setTransmitPower();
@@ -335,8 +335,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             // Default 66 = 2466 MHz
 
             var setChannelRFFreq =  function () {
-                if (options.RFfrequency)
-                    this.setChannelRFFreq(channelNumber, options.RFfrequency, function (error, response) {
+                if (parameters.RFfrequency)
+                    this.setChannelRFFreq(channelNumber, parameters.RFfrequency, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             setChannelPeriod();
@@ -352,8 +352,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             //// Default 3 = 0bDm
 
             var setTransmitPower = function () {
-                if (options.transmitPower)
-                    this.setTransmitPower(options.transmitPower, function (error, response) {
+                if (parameters.transmitPower)
+                    this.setTransmitPower(parameters.transmitPower, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             setChannelTxPower();
@@ -366,8 +366,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             }.bind(this);
 
             var setChannelTxPower = function () {
-                if (options.channelTxPower)
-                    this.setChannelTxPower(channelNumber,options.channelTxPower, function (error, response) {
+                if (parameters.channelTxPower)
+                    this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             setChannelSearchTimeout();
@@ -381,9 +381,9 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             // Optional
 
-            if (options.networkKey)
+            if (parameters.networkKey)
 
-                this.setNetworkKey(networkNumber, options.networkKey, function _setNetworkKeyCB(error, response) {
+                this.setNetworkKey(networkNumber, parameters.networkKey, function _setNetworkKeyCB(error, response) {
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                         assignChannelSetChannelId();
@@ -398,12 +398,12 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             //// SLAVE SEARCH TIMEOUTS : high priority and low priority
             
-            //    this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Channel "+channelNumber+" type "+ Channel.prototype.TYPE[options.channelType]);
+            //    this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Channel "+channelNumber+" type "+ Channel.prototype.TYPE[parameters.channelType]);
 
             var setChannelSearchTimeout = function () {
                 // Default HP = 10 -> 25 seconds
-                if (!masterChannel && options.HPsearchTimeout) 
-                    this.setChannelSearchTimeout(channelNumber, options.HPsearchTimeout, function (error, response) {
+                if (!masterChannel && parameters.HPsearchTimeout) 
+                    this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response) {
                         if (!error) {
                             setLowPriorityChannelSearchTimeout();
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
@@ -417,8 +417,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         
             var setLowPriorityChannelSearchTimeout = function () {
                 // Default LP = 2 -> 5 seconds
-                if (!masterChannel && options.LPsearchTimeout) 
-                    this.setLowPriorityChannelSearchTimeout(channelNumber, options.LPsearchTimeout, function (error, response) {
+                if (!masterChannel && parameters.LPsearchTimeout) 
+                    this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             setProximitySearch();
@@ -431,8 +431,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
             }.bind(this);
 
             var setProximitySearch = function () {
-                if (options.proximitySearch)
-                    this.setProximitySearch(channelNumber, options.proximitySearch, function (error, response) {
+                if (parameters.proximitySearch)
+                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
                         if (!error) {
                             this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                             openChannel();
@@ -589,10 +589,10 @@ Host.prototype.init = function (options, nextCB) {
         if (this.usb.isTimeoutError(error)) {
 
             // TX: Wire outgoing pipes host -> frame transform -> usb
-            this._TXstream.pipe(this.frameTransform).pipe(this.usb.getStream());
+            this._TXstream.pipe(this.frameTransform).pipe(this.usb);
 
             // RX: Wire incoming pipes usb -> deframe transf. -> host
-            this.usb.getStream().pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
+            this.usb.pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
 
             var resetCapabilitiesLibConfig = function _resetSystem(callback) {
 
