@@ -11,7 +11,7 @@ function BroadcastDataMessage() {
     this.name = "Broadcast Data";
     this.id = ANTMessage.prototype.MESSAGE.BROADCAST_DATA;
 
-    // Pre-create for fast access
+    // Pre-create properties extended broadcast for fast access
     this.channelId = new ChannelId();
     this.RSSI = new RSSI();
     this.RXTimestamp = new RXTimestamp();

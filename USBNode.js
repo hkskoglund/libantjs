@@ -261,16 +261,19 @@ USBNode.prototype.exit = function (nextCB) {
 
     function releaseInterfaceCloseDevice()  {
 
+        //console.log("RELEASE INTERFACE");
+
         this.device.interface().release(function (error) {
             if (error)
                 this.emit(USBDevice.prototype.EVENT.ERROR, error);
             else {
                 //console.log("Closing device, removing interface, exiting...");
                 this.device.close();
+                this.emit('closed');
                 if (typeof nextCB === "function")
                     nextCB();
             }
-        });
+        }.bind(this));
     };
 
     if (this.inTransfer) {
@@ -289,6 +292,8 @@ USBNode.prototype.exit = function (nextCB) {
 
 // Private func. -> not accessible on USBNode.prototype
 function drainLIBUSB(nextCB) {
+    //console.trace();
+    //console.log("drain LIBUSB");
 
     var totalBytesDrained = 0,
         drainAttempt = 0;
@@ -303,9 +308,11 @@ function drainLIBUSB(nextCB) {
     function retry() {
 
         drainAttempt++;
-        //console.log("Drain attempt", drainAttempt);
+       // console.log("Drain attempt", drainAttempt,this.inEP);
 
         this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
+
+            //console.log("error,data", error, data);
 
             if (data.length > 0)
                 totalBytesDrained += data.length;
@@ -315,7 +322,7 @@ function drainLIBUSB(nextCB) {
             if (!error)
                 setImmediate(retry.bind(this)); // Should be the highest priority
             else {
-               // console.log("DRAINING FINISHED", totalBytesDrained, error);
+                //console.log("DRAINING FINISHED", totalBytesDrained, error);
                 nextCB(error, totalBytesDrained);
             }
             
@@ -346,13 +353,15 @@ USBNode.prototype.listen = function (nextCB) {
             //console.time('RXtime');
             this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
                 //console.timeEnd('RXtime')
-                if (data && data.length > 0)
-                 console.log(Date.now(),'RX', data);
+                 
                 //console.log("IN USB error,data", error, data);
                 if (!error) {
 
-                    if (data && data.length > 0)
+                    if (data && data.length > 0) {
+                       // console.time('usbtoprofile');
+                        console.log(Date.now(),'RX', data);
                         this.push(data); // RX -> (piped into DeFrameTransform writable stream)
+                    }
                     setImmediate(retry.bind(this));
                 } else if (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
                     this.emit(USBDevice.prototype.EVENT.LOG, 'USB: No ANT responses in ' + LISTEN_TIMEOUT + " ms.");
@@ -411,8 +420,8 @@ USBNode.prototype.transfer = function (chunk, nextCB)
                                 sendAttempt++;
 
                                 // http://stackoverflow.com/questions/15349733/setimmediate-vs-nexttick
-                                //setImmediate(retry);  
-                                process.nextTick(retry.bind(this));
+                                setImmediate(retry.bind(this));  
+                                //process.nextTick(retry.bind(this));
                                 //retry();
                             }, this.device.timeout);
                         } else {

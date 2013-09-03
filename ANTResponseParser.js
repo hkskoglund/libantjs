@@ -19,8 +19,13 @@
      BroadcastDataMessage = require('./messages/from/BroadcastDataMessage.js');
 
 function ParseANTResponse(options) {
-    Transform.call(this, options);
-   
+    //if (!(this instanceof ParseANTResponse))
+    //    return new ParseANTResponse({ objectMode: true });
+
+    if (!options)
+      Transform.call(this, { objectMode: true });
+    else
+      Transform.call(this, options);
 
     this.on(ParseANTResponse.prototype.EVENT.LOG, this.showLog);
 
@@ -62,7 +67,7 @@ ParseANTResponse.prototype.showLog = function (msg) {
 
 // Overview on p. 58 - ANT Message Protocol and Usage
 ParseANTResponse.prototype.parse = function (data) {
-   
+    console.time('parse');
     var notification;
    
     var ANTmsg = {

@@ -96,7 +96,7 @@ function formatTransmissionType() {
     // Bit 2
     if (this.usesANTPLUSGlobalDataPages()) {
        // case 0: msg += " | ANT+ Global data pages not used"; break;
-         msg += " | ANT+ Global data pages used"; 
+         msg += " | ANT+ Global data pages"; 
        // default: msg += " | ?"; break;
     }
 
@@ -116,7 +116,7 @@ ChannelId.prototype.usesANTPLUSGlobalDataPages = function () {
 
 ChannelId.prototype.toString = function () {
     
-    return "ChannelID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType.bind(this)()
+    return "CID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType.bind(this)()
 }
 
 module.exports = ChannelId;

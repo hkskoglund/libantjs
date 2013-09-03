@@ -58,19 +58,23 @@ var events = require('events'),
     ChannelId = require('./channelId.js'),
 
     DeviceProfile_HRM = require('./profiles/deviceProfile_HRM.js'),
+
+     Duplex = require('stream').Duplex,
         
     runFromCommandLine = (require.main === module) ? true : false;
 
 
-
-function Host() {
-
-    events.EventEmitter.call(this);
-
+// Host for USB ANT communication, options are for initializing TX/RX stream
+function Host(options) {
+ 
+    if (!options)
+        Duplex.call(this, { objectMode: true });
+    else
+        Duplex.call(this, options);
     
     this._channel = []; // Alternative new Array(), jshint recommends []
 
-    this._responseParser = new ResponseParser();
+    this._responseParser = new ResponseParser({ objectMode: true });
 
     this._responseParser.on(ResponseParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
     this._responseParser.on(ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent.bind(this));
@@ -81,14 +85,32 @@ function Host() {
 
     this._mutex = {};
 
-    
+    this.on('error', function (msg, err) {
+        this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
+        if (typeof err !== "undefined")
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, err);
+    }.bind(this));
 
-    
-    
+    //this.on('finish', function () {
+    //    //this.unpipe(); // Remove all pipes
+    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Host RX stream finished');
+    //}.bind(this));
+
+    //this.on('end', function () {
+    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Host TX stream ended');
+    //}.bind(this));
+
+    //this.on('unpipe', function () {
+    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Host TX stream unpipe');
+    //}.bind(this));
+
+    //this.on('pipe', function (src) {
+    //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Pipe registered into host TX stream');
+    //}.bind(this));
+
 }
 
-// Let ANT inherit from EventEmitter http://nodejs.org/api/util.html#util_util_inherits_constructor_superconstructor
-util.inherits(Host, events.EventEmitter);
+util.inherits(Host, Duplex);
 
 // Continous scanning channel or background scanning channel
 //Host.prototype.SCANNING_CHANNEL_TYPE = {
@@ -115,7 +137,7 @@ util.inherits(Host, events.EventEmitter);
 Host.prototype.EVENT = {
 
     LOG_MESSAGE: 'logMessage',
-    ERROR : 'error',
+    ERROR : 'error', 
 
     //SET_CHANNEL_ID: 'setChannelId',
 
@@ -144,7 +166,7 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
 Host.prototype.broadcastData = function (broadcast) {
     // Send event to specific channel handler
     if (typeof this._channel[broadcast.channel] !== "undefined") {
-
+       
         if (!this._channel[broadcast.channel].emit(ResponseParser.prototype.EVENT.BROADCAST, broadcast))
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
     } else
@@ -465,82 +487,75 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     }.bind(this));
 };
 
-// Initializes TX/RX streams
-function initStream() {
-    // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
-    this._TXstream = new Duplex({objectMode : true}); // Default highWaterMark = 16384 bytes
-    this._RXstream = new Duplex(); // Cannot pipe into ._TXstream -> will create a loop, must have separate stream to pipe into
+// Must be defined/overridden otherwise throws error "not implemented"
+// _read-function is used to generate data when the consumer wants to read them
+// https://github.com/substack/stream-handbook#creating-a-readable-stream
+// https://github.com/joyent/node/blob/master/lib/_stream_readable.js
+Host.prototype._read = function (size) {
+   // console.trace();
+   // console.log("Host: Consumer wants to read %d bytes", size);
+    //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
+    // this.readable.push('A');
+};
 
-    //this._RXstream = new Writable();
-
-    // Must be defined/overridden otherwise throws error "not implemented"
-    // _read-function is used to generate data when the consumer wants to read them
-    // https://github.com/substack/stream-handbook#creating-a-readable-stream
-    // https://github.com/joyent/node/blob/master/lib/_stream_readable.js
-    this._TXstream._read = function (size) {
-        //console.trace();
-        //console.log("Host read %d bytes", size);
-        //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
-        // this.readable.push('A');
-    }.bind(this);
-
-    this._RXstream._read = function (size) {
-        //console.trace();
-        //console.log("_RXstream._read read %d bytes", size);
-        //console.log(this._RXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
-    }.bind(this);
-
-    //this._TXstream.pipe(process.stdout);
-
-    // http://nodejs.org/api/stream.html#stream_class_stream_readable
-    // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
-    // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
-    // https://github.com/substack/stream-handbook
-    //Note that whenever you register a "data" listener, you put the stream into compatability mode so you lose the benefits of the new streams2 api.
-    //this._TXstream.addListener('data', function _streamDataListener(response) {
-    //    console.log(Date.now(), 'Stream RX:', response);
-    //    this.parse_response(response);
-    //}.bind(this));
-
-    // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
-
-    //this._TXstream.addListener('readable', function () {
-    //    var buf;
-    //    // console.log("**************************readable", arguments);
-    //    // console.log("TX:",this._TXstream._readableState.buffer)
-    //    //buf = this._TXstream.read();
-    //    // console.log(Date.now(), 'Stream TX test:', buf);
-
-    //    //this.parse_response(buf);
-    //    // this._TXstream.unshift(buf);
-    //}.bind(this));
-
-    this._TXstream.on('error', function (msg, err) {
-        this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
-        if (typeof err !== "undefined")
-            this.emit(Host.prototype.EVENT.LOG_MESSAGE, err);
-    }.bind(this));
-
-    //this._TXstream.addListener('drain', function () { console.log(Date.now(), "Stream RX DRAIN",arguments); });
-
-    //this._TXstream.addListener('finish', function () {
-
-    //    console.log(Date.now(), "Stream RX FINISH", arguments);
-
-    //}.bind(this));
-
-    //// Callback from doWrite-func. in module _stream_writable (internal node.js)
-    this._RXstream._write = function _write(ANTresponse, encoding, nextCB) {
-        // console.trace();
-        //console.log("RX:", arguments[0]);
-        //console.log(Date.now(), "Host _write (Stream RX:)", ANTresponse);
-
-        //this._responseParser.parse_response(ANTresponse);
-        this._RXstream.push(ANTresponse); // Send it on the pipes
-        nextCB();
-    }.bind(this);
-
+Host.prototype._write = function (payload,encoding,nextCB) {
+    //console.trace();
+   // console.log("Host: _write", arguments,payload);
+    this._responseParser.write(payload);
+    nextCB();
 }
+
+
+// Initializes TX/RX streams
+//function initStream() {
+//    // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
+//    this._TXstream = new Duplex({objectMode : true}); // Default highWaterMark = 16384 bytes
+//    this._RXstream = new Duplex(); // Cannot pipe into ._TXstream -> will create a loop, must have separate stream to pipe into
+
+//    //this._RXstream = new Writable();
+
+//    // Must be defined/overridden otherwise throws error "not implemented"
+//    // _read-function is used to generate data when the consumer wants to read them
+//    // https://github.com/substack/stream-handbook#creating-a-readable-stream
+//    // https://github.com/joyent/node/blob/master/lib/_stream_readable.js
+//    this._TXstream._read = function (size) {
+//        //console.trace();
+//        //console.log("Host read %d bytes", size);
+//        //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
+//        // this.readable.push('A');
+//    }.bind(this);
+
+//    this._RXstream._read = function (size) {
+//        //console.trace();
+//        //console.log("_RXstream._read read %d bytes", size);
+//        //console.log(this._RXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
+//    }.bind(this);
+
+//    //this._TXstream.pipe(process.stdout);
+
+//    // http://nodejs.org/api/stream.html#stream_class_stream_readable
+//    // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
+//    // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
+//    // https://github.com/substack/stream-handbook
+//    //Note that whenever you register a "data" listener, you put the stream into compatability mode so you lose the benefits of the new streams2 api.
+//    //this._TXstream.addListener('data', function _streamDataListener(response) {
+//    //    console.log(Date.now(), 'Stream RX:', response);
+//    //    this.parse_response(response);
+//    //}.bind(this));
+
+//    // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
+
+//    //this._TXstream.addListener('readable', function () {
+//    //    var buf;
+//    //    // console.log("**************************readable", arguments);
+//    //    // console.log("TX:",this._TXstream._readableState.buffer)
+//    //    //buf = this._TXstream.read();
+//    //    // console.log(Date.now(), 'Stream TX test:', buf);
+
+//    //    //this.parse_response(buf);
+//    //    // this._TXstream.unshift(buf);
+//    //}.bind(this));
+
 
 // Initializes USB device and set up of TX/RX stream pipes
 Host.prototype.init = function (options, nextCB) {
@@ -555,28 +570,26 @@ Host.prototype.init = function (options, nextCB) {
     var vendor = options.vid || 4047, // Default to USB 2
         product = options.pid || 4104;
 
-    process.on('SIGINT', function sigint() {
-        //console.log("ANT SIGINT");
+    process.on('SIGINT', function _sigintCB() {
         this.exit(function _exitCB(error) {
+            //console.log("SIGINT");
+            //console.trace();
             if (!error)
-                this.emit(Host.prototype.EVENT.LOG_MESSAGE,"USB ANT device closed. Exiting.");
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE,"USB connection to ANT device closed. Exiting.");
             nextCB(error);
-        });
-
+        }.bind(this));
     }.bind(this));
 
     this.usb = new USBDevice();
 
     // Object mode is enabled to allow for passing message objects downstream/TX, from here the message is transformed into a buffer and sent down the pipe to usb
-    // Sending directly to the usb stream as a buffer would have been somewhat more performant
+    // Sending directly to the usb as a buffer would have been more performant
     this.frameTransform = new FrameTransform({ objectMode: true }); // TX
 
     this.deframeTransform = new DeFrameTransform({ highWaterMark: 0 }); // RX, don't want any buffer on reception -> highWaterMark = 0
 
-    initStream.bind(this)();
-
     this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
-    this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
+    //this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
 
     this._responseParser.addListener(ResponseParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
         //nextCB(new Error(notification.toString()));
@@ -589,10 +602,11 @@ Host.prototype.init = function (options, nextCB) {
         if (this.usb.isTimeoutError(error)) {
 
             // TX: Wire outgoing pipes host -> frame transform -> usb
-            this._TXstream.pipe(this.frameTransform).pipe(this.usb);
+            this.pipe(this.frameTransform).pipe(this.usb);
 
             // RX: Wire incoming pipes usb -> deframe transf. -> host
-            this.usb.pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
+           // this.usb.pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
+            this.usb.pipe(this.deframeTransform).pipe(this);
 
             var resetCapabilitiesLibConfig = function _resetSystem(callback) {
 
@@ -680,17 +694,21 @@ Host.prototype.init = function (options, nextCB) {
             }.bind(this);
 
             this.usb.listen(function _USBListenCB(error) {
+
                 if (error)
+
                     nextCB(error);
+                
                 else
+
                     resetCapabilitiesLibConfig(function (error) {
                         if (!error) {
                             var HRMChannel = new DeviceProfile_HRM();
 
                             //HRMChannel.broadcastHandler = function (broadcast) {
-                               
+
                             //}
-                            
+
 
                             //HRMChannel.addConfiguration("slave", {
                             //    networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
@@ -712,7 +730,7 @@ Host.prototype.init = function (options, nextCB) {
                                 if (!error)
                                     //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
                                     //    if (!error)
-                                            nextCB();
+                                    nextCB();
                                     //    else
                                     //        nextCB(error);
                                     //}.bind(this));
@@ -737,12 +755,13 @@ Host.prototype.exit = function (callback) {
     // console.log("Inside exit ANT");
 
     // Finish RX stream
-    this._RXstream.end(null)
+    //this._RXstream.end(null)
     // TEST : [Error: write after end]
     //this._RXstream.write(new Buffer(10));
 
-    // Close TX stream
-    this._TXstream.push(null);
+    // End TX stream, close RX stream
+    this.push(null);
+    this.end();
     // TEST EOF readable stream : this._TXstream.push(new Buffer(10)); 
     //-> gives [Error: stream.push() after EOF]
 
@@ -887,6 +906,7 @@ function sendMessage(sendMessage,event,callback) {
     this._responseParser.on(event, listener);
 
     var estimatedRoundtripDelayForMessage = this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5;
+    //var estimatedRoundtripDelayForMessage = 1000;
 
     timeoutMessageFailID = setTimeout(function () {
        // console.log("ERROR TIMEOUT")
@@ -926,8 +946,10 @@ function sendMessage(sendMessage,event,callback) {
     }.bind(this), WAIT_FOR_RESPONSE_TIME);
 
     function retry() {
-
-        this._TXstream.push(sendMessage); // TX -> generates a "readable" thats piped into FrameTransform
+       
+      // TX -> generates a "readable" thats piped into FrameTransform
+        if (!this.push(sendMessage))
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'TX stream indicates overflow, attempt to push data beyond highWaterMark');
        
             // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
         timeoutRetryMessageID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)); }.bind(this), estimatedRoundtripDelayForMessage);
@@ -1599,6 +1621,7 @@ function sendMessage(sendMessage,event,callback) {
     if (runFromCommandLine) {
        
         var noopIntervalID = setInterval(function _noop() { }, 1000 * 60 * 60 * 24);
+        var testCounter = 0;
         var host = new Host();
         host.init({
             vid: 4047,
@@ -1623,8 +1646,17 @@ function sendMessage(sendMessage,event,callback) {
             //    }]
                
                     
-        }, function (error) { if (error) host.emit(Host.prototype.EVENT.ERROR,error); clearInterval(noopIntervalID); });
-    }
+        }, function (error) {
 
+            if (error) {
+                host.emit(Host.prototype.EVENT.ERROR, error)
+                host.usb.on('closed', function () { clearInterval(noopIntervalID); });
+            } else {
+                //console.log("Host callback");
+                //console.trace();
+            }
+           
+        });
+    }
 
     module.exports = Host;

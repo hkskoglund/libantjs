@@ -3,6 +3,7 @@ var
     util = require('util'),
     Duplex = require('stream').Duplex;
   
+// Abstract USB device
 function USBDevice(options) {
     //events.EventEmitter.call(this);
     // Stream inherits from event emitter
@@ -16,7 +17,9 @@ util.inherits(USBDevice, Duplex);
 USBDevice.prototype.EVENT = {
 
     LOG: 'log',
-    ERROR : 'error'
+    ERROR: 'error',
+    CLOSED : 'closed'
+   
 }
 
 
@@ -30,6 +33,10 @@ USBDevice.prototype.init = function (idVendor, idProduct,callback) {
 }
 
 USBDevice.prototype.exit = function (callback) {
+
+    if (!this.emit(USBDevice.prototpe.EVENT.CLOSED))
+        this.showLogMessage('No listener for device closed event');
+
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
 }
 

@@ -1,18 +1,25 @@
 ﻿// Function names based on Dynastram Android SDK v 4.00 documentation
 function RXTimestamp(rxTimestamp) {
-    this.RX_timestamp = rxTimestamp;
+    this.timestamp = rxTimestamp;
 }
 
 RXTimestamp.prototype.parse = function (extendedData) {
-    this.RX_timestamp = extendedData.readUInt16LE(0);
+    this.timestamp = extendedData.readUInt16LE(0);
 }
 
 RXTimestamp.prototype.getRxTimestamp = function () {
-    return this.RX_timestamp;
+    return this.timestamp;
+}
+
+RXTimestamp.prototype.convertRXTimestampToSeconds = function (timestamp) {
+    if (timestamp)
+        return timestamp / 32768;
+    else
+      return (this.timestamp / 32768);
 }
 
 RXTimestamp.prototype.toString = function () {
-    return "RX Timestamp " + this.RX_timestamp + " " +(this.RX_timestamp / 32768).toFixed(3)+" s";
+    return "RX Timestamp " + this.getRxTimestamp()+ " " + this.convertRXTimestampToSeconds().toFixed(3)+" s";
 }
 
 module.exports = RXTimestamp;
