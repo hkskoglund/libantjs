@@ -86,7 +86,7 @@ function DeviceProfile_HRM(configuration) {
 
     //this.previousPageChangeToggle = -1;
 
-    this.broadcastCounter = 0;
+    this.receivedBroadcastCounter = 0;
 
     // Maybe optimize the "hidden classes" used for property lookup in V8 by introducing common properties for all pages
     // "Objects are always considered having different class if they don't have exactly the same set of properties in the same order."
@@ -167,14 +167,21 @@ DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) 
 
 
 DeviceProfile_HRM.prototype.toString = function () {
-    var msg = this.broadcastCounter+" "+ this.page.type + " P# " + this.page.number + " T " + this.page.changeToggle + " HR " + this.page.computedHeartRate + " C " + this.page.heartBeatCount +
+    var msg = this.receivedBroadcastCounter+" "+ this.page.type + " P# " + this.page.number + " T " + this.page.changeToggle + " HR " + this.page.computedHeartRate + " C " + this.page.heartBeatCount +
                 " Tn " + this.page.heartBeatEventTime;
 
+    function addRRInterval(msg)
+    {
+        if (this.page.RRInterval)
+            return " RR " + this.page.RRInterval.toFixed(1) + " ms";
+        else
+            return "";
+    }
+    
     switch (this.page.number) {
         case 4:
             msg += " Tn-1 " + this.page.previousHeartBeatEventTime + " T-Tn-1 " + (this.page.heartBeatEventTime - this.page.previousHeartBeatEventTime);
-            if (this.page.RRInterval)
-                msg += " RR " + this.page.RRInterval.toFixed(1) + " ms";
+            msg += addRRInterval.bind(this)();
             break;
 
         case 3:
@@ -191,7 +198,7 @@ DeviceProfile_HRM.prototype.toString = function () {
             break;
 
         case 0:
-            msg += "Main";
+            msg += addRRInterval.bind(this)();
             break;
 
         default:
@@ -225,33 +232,43 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
            previousBroadcastDataCopy,
            dataCopy = new Buffer(data.length),
            RXTimestamp_Difference,
-           JSONPage;
+           JSONPage,
+           previousRXTimestamp_Difference;
+
+    this.receivedBroadcastCounter++;
 
     if (broadcast.channelId.deviceType !== DeviceProfile_HRM.prototype.DEVICE_TYPE) {
         this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,"Received broadcast from non HRM device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
         return;
     }
 
-    if (broadcast.channelId.usesANTPLUSGlobalDataPages())
-        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,"Seems like ANT+ global data pages are used, but no support for intepretation here.");
-
-   
+    if (typeof this.usesANTPLUSGlobalDataPages === "undefined") {
+        this.usesANTPLUSGlobalDataPages = broadcast.channelId.usesANTPLUSGlobalDataPages();
+        if (this.usesANTPLUSGlobalDataPages)
+            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM ANT+ global data pages are used, but no support for intepretation here.");
+        else
+            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM ANT+ global data pages not used.");
+    }
 
     // Estimate channel period for master if RX timestamp extended broadcast information is available
     if (broadcast.RXTimestamp) {
         if (typeof this.previousRXTimestamp === "undefined")
             this.previousRXTimestamp = broadcast.RXTimestamp.timestamp;
         else {
-            RXTimestamp_Difference = broadcast.RXTimestamp.timestamp - this.previousRXTimestamp;
+            previousRXTimestamp_Difference = this.RXTimestamp_Difference;
+            this.RXTimestamp_Difference = broadcast.RXTimestamp.timestamp - this.previousRXTimestamp;
             if (RXTimestamp_Difference < 0)
-                RXTimestamp_Difference += 0xFFFF;
-            this.page.channelPeriod = RXTimestamp_Difference;
-            this.page.channelPeriodHz = 32768 / RXTimestamp_Difference;
+                this.RXTimestamp_Difference += 0xFFFF;
+            this.page.channelPeriod = this.RXTimestamp_Difference;
+            this.page.channelPeriodHz = 32768 / this.RXTimestamp_Difference;
             this.previousRXTimestamp = broadcast.RXTimestamp.timestamp;
+
+            if (typeof previousRXTimestamp_Difference === "undefined")
+                this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM channel "+broadcast.channel+" channel period " + this.page.channelPeriod + " " + this.page.channelPeriodHz.toFixed(2) + " Hz");
         }
     }
 
-    this.broadcastCounter++;
+    
 
     this.broadcast = broadcast;
     //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
@@ -281,7 +298,7 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
 
         if (typeof this.previousPageChangeToggle !== "undefined" && (this.page.changeToggle !== this.previousPageChangeToggle)) {
             this.usesPages = true;
-            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'HRM uses pages - observed page toggle bit transition after '+this.broadcastCounter+ ' broadcasts');
+            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'HRM uses ANT+ page numbers - page toggle bit (T) transition after '+this.receivedBroadcastCounter+ ' broadcasts');
         }
 
         this.previousPageChangeToggle = this.page.changeToggle;
@@ -326,6 +343,9 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     this.page.channelId = broadcast.channelId;
 
     // Only intepret page number and byte 1,2,3 if HRM uses paging
+
+    // this.usesPages = false; // TEST : page 0 simulation
+
     if (this.usesPages) {
 
         this.page.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
@@ -340,22 +360,8 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
                 this.page.previousHeartBeatEventTime = data.readUInt16LE(2);
 
                 // Only calculate RR if there is less than 64 seconds between data pages and 1 beat difference between last reception of page
-                if (this.previousReceivedTimestamp && (this.page.timestamp - this.previousReceivedTimestamp) < 64000) {
-
-
-                    heartBeatCountDiff = this.page.heartBeatCount - this.previousHeartBeatCount;
-                    if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
-                        heartBeatCountDiff += 256;
-
-                    if (heartBeatCountDiff === 1) {
-                        heartBeatEventTimeDiff = this.page.heartBeatEventTime - this.page.previousHeartBeatEventTime;
-
-                        if (heartBeatEventTimeDiff < 0) // Roll over
-                            heartBeatEventTimeDiff += 0xFFFF;
-
-                        this.page.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
-                    }
-                }
+                if (this.previousReceivedTimestamp && (this.page.timestamp - this.previousReceivedTimestamp) < 64000) 
+                    this.setPageRRInterval(this.page.heartBeatCount, this.previousHeartBeatCount, this.page.heartBeatEventTime, this.page.previousHeartBeatEventTime);
 
                 break;
 
@@ -392,13 +398,17 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
                 throw new Error("Page " + this.page.number + " not supported");
                 //break;
         }
+    } else {
+
+        // Try calculating RR for old legacy HRM
+
+        this.page.type = "Main";
+
+        if (this.previousHeartBeatCount !== -1) 
+            this.setPageRRInterval(this.page.heartBeatCount,this.previousHeartBeatCount,this.page.heartBeatEventTime,this.previousHeartBeatEventTime);
     }
-
-    //case 0: // Main - unknown data format, transmitter shall set the value to 0xFF for bytes 1,2,3
-    //    this.page.type = "Main";
-    //    break;
-
-    if (this.broadcastCounter > 4 || this.usesPages) {
+    
+    if (this.receivedBroadcastCounter > 4 || this.usesPages) {
 
         JSONPage = JSON.stringify(
             {
@@ -416,9 +426,27 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     this.previousReceivedTimestamp = this.page.timestamp;
     this.previousBroadcastData = data;
     this.previousHeartBeatCount = this.page.heartBeatCount;
+    this.previousHeartBeatEventTime = this.page.heartBeatEventTime;
 
     //console.timeEnd('broadcast');
    
 };
+
+DeviceProfile_HRM.prototype.setPageRRInterval = function (HRCount,prevHRCount,HREventTime,prevHREventTime) {
+    var heartBeatCountDiff = HRCount - prevHRCount,
+        heartBeatEventTimeDiff;
+    if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
+        heartBeatCountDiff += 256;
+
+    if (heartBeatCountDiff === 1) {
+        heartBeatEventTimeDiff = HREventTime - prevHREventTime;
+
+        if (heartBeatEventTimeDiff < 0) // Roll over
+            heartBeatEventTimeDiff += 0xFFFF;
+
+        this.page.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
+
+    }
+}
 
 module.exports = DeviceProfile_HRM;
