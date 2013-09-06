@@ -242,6 +242,7 @@ ANTMessage.prototype.MESSAGE = {
 
         0x51: "Set Channel ID",
         SET_CHANNEL_ID: 0x51,
+        CHANNEL_ID: 0x51,
 
         0x65: "Set Serial Num Channel ID",
         SET_SERIAL_NUM_CHANNEL_ID : 0x65,

@@ -15,7 +15,8 @@
   ],
   "main": "./host.js",
   "dependencies": {
-    "usb": " >=0.2.x"
+    "usb": " >=0.2.x",
+	"ws" : " >=0.4.x"
   },
   "repository": {
     "type": "git",

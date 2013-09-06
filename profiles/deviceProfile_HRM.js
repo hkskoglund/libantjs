@@ -1,173 +1,6 @@
 var DeviceProfile = require('./deviceProfile.js'),
-    util = require('util');
-
-function Page(broadcast) {
-    this.timestamp = Date.now();
-
-    if (broadcast && broadcast.data) {
-        this.channelId = broadcast.channelId;
-        this.parseCommon(broadcast.data);
-    }
-}
-
-Page.prototype.toString = function () {
-    var msg = this.type + " P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
-
-    function addRRInterval(msg) {
-        if (this.RRInterval)
-            return " RR " + this.RRInterval.toFixed(1) + " ms";
-        else
-            return "";
-    }
-
-    switch (this.number) {
-        case 4:
-            msg += " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
-            msg += addRRInterval.bind(this)();
-            break;
-
-        case 3:
-            msg += " HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
-            break;
-
-        case 2:
-            msg += " Manufacturer " + this.manufacturerID + " serial num. : " + this.serialNumber;
-            break;
-
-        case 1:
-            msg += " Cumulative operating time  " + this.cumulativeOperatingTime + " s = " + (this.cumulativeOperatingTime / 3600).toFixed(1) + " h";
-            break;
-
-        case 0:
-            msg += addRRInterval.bind(this)();
-            break;
-
-        default:
-            msg += "Unknown page number " + this.number;
-            break;
-
-
-    }
-
-    return msg + " " + this.channelId.toString();
-};
-
-// Parses common fields for all pages
-Page.prototype.parseCommon = function (data) {
-    // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
-
-    this.changeToggle = (data[0] & 0x80) >> 7;
-
-    // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
-    this.heartBeatEventTime = data.readUInt16LE(4);
-
-    // Counter for each heart beat event, rollover 255 counts
-    this.heartBeatCount = data[6];
-
-    // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
-    this.computedHeartRate = data[7];
-}
-
-// Parses ANT+ pages the device uses paging
-Page.prototype.parse = function (broadcast, previousPage, usesPages) {
-
-    var data = broadcast.data;
-
-    if (usesPages)
-        this.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
-    else
-        this.number = 0;
-
-    switch (this.number) {
-
-        case 4:
-            // Main data page
-
-            this.type = "Main";
-
-            this.previousHeartBeatEventTime = data.readUInt16LE(2);
-
-            // Only calculate RR if there is less than 64 seconds between data pages and 1 beat difference between last reception of page
-            if (previousPage.timestamp && (this.timestamp - previousPage.timestamp) < 64000)
-                this.setRRInterval(previousPage.heartBeatCount, previousPage.heartBeatEventTime);
-
-            break;
-
-        case 3: // Background data page
-            this.type = "Background";
-
-            this.hardwareVersion = data[1];
-            this.softwareVersion = data[2];
-            this.modelNumber = data[3];
-
-            break;
-
-        case 2: // Background data page - sent every 65'th message
-            this.type = "Background";
-
-            this.manufacturerID = data[1];
-            this.serialNumber = data.readUInt16LE(2); // Upper 16-bits of a 32 bit serial number
-
-            // Set the lower 2-bytes of serial number, if available in channel Id.
-            if (typeof broadcast.channelId !== "undefined" && typeof broadcast.channelId.deviceNumber !== "undefined")
-                this.serialNumber = (this.serialNumber << 16) | broadcast.channelId.deviceNumber;
-
-            break;
-
-        case 1: // Background data page
-            this.type = "Background";
-
-            this.cumulativeOperatingTime = (data.readUInt32LE(1) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
-
-            break;
-
-        case 0: // Old legacy 
-            this.type = "Main";
-            delete this.changeToggle; // Doesnt use paging for bytes 1-3
-
-            if (typeof previousPage.heartBeatCount !== "undefined")
-                this.setRRInterval(previousPage.heartBeatCount, previousPage.heartBeatEventTime);
-
-            break;
-
-
-
-        default:
-            throw new Error("Page " + this.number + " not supported");
-            //break;
-    }
-}
-
-// Page as JSON
-Page.prototype.getJSON = function () {
-    return JSON.stringify(
-             {
-                 type: 'page',
-                 page: this
-             });
-}
-
-// Set RR interval based on previous heart event time and heart beat count
-Page.prototype.setRRInterval = function (previousHeartBeatCount, previousHeartBeatEventTime) {
-    var heartBeatCountDiff = this.heartBeatCount - previousHeartBeatCount,
-        heartBeatEventTimeDiff;
-
-    if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
-        heartBeatCountDiff += 256;
-
-    if (heartBeatCountDiff === 1) {
-        heartBeatEventTimeDiff = this.heartBeatEventTime - previousHeartBeatEventTime;
-
-        if (heartBeatEventTimeDiff < 0) // Roll over
-            heartBeatEventTimeDiff += 0xFFFF;
-
-        if (typeof this.previousHeartBeatEventTime === "undefined")  // Old legacy format doesnt have previous heart beat event time
-            this.previousHeartBeatEventTime = previousHeartBeatEventTime;
-
-        this.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
-
-    }
-}
+    util = require('util'),
+    Page = require('./HRMPage.js');
 
 function DeviceProfile_HRM(configuration) {
     //console.log("HRM configuration", configuration);
@@ -260,6 +93,11 @@ function DeviceProfile_HRM(configuration) {
 
     this.usesPages = false;
 
+    this.state = {
+        heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
+        pageToggle : DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE, // Uses page toggle bit
+    };
+
 }
 
 //DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
@@ -269,6 +107,9 @@ util.inherits(DeviceProfile_HRM, DeviceProfile);
 DeviceProfile_HRM.prototype.STATE = {
     HR_EVENT: 1,
     NO_HR_EVENT: 0,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
+    DETERMINE_PAGE_TOGGLE: 1,
+    NO_PAGE_TOGGLE: 0,
+    PAGE_TOGGLE: 2
 };
 DeviceProfile_HRM.prototype.NAME = 'HRM';
 
@@ -291,7 +132,8 @@ DeviceProfile_HRM.prototype.showLog = function (msg)
 }
 
 DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) {
-    console.log(Date.now(), "HRM got channel response/RF event", channelResponse);
+    if (channelResponse.RFEvent)
+        console.log(Date.now(), "HRM got channel response/RF event", channelResponse);
 };
 
 //DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
@@ -334,15 +176,16 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     var
         data = broadcast.data,
            //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
-           heartBeatCountDiff,
-           heartBeatEventTimeDiff,
            TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
+           TIMEOUT_DETERMINE_PAGE_TOGGLE = 1500,
+           TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000, 
            previousBroadcastDataCopy,
            dataCopy = new Buffer(data.length),
            RXTimestamp_Difference,
            JSONPage,
            previousRXTimestamp_Difference,
-           page = new Page(broadcast); // Page object is polymorphic (variable number of properties based on ANT+ page format)
+           page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
+           INVALID_HEART_RATE = 0x00; 
 
     this.receivedBroadcastCounter++;
 
@@ -385,15 +228,35 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     // "The receiver may not interpret bytes 0-3 until it has seen this bit set to both a 0 and a 1" (ANT+ HRM spec, p. 15) 
     // http://www.thisisant.com/forum/viewthread/3896/
 
-    if (!this.usesPages) {
+    // console.log("PAGE toggle", this.state.pageToggle);
 
-        if (typeof this.previousPage.changeToggle !== "undefined" && (page.changeToggle !== this.previousPage.changeToggle)) {
-            this.usesPages = true;
-            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'HRM uses ANT+ page numbers - page toggle bit (T) transition after '+this.receivedBroadcastCounter+ ' broadcasts');
+    function setTimeoutDeterminePageToggle() {
+       
+        this.timeoutPageToggleID = setTimeout(function () {
+            if (this.receivedBroadcastCounter >= 2) // Require at least 2 messages to determine if page toggle bit is used
+            {
+                this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.NO_PAGE_TOGGLE;
+                this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'HRM uses legacy format page 0 - page toggle bit (T) not toggeling after ' + this.receivedBroadcastCounter + ' broadcasts');
+            }
+            else 
+                setImmediate(setTimeoutDeterminePageToggle.bind(this));
+            
+        }.bind(this), TIMEOUT_DETERMINE_PAGE_TOGGLE);
+    }
+
+    if (this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
+
+        if (typeof this.previousPage.changeToggle === "undefined")
+            setTimeoutDeterminePageToggle.bind(this)();
+
+        if (page.changeToggle !== this.previousPage.changeToggle) {
+            clearTimeout(this.timeoutPageToggleID);
+            this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE;
+            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'HRM uses ANT+ pages - page toggle bit (T) transition after '+this.receivedBroadcastCounter+ ' broadcasts');
         }
 
-        this.previousPage.changeToggle = page.changeToggle;
     }
+
     // FILTER - Skip duplicate messages from same master 
 
     if (this.previousBroadcastData) {
@@ -402,7 +265,18 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
         dataCopy = new Buffer(data);
         dataCopy[0] = dataCopy[0] & 0x7F;
         if (previousBroadcastDataCopy.toString() === dataCopy.toString()) {
+            this.currentTime = Date.now();
+
+            if (this.duplicateMessageCounter === 0)
+                this.duplicateMessageStartTime = this.currentTime;
+
+            if (this.currentTime - this.duplicateMessageStartTime >= TIMEOUT_DUPLICATE_MESSAGE_WARNING) {
+                this.duplicateMessageStartTime = this.currentTime;
+                this.emit(DeviceProfile_HRM.prototype.EVENT.LOG,"Duplicate message registered for " + TIMEOUT_DUPLICATE_MESSAGE_WARNING + " ms, may indicate lost heart rate data");
+            }
+
             this.duplicateMessageCounter++;
+
             return;
         }
     }
@@ -417,31 +291,29 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     if (page.heartBeatCount === this.previousPage.heartBeatCount) {
         //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
 
-        if (this.state === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
-            page.computedHeartRate = 0x00;
+        if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
+            page.computedHeartRate = INVALID_HEART_RATE;
 
         this.timeOutSetInvalidComputedHR = setTimeout(function () {
-            this.state = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-            page.computedHeartRate = 0x00; // Set to invalid
+            this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
+            page.computedHeartRate = INVALID_HEART_RATE; 
         }.bind(this), TIMEOUT_CLEAR_COMPUTED_HEARTRATE);
     }
     else {
         clearTimeout(this.timeOutSetInvalidComputedHR);
-        this.state = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
+        this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
     }
 
-    // this.usesPages = false; // TEST : page 0 simulation
-    
-     page.parse(broadcast,this.previousPage,this.usesPages);
-    
-    if (this.receivedBroadcastCounter > 4 || this.usesPages) {
+    if (this.state.pageToggle !== DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
+
+        page.parse(broadcast, this.previousPage, this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE);
 
         JSONPage = page.getJSON();
 
         if (!this.emit(DeviceProfile_HRM.prototype.EVENT.PAGE, JSONPage)) // Let host take care of message, i.e sending on websocket
             this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'No listener for event ' + DeviceProfile_HRM.prototype.EVENT.PAGE + " P# " + page.number);
 
-        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, this.receivedBroadcastCounter+" "+page.toString()+" "+JSONPage);
+        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, this.receivedBroadcastCounter+" "+page.toString());
 
     }
 
@@ -450,6 +322,7 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
     this.previousBroadcastData = data;
     this.previousPage.heartBeatCount = page.heartBeatCount;
     this.previousPage.heartBeatEventTime = page.heartBeatEventTime;
+    this.previousPage.changeToggle = page.changeToggle;
 
     //console.timeEnd('broadcast');
 };

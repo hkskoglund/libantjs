@@ -59,9 +59,11 @@ var events = require('events'),
 
     DeviceProfile_HRM = require('./profiles/deviceProfile_HRM.js'),
 
-     Duplex = require('stream').Duplex,
+    runFromCommandLine = (require.main === module) ? true : false,
+         
+    WebSocketManager = require('./profiles/WebSocketManager.js'),
         
-    runFromCommandLine = (require.main === module) ? true : false;
+    hostCommander = require('commander');
 
 
 // Host for USB ANT communication, options are for initializing TX/RX stream
@@ -73,6 +75,7 @@ function Host(options) {
         Duplex.call(this, options);
     
     this._channel = []; // Alternative new Array(), jshint recommends []
+    this._channelStatus = {};
 
     this._responseParser = new ResponseParser({ objectMode: true });
 
@@ -108,10 +111,23 @@ function Host(options) {
     //    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Pipe registered into host TX stream');
     //}.bind(this));
 
+    hostCommander.version(Host.prototype.VERSION)
+           // .option('-n,--new', 'Download FIT files flagged as new')
+            //.option('-l,--list', 'List directory of ANT-FS device')
+            //.option('-d,--download <items>', "Download FIT files at index '<n1>,<n2>,...'", list)
+            //.option('-a,--download-all', 'Download the entire index of FIT files')
+            //.option('-e,--erase <items>', "Erase FIT file at index '<n1>'", list)
+            //.option('-b,--background', 'Background search channel for ANT+ devices + websocket server sending ANT+ pages for HRM/SDM4/SPDCAD device profile')
+            //.option('-c,--continous', 'Continous scan mode for ANT+ devices + websocket server sending ANT+ pages for HRM/SDM4/SPDCAD device profile')
+            .option('-r,--reset', 'Reset ANT device')
+            .option('-C,--capabilities', 'List ANT device capabilities')
+            .option('-u,--log_usb','Log LIBUSB message, i.e TX/RX buffer to/from ANT')
+            .parse(process.argv);
 }
 
 util.inherits(Host, Duplex);
 
+Host.prototype.VERSION = "0.1.0";
 // Continous scanning channel or background scanning channel
 //Host.prototype.SCANNING_CHANNEL_TYPE = {
 //    CONTINOUS: 0x00,
@@ -147,12 +163,17 @@ Host.prototype.EVENT = {
 
     //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
+    PAGE : 'page' // Page from ANT+ sensor / device profile
+
 };
 
+Host.prototype.getUnAssignedChannel = function () {
+    var channelNumber;
+}
 
 // Log message to console
 Host.prototype.showLogMessage = function (msg) {
-    console.log(Date.now(), msg);
+    console.log(msg);
 };
 
 Host.prototype.channelResponseRFevent = function (channelResponse) {
@@ -319,6 +340,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             var assignChannelSetChannelId = function _setNetworkKeyCB() {
                 this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response) {
+                    
                     if (!error) {
                         this.emit(Host.prototype.EVENT.LOG_MESSAGE, response.toString());
                         //setTimeout(function () {
@@ -558,29 +580,47 @@ Host.prototype._write = function (payload,encoding,nextCB) {
 
 
 // Initializes USB device and set up of TX/RX stream pipes
-Host.prototype.init = function (options, nextCB) {
+Host.prototype.init = function (options, _initCB) {
+
     //console.trace();
     // options : {
     //   vid : 4047,
     //   pid : 4104,
     //   libconfig : "channelId,rxtimestamp" or number
+    //   log_usb : true
+    //   reset : true
+    //   capabilities : true
     // }
     this.options = options;
 
-    var vendor = options.vid || 4047, // Default to USB 2
+    var vendor, product;
+    if (typeof options === "undefined") {
+        vendor = 4047;
+        product = 4104;
+    }
+    else {
+        vendor = options.vid || 4047, // Default to USB 2
         product = options.pid || 4104;
-
+    }
     process.on('SIGINT', function _sigintCB() {
         this.exit(function _exitCB(error) {
+            if (typeof this.webSocketManager !== "undefined") {
+                       this.emit(Host.prototype.EVENT.LOG_MESSAGE,"Closing websocket server");
+                        this.webSocketManager.close();
+                 }
             //console.log("SIGINT");
             //console.trace();
             if (!error)
                 this.emit(Host.prototype.EVENT.LOG_MESSAGE,"USB connection to ANT device closed. Exiting.");
-            nextCB(error);
+            _initCB(error);
         }.bind(this));
     }.bind(this));
 
+    this.webSocketManager = new WebSocketManager("localhost", 8093);
+   
+
     this.usb = new USBDevice();
+    this.usb.setLogging(hostCommander.log_usb || options.log_usb);
 
     // Object mode is enabled to allow for passing message objects downstream/TX, from here the message is transformed into a buffer and sent down the pipe to usb
     // Sending directly to the usb as a buffer would have been more performant
@@ -592,11 +632,129 @@ Host.prototype.init = function (options, nextCB) {
     //this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
 
     this._responseParser.addListener(ResponseParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
-        //nextCB(new Error(notification.toString()));
+        //_initCB(new Error(notification.toString()));
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
     }.bind(this));
 
+  
+
     this.usb.init(vendor, product, function _usbInitCB(error) {
+
+        var resetCapabilitiesLibConfig = function _resetSystem(callback) {
+
+
+            var doLibConfig = function (_doLibConfigCB) {
+                if (!this.options || !this.capabilities)
+                    _doLibConfigCB();
+
+                var libConfigOptions = this.options.libconfig,
+                    libConfig, libConfigOptionsSplit;
+
+                if (typeof libConfigOptions === "undefined" || !this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
+                    _doLibConfigCB();
+
+                libConfig = new LibConfig();
+
+
+                if (typeof libConfigOptions === 'number')
+                    libConfig.setFlagsByte(libConfigOptions);
+
+                else if (typeof libConfigOptions === 'string') {
+
+                    libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
+
+                    if (libConfigOptionsSplit.indexOf("channelid") !== -1)
+                        libConfig.setEnableChannelId();
+
+                    if (libConfigOptionsSplit.indexOf("rssi") !== -1)
+                        libConfig.setEnableRSSI();
+
+                    if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
+                        libConfig.setEnableRXTimestamp();
+                }
+
+                else _doLibConfigCB();
+
+                //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
+                this.libConfig(libConfig.getFlagsByte(),
+                    function (error, serialNumberMsg) {
+                        if (!error) {
+                            this.libConfig = libConfig;
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
+                            _doLibConfigCB();
+                        }
+                        else
+                            _doLibConfigCB(error);
+                    }.bind(this));
+            }.bind(this);
+
+            var getDeviceInfo = function (_getDeviceInfoCB) {
+
+                var getANTVersionAndDeviceNumber = function (_getANTVersionAndDeviceNumberCB) {
+                    this.getANTVersion(function (error, version) {
+                        if (!error) {
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
+
+                                this.getDeviceSerialNumber(function (error, serialNumberMsg) {
+                                    if (!error) {
+                                        this.deviceSerialNumber = serialNumberMsg.serialNumber;
+                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
+                                        //doLibConfig.bind(this)(function (error) {
+                                        //    _getDeviceInfoCB(error);
+                                        //});
+                                        _getANTVersionAndDeviceNumberCB();
+                                        //callback();
+                                    } else
+                                        //_initCB(error);
+                                        _getANTVersionAndDeviceNumberCB(error);
+                                }.bind(this));
+                        } else
+                            _getANTVersionAndDeviceNumberCB(error);
+                    }.bind(this));
+                }.bind(this);
+
+                this.getCapabilities(function (error, capabilities) {
+                    if (!error) {
+                        this.capabilities = capabilities;
+
+                        if (hostCommander.capabilities || options.capabilities) 
+                            this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
+                        
+                        this.getChannelStatusAll(function (error) {
+                            if (error)
+                                _getDeviceInfoCB(error);
+
+                            getANTVersionAndDeviceNumber(function (error) {
+                                if (error)
+                                    _getDeviceInfoCB(error);
+                                
+                                this.getChannelId(1,function (error, channelId) {
+                                    
+                                    _getDeviceInfoCB(error);
+
+                                })
+                            }.bind(this))
+                        
+                        }.bind(this));
+                    } else
+                        _getDeviceInfoCB(error);
+                }.bind(this));
+            }.bind(this);
+
+            if (hostCommander.reset || options.reset) {
+                this.resetSystem(function (error, notification) {
+                    if (!error) {
+                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
+                        this.startupNotification = notification;
+                        getDeviceInfo(function (error) { callback(error); });
+                    } else
+                        callback(error);
+                }.bind(this));
+            }
+            else
+                getDeviceInfo(function (error) { callback(error); });
+
+        }.bind(this);
 
         // Normally get a timeout after draining 
         if (this.usb.isTimeoutError(error)) {
@@ -608,103 +766,18 @@ Host.prototype.init = function (options, nextCB) {
            // this.usb.pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
             this.usb.pipe(this.deframeTransform).pipe(this);
 
-            var resetCapabilitiesLibConfig = function _resetSystem(callback) {
-
-
-                var doLibConfig = function () {
-
-                    var libConfigOptions = this.options.libconfig,
-                        libConfig, libConfigOptionsSplit;
-
-                    if (typeof libConfigOptions === "undefined" || !this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
-                        return;
-
-                      libConfig = new LibConfig();
-
-
-                    if (typeof libConfigOptions === 'number')
-                        libConfig.setFlagsByte(libConfigOptions);
-
-                    else if (typeof libConfigOptions === 'string') {
-
-                        libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
-
-                        if (libConfigOptionsSplit.indexOf("channelid") !== -1)
-                            libConfig.setEnableChannelId();
-
-                        if (libConfigOptionsSplit.indexOf("rssi") !== -1)
-                            libConfig.setEnableRSSI();
-
-                        if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
-                            libConfig.setEnableRXTimestamp();
-                    }
-
-                    else return;
-
-                    console.log("libConfig", libConfig);
-                    //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-                    this.libConfig(libConfig.getFlagsByte(),
-                        function (error, serialNumberMsg) {
-                            if (!error) {
-                                this.libConfig = libConfig;
-                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, libConfig.toString());
-                                callback();
-                            }
-                            else
-                                nextCB(error);
-                        }.bind(this));
-                }.bind(this);
-
-                this.resetSystem(function (error, notification) {
-                    if (!error) {
-                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
-                        this.startupNotification = notification;
-
-                        this.getCapabilities(function (error, capabilities) {
-                            if (!error) {
-                                this.capabilities = capabilities;
-
-                                //console.log(capabilities);
-                                this.emit(Host.prototype.EVENT.LOG_MESSAGE, capabilities.toString());
-                                // TO DO : setup max. channel configurations
-                                this.getANTVersion(function (error, version) {
-                                    if (!error) {
-                                        this.emit(Host.prototype.EVENT.LOG_MESSAGE, version.toString());
-
-                                        if (this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) {
-
-                                            this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                                                if (!error) {
-                                                    this.deviceSerialNumber = serialNumberMsg.serialNumber;
-                                                    this.emit(Host.prototype.EVENT.LOG_MESSAGE, serialNumberMsg.toString());
-                                                    doLibConfig.bind(this)();
-                                                } else
-                                                    nextCB(error);
-                                            }.bind(this));
-                                        }
-                                    } else
-                                        nextCB(error);
-                                }.bind(this));
-                            } else
-                                nextCB(error);
-                        }.bind(this));
-                    } else
-                        nextCB(error);
-                }.bind(this));
-            }.bind(this);
-
             this.usb.listen(function _USBListenCB(error) {
 
                 if (error)
 
-                    nextCB(error);
-                
-                else
+                    _initCB(error);
+
+                else {
 
                     resetCapabilitiesLibConfig(function (error) {
                         if (!error) {
                             var HRMChannel = new DeviceProfile_HRM();
-
+                            HRMChannel.addListener(Host.prototype.EVENT.PAGE, function (page) { this.webSocketManager.broadcast(page); }.bind(this));
                             //HRMChannel.broadcastHandler = function (broadcast) {
 
                             //}
@@ -726,20 +799,21 @@ Host.prototype.init = function (options, nextCB) {
 
                             //});
                             //console.log("Test channel", HRMChannel);
-                            this.establishChannel(1, 1, "slave", HRMChannel, function (error) {
+                            this.establishChannel(2, 1, "slave", HRMChannel, function (error) {
                                 if (!error)
                                     //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
                                     //    if (!error)
-                                    nextCB();
+                                    _initCB();
                                     //    else
-                                    //        nextCB(error);
+                                    //        _initCB(error);
                                     //}.bind(this));
                                 else
-                                    nextCB(error);
+                                    _initCB(error);
                             }.bind(this));
                         } else
-                            nextCB(error);
+                            _initCB(error);
                     }.bind(this));
+                }
             }.bind(this));
         } else if (runFromCommandLine && error)
             process.emit('SIGINT');
@@ -749,8 +823,6 @@ Host.prototype.init = function (options, nextCB) {
 };
 
 // Exit USB device and closes/end TX/RX stream
-
-
 Host.prototype.exit = function (callback) {
     // console.log("Inside exit ANT");
 
@@ -781,6 +853,13 @@ Host.prototype.resetSystem = function (callback) {
         setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, message);
     }.bind(this));
 };
+
+// Send request for channel ID 
+Host.prototype.getChannelId = function (channel, callback) {
+    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_ID));
+
+    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CHANNEL_ID, callback);
+}
 
 // Send a request for ANT version
 Host.prototype.getANTVersion = function (callback) {
@@ -990,6 +1069,39 @@ function sendMessage(sendMessage,event,callback) {
 //        });
 //};
 
+
+
+
+Host.prototype.getChannelStatusAll = function (callback) {
+    var channelNumber = 0,
+        msg;
+
+    if (!this.capabilities)
+        callback(new Error('Cannot determine max number of channels, capabilities object not available, run .getCapabilities first'));
+
+    function singleChannelStatus() {
+        this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
+            if (!error) {
+                this._channelStatus[channelNumber] = statusMsg;
+
+                msg = channelNumber + '       ' + statusMsg.channelStatus.networkNumber + '       '+ statusMsg.channelStatus.stateMessage;
+                this.emit(Host.prototype.EVENT.LOG_MESSAGE, msg);
+                channelNumber++;
+                if (channelNumber < this.capabilities.MAX_CHAN)
+                    singleChannelStatus.bind(this)();
+                else {
+                   
+                    callback();
+                }
+            }
+            else
+                callback(error);
+        }.bind(this));
+    };
+
+    this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Channel Network State');
+    singleChannelStatus.bind(this)();
+}
 
     // Iterates from channelNrSeed and optionally closes channel
     //Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
@@ -1650,7 +1762,9 @@ function sendMessage(sendMessage,event,callback) {
 
             if (error) {
                 host.emit(Host.prototype.EVENT.ERROR, error)
-                host.usb.on('closed', function () { clearInterval(noopIntervalID); });
+                host.usb.on('closed', function () {
+                    clearInterval(noopIntervalID);
+                });
             } else {
                 //console.log("Host callback");
                 //console.trace();

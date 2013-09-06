@@ -8,6 +8,7 @@
     NotificationSerialError = require('./messages/from/NotificationSerialError.js'),
 
      CapabilitiesMessage = require('./messages/from/CapabilitiesMessage.js'),
+     ChannelIdMessage = require('./messages/from/ChannelIdMessage.js'),
     ANTVersionMessage = require('./messages/from/ANTVersionMessage.js'),
     DeviceSerialNumberMessage = require('./messages/from/DeviceSerialNumberMessage.js'),
      ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
@@ -50,6 +51,7 @@ ParseANTResponse.prototype.EVENT = {
     LOG: 'log',
     ERROR: 'error',
 
+    CHANNEL_ID: 'channelId',
     DEVICE_SERIAL_NUMBER: 'deviceSerialNumber',
     ANT_VERSION: 'ANTVersion',
     CAPABILITIES: 'deviceCapabilities',
@@ -67,7 +69,7 @@ ParseANTResponse.prototype.showLog = function (msg) {
 
 // Overview on p. 58 - ANT Message Protocol and Usage
 ParseANTResponse.prototype.parse = function (data) {
-    console.time('parse');
+    //console.time('parse');
     var notification;
    
     var ANTmsg = {
@@ -356,9 +358,19 @@ ParseANTResponse.prototype.parse = function (data) {
 
             break;
 
-        case ANTMessage.prototype.MESSAGE.SET_CHANNEL_ID:
-            if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
-                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
+        case ANTMessage.prototype.MESSAGE.CHANNEL_ID:
+
+            var channelIdMsg = new ChannelIdMessage();
+            channelIdMsg.setContent(data.slice(3, 3 + ANTmsg.length));
+            channelIdMsg.parse();
+
+            console.log("Got response channel ID", channelIdMsg.toString());
+
+            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_ID, channelIdMsg))
+                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelIdMsg.toString());
+
+            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
+            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
             break;
 
             // ANT device specific, i.e nRF24AP2

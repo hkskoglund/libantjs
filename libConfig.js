@@ -75,16 +75,16 @@ LibConfig.prototype.Flag = {
 
 LibConfig.prototype.toString = function () {
     
-    var msg = "LIBCONFIG";
+    var msg = "Library configured for extended messaging (LIBCONFIG) :";
 
     if (this.enableChannelId)
-        msg += " Channel ID";
+        msg += " ChannelID";
 
     if (this.enableRSSI)
         msg += " RSSI";
 
     if (this.enableRXTimestamp)
-        msg += " RX timestamp";
+        msg += " RXtimestamp";
 
     return msg;
 }

@@ -40,8 +40,20 @@ USBDevice.prototype.exit = function (callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
 }
 
-USBDevice.prototype.showLogMessage = function (msg) {
-    console.log(Date.now(),msg);
+USBDevice.prototype.setLogging = function (logging) {
+    this._logging = logging;
+}
+
+USBDevice.prototype.showLogMessage = function () {
+    if (this._logging) {
+        if (arguments.length === 1)
+            console.log(Date.now(), arguments[0]);
+        else
+        if (arguments.length === 2)
+            console.log(Date.now(), arguments[0], arguments[1]);
+        else
+            console.log(Date.now(), arguments);
+    }
 }
 
 // Sets device timeout in ms.

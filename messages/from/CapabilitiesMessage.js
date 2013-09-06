@@ -87,8 +87,64 @@ CapabilitiesMessage.prototype.parse = function () {
 };
 
 CapabilitiesMessage.prototype.toString = function () {
-    console.log("capabilities", this);
-    var msg = this.name + " ID 0x" + this.id.toString(16) + " " + "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
+    //console.log("capabilities", this);
+    var msg;
+    
+    console.log("Capabilities\n------------");
+    console.log("Max channels " + this.getNumberOfChannels());
+    console.log("Max network " + this.getNumberOfNetworks());
+
+    if (this.standardOptions.CAPABILITIES_NO_RECEIVE_CHANNELS)
+        console.log("No receive channels");
+    if (this.standardOptions.CAPABILITIES_NO_TRANSMIT_CHANNELS)
+        console.log("No receive channels");
+    if (this.standardOptions.CAPABILITIES_NO_RECEIVE_MESSAGES)
+        console.log("No receive messages");
+    if (this.standardOptions.CAPABILITIES_NO_TRANSMIT_MESSAGES)
+        console.log("No transmit messages");
+    if (this.standardOptions.CAPABILITIES_NO_ACKD_MESSAGES)
+        console.log("No ackd. messages");
+    if (this.standardOptions.CAPABILITIES_NO_BURST_MESSAGES)
+        console.log("No burst messages");
+
+    if (this.advancedOptions.CAPABILITIES_NETWORK_ENABLED)
+        console.log("Network");
+    if (this.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
+        console.log("Serial number");
+    if (this.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
+        console.log("Per channel Tx Power");
+    if (this.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
+        console.log("Low priority search");
+    if (this.advancedOptions.CAPABILITIES_SCRIPT_ENABLED)
+        console.log("Script");
+    if (this.advancedOptions.CAPABILITIES_SEARCH_LIST_ENABLED)
+        console.log("Search list");
+
+    if (this.advancedOptions2.CAPABILITIES_LED_ENABLED)
+        console.log("Led");
+    if (this.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
+        console.log("Extended messages");
+    if (this.advancedOptions2.CAPABILITIES_SCAN_MODE_ENABLED)
+        console.log("Scan mode");
+    if (this.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
+        console.log("Proximity search");
+    if (this.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
+        console.log("Extended assign");
+    if (this.advancedOptions2.CAPABILITIES__FS_ANTFS_ENABLED)
+        console.log("ANT-FS");
+
+    if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
+        console.log("Advanced burst");
+    if (this.advancedOptions3.CAPABILITIES_EVENT_BUFFERING_ENABLED)
+        console.log("Event buffering");
+    if (this.advancedOptions3.CAPABILITIES_EVENT_FILTERING_ENABLED)
+        console.log("Event filtering");
+    if (this.advancedOptions3.CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED)
+        console.log("High duty search");
+    if (this.advancedOptions3.CAPABILITIES_SELECTIVE_DATA_ENABLED)
+        console.log("Selective data");
+  
+    msg = this.name + " ID 0x" + this.id.toString(16) + "Max channels: " + this.getNumberOfChannels() + " Max networks:" + this.getNumberOfNetworks();
 
     return msg;
 }

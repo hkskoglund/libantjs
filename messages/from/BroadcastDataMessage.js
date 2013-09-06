@@ -205,7 +205,9 @@ BroadcastDataMessage.prototype.parse = function (content) {
 
 
 BroadcastDataMessage.prototype.toString = function () {
-    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " " + "ext. " + this.extendedDataMessage + " Flags 0x" + this.flagsByte.toString(16);
+    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel;
+    if (this.extendedDataMessage)
+        msg += " " + "ext. " + this.extendedDataMessage + " Flags 0x" + this.flagsByte.toString(16);
 
     return msg;
 }

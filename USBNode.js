@@ -191,8 +191,8 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         antInterface.claim(); // Must call before attempting transfer on endpoints
 
 
-        this.emit(USBDevice.prototype.EVENT.LOG, "RX Endpoint IN (ANT -> HOST) wMaxPacketSize: " + this.inEP.descriptor.wMaxPacketSize + " bytes");
-        this.emit(USBDevice.prototype.EVENT.LOG, "TX Endpoint OUT(HOST -> ANT) wMaxPacketSize: " + this.outEP.descriptor.wMaxPacketSize + " bytes");
+        //this.emit(USBDevice.prototype.EVENT.LOG, "RX Endpoint IN (ANT -> HOST) wMaxPacketSize: " + this.inEP.descriptor.wMaxPacketSize + " bytes");
+        //this.emit(USBDevice.prototype.EVENT.LOG, "TX Endpoint OUT(HOST -> ANT) wMaxPacketSize: " + this.outEP.descriptor.wMaxPacketSize + " bytes");
 
         //initStream.bind(this)();
 
@@ -301,9 +301,9 @@ function drainLIBUSB(nextCB) {
 
     this.setDirectANTChipCommunicationTimeout();
 
-    // In case we already are listening on in endpoint, cancel it please
-    if (this.inTransfer)
-        this.inTransfer.cancel();
+    //// In case we already are listening on in endpoint, cancel it please
+    //if (this.inTransfer)
+    //    this.inTransfer.cancel();
 
     function retry() {
 
@@ -359,15 +359,21 @@ USBNode.prototype.listen = function (nextCB) {
 
                     if (data && data.length > 0) {
                        // console.time('usbtoprofile');
-                        console.log(Date.now(),'RX', data);
+                        this.emit(USBDevice.prototype.EVENT.LOG,'RX', data);
                         this.push(data); // RX -> (piped into DeFrameTransform writable stream)
                     }
                     setImmediate(retry.bind(this));
                 } else if (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
                     this.emit(USBDevice.prototype.EVENT.LOG, 'USB: No ANT responses in ' + LISTEN_TIMEOUT + " ms.");
                     setImmediate(retry.bind(this));
-                } else
+                    //} else if (error.errno === usb.LIBUSB_TRANSFER_CANCELLED) {
+                    //    //console.trace();
+                    //    setImmediate(retry.bind(this));
+                } else {
+                   
                     nextCB(error);
+                }
+                
             }.bind(this));
         //} catch (error) {
         //    //if (error.errno === -1) // LIBUSB_ERROR_IO 
@@ -398,7 +404,7 @@ USBNode.prototype.transfer = function (chunk, nextCB)
         //console.trace();
         //try {
             this.setDirectANTChipCommunicationTimeout();
-            console.log(Date.now(),'TX', chunk);
+            this.emit(USBDevice.prototype.EVENT.LOG,'TX', chunk);
             //console.time('TXtime');
             this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
                 //console.timeEnd('TXtime')

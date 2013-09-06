@@ -44,10 +44,10 @@ ChannelStatusMessage.prototype.parse = function () {
     // Tip from http://www.i-programmer.info/programming/javascript/2550-javascript-bit-manipulation.html
     
     switch (this.channelStatus.state) {
-        case ChannelStatusMessage.prototype.STATE.UN_ASSIGNED : this.channelStatus.stateMessage = "Un-Assigned"; break;
-        case ChannelStatusMessage.prototype.STATE.ASSIGNED: this.channelStatus.stateMessage = "Assigned"; break;
-        case ChannelStatusMessage.prototype.STATE.SEARCHING: this.channelStatus.stateMessage = "Searching"; break;
-        case ChannelStatusMessage.prototype.STATE.TRACKING: this.channelStatus.stateMessage = "Tracking"; break;
+        case ChannelStatusMessage.prototype.STATE.UN_ASSIGNED : this.channelStatus.stateMessage = "UN-ASSIGNED"; break;
+        case ChannelStatusMessage.prototype.STATE.ASSIGNED: this.channelStatus.stateMessage = "ASSIGNED"; break;
+        case ChannelStatusMessage.prototype.STATE.SEARCHING: this.channelStatus.stateMessage = "SEARCHING"; break;
+        case ChannelStatusMessage.prototype.STATE.TRACKING: this.channelStatus.stateMessage = "TRACKING"; break;
         default: throw new Error('Unknown state for channel ' + this.channelStatus.state); break;
     }
 
@@ -60,7 +60,7 @@ ChannelStatusMessage.prototype.parse = function () {
 };
 
 ChannelStatusMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " Channel " + this.channelNumber + " Network " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
 }
 
 module.exports = ChannelStatusMessage;
