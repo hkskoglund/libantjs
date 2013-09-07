@@ -30,7 +30,7 @@ function ParseANTResponse(options) {
 
     this.on(ParseANTResponse.prototype.EVENT.LOG, this.showLog);
 
-    this.broadcast = new BroadcastDataMessage(); // Only use one instance for parsing - don't use any time to create instance
+   
 
 }
 
@@ -70,6 +70,7 @@ ParseANTResponse.prototype.showLog = function (msg) {
 // Overview on p. 58 - ANT Message Protocol and Usage
 ParseANTResponse.prototype.parse = function (data) {
     //console.time('parse');
+   
     var notification;
    
     var ANTmsg = {
@@ -229,7 +230,8 @@ ParseANTResponse.prototype.parse = function (data) {
 
             // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
            
-           
+            this.broadcast = new BroadcastDataMessage(); 
+
             this.broadcast.parse(data.slice(3,3+ANTmsg.length));
 
             // console.log(Date.now(),this.broadcast.toString(), "Payload",this.broadcast.data);

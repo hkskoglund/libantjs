@@ -53,7 +53,7 @@ var events = require('events'),
     DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now  -> just echo
         
     // Parsing of ANT messages received
-    ResponseParser = require('./ANTResponseParser.js'),
+    ANTParser = require('./antparser.js'),
         
     ChannelId = require('./channelId.js'),
 
@@ -77,10 +77,10 @@ function Host(options) {
     this._channel = []; // Alternative new Array(), jshint recommends []
     this._channelStatus = {};
 
-    this._responseParser = new ResponseParser({ objectMode: true });
+    this._responseParser = new ANTParser({ objectMode: true });
 
-    this._responseParser.on(ResponseParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
-    this._responseParser.on(ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent.bind(this));
+    this._responseParser.on(ANTParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
+    this._responseParser.on(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent.bind(this));
    
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
@@ -178,8 +178,8 @@ Host.prototype.showLogMessage = function (msg) {
 
 Host.prototype.channelResponseRFevent = function (channelResponse) {
     if (typeof this._channel[channelResponse.channel] !== "undefined") {
-        if (!this._channel[channelResponse.channel].emit(ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
-            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
+        if (!this._channel[channelResponse.channel].emit(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
     } else
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + channelResponse.toString());
 };
@@ -188,8 +188,8 @@ Host.prototype.broadcastData = function (broadcast) {
     // Send event to specific channel handler
     if (typeof this._channel[broadcast.channel] !== "undefined") {
        
-        if (!this._channel[broadcast.channel].emit(ResponseParser.prototype.EVENT.BROADCAST, broadcast))
-            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ResponseParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
+        if (!this._channel[broadcast.channel].emit(ANTParser.prototype.EVENT.BROADCAST, broadcast))
+            this.emit(Host.prototype.EVENT.LOG_MESSAGE, "No listener for : " + ANTParser.prototype.EVENT.BROADCAST + " on C# " + broadcast.channel);
     } else
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'No channel on host is associated with ' + broadcast.toString());
 };
@@ -631,7 +631,7 @@ Host.prototype.init = function (options, _initCB) {
     this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
     //this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
 
-    this._responseParser.addListener(ResponseParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
+    this._responseParser.addListener(ANTParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
         //_initCB(new Error(notification.toString()));
         this.emit(Host.prototype.EVENT.LOG_MESSAGE, notification.toString());
     }.bind(this));
@@ -849,7 +849,7 @@ Host.prototype.resetSystem = function (callback) {
     var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing with callbacks...
     var msg = new ResetSystemMessage();
 
-    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.NOTIFICATION_STARTUP, function (error, message) {
+    sendMessage.bind(this)(msg, ANTParser.prototype.EVENT.NOTIFICATION_STARTUP, function (error, message) {
         setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, message);
     }.bind(this));
 };
@@ -858,7 +858,7 @@ Host.prototype.resetSystem = function (callback) {
 Host.prototype.getChannelId = function (channel, callback) {
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_ID));
 
-    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CHANNEL_ID, callback);
+    sendMessage.bind(this)(msg, ANTParser.prototype.EVENT.CHANNEL_ID, callback);
 }
 
 // Send a request for ANT version
@@ -866,7 +866,7 @@ Host.prototype.getANTVersion = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
-    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.ANT_VERSION, callback);
+    sendMessage.bind(this)(msg, ANTParser.prototype.EVENT.ANT_VERSION, callback);
        
 };
 
@@ -875,7 +875,7 @@ Host.prototype.getCapabilities = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
 
-    sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.CAPABILITIES, callback);
+    sendMessage.bind(this)(msg, ANTParser.prototype.EVENT.CAPABILITIES, callback);
         
 };
 
@@ -890,7 +890,7 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
 
-        sendMessage.bind(this)(msg, ResponseParser.prototype.EVENT.DEVICE_SERIAL_NUMBER, callback);
+        sendMessage.bind(this)(msg, ANTParser.prototype.EVENT.DEVICE_SERIAL_NUMBER, callback);
     
 };
 
@@ -943,7 +943,7 @@ Host.prototype.getChannelStatus = function (channel, callback) {
 
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS));
 
-    sendMessage.bind(this)(msg,ResponseParser.prototype.EVENT.CHANNEL_STATUS,callback);
+    sendMessage.bind(this)(msg,ANTParser.prototype.EVENT.CHANNEL_STATUS,callback);
        
 };
 
@@ -952,7 +952,8 @@ function sendMessage(sendMessage,event,callback) {
 
     var timeoutRetryMessageID,
         timeoutMessageFailID,
-        WAIT_FOR_RESPONSE_TIME = 500, // Wait 500 ms before creating error for failed response from ANT
+        WAIT_FOR_RESPONSE_TIME = 500,// Wait 500 ms before creating error for failed response from ANT
+        retryCounter=0,
 
         // Listener for responses on event
         listener = function (responseMessage, channel, requestMsgId, msgCode) {
@@ -970,14 +971,14 @@ function sendMessage(sendMessage,event,callback) {
 
 
                         // If we got RESPONSE_NO_ERROR on sendMessage channel
-                        if (typeof sendMessage.channel !== "undefined" && event === ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
+                        if (typeof sendMessage.channel !== "undefined" && event === ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
                             sendMessage.channel === channel && sendMessage.id === requestMsgId && msgCode === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
                             processCB();
                         } // RESPONSE_NO_ERROR for message without channel, i.e setTransmitPower - using filler byte reported reply on channel 0
-                        else if (event === ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
+                        else if (event === ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
                             sendMessage.id === requestMsgId && msgCode === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR)
                             processCB();
-                        else if (event !== ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT) // i.e notification startup
+                        else if (event !== ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT) // i.e notification startup
                             processCB();
 
             }.bind(this);
@@ -985,6 +986,7 @@ function sendMessage(sendMessage,event,callback) {
     this._responseParser.on(event, listener);
 
     var estimatedRoundtripDelayForMessage = this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5;
+    //console.log("Estimated round trip delay for message : ", estimatedRoundtripDelayForMessage + " ms");
     //var estimatedRoundtripDelayForMessage = 1000;
 
     timeoutMessageFailID = setTimeout(function () {
@@ -1020,18 +1022,22 @@ function sendMessage(sendMessage,event,callback) {
         //}.bind(this));
        
         //console.log("msg",sendMessage);
-        callback(new Error('Message failed ' + sendMessage.name));
+        callback(new Error('Failed to send: ' + sendMessage.name));
        
     }.bind(this), WAIT_FOR_RESPONSE_TIME);
 
     function retry() {
        
+       // this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'Retry nr ' + retryCounter);
       // TX -> generates a "readable" thats piped into FrameTransform
         if (!this.push(sendMessage))
             this.emit(Host.prototype.EVENT.LOG_MESSAGE, 'TX stream indicates overflow, attempt to push data beyond highWaterMark');
        
             // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
-        timeoutRetryMessageID = setTimeout(function _retryTimerCB() { setImmediate(retry.bind(this)); }.bind(this), estimatedRoundtripDelayForMessage);
+        timeoutRetryMessageID = setTimeout(function _retryTimerCB() {
+            estimatedRoundtripDelayForMessage += 17; // Allow some more time if no response received
+            setImmediate(retry.bind(this));
+        }.bind(this), estimatedRoundtripDelayForMessage);
        
     }
 
@@ -1170,7 +1176,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new LibConfigMessage(libConfig);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
      
    
  };
@@ -1215,7 +1221,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new UnAssignChannelMessage();
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
         //function (error, responseMessage) {
         //    if (error)
         //        callback(error)
@@ -1234,12 +1240,12 @@ Host.prototype.getChannelStatusAll = function (callback) {
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
  Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
  also sets defaults values for RF, period, tx power, search timeout p.22 */
-    Host.prototype.assignChannel = function (channelNr, channelType, networkNumber, extend, callback) {
+    Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback) {
         var cb, configurationMsg;
 
-        verifyRange.bind(this)('channel', channelNr);
+        verifyRange.bind(this)('channel', channelNumber);
 
-        configurationMsg = new AssignChannelMessage(channelNr, channelType, networkNumber, extend);
+        configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
 
         if (typeof extend === "function")
             cb = extend; // If no extended assignment use parameter as callback
@@ -1253,7 +1259,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
                 cb(new Error('Device does not support extended assignment'));
         }
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, cb);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, cb);
         //, function _validationCB(responseMessage) {
         //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
         //});
@@ -1273,7 +1279,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
     };
 
@@ -1294,7 +1300,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
 
-            sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+            sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
     };
 
@@ -1310,7 +1316,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
     };
 
@@ -1334,7 +1340,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
 
-            sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+            sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
            
     };
 
@@ -1347,7 +1353,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
 
     };
@@ -1361,7 +1367,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
     
     };
 
@@ -1374,7 +1380,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetNetworkKeyMessage(netNumber, key);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
     };
 
     // Set transmit power for all channels
@@ -1386,7 +1392,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetTransmitPowerMessage(transmitPower);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
     };
 
     // Set transmit power for individual channel
@@ -1405,7 +1411,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetChannelTxPowerMessage(channel, transmitPower);
 
-            sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+            sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
         
     };
 
@@ -1425,7 +1431,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetProximitySearchMessage(channel, searchThreshold);
 
-            sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+            sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
            
     };
 
@@ -1447,7 +1453,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new OpenChannelMessage(channel);
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
@@ -1552,7 +1558,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
         // this._
         // TO DO : create a single function for configuration/control commands that receive RESPONSE_NO_ERROR ?
 
-        sendMessage.bind(this)(configurationMsg, ResponseParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
+        sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, function (error, responseMessage) {
             if (error)
                 callback('Failed to close channel nr. ' + channel);
             else
