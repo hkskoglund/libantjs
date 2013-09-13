@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js'),
     //Channel = require('../../channel.js');
     ChannelId = require('../../channelId.js');
@@ -31,7 +34,7 @@ ChannelIdMessage.prototype.constructor = ChannelIdMessage;
 ChannelIdMessage.prototype.parse = function () {
 
     this.channelNumber = this.content[0];
-    this.channelId = new ChannelId(this.content.readUInt16LE(1), this.content[3], this.content[4]);
+    this.channelId = new ChannelId(new DataView(this.content).getUint16(1,true), this.content[3], this.content[4]);
 
     //var status;
 
@@ -68,3 +71,5 @@ ChannelIdMessage.prototype.toString = function () {
 }
 
 module.exports = ChannelIdMessage;
+    return module.exports;
+});

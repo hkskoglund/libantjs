@@ -1,3 +1,7 @@
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+
 var events = require('events'),
    util = require('util');
 
@@ -11,7 +15,7 @@ util.inherits(Channel, events.EventEmitter);
 Channel.prototype.addConfiguration = function (name, parameters)
 {
     this.parameters[name] = parameters;
-}
+};
 
 Channel.prototype.showConfiguration = function (name) {
     var parameters = this.parameters[name];
@@ -70,13 +74,13 @@ Channel.prototype.showConfiguration = function (name) {
     return name +" "+ parameters.channelId.toString()+
         ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod)+ ' LP '+
         formatSearchTimeout(parameters.LPsearchTimeout) + ' HP ' + formatSearchTimeout(parameters.HPsearchTimeout) + ' ext.Assign ' + formatExtendedAssignment(parameters.extendedAssignment);
-}
-
-
-//Channel.prototype.setChannelNumer = function (channel) {
-//    this.channelNumber = channel;
-//}
-
+};
+//
+//
+////Channel.prototype.setChannelNumer = function (channel) {
+////    this.channelNumber = channel;
+////}
+//
 Channel.prototype.EXTENDED_ASSIGNMENT = {
     0x01: "Background Scanning",
     0x04: "Frequency Agility",
@@ -88,16 +92,16 @@ Channel.prototype.EXTENDED_ASSIGNMENT = {
     ASYNCHRONOUS_TRANSMISSION_ENABLE: 0x20
 };
 
-//Channel.prototype.EVENT = {
+Channel.prototype.EVENT = {
 
-//    // Event and responses
-//    CHANNEL_RESPONSE_EVENT: "channelResponseEvent",
+    // Event and responses
+    CHANNEL_RESPONSE_EVENT: "channelResponseEvent",
 
-//    // Data
+    // Data
 
-//    BROADCAST: "broadcast",
-//    BURST : "burst"
-//},
+    BROADCAST: "broadcast",
+    BURST : "burst"
+};
 
 // Check for a bidirectional master channel
 Channel.prototype.isMaster = function (configurationName) {
@@ -108,12 +112,12 @@ Channel.prototype.isMaster = function (configurationName) {
         return false;
 
     if (typeof channelType === 'number')
-        return (channelType === Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL)
+        return (channelType === Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL);
     else if (channelType === 'master')
         return true;
     else return false;
        
-}
+};
 
 Channel.prototype.TYPE = {
 
@@ -140,6 +144,7 @@ Channel.prototype.TYPE = {
     SHARED_BIDIRECTIONAL_MASTER_CHANNEL: 0x30
 };
 
-
-
-module.exports = Channel;
+    module.exports = Channel;
+    
+    return module.exports;
+});

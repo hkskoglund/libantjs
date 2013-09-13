@@ -1,16 +1,19 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 
 function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
 
-    var msgBuffer = new Buffer(4),
+    var msgBuffer = new ArrayBuffer(4),
         pairingRequest = (deviceType & SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
     msgBuffer[0] = channel;
     msgBuffer[1] = pairingRequest;
-    msgBuffer[2] = deviceType & SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK // Slave: 0 = match any device type - Range 0 .. 127
+    msgBuffer[2] = deviceType & SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK; // Slave: 0 = match any device type - Range 0 .. 127
     msgBuffer[3] = transmissionType; // Slave: 0 = match any transmission type
 
     ANTMessage.call(this);
@@ -22,7 +25,7 @@ function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
     this.deviceType = deviceType;
     this.transmissionType = transmissionType;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer);
 
     //console.log("SetSerialNumChannelIdMessage", this);
 }
@@ -37,6 +40,9 @@ SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111
 
 SetSerialNumChannelIdMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
-}
+};
 
 module.exports = SetSerialNumChannelIdMessage;
+    
+    return module.exports;
+});

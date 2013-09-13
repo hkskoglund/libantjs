@@ -1,10 +1,15 @@
-﻿// Function names based on Dynastram Android SDK v 4.00 documentation
+"use strict";
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+// Function names based on Dynastram Android SDK v 4.00 documentation
 function RXTimestamp(rxTimestamp) {
     this.timestamp = rxTimestamp;
 }
 
 RXTimestamp.prototype.parse = function (extendedData) {
-    this.timestamp = extendedData.readUInt16LE(0);
+    this.timestamp = (new DataView(extendedData)).getUint16(0,true);
 }
 
 RXTimestamp.prototype.getRxTimestamp = function () {
@@ -23,3 +28,5 @@ RXTimestamp.prototype.toString = function () {
 }
 
 module.exports = RXTimestamp;
+    return module.exports;
+});

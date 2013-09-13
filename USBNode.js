@@ -1,4 +1,9 @@
-﻿"use strict"
+"use strict";
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+    
 var USBDevice = require('./USBDevice.js'),
     usb = require('usb'),
     ANT = require('libant'),
@@ -13,65 +18,71 @@ var USBDevice = require('./USBDevice.js'),
     this.setBurstMode(false);
 }
 
-//USBNode.prototype = Object.create(USBDevice.prototype);
+USBNode.prototype = Object.create(USBDevice.prototype, { constructor : { value : USBNode,
+                                                                        enumerable : false,
+                                                                        writeable : true,
+                                                                        configurable : true } });
 
 //USBNode.prototype.constructor = USBNode; // Otherwise constructor = USBDevice ...
 
-    util.inherits(USBNode, USBDevice);
+ //   util.inherits(USBNode, USBDevice);
 
+//'function (ctor, superCtor) {\n  ctor.super_ = superCtor;\n  ctor.prototype = Object.create(superCtor.prototype, {\n
+//constructor: {\n      value: ctor,\n      enumerable: false,\n      writable: true,\n      configurable: true\n    }\n
+//});\n}'
   
-    USBNode.prototype._read = function (size) {
-        //console.log(Date.now(),"USBNode._read", arguments);
-};
+//    USBNode.prototype._read = function (size) {
+//        //console.log(Date.now(),"USBNode._read", arguments);
+//};
+//
+//    // TX: Everything that should be written to the ANT chip goes via this stream
+//    USBNode.prototype._write = function (payload, encoding, nextCB) {
+//
+//    var burstLen = this._burstBuffer.length + payload.length;
+//
+//    //console.log("USBDevice _write", payload, "burst mode", this.burstMode, "burst buffer", this._burstBuffer);
+//    //console.trace();
+//    // Loopback test : this._stream.push(new Buffer([1, 2, 3, 4]));
+//    // node.js - wants to minimize internal buffer on streams (lower RAM usage)
+//    // but now I want to maximize the amount of bytes written to the ANT chip  
+//    // to saturate receive buffers in ANT CHIP for bursts, so it seems like I have to have a separate buffer here
+//    if (this.burstMode && burstLen < endpointPacketSize) { // Available space in buffer
+//
+//        this._burstBuffer = Buffer.concat([this._burstBuffer, payload]);
+//        console.log("Buffering ", payload, " burst buffer is now:", this._burstBuffer);
+//    }
+//    else if (this.burstMode) { // Buffer is full
+//        console.log("Write burst to ANT chip now",this._burstBuffer);
+//        this.transfer(this._burstBuffer, function () { this._burstBuffer = payload; nextCB() }.bind(this));
+//    } else // {
+//
+//        if (this._burstBuffer.length > 0) // Still a burst in burst buffer
+//        {
+//            console.log("Still a burst packet in buffer", this._burstBuffer);
+//            this.transfer(Buffer.concat([this._burstBuffer, payload]), function () { this._burstBuffer = new Buffer(0); nextCB() }.bind(this));
+//        }
+//        else
+//            this.transfer(payload, nextCB);
+//       
+//
+//    //nextCB();
+//    };
 
-    // TX: Everything that should be written to the ANT chip goes via this stream
-    USBNode.prototype._write = function (payload, encoding, nextCB) {
-
-    var burstLen = this._burstBuffer.length + payload.length;
-
-    //console.log("USBDevice _write", payload, "burst mode", this.burstMode, "burst buffer", this._burstBuffer);
-    //console.trace();
-    // Loopback test : this._stream.push(new Buffer([1, 2, 3, 4]));
-    // node.js - wants to minimize internal buffer on streams (lower RAM usage)
-    // but now I want to maximize the amount of bytes written to the ANT chip  
-    // to saturate receive buffers in ANT CHIP for bursts, so it seems like I have to have a separate buffer here
-    if (this.burstMode && burstLen < endpointPacketSize) { // Available space in buffer
-
-        this._burstBuffer = Buffer.concat([this._burstBuffer, payload]);
-        console.log("Buffering ", payload, " burst buffer is now:", this._burstBuffer);
-    }
-    else if (this.burstMode) { // Buffer is full
-        console.log("Write burst to ANT chip now",this._burstBuffer);
-        this.transfer(this._burstBuffer, function () { this._burstBuffer = payload; nextCB() }.bind(this));
-    } else // {
-
-        if (this._burstBuffer.length > 0) // Still a burst in burst buffer
-        {
-            console.log("Still a burst packet in buffer", this._burstBuffer);
-            this.transfer(Buffer.concat([this._burstBuffer, payload]), function () { this._burstBuffer = new Buffer(0); nextCB() }.bind(this));
-        }
-        else
-            this.transfer(payload, nextCB);
-       
-
-    //nextCB();
-    }
-    ;
 USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
 USBNode.prototype.ANT_DEVICE_TIMEOUT = 6; // 11.11 ms to transfer 64 (max. endpoint size) bytes at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
 
 USBNode.prototype.getINEndpointPacketSize = function () {
     return this.inEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
-},
+};
 
 USBNode.prototype.getOUTEndpointPacketSize = function () {
     return this.outEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
-},
+};
 
 USBNode.prototype.getDirectANTChipCommunicationTimeout = function () {
     return USBNode.prototype.ANT_DEVICE_TIMEOUT;
-}
+};
 
 // ANT CHIP serial interface configured at 57600 baud (BR pins 1 2 3 = 111) = 57600 bit/s = 57.6 bit/ms
 // Sends : 1 start bit + 8 data bits + 1 stop bits = 10 bit/byte
@@ -83,26 +94,27 @@ USBNode.prototype.getDirectANTChipCommunicationTimeout = function () {
 USBNode.prototype.setDirectANTChipCommunicationTimeout = function (timeout)
 {
     this.setDeviceTimeout(timeout || USBNode.prototype.ANT_DEVICE_TIMEOUT);
-}
+};
 
 USBNode.prototype.setDeviceTimeout = function (timeout) {
     this.device.timeout = timeout;
-}
+};
 
 USBNode.prototype.isTimeoutError = function (error) {
     //if (typeof error !== "undefined")
         return (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT);
     //else
     //    return false;
-}
+};
 
-USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
+USBNode.prototype.init = function (idVendor, idProduct, host, nextCB) {
+    this.host = host;
     var
         antInterface,
         err;
     //console.log("INIT args", arguments);
-
-    //  usb.setDebugLevel(3);
+   
+     usb.setDebugLevel(3);
     if (typeof idVendor === "undefined")
         throw new Error("Vendor id not specified");
 
@@ -243,7 +255,7 @@ USBNode.prototype.init = function (idVendor, idProduct, nextCB) {
         }
 
     
-}
+};
 
 
 
@@ -288,7 +300,7 @@ USBNode.prototype.exit = function (nextCB) {
 
     drainLIBUSB.bind(this)(releaseInterfaceCloseDevice.bind(this));
 
-}
+};
 
 // Private func. -> not accessible on USBNode.prototype
 function drainLIBUSB(nextCB) {
@@ -343,7 +355,15 @@ USBNode.prototype.listen = function (nextCB) {
     //console.log("USB LISTEN");
     //console.trace();
 
-    
+    // http://stackoverflow.com/questions/8609289/convert-a-binary-nodejs-buffer-to-javascript-arraybuffer
+    function toArrayBuffer(buffer) {
+        var ab = new ArrayBuffer(buffer.length);
+        var view = new Uint8Array(ab);
+        for (var i = 0; i < buffer.length; ++i) {
+            view[i] = buffer[i];
+        }
+        return ab;
+}
 
     function retry () {
 
@@ -360,7 +380,8 @@ USBNode.prototype.listen = function (nextCB) {
                     if (data && data.length > 0) {
                        // console.time('usbtoprofile');
                         this.emit(USBDevice.prototype.EVENT.LOG,'RX', data);
-                        this.push(data); // RX -> (piped into DeFrameTransform writable stream)
+                        //this.push(data); // RX -> (piped into DeFrameTransform writable stream)
+                        this.host.parse(toArrayBuffer(data));
                     }
                     setImmediate(retry.bind(this));
                 } else if (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT) {
@@ -398,15 +419,17 @@ USBNode.prototype.transfer = function (chunk, nextCB)
 
     var sendAttempt = 1,
         MAXATTEMPT = 5,
-        err;
+        err,
+        chunkToNodeBuffer = new Buffer(new Uint8Array(chunk));
 
     function retry() {
         //console.trace();
         //try {
             this.setDirectANTChipCommunicationTimeout();
-            this.emit(USBDevice.prototype.EVENT.LOG,'TX', chunk);
+            //console.log('TX',chunkToNodeBuffer);
+            this.emit(USBDevice.prototype.EVENT.LOG,'TX', chunkToNodeBuffer);
             //console.time('TXtime');
-            this.outTransfer = this.outEP.transfer(chunk, function _outTransferCallback(error) {
+            this.outTransfer = this.outEP.transfer(chunkToNodeBuffer, function _outTransferCallback(error) {
                 //console.timeEnd('TXtime')
                  // Test LIBUSB transfer error
                 //error = {};
@@ -453,3 +476,5 @@ USBNode.prototype.transfer = function (chunk, nextCB)
 }
 
 module.exports = USBNode;
+return module.exports;
+});

@@ -1,11 +1,15 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 
 function UnAssignChannelMessage(channel) {
 
-    var msgBuffer = new Buffer([channel]);
+    var msgBuffer = new Uint8Array([channel]);
+    
 
     ANTMessage.call(this);
 
@@ -16,7 +20,7 @@ function UnAssignChannelMessage(channel) {
 
     this.channel = channel;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer.buffer);
 
     //console.log("UnAssignChannelMessage", this);
 
@@ -28,6 +32,8 @@ UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
 UnAssignChannelMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel;
-}
+};
 
 module.exports = UnAssignChannelMessage;
+    return module.exports;
+});

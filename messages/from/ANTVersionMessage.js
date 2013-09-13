@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js');
   
 
@@ -33,3 +36,5 @@ ANTVersionMessage.prototype.toString = function () {
 }
 
 module.exports = ANTVersionMessage;
+    return module.exports;
+});

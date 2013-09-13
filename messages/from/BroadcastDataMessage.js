@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js'),
     LibConfig = require('../../libConfig.js'),
     ChannelId = require('../../channelId.js'),
@@ -23,11 +26,14 @@ BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
 // Spec. p. 91
 BroadcastDataMessage.prototype.parse = function (content) {
-    var sharedAddress;
+    var sharedAddress,
+        dataView;
 
-    if (typeof content !== "undefined" && Buffer.isBuffer(content))
+    if (typeof content !== "undefined") {
+        dataView = new DataView(content);
         this.setContent(content);
-
+    }
+    
     this.channel = this.content[0];
     this.data = this.content.slice(1, 9); // Data 0 .. 7 - assume independent channel
 
@@ -51,7 +57,7 @@ BroadcastDataMessage.prototype.parse = function (content) {
                 this.data = this.content.slice(2, 9);
 
             } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
-                this.sharedAddress = this.content.readUInt16LE(0); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
+                this.sharedAddress = (new DataView(this.content,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
                 this.data = this.content.slice(3, 9);
             }
         }
@@ -212,4 +218,7 @@ BroadcastDataMessage.prototype.toString = function () {
     return msg;
 }
 
-module.exports = BroadcastDataMessage
+module.exports = BroadcastDataMessage;
+    return module.exports;
+});
+

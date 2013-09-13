@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
@@ -9,7 +12,7 @@ function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
     if (!requestedMessageId)
         throw new TypeError('no request message id. specified');
 
-    var msgBuffer = new Buffer([channel || 0, requestedMessageId]);
+    var msgBuffer = new Uint8Array([channel || 0, requestedMessageId]);
 
     ANTMessage.call(this);
 
@@ -18,25 +21,29 @@ function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
 
     this.channel = channel || 0;
     this.requestedMessageId = requestedMessageId;
-    this.NVMaddr = NVMaddr;
-    this.NVMsize = NVMsize;
+    
 
 
     // Non Volatile Memory 
     if (typeof NVMaddr !== "undefined" && typeof NVMsize !== "undefined") {
         var NVM_Buffer;
+        this.NVMaddr = NVMaddr;
+        this.NVMsize = NVMsize;
 
-        NVM_Buffer = new Buffer(3);
-        NVM_Buffer.writeUInt16LE(NVMaddr);
+        NVM_Buffer = new DataView(new ArrayBuffer(3));
+        NVM_Buffer.setUint16(0,NVMaddr,true); // Little endian
         NVM_Buffer[2] = NVMsize;
-
-        msgBuffer = Buffer.concat(msgBuffer, NVM_Buffer)
+        
+        msgBuffer = new Uint8Array([channel || 0, requestedMessageId,0,0,0]);
+        msgBuffer.set(new Uint8Array(NVM_Buffer.buffer),2);
+        
+        
 
     } 
     
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer.buffer);
 
-    // console.log("RequestMessage", this);
+ //console.log("RequestMessage", this);
 
 }
 
@@ -46,6 +53,8 @@ RequestMessage.prototype.constructor = RequestMessage;
 
 RequestMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id " + this.requestedMessageId + " NVMaddr " + this.NVMaddr + "NVMsize" + this.NVMsize;
-}
+};
 
 module.exports = RequestMessage;
+    return module.exports;
+});

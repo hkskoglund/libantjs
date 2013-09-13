@@ -1,11 +1,14 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelRFFreqMessage(channel, RFFreq) {
 
-    var msgBuffer = new Buffer(2);
+    var msgBuffer = new ArrayBuffer(2);
 
     msgBuffer[0] = channel;
     msgBuffer[1] = RFFreq || 66;
@@ -18,7 +21,7 @@ function SetChannelRFFreqMessage(channel, RFFreq) {
     this.channel = channel;
     this.RFFreq = RFFreq;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer);
 
     //console.log("SetChannelRFFreqMessage", this);
 }
@@ -30,6 +33,8 @@ SetChannelRFFreqMessage.prototype.constructor = SetChannelRFFreqMessage;
 
 SetChannelRFFreqMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " RF freq. " + this.RFFreq;
-}
+};
 
 module.exports = SetChannelRFFreqMessage;
+    return module.exports;
+});

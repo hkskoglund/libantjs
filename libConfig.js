@@ -1,4 +1,9 @@
-﻿// Function names based on Dynastram Android SDK v 4.00 documentation
+'use strict';
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+// Function names based on Dynastram Android SDK v 4.00 documentation
 // Support object to be used as parameter to LibConfigMessage (use .getFlagsByte() as param.)
 function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp) {
 
@@ -90,3 +95,5 @@ LibConfig.prototype.toString = function () {
 }
 
 module.exports = LibConfig;
+    return module.exports;
+});

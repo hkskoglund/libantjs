@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js'),
     Channel = require('../../channel.js');
 
@@ -64,3 +67,5 @@ ChannelStatusMessage.prototype.toString = function () {
 }
 
 module.exports = ChannelStatusMessage;
+    return module.exports;
+});

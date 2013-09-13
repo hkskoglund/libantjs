@@ -17,7 +17,8 @@
   "dependencies": {
     "usb": " >=0.2.x",
 	"ws" : " >=0.4.x",
-	"commander" : " >=2.0.0"
+	"commander" : " >=2.0.0",
+    "amddefine" : " >=0.0.8"
   },
   "repository": {
     "type": "git",

@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict"
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
@@ -50,9 +53,6 @@ NotificationStartup.prototype.SUSPEND_RESET = {
             MESSAGE: 'SUSPEND_RESET'
 }
 
-NotificationStartup.prototype.setContent = function (command) {
-    this.create(new Buffer([command]));
-}
 
 NotificationStartup.prototype.parse = function () {
     var msg;
@@ -96,3 +96,5 @@ NotificationStartup.prototype.toString = function () {
 }
 
 module.exports = NotificationStartup;
+    return module.exports;
+});

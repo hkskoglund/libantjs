@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js');
 
 function NotificationSerialError(data) {
@@ -63,3 +66,5 @@ NotificationSerialError.prototype.toString = function () {
 }
 
 module.exports = NotificationSerialError
+return module.exports;
+});

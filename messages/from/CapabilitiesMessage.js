@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js');
 
 function CapabilitiesMessage() {
@@ -24,13 +27,13 @@ CapabilitiesMessage.prototype.constructor = CapabilitiesMessage;
 CapabilitiesMessage.prototype.getNumberOfChannels = function ()
 {
     return this.content[0];
-}
+};
 
 // Inspired by Dynastream Android SDK 4.0.0
 CapabilitiesMessage.prototype.getNumberOfNetworks = function ()
 {
     return this.content[1];
-}
+};
 
 // ANT Message Protocol and Usage. rev 5.0b - page 115
 CapabilitiesMessage.prototype.parse = function () {
@@ -60,7 +63,7 @@ CapabilitiesMessage.prototype.parse = function () {
         CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED : advancedOptions & (1 << 5),
         CAPABILITIES_SCRIPT_ENABLED : advancedOptions & (1 << 6),
         CAPABILITIES_SEARCH_LIST_ENABLED : advancedOptions & (1 << 7),
-    }
+    };
 
     this.advancedOptions2 = {
         value: "MSB " + advancedOptions2.toString(2) + " " + advancedOptions2,
@@ -79,7 +82,7 @@ CapabilitiesMessage.prototype.parse = function () {
         CAPABILITIES_EVENT_FILTERING_ENABLED : advancedOptions3 & (1 << 2),
         CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED : advancedOptions3 & (1 << 3),
         CAPABILITIES_SELECTIVE_DATA_ENABLED : advancedOptions3 & (1 << 6)
-    }
+    };
      
    // this.message = "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
 
@@ -202,3 +205,5 @@ CapabilitiesMessage.prototype.toString = function () {
 }
 
 module.exports = CapabilitiesMessage;
+    return module.exports;
+});

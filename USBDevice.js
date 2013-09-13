@@ -1,17 +1,29 @@
-﻿"use strict"
-var
-    util = require('util'),
-    Duplex = require('stream').Duplex;
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+
+//var  util = require('util'),
+//    Duplex = require('stream').Duplex;
+
+var events = require('events');
   
 // Abstract USB device
 function USBDevice(options) {
-    //events.EventEmitter.call(this);
+    events.EventEmitter.call(this);
     // Stream inherits from event emitter
-    Duplex.call(this, options);
-    this._burstBuffer = new Buffer(0);
+//    Duplex.call(this, options);
+//    this._burstBuffer = new Buffer(0);
 }
 
-util.inherits(USBDevice, Duplex);
+USBDevice.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : USBDevice,
+                                                                        enumerable : false,
+                                                                        writeable : true,
+                                                                        configurable : true } });
+//util.inherits(USBDevice, Duplex);
+//'function (ctor, superCtor) {\n  ctor.super_ = superCtor;\n  ctor.prototype = Object.create(superCtor.prototype, {\n
+//constructor: {\n      value: ctor,\n      enumerable: false,\n      writable: true,\n      configurable: true\n    }\n
+//});\n}'
 
 // for event emitter
 USBDevice.prototype.EVENT = {
@@ -20,17 +32,17 @@ USBDevice.prototype.EVENT = {
     ERROR: 'error',
     CLOSED : 'closed'
    
-}
+};
 
 
 USBDevice.prototype.setBurstMode = function (value) {
     this.burstMode = value;
-}
+};
 
 
-USBDevice.prototype.init = function (idVendor, idProduct,callback) {
+USBDevice.prototype.init = function (idVendor, idProduct,rxParser,callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
-}
+};
 
 USBDevice.prototype.exit = function (callback) {
 
@@ -38,11 +50,11 @@ USBDevice.prototype.exit = function (callback) {
         this.showLogMessage('No listener for device closed event');
 
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
-}
+};
 
 USBDevice.prototype.setLogging = function (logging) {
     this._logging = logging;
-}
+};
 
 USBDevice.prototype.showLogMessage = function () {
     if (this._logging) {
@@ -54,19 +66,22 @@ USBDevice.prototype.showLogMessage = function () {
         else
             console.log(Date.now(), arguments);
     }
-}
+};
 
 // Sets device timeout in ms.
 USBDevice.prototype.setDeviceTimeout = function (timeout) {
     throw new Error('Func. should be overridden in descendant objects');
-}
+};
 
 USBDevice.prototype.listen = function (successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
-}
+};
 
 USBDevice.prototype.transfer = function (chunk, successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
-}
+};
 
 module.exports = USBDevice;
+    
+    return module.exports;
+});

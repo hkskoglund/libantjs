@@ -1,11 +1,15 @@
-﻿"use strict"
+"use strict";
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 
 function LibConfigMessage(libConfig) {
 
-    var msgBuffer = new Buffer(2);
+    var msgBuffer = new Uint8Array(2);
         
     msgBuffer[0] = 0x00; // Filler
     msgBuffer[1] = libConfig; 
@@ -17,7 +21,7 @@ function LibConfigMessage(libConfig) {
     
     this.libConfig = libConfig;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer.buffer);
 
     //console.log("LibConfigMessage", this);
 }
@@ -29,6 +33,8 @@ LibConfigMessage.prototype.constructor = LibConfigMessage;
 
 LibConfigMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " lib config " + this.libConfig;
-}
+};
 
 module.exports = LibConfigMessage;
+    return module.exports;
+});

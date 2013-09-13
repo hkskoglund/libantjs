@@ -1,17 +1,20 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 function CloseChannelMessage(channel) {
 
-    var msgBuffer = new Buffer([channel]);
+    var msgBuffer = new Uint8Array([channel]);
 
     ANTMessage.call(this);
 
     this.id = ANTMessage.prototype.MESSAGE.CLOSE_CHANNEL;
     this.name = "Close channel";
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer.buffer);
 
     //console.log("CloseChannelMessage", this);
 }
@@ -22,6 +25,8 @@ CloseChannelMessage.prototype.constructor = CloseChannelMessage;
 
 CloseChannelMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16);
-}
+};
 
 module.exports = CloseChannelMessage;
+    return module.exports;
+});

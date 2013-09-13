@@ -1,15 +1,18 @@
-﻿"use strict";
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 
 function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
 
-    var msgBuffer = new Buffer(5),
+    var msgBuffer = new DataView(new ArrayBuffer(5)),
         pairingRequest = (deviceType & SetChannelIDMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
     msgBuffer[0] = channel;
-    msgBuffer.writeUInt16LE(deviceNum, 1);
+    msgBuffer.setUint16(1,deviceNum, true);
     msgBuffer[3] = deviceType; // Slave: 0 = match any device type - Range 0 .. 127 if no pairing
     msgBuffer[4] = transmissionType; // Slave: 0 = match any transmission type
 
@@ -24,7 +27,7 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     this.transmissionType = transmissionType;
     this.pair = pairingRequest;
 
-    this.setContent(msgBuffer);
+    this.setContent(msgBuffer.buffer);
 
     //console.log("SetChannelIDMessage", this);
 }
@@ -42,3 +45,5 @@ SetChannelIDMessage.prototype.toString = function () {
 };
 
 module.exports = SetChannelIDMessage;
+    return module.exports;
+});

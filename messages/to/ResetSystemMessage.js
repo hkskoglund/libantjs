@@ -1,4 +1,8 @@
-﻿"use strict"
+"use strict";
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var ANTMessage = require('../ANTMessage.js');
 
 function ResetSystemMessage() {
@@ -21,3 +25,5 @@ ResetSystemMessage.prototype = Object.create(ANTMessage.prototype);
 ResetSystemMessage.prototype.constructor = ResetSystemMessage;
 
 module.exports = ResetSystemMessage;
+    return module.exports;
+});

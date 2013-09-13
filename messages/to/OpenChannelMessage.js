@@ -1,10 +1,13 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 var ANTMessage = require('../ANTMessage.js');
 
 function OpenChannelMessage(channel) {
 
-    var msgBuffer = new Buffer([channel]);
+    var msgBuffer = new Uint8Array([channel]);
   
     ANTMessage.call(this);
 
@@ -13,7 +16,7 @@ function OpenChannelMessage(channel) {
 
     this.channel = channel;
 
-    this.setContent(msgBuffer)
+    this.setContent(msgBuffer.buffer);
 
     //console.log("OpenChannelMessage", this);
 }
@@ -24,6 +27,8 @@ OpenChannelMessage.prototype.constructor = OpenChannelMessage;
 
 OpenChannelMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16);
-}
+};
 
 module.exports = OpenChannelMessage;
+    return module.exports;
+});

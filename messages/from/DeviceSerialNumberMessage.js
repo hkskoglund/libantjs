@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 var  ANTMessage = require('../ANTMessage.js')
 
 function DeviceSerialNumberMessage() {
@@ -20,7 +23,7 @@ DeviceSerialNumberMessage.prototype.constructor = DeviceSerialNumberMessage;
 DeviceSerialNumberMessage.prototype.parse = function () {
     // SN 4 bytes Little Endian
     
-    this.serialNumber = this.content.readUInt32LE(0);
+    this.serialNumber = (new DataView(this.content)).getUint32(0,true);
     this.serialNumberAsChannelId = this.serialNumber & 0xFFFF; // Lower 2-bytes
 }
 
@@ -29,3 +32,5 @@ DeviceSerialNumberMessage.prototype.toString = function () {
 }
 
 module.exports = DeviceSerialNumberMessage;
+    return module.exports;
+});

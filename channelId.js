@@ -1,4 +1,7 @@
-﻿"use strict"
+"use strict";
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
 // Function names based on Dynastram Android SDK v 4.00 documentation
 function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
@@ -38,7 +41,7 @@ ChannelId.prototype.getPair = function () {
 ChannelId.prototype.parse = function (extendedData) {
     // | DN # af 41 | DT # 78 |T# 01
 
-    this.deviceNumber = extendedData.readUInt16LE(0);
+    this.deviceNumber = (new DataView(extendedData)).getUint16(0,true);
     this.deviceType = extendedData[2];
 
     // From spec. p. 17 - "an 8-bit field used to define certain transmission characteristics of a device" - shared address, global data pages, 20 bit device number
@@ -119,3 +122,5 @@ ChannelId.prototype.toString = function () {
 }
 
 module.exports = ChannelId;
+    return module.exports;
+});
