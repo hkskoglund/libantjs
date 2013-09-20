@@ -1,0 +1,25 @@
+{
+  "name": "libant",
+  "version": "0.1.0",
+  "homepage": "https://github.com/hkskoglund/libant",
+  "authors": [
+    "Henning Knut Skoglund <hkskoglund@gmail.com>"
+  ],
+  "description": "ANT wireless USB library",
+  "main": "./anthost.js",
+  "keywords": [
+    "ANT",
+    "wireless",
+    "USB",
+    "library"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

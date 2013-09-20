@@ -1,19 +1,19 @@
 /*jslint node: true */
 "use strict";
 
-var requirejs = require('requirejs');
-
-requirejs.config({
-    //Pass the top-level main.js/index.js require
-    //function to requirejs so that node modules
-    //are loaded relative to the top-level JS file.
-    nodeRequire: require
-});
-
-//requirejs(['events','channel'], function (events,channel)
-//          {
-//              console.log("events",events,channel);
-//          });
+//var requirejs = require('requirejs');
+//
+//requirejs.config({
+//    //Pass the top-level main.js/index.js require
+//    //function to requirejs so that node modules
+//    //are loaded relative to the top-level JS file.
+//    nodeRequire: require
+//});
+//
+////requirejs(['events','channel'], function (events,channel)
+////          {
+////              console.log("events",events,channel);
+////          });
 
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }

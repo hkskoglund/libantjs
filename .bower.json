@@ -1,0 +1,13 @@
+{
+  "name": "libant",
+  "_release": "master",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "d9ce1b64742cc4b3840f5e8d9fcfd1290e3ccc69"
+  },
+  "_source": "c:\\users\\henningknut\\github\\libant",
+  "_target": "*",
+  "_originalSource": "c:\\users\\henningknut\\github\\libant",
+  "_direct": true
+}
