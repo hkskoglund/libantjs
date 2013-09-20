@@ -16,6 +16,7 @@
 ////          });
 
 // Allows using define in node.js
+// Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -26,50 +27,50 @@ var
    // assert = require('assert'),
     USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
     Channel = require('channel'),
-    ANTMessage = require('./messages/ANTMessage.js'),
+    ANTMessage = require('messages/ANTMessage'),
 
     //Duplex = require('stream').Duplex,
 
     // Control ANT
-    ResetSystemMessage = require('./messages/to//ResetSystemMessage.js'),
-    OpenChannelMessage = require('./messages/to/OpenChannelMessage.js'),
-    CloseChannelMessage = require('./messages/to/CloseChannelMessage.js'),
+    ResetSystemMessage = require('messages/to//ResetSystemMessage'),
+    OpenChannelMessage = require('messages/to/OpenChannelMessage'),
+    CloseChannelMessage = require('messages/to/CloseChannelMessage'),
 
     // Notifications
 
-    NotificationStartup = require('./messages/from/NotificationStartup.js'),
-    NotificationSerialError = require('./messages/from/NotificationSerialError.js'),
+    NotificationStartup = require('messages/from/NotificationStartup'),
+    NotificationSerialError = require('messages/from/NotificationSerialError'),
 
     // Request -response
 
-    RequestMessage = require('./messages/to/RequestMessage.js'),
+    RequestMessage = require('messages/to/RequestMessage'),
 
-        CapabilitiesMessage = require('./messages/from/CapabilitiesMessage.js'),
-        ANTVersionMessage = require('./messages/from/ANTVersionMessage.js'),
-        DeviceSerialNumberMessage = require('./messages/from/DeviceSerialNumberMessage.js'),
+        CapabilitiesMessage = require('messages/from/CapabilitiesMessage'),
+        ANTVersionMessage = require('messages/from/ANTVersionMessage'),
+        DeviceSerialNumberMessage = require('messages/from/DeviceSerialNumberMessage'),
 
     // Configuration
 
-    AssignChannelMessage = require('./messages/to/AssignChannelMessage.js'),
-    UnAssignChannelMessage = require('./messages/to/UnAssignChannelMessage.js'),
-    SetChannelIDMessage = require('./messages/to/SetChannelIDMessage.js'),
-    SetChannelPeriodMessage = require('./messages/to/SetChannelPeriodMessage.js'),
-    SetChannelSearchTimeoutMessage = require('./messages/to/SetChannelSearchTimeoutMessage.js'),
-    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/to/SetLowPriorityChannelSearchTimeoutMessage.js'),
-    SetChannelRFFreqMessage = require('./messages/to/SetChannelRFFreqMessage.js'),
-    SetNetworkKeyMessage = require('./messages/to/SetNetworkKeyMessage.js'),
-    SetTransmitPowerMessage = require('./messages/to/SetTransmitPowerMessage.js'),
-    SetChannelTxPowerMessage = require('./messages/to/SetChannelTxPowerMessage.js'),
-    SetProximitySearchMessage = require('./messages/to/SetProximitySearchMessage.js'),
-    SetSerialNumChannelIdMessage = require('./messages/to/SetSerialNumChannelIdMessage.js'),
+    AssignChannelMessage = require('messages/to/AssignChannelMessage'),
+    UnAssignChannelMessage = require('messages/to/UnAssignChannelMessage'),
+    SetChannelIDMessage = require('messages/to/SetChannelIDMessage'),
+    SetChannelPeriodMessage = require('messages/to/SetChannelPeriodMessage'),
+    SetChannelSearchTimeoutMessage = require('messages/to/SetChannelSearchTimeoutMessage'),
+    SetLowPriorityChannelSearchTimeoutMessage = require('messages/to/SetLowPriorityChannelSearchTimeoutMessage'),
+    SetChannelRFFreqMessage = require('messages/to/SetChannelRFFreqMessage'),
+    SetNetworkKeyMessage = require('messages/to/SetNetworkKeyMessage.js'),
+    SetTransmitPowerMessage = require('messages/to/SetTransmitPowerMessage.js'),
+    SetChannelTxPowerMessage = require('messages/to/SetChannelTxPowerMessage.js'),
+    SetProximitySearchMessage = require('/messages/to/SetProximitySearchMessage.js'),
+    SetSerialNumChannelIdMessage = require('messages/to/SetSerialNumChannelIdMessage.js'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
-    LibConfigMessage = require('./messages/to/LibConfigMessage.js'),
-    LibConfig = require('./libConfig.js'),
+    LibConfigMessage = require('messages/to/LibConfigMessage.js'),
+    LibConfig = require('libConfig.js'),
    
 
-    ChannelResponseMessage = require('./messages/from/ChannelResponseMessage.js'),
-    ChannelStatusMessage = require('./messages/from/ChannelStatusMessage.js'),
+    ChannelResponseMessage = require('messages/from/ChannelResponseMessage.js'),
+    ChannelStatusMessage = require('messages/from/ChannelStatusMessage.js'),
 
 //    FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
 //    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now  -> just echo
@@ -77,9 +78,9 @@ var
     // Parsing of ANT messages received
    // ANTParser = require('./antparser.js'), // Maybe: move to configuration file
         
-    ChannelId = require('./channelId.js'),
+    ChannelId = require('messages/channelId.js'),
 
-    DeviceProfile_HRM = require('./profiles/deviceProfile_HRM.js'), // Maybe: move to configuration file
+    DeviceProfile_HRM = require('profiles/deviceProfile_HRM.js'), // Maybe: move to configuration file
 
     //runFromCommandLine = (require.main === module) ? true : false;
     
