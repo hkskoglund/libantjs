@@ -15,12 +15,13 @@
 ////              console.log("events",events,channel);
 ////          });
 
-
+// Allows using define in node.js
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     
-var events = require('events'),
+var
+    //events = require('events'),
     //util = require('util'),
    // assert = require('assert'),
     USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
@@ -152,10 +153,10 @@ function Host(options) {
 
 //util.inherits(Host, Duplex);
 
-Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
-                                                                        enumerable : false,
-                                                                        writeable : true,
-                                                                        configurable : true } });
+//Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
+//                                                                        enumerable : false,
+//                                                                        writeable : true,
+//                                                                        configurable : true } });
 
 Host.prototype.VERSION = "0.1.0";
 // Continous scanning channel or background scanning channel
