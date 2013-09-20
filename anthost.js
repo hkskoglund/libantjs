@@ -58,19 +58,19 @@ var
     SetChannelSearchTimeoutMessage = require('messages/to/SetChannelSearchTimeoutMessage'),
     SetLowPriorityChannelSearchTimeoutMessage = require('messages/to/SetLowPriorityChannelSearchTimeoutMessage'),
     SetChannelRFFreqMessage = require('messages/to/SetChannelRFFreqMessage'),
-    SetNetworkKeyMessage = require('messages/to/SetNetworkKeyMessage.js'),
-    SetTransmitPowerMessage = require('messages/to/SetTransmitPowerMessage.js'),
-    SetChannelTxPowerMessage = require('messages/to/SetChannelTxPowerMessage.js'),
-    SetProximitySearchMessage = require('/messages/to/SetProximitySearchMessage.js'),
-    SetSerialNumChannelIdMessage = require('messages/to/SetSerialNumChannelIdMessage.js'),
+    SetNetworkKeyMessage = require('messages/to/SetNetworkKeyMessage'),
+    SetTransmitPowerMessage = require('messages/to/SetTransmitPowerMessage'),
+    SetChannelTxPowerMessage = require('messages/to/SetChannelTxPowerMessage'),
+    SetProximitySearchMessage = require('/messages/to/SetProximitySearchMessage'),
+    SetSerialNumChannelIdMessage = require('messages/to/SetSerialNumChannelIdMessage'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
-    LibConfigMessage = require('messages/to/LibConfigMessage.js'),
-    LibConfig = require('libConfig.js'),
+    LibConfigMessage = require('messages/to/LibConfigMessage'),
+    LibConfig = require('messages/libConfig'),
    
 
-    ChannelResponseMessage = require('messages/from/ChannelResponseMessage.js'),
-    ChannelStatusMessage = require('messages/from/ChannelStatusMessage.js'),
+    ChannelResponseMessage = require('messages/from/ChannelResponseMessage'),
+    ChannelStatusMessage = require('messages/from/ChannelStatusMessage'),
 
 //    FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
 //    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now  -> just echo
@@ -78,9 +78,9 @@ var
     // Parsing of ANT messages received
    // ANTParser = require('./antparser.js'), // Maybe: move to configuration file
         
-    ChannelId = require('messages/channelId.js'),
+    ChannelId = require('messages/channelId'),
 
-    DeviceProfile_HRM = require('profiles/deviceProfile_HRM.js'), // Maybe: move to configuration file
+    DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
 
     //runFromCommandLine = (require.main === module) ? true : false;
     
