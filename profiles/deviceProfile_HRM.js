@@ -1,5 +1,11 @@
+"use strict";
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
+    
 var DeviceProfile = require('./deviceProfile.js'),
-    util = require('util'),
+    //util = require('util'),
     Page = require('./HRMPage.js');
 
 function DeviceProfile_HRM(configuration) {
@@ -100,9 +106,9 @@ function DeviceProfile_HRM(configuration) {
 
 }
 
-//DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
-//DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
-util.inherits(DeviceProfile_HRM, DeviceProfile);
+DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
+DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
+//util.inherits(DeviceProfile_HRM, DeviceProfile);
 
 DeviceProfile_HRM.prototype.STATE = {
     HR_EVENT: 1,
@@ -328,3 +334,6 @@ DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
 };
 
 module.exports = DeviceProfile_HRM;
+    
+return module.exports;
+});

@@ -61,7 +61,7 @@ var
     SetNetworkKeyMessage = require('messages/to/SetNetworkKeyMessage'),
     SetTransmitPowerMessage = require('messages/to/SetTransmitPowerMessage'),
     SetChannelTxPowerMessage = require('messages/to/SetChannelTxPowerMessage'),
-    SetProximitySearchMessage = require('/messages/to/SetProximitySearchMessage'),
+    SetProximitySearchMessage = require('messages/to/SetProximitySearchMessage'),
     SetSerialNumChannelIdMessage = require('messages/to/SetSerialNumChannelIdMessage'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
@@ -91,64 +91,20 @@ var
  //   hostCommander = require('commander');
 
 
-// Host for USB ANT communication, options are for initializing TX/RX stream
+// Host for USB ANT communication
 function Host(options) {
  
-//    if (!options)
-//        Duplex.call(this, { objectMode: true });
-//    else
-//        Duplex.call(this, options);
     
     this._channel = []; // Alternative new Array(), jshint recommends []
     this._channelStatus = {};
 
-//    this._responseParser = new ANTParser({ objectMode: true });
-//
-//    this._responseParser.on(ANTParser.prototype.EVENT.BROADCAST, this.broadcastData.bind(this));
-//    this._responseParser.on(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent.bind(this));
-   
+
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
 
     this._mutex = {};
-//
-//    this.on('error', function (msg, err) {
-//        this.showLogMessage( msg);
-//        if (typeof err !== "undefined")
-//            this.showLogMessage( err);
-//    }.bind(this));
 
-    //this.on('finish', function () {
-    //    //this.unpipe(); // Remove all pipes
-    //    this.showLogMessage( 'Host RX stream finished');
-    //}.bind(this));
-
-    //this.on('end', function () {
-    //    this.showLogMessage( 'Host TX stream ended');
-    //}.bind(this));
-
-    //this.on('unpipe', function () {
-    //    this.showLogMessage( 'Host TX stream unpipe');
-    //}.bind(this));
-
-    //this.on('pipe', function (src) {
-    //    this.showLogMessage( 'Pipe registered into host TX stream');
-    //}.bind(this));
-
-//    hostCommander.version(Host.prototype.VERSION)
-//           // .option('-n,--new', 'Download FIT files flagged as new')
-//            //.option('-l,--list', 'List directory of ANT-FS device')
-//            //.option('-d,--download <items>', "Download FIT files at index '<n1>,<n2>,...'", list)
-//            //.option('-a,--download-all', 'Download the entire index of FIT files')
-//            //.option('-e,--erase <items>', "Erase FIT file at index '<n1>'", list)
-//            //.option('-b,--background', 'Background search channel for ANT+ devices + websocket server sending ANT+ pages for HRM/SDM4/SPDCAD device profile')
-//            //.option('-c,--continous', 'Continous scan mode for ANT+ devices + websocket server sending ANT+ pages for HRM/SDM4/SPDCAD device profile')
-//            .option('-r,--reset', 'Reset ANT device')
-//            .option('-C,--capabilities', 'List ANT device capabilities')
-//            .option('-u,--log_usb','Log LIBUSB message, i.e TX/RX buffer to/from ANT')
-//            .parse(process.argv);
-    
     this.callback = {};
 }
 
@@ -160,26 +116,6 @@ function Host(options) {
 //                                                                        configurable : true } });
 
 Host.prototype.VERSION = "0.1.0";
-// Continous scanning channel or background scanning channel
-//Host.prototype.SCANNING_CHANNEL_TYPE = {
-//    CONTINOUS: 0x00,
-//    BACKGROUND: 0x01
-//};
-
-//Host.prototype.ANT_DEFAULT_RETRY = 2;
-
-//Host.prototype.ANT_RETRY_ON_CLOSE = 10;  // Potentially get quite a lot of broadcasts in a ANT-FS channel
-
-//Host.prototype.TX_DEFAULT_RETRY = 5; // Retry of RF acknowledged packets (including timeouts)
-
-//Host.prototype.SEARCH_TIMEOUT = {
-//    INFINITE_SEARCH: 0xFF,
-//    DISABLE_HIGH_PRIORITY_SEARCH_MODE: 0x00
-//};
-
-//Host.prototype.ANT_FREQUENCY = 57;
-
-//Host.prototype.ANTFS_FREQUENCY = 50;
 
 // for event emitter
 Host.prototype.EVENT = {
@@ -533,77 +469,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     }.bind(this));
 };
 
-//// Must be defined/overridden otherwise throws error "not implemented"
-//// _read-function is used to generate data when the consumer wants to read them
-//// https://github.com/substack/stream-handbook#creating-a-readable-stream
-//// https://github.com/joyent/node/blob/master/lib/_stream_readable.js
-//Host.prototype._read = function (size) {
-//   // console.trace();
-//   // console.log("Host: Consumer wants to read %d bytes", size);
-//    //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
-//    // this.readable.push('A');
-//};
-//
-//Host.prototype._write = function (payload,encoding,nextCB) {
-//    //console.trace();
-//   // console.log("Host: _write", arguments,payload);
-//    this._responseParser.write(payload);
-//    nextCB();
-//};
-
-
-// Initializes TX/RX streams
-//function initStream() {
-//    // https://github.com/joyent/node/blob/master/lib/_stream_duplex.js
-//    this._TXstream = new Duplex({objectMode : true}); // Default highWaterMark = 16384 bytes
-//    this._RXstream = new Duplex(); // Cannot pipe into ._TXstream -> will create a loop, must have separate stream to pipe into
-
-//    //this._RXstream = new Writable();
-
-//    // Must be defined/overridden otherwise throws error "not implemented"
-//    // _read-function is used to generate data when the consumer wants to read them
-//    // https://github.com/substack/stream-handbook#creating-a-readable-stream
-//    // https://github.com/joyent/node/blob/master/lib/_stream_readable.js
-//    this._TXstream._read = function (size) {
-//        //console.trace();
-//        //console.log("Host read %d bytes", size);
-//        //console.log(this._TXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
-//        // this.readable.push('A');
-//    }.bind(this);
-
-//    this._RXstream._read = function (size) {
-//        //console.trace();
-//        //console.log("_RXstream._read read %d bytes", size);
-//        //console.log(this._RXstream._readableState.buffer,size); // .buffer is an array of buffers [buf1,buf2,....] based on whats pushed 
-//    }.bind(this);
-
-//    //this._TXstream.pipe(process.stdout);
-
-//    // http://nodejs.org/api/stream.html#stream_class_stream_readable
-//    // "If you just want to get all the data out of the stream as fast as possible, this is the best way to do so."
-//    // This is socalled "FLOW"-mode (no need to make a manual call to .read to get data from internal buffer)
-//    // https://github.com/substack/stream-handbook
-//    //Note that whenever you register a "data" listener, you put the stream into compatability mode so you lose the benefits of the new streams2 api.
-//    //this._TXstream.addListener('data', function _streamDataListener(response) {
-//    //    console.log(Date.now(), 'Stream RX:', response);
-//    //    this.parse_response(response);
-//    //}.bind(this));
-
-//    // 'readable' event signals that data is available in the internal buffer list that can be consumed with .read call
-
-//    //this._TXstream.addListener('readable', function () {
-//    //    var buf;
-//    //    // console.log("**************************readable", arguments);
-//    //    // console.log("TX:",this._TXstream._readableState.buffer)
-//    //    //buf = this._TXstream.read();
-//    //    // console.log(Date.now(), 'Stream TX test:', buf);
-
-//    //    //this.parse_response(buf);
-//    //    // this._TXstream.unshift(buf);
-//    //}.bind(this));
-
-
-// Initializes USB device and set up of TX/RX stream pipes
+// Initializes USB device
 Host.prototype.init = function (options, _initCB) {
 
     //console.trace();
@@ -647,19 +513,8 @@ Host.prototype.init = function (options, _initCB) {
     this.usb = new USBDevice();
     this.usb.setLogging(options.log_usb);
 
-    // Object mode is enabled to allow for passing message objects downstream/TX, from here the message is transformed into a buffer and sent down the pipe to usb
-    // Sending directly to the usb as a buffer would have been more performant
-//    this.frameTransform = new FrameTransform({ objectMode: true }); // TX
-//
-//    this.deframeTransform = new DeFrameTransform({ highWaterMark: 0 }); // RX, don't want any buffer on reception -> highWaterMark = 0
 
-    this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
-    //this.addListener(Host.prototype.EVENT.ERROR, this.showLogMessage);
-
-//    this._responseParser.addListener(ANTParser.prototype.EVENT.NOTIFICATION_SERIAL_ERROR, function (notification) {
-//        //_initCB(new Error(notification.toString()));
-//        this.showLogMessage( notification.toString());
-//    }.bind(this));
+   // this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
 
 
     this.usb.init(vendor, product, this, function _usbInitCB(error) {
@@ -783,12 +638,7 @@ Host.prototype.init = function (options, _initCB) {
         // Normally get a timeout after draining 
         if (this.usb.isTimeoutError(error)) {
 
-            // TX: Wire outgoing pipes host -> frame transform -> usb
-            //this.pipe(this.frameTransform).pipe(this.usb);
-
-            // RX: Wire incoming pipes usb -> deframe transf. -> host
-           // this.usb.pipe(this.deframeTransform).pipe(this._RXstream).pipe(this._responseParser);
-            //this.usb.pipe(this.deframeTransform).pipe(this);
+        
 
             this.usb.listen(function _USBListenCB(error) {
 
@@ -846,22 +696,9 @@ Host.prototype.init = function (options, _initCB) {
 
 };
 
-// Exit USB device and closes/end TX/RX stream
+// Exit USB device
 Host.prototype.exit = function (callback) {
-    // console.log("Inside exit ANT");
-
-    // Finish RX stream
-    //this._RXstream.end(null)
-    // TEST : [Error: write after end]
-    //this._RXstream.write(new Buffer(10));
-
-    // End TX stream, close RX stream
-//    this.push(null);
-//    this.end();
-    // TEST EOF readable stream : this._TXstream.push(new Buffer(10)); 
-    //-> gives [Error: stream.push() after EOF]
-
-    // Exit USB
+   
 
     this.usb.exit(callback);
 
