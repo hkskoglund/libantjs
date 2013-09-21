@@ -25,7 +25,7 @@ var
     //events = require('events'),
     //util = require('util'),
    // assert = require('assert'),
-    USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
+   // USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
     Channel = require('channel'),
     ANTMessage = require('messages/ANTMessage'),
 
