@@ -2,15 +2,16 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-var events = require('events'),
-   util = require('util');
+//var 
+//events = require('events'),
+//   util = require('util');
 
 function Channel() {
-    events.EventEmitter.call(this);
+   // events.EventEmitter.call(this);
     this.parameters = {};
 }
 
-util.inherits(Channel, events.EventEmitter);
+//util.inherits(Channel, events.EventEmitter);
 
 Channel.prototype.addConfiguration = function (name, parameters)
 {
