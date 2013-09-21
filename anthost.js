@@ -32,7 +32,7 @@ var
     //Duplex = require('stream').Duplex,
 
     // Control ANT
-    ResetSystemMessage = require('messages/to//ResetSystemMessage'),
+    ResetSystemMessage = require('messages/to/ResetSystemMessage'),
     OpenChannelMessage = require('messages/to/OpenChannelMessage'),
     CloseChannelMessage = require('messages/to/CloseChannelMessage'),
 

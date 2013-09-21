@@ -2,11 +2,11 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-var ANTMessage = require('../ANTMessage.js'),
-    LibConfig = require('../../libConfig.js'),
-    ChannelId = require('../../channelId.js'),
-    RSSI = require('../../rssi.js'),
-    RXTimestamp = require('../../RXTimestamp.js')
+var ANTMessage = require('messages/ANTMessage'),
+    LibConfig = require('messages/libConfig'),
+    ChannelId = require('messages/channelId'),
+    RSSI = require('messages/rssi'),
+    RXTimestamp = require('messages/RXTimestamp')
 
 function BroadcastDataMessage() {
     ANTMessage.call(this);

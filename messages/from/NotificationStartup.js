@@ -2,7 +2,7 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-var ANTMessage = require('../ANTMessage.js');
+var ANTMessage = require('messages/ANTMessage');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
 function NotificationStartup(data) {

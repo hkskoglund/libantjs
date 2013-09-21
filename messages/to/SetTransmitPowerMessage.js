@@ -3,7 +3,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-var ANTMessage = require('../ANTMessage.js');
+var ANTMessage = require('messages/ANTMessage');
 
 
 function SetTransmitPowerMessage(transmitPower) {
