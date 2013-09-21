@@ -80,7 +80,7 @@ var
         
     ChannelId = require('messages/channelId'),
 
-    DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
+  //  DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
 
     //runFromCommandLine = (require.main === module) ? true : false;
     
