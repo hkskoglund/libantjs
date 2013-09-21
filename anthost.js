@@ -26,7 +26,7 @@ var
     //util = require('util'),
    // assert = require('assert'),
    // USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
-    Channel = require('channel'),
+    Channel = require('Channel'),
     ANTMessage = require('messages/ANTMessage'),
 
     //Duplex = require('stream').Duplex,
