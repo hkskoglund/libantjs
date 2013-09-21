@@ -3,7 +3,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-var ANTMessage = require('message/ANTMessage');
+var ANTMessage = require('messages/ANTMessage');
 
 // p.89 "ANT Message Protocol and Usage, rev 5.0b"
 // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
