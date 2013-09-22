@@ -2,8 +2,15 @@
 
 define(function (require, exports, module) {
     
+    var USBDevice = require('usb/USBDevice');
+    
 function USBChrome() {
 }
+
+USBChrome.prototype = Object.create(USBDevice.prototype, { constructor : { value : USBChrome,
+                                                                        enumerable : false,
+                                                                        writeable : true,
+                                                                        configurable : true } });
 
 // Assume correspondence between resultCodes and LIBUSB
 USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED = 0;
