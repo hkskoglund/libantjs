@@ -308,13 +308,13 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
                     this.setChannelPeriod(channelNumber, parameters.channelPeriod, function (error, response) {
                         if (!error) {
                             this.showLogMessage( response.toString());
-                            setTransmitPower();
+                            setChannelSearchTimeout();
                         }
                         else
                             callback(error);
                     }.bind(this));
                 else
-                    setTransmitPower();
+                    setChannelSearchTimeout();
             }.bind(this);
 
             // Default 66 = 2466 MHz
@@ -334,35 +334,35 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
                
             }.bind(this);
 
-            //// Default 3 = 0bDm
+            ////// Default 3 = 0bDm
 
-            var setTransmitPower = function () {
-                if (parameters.transmitPower)
-                    this.setTransmitPower(parameters.transmitPower, function (error, response) {
-                        if (!error) {
-                            this.showLogMessage( response.toString());
-                            setChannelTxPower();
-                        }
-                        else
-                            this.showLogMessage( error);
-                    }.bind(this));
-                else
-                    setChannelTxPower();
-            }.bind(this);
+            //var setTransmitPower = function () {
+            //    if (parameters.transmitPower)
+            //        this.setTransmitPower(parameters.transmitPower, function (error, response) {
+            //            if (!error) {
+            //                this.showLogMessage( response.toString());
+            //                setChannelTxPower();
+            //            }
+            //            else
+            //                this.showLogMessage( error);
+            //        }.bind(this));
+            //    else
+            //        setChannelTxPower();
+            //}.bind(this);
 
-            var setChannelTxPower = function () {
-                if (parameters.channelTxPower)
-                    this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
-                        if (!error) {
-                            this.showLogMessage( response.toString());
-                            setChannelSearchTimeout();
-                        }
-                        else
-                            this.showLogMessage( error);
-                    }.bind(this));
-                else
-                    setChannelSearchTimeout();
-            }.bind(this);
+            //var setChannelTxPower = function () {
+            //    if (parameters.channelTxPower)
+            //        this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
+            //            if (!error) {
+            //                this.showLogMessage( response.toString());
+            //                setChannelSearchTimeout();
+            //            }
+            //            else
+            //                this.showLogMessage( error);
+            //        }.bind(this));
+            //    else
+            //        setChannelSearchTimeout();
+            //}.bind(this);
 
             // Optional
 
