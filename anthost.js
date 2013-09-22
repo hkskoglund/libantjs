@@ -71,25 +71,10 @@ var
 
     ChannelResponseMessage = require('messages/from/ChannelResponseMessage'),
     ChannelStatusMessage = require('messages/from/ChannelStatusMessage'),
-
-//    FrameTransform = require('./messages/FrameTransform.js'), // Add SYNC LENGTH and CRC
-//    DeFrameTransform = require('./messages/DeFrameTransform.js'), // Maybe remove SYNC and CRC and verify message, for now  -> just echo
-//        
-    // Parsing of ANT messages received
-   // ANTParser = require('./antparser.js'), // Maybe: move to configuration file
-        
-    ChannelId = require('messages/channelId'),
+    
+    ChannelId = require('messages/channelId');
 
   //  DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
-
-    //runFromCommandLine = (require.main === module) ? true : false;
-    
-    runFromCommandLine = true;
-        
-  //  WebSocketManager = require('./profiles/WebSocketManager.js');
-        
- //   hostCommander = require('commander');
-
 
 // Host for USB ANT communication
 function Host(options) {
@@ -97,8 +82,6 @@ function Host(options) {
     
     this._channel = []; // Alternative new Array(), jshint recommends []
     this._channelStatus = {};
-
-
 
     this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
     this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
@@ -151,8 +134,6 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
     } else
         this.showLogMessage( 'No channel on host is associated with ' + channelResponse.toString());
 };
-
-
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
@@ -493,29 +474,8 @@ Host.prototype.init = function (options, _initCB) {
         product = options.pid || 4104;
     }
 
-    process.on('SIGINT', function _sigintCB() {
-        this.exit(function _exitCB(error) {
-            if (typeof this.webSocketManager !== "undefined") {
-                       this.showLogMessage("Closing websocket server");
-                        this.webSocketManager.close();
-                 }
-            //console.log("SIGINT");
-            //console.trace();
-            if (!error)
-                this.showLogMessage("USB connection to ANT device closed. Exiting.");
-            _initCB(error);
-        }.bind(this));
-    }.bind(this));
-
-   // this.webSocketManager = new WebSocketManager("localhost", 8093);
-   
-
     this.usb = new USBDevice();
     this.usb.setLogging(options.log_usb);
-
-
-   // this.addListener(Host.prototype.EVENT.LOG_MESSAGE, this.showLogMessage);
-
 
     this.usb.init(vendor, product, this, function _usbInitCB(error) {
 
@@ -638,8 +598,6 @@ Host.prototype.init = function (options, _initCB) {
         // Normally get a timeout after draining 
         if (this.usb.isTimeoutError(error)) {
 
-        
-
             this.usb.listen(function _USBListenCB(error) {
 
                 if (error)
@@ -648,58 +606,57 @@ Host.prototype.init = function (options, _initCB) {
 
                 else {
 
-                    resetCapabilitiesLibConfig(function (error) {
-                        if (!error) {
-                            var HRMChannel = new DeviceProfile_HRM();
-                            HRMChannel.addListener(Host.prototype.EVENT.PAGE, function (page) { this.webSocketManager.broadcast(page); }.bind(this));
-                            //HRMChannel.broadcastHandler = function (broadcast) {
-
-                            //}
-
-
-                            //HRMChannel.addConfiguration("slave", {
-                            //    networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
-                            //    //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-                            //    channelType: "slave",
-                            //    channelId:  { deviceNumber : '*', deviceType : '*', transmissionType : '*' },
-                            //    RFfrequency: 57,     // 2457 Mhz ANT +
-                            //    LPsearchTimeout: 24, // 60 seconds
-                            //    HPsearchTimeout: 10, // 25 seconds n*2.5 s
-                            //    //transmitPower: 3,
-                            //    //channelTxPower : 3,
-                            //    channelPeriod: 8070, // HRM
-                            //    //channelPeriod : 8086, //SPDCAD
-                            //    proximitySearch : 10   // 0 - disabled 1 (nearest) - 10 (farthest)
-
-                            //});
-                            //console.log("Test channel", HRMChannel);
-                            this.establishChannel(2, 1, "slave", HRMChannel, function (error) {
-                                if (!error)
-                                    //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
-                                    //    if (!error)
-                                    _initCB();
-                                    //    else
-                                    //        _initCB(error);
-                                    //}.bind(this));
-                                else
-                                    _initCB(error);
-                            }.bind(this));
-                        } else
-                            _initCB(error);
+                    resetCapabilitiesLibConfig(_initCB);
+//                    function (error) {
+//                        if (!error) {
+//                            var HRMChannel = new DeviceProfile_HRM();
+//                            HRMChannel.addListener(Host.prototype.EVENT.PAGE, function (page) { this.webSocketManager.broadcast(page); }.bind(this));
+//                            //HRMChannel.broadcastHandler = function (broadcast) {
+//
+//                            //}
+//
+//
+//                            //HRMChannel.addConfiguration("slave", {
+//                            //    networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
+//                            //    //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+//                            //    channelType: "slave",
+//                            //    channelId:  { deviceNumber : '*', deviceType : '*', transmissionType : '*' },
+//                            //    RFfrequency: 57,     // 2457 Mhz ANT +
+//                            //    LPsearchTimeout: 24, // 60 seconds
+//                            //    HPsearchTimeout: 10, // 25 seconds n*2.5 s
+//                            //    //transmitPower: 3,
+//                            //    //channelTxPower : 3,
+//                            //    channelPeriod: 8070, // HRM
+//                            //    //channelPeriod : 8086, //SPDCAD
+//                            //    proximitySearch : 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+//
+//                            //});
+//                            //console.log("Test channel", HRMChannel);
+//                            this.establishChannel(2, 1, "slave", HRMChannel, function (error) {
+//                                if (!error)
+//                                    //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
+//                                    //    if (!error)
+//                                    _initCB();
+//                                    //    else
+//                                    //        _initCB(error);
+//                                    //}.bind(this));
+//                                else
+//                                    _initCB(error);
+//                            }.bind(this));
+//                        } else
+//                            _initCB(error);
                     }.bind(this));
                 }
             }.bind(this));
-        } else if (runFromCommandLine && error)
-            process.emit('SIGINT');
+        } 
        
     }.bind(this));
 
 };
 
-// Exit USB device
+// Exit hpst
 Host.prototype.exit = function (callback) {
    
-
     this.usb.exit(callback);
 
 };
@@ -2020,48 +1977,48 @@ Host.prototype.getChannelStatusAll = function (callback) {
         sendBurst();
     };
 
-    if (runFromCommandLine) {
-       
-        var noopIntervalID = setInterval(function _noop() { }, 1000 * 60 * 60 * 24);
-        var testCounter = 0;
-        var host = new Host();
-        host.init({
-            vid: 4047,
-            pid: 4104,
-            libconfig: "channelid,rssi,rxtimestamp",
-            //configuration : {
-            //    slaveANTPLUS_ANY: {
-            //        networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
-            //        channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            //        channelId: new ChannelId(ChannelId.prototype.ANY_DEVICE_NUMBER, ChannelId.prototype.ANY_DEVICE_TYPE, ChannelId.prototype.ANY_TRANSMISSION_TYPE),
-            //        RFfrequency: 57,     // 2457 Mhz ANT +
-            //        LPsearchTimeout: 24, // 60 seconds
-            //        HPsearchTimeout: 10, // 25 seconds n*2.5 s
-            //        transmitPower: 3,
-            //        channelPeriod: 8070, // HRM
-            //    }
-            //},
-            //establish : [{
-            //    channel : 0,
-            //    network: 0,
-            //    configuration: "slaveANTPLUS_ANY"
-            //    }]
-               
-                    
-        }, function (error) {
-
-            if (error) {
-                host.emit(Host.prototype.EVENT.ERROR, error);
-                host.usb.on('closed', function () {
-                    clearInterval(noopIntervalID);
-                });
-            } else {
-                //console.log("Host callback");
-                //console.trace();
-            }
-           
-        });
-    }
+//    if (runFromCommandLine) {
+//       
+//        var noopIntervalID = setInterval(function _noop() { }, 1000 * 60 * 60 * 24);
+//        var testCounter = 0;
+//        var host = new Host();
+//        host.init({
+//            vid: 4047,
+//            pid: 4104,
+//            libconfig: "channelid,rssi,rxtimestamp",
+//            //configuration : {
+//            //    slaveANTPLUS_ANY: {
+//            //        networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
+//            //        channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+//            //        channelId: new ChannelId(ChannelId.prototype.ANY_DEVICE_NUMBER, ChannelId.prototype.ANY_DEVICE_TYPE, ChannelId.prototype.ANY_TRANSMISSION_TYPE),
+//            //        RFfrequency: 57,     // 2457 Mhz ANT +
+//            //        LPsearchTimeout: 24, // 60 seconds
+//            //        HPsearchTimeout: 10, // 25 seconds n*2.5 s
+//            //        transmitPower: 3,
+//            //        channelPeriod: 8070, // HRM
+//            //    }
+//            //},
+//            //establish : [{
+//            //    channel : 0,
+//            //    network: 0,
+//            //    configuration: "slaveANTPLUS_ANY"
+//            //    }]
+//               
+//                    
+//        }, function (error) {
+//
+//            if (error) {
+//                host.emit(Host.prototype.EVENT.ERROR, error);
+//                host.usb.on('closed', function () {
+//                    clearInterval(noopIntervalID);
+//                });
+//            } else {
+//                //console.log("Host callback");
+//                //console.trace();
+//            }
+//           
+//        });
+//    }
 
     module.exports = Host;
     
