@@ -450,8 +450,10 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     }.bind(this));
 };
 
-// Initializes USB device
+// Initializes Host
 Host.prototype.init = function (options, _initCB) {
+    
+    var usbInitCB = 
 
     //console.trace();
     // options : {
@@ -595,9 +597,6 @@ Host.prototype.init = function (options, _initCB) {
 
         }.bind(this);
 
-        // Normally get a timeout after draining 
-        if (this.usb.isTimeoutError(error)) {
-
             this.usb.listen(function _USBListenCB(error) {
 
                 if (error)
@@ -607,54 +606,15 @@ Host.prototype.init = function (options, _initCB) {
                 else {
 
                     resetCapabilitiesLibConfig(_initCB);
-//                    function (error) {
-//                        if (!error) {
-//                            var HRMChannel = new DeviceProfile_HRM();
-//                            HRMChannel.addListener(Host.prototype.EVENT.PAGE, function (page) { this.webSocketManager.broadcast(page); }.bind(this));
-//                            //HRMChannel.broadcastHandler = function (broadcast) {
-//
-//                            //}
-//
-//
-//                            //HRMChannel.addConfiguration("slave", {
-//                            //    networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
-//                            //    //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-//                            //    channelType: "slave",
-//                            //    channelId:  { deviceNumber : '*', deviceType : '*', transmissionType : '*' },
-//                            //    RFfrequency: 57,     // 2457 Mhz ANT +
-//                            //    LPsearchTimeout: 24, // 60 seconds
-//                            //    HPsearchTimeout: 10, // 25 seconds n*2.5 s
-//                            //    //transmitPower: 3,
-//                            //    //channelTxPower : 3,
-//                            //    channelPeriod: 8070, // HRM
-//                            //    //channelPeriod : 8086, //SPDCAD
-//                            //    proximitySearch : 10   // 0 - disabled 1 (nearest) - 10 (farthest)
-//
-//                            //});
-//                            //console.log("Test channel", HRMChannel);
-//                            this.establishChannel(2, 1, "slave", HRMChannel, function (error) {
-//                                if (!error)
-//                                    //this.establishChannel(0, 0, "slave", HRMChannel, function (error) {
-//                                    //    if (!error)
-//                                    _initCB();
-//                                    //    else
-//                                    //        _initCB(error);
-//                                    //}.bind(this));
-//                                else
-//                                    _initCB(error);
-//                            }.bind(this));
-//                        } else
-//                            _initCB(error);
-                    }.bind(this));
-                }
+
+                };
             }.bind(this));
-        } 
        
     }.bind(this));
 
 };
 
-// Exit hpst
+// Exit host
 Host.prototype.exit = function (callback) {
    
     this.usb.exit(callback);
@@ -1316,9 +1276,6 @@ function sendMessage(message,event,callback) {
 //        });
 //};
 
-
-
-
 Host.prototype.getChannelStatusAll = function (callback) {
     var channelNumber = 0,
         msg;
@@ -1443,7 +1400,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
     //};
 
-
 // Used to validate configuration commands 
     function validateResponseNoError(message,msgRequestId) {
         //console.log("args", arguments);
@@ -1508,7 +1464,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
         
     };
 
-
 /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
 "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
 */
@@ -1544,7 +1499,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
             sendMessage.bind(this)(configurationMsg, ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, callback);
 
     };
-
 
     Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
 
