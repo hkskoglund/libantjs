@@ -20,6 +20,7 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    console.log("__dirname", __dirname);
     
 var
     //events = require('events'),
@@ -28,8 +29,6 @@ var
    // USBDevice = require('./USBNode.js'), // Change to appropiate device, maybe : move to configuration file
     Channel = require('Channel'),
     ANTMessage = require('messages/ANTMessage'),
-
-    //Duplex = require('stream').Duplex,
 
     // Control ANT
     ResetSystemMessage = require('messages/to/ResetSystemMessage'),
