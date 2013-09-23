@@ -83,7 +83,12 @@ function Host(options) {
 
     this._mutex = {};
 
+    // Callbacks when response is received for a command
     this.callback = {};
+    
+    // Timeouts for expected response
+    this.timeout = {};
+    
 }
 
 //Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
@@ -586,7 +591,7 @@ Host.prototype.init = function (options, _initCB) {
             // Binding parse callback to this/host, otherwise this is undefined when
             // called from listen in strict mode and this cannot be used in parse
             
-            this.usb.listen(this.parse.bind(this));
+            this.usb.listen(this.RXparse.bind(this));
             
             resetCapabilitiesLibConfig(_initCB);
         }
@@ -609,8 +614,8 @@ Host.prototype.exit = function (callback) {
 
 };
 
-Host.prototype.parse = function (error,data) {
-    console.log("Parse",arguments);
+Host.prototype.RXparse = function (error,data) {
+    
     //console.time('parse');
    
     var notification;
@@ -799,6 +804,15 @@ Host.prototype.parse = function (error,data) {
         // Notifications
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
+            
+            console.timeEnd('resetSystem');
+            
+            if (this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]) {
+              clearTimeout(this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]);
+                delete this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
+            }
+            else
+              this.showLogMessage('warn','No timeout registered for response time for reset command');
 
             notification = new NotificationStartup(data);
             
@@ -812,7 +826,7 @@ Host.prototype.parse = function (error,data) {
                 
              msgCallback = this.callback[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
                 
-             var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing with callbacks...
+             var RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing
                      
              setTimeout(function () {
                  delete this.callback[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
@@ -823,16 +837,16 @@ Host.prototype.parse = function (error,data) {
             }
 
             break;
-//
-//        case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
-//
-//            notification = new NotificationSerialError(data);
-//            console.log("Notification serial error: ",notification.toString());
-//
-////            if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_SERIAL_ERROR,notification))
-////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
-//
-//            break;
+
+        case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
+
+            notification = new NotificationSerialError(data);
+            this.showLogMessage('log',"Notification serial error: ",notification.toString());
+
+//            if (!this.emit(ParseANTResponse.prototype.EVENT.NOTIFICATION_SERIAL_ERROR,notification))
+//                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: "+notification.toString());
+
+            break;
 //
 //            // Channel event or responses
 //
@@ -1023,22 +1037,27 @@ Host.prototype.parse = function (error,data) {
 // Send a reset device command
 Host.prototype.resetSystem = function (callback) {
 
-var msg = new ResetSystemMessage();
+var msg = new ResetSystemMessage(),
+    RESPONSE_TIMEOUT = 75 ;
 
-//    var sendMessageCB = function (error,notification) {
-//        setTimeout(callback.bind(this), RESET_DELAY_TIMEOUT, error, notification);
-//    }.bind(this);
-//    
-    // Register callback for reset system, its fired when notification startup is received from device in parse
+  
+    // Register callback for reset system command, its fired when notification startup is received from device in parse
+    // Callbacks always follow the function (error,response) callback pattern
     
      if (typeof this.callback[ANTMessage.prototype.MESSAGE.RESET_SYSTEM] === "undefined")
       this.callback[ANTMessage.prototype.MESSAGE.RESET_SYSTEM] = callback;
     else
     {
-        this.showLogMessage('log','Awaiting response for a previous resetSystem message, cannot send another');
+       // this.showLogMessage('log','Awaiting response for a previous resetSystem message, this request is ignored');
+        callback(new Error('Awaiting response for a previous resetSystem message, this request is ignored'));
         return;
     }
     
+    console.time('resetSystem');
+    this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM] = setTimeout(function ()
+                                                                         {
+                                                                             this.showLogMessage('warn','No notification startup response received in '+RESPONSE_TIMEOUT+' ms');
+                                                                         }.bind(this),RESPONSE_TIMEOUT);
     sendMessage.bind(this)(msg, function (error) { 
                                     if (error)
                                         this.showLogMessage('log','Failed to send reset system comand');
@@ -1245,6 +1264,7 @@ function sendMessage(message,callback) {
 
      var usbTransferCB = function (error)
                           {
+                              //console.timeEnd('sendMessageUSBtransfer');
                               if (error)
                                   this.showLogMessage('error','TX failed of '+message.toString());
                               
@@ -1259,7 +1279,7 @@ function sendMessage(message,callback) {
 //        if (!this.push(message))
 //            this.showLogMessage('log','TX stream indicates overflow, attempt to push data beyond highWaterMark');
                     
-        
+        //console.time('sendMessageUSBtransfer');
         this.usb.transfer(message.getRawMessage(),usbTransferCB);
         
 //            // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
