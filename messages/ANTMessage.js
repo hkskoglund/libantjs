@@ -1,4 +1,5 @@
 "use strict";
+
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -20,7 +21,7 @@ function ANTMessage(data) {
         this.SYNC = data[0];
         this.length = data[1];
         this.id = data[2];
-        this.content = data.slice(3, 3 + this.length);
+        this.content = data.subarray(3, 3 + this.length);
         //console.log("CONTENT", this.content);
         this.CRC = data[3 + this.length];
     } 
@@ -133,7 +134,7 @@ ANTMessage.prototype.getRawMessage = function () {
     //var checksum = 0xFF;
     //this.checksum = this.getCRC(this.buffer);
     //console.log("SLICE",standardMessage.slice(0,content_len+3),content_len);
-    this.checksum = this.getCRC(standardMessage.slice(0,content_len+3));
+    this.checksum = this.getCRC(standardMessage.subarray(0,content_len+3));
     //console.log("CHECKSUM",this.checksum);
     standardMessage[content_len+3] = this.checksum;
 

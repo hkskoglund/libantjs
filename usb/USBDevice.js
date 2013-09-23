@@ -40,7 +40,7 @@ USBDevice.prototype.setBurstMode = function (value) {
 };
 
 
-USBDevice.prototype.init = function (idVendor, idProduct,rxParser,callback) {
+USBDevice.prototype.init = function (options,callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
 };
 
@@ -51,17 +51,28 @@ USBDevice.prototype.exit = function (callback) {
 
 USBDevice.prototype.setLogging = function (logging) {
     this._logging = logging;
+    if (this._logging)
+        this.log('log','USB logging ON');
+    else
+        this.log('log','USB logging OFF');
 };
 
-USBDevice.prototype.showLogMessage = function () {
+USBDevice.prototype.log = function (type) {
+    
     if (this._logging) {
-        if (arguments.length === 1)
-            console.log(Date.now(), arguments[0]);
-        else
         if (arguments.length === 2)
-            console.log(Date.now(), arguments[0], arguments[1]);
+            console[type](Date.now(), arguments[1]);
         else
-            console.log(Date.now(), arguments);
+            if (arguments.length === 3)
+                console[type](Date.now(), arguments[1], arguments[2]);
+        else
+            if (arguments.length === 4)
+                console[type](Date.now(), arguments[1], arguments[2], arguments[3]);
+         else
+            if (arguments.length === 5)
+                console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);
+        else
+            console[type](Date.now(), arguments);
     }
 };
 
