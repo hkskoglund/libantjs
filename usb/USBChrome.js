@@ -1,7 +1,9 @@
-"use strict";
+/* global chrome: true */
+/* global Uint8Array: true */
+/* global define: true */
 
 define(function (require, exports, module) {
-    
+   "use strict"; 
     var USBDevice = require('usb/USBDevice');
        
     
@@ -79,19 +81,20 @@ USBChrome.prototype.listen = function (callback) {
         }
 
         //console.log("About to retry listen this is ",this);
-        retry.bind(this)();
+        retry.call(this);
 
     }.bind(this);
 
-    function retry() {
+   var retry = function () {
         //console.time('RX');
        // this.log.log('log',"retry", this.connectionHandle, RXinfo, onRX);
           
         chrome.usb.bulkTransfer(this.connectionHandle,RXinfo, onRX);
-    }
+    }.bind(this);
+    
  this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
  
-    retry.bind(this)();
+    retry.call(this);
 
     
 
