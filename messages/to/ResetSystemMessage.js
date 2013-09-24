@@ -11,6 +11,10 @@ function ResetSystemMessage() {
 
     this.id = ANTMessage.prototype.MESSAGE.RESET_SYSTEM;
     this.name = "Reset System";
+    this.type = ANTMessage.prototype.TYPE.REQUEST;
+    
+    this.responseId = ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP;
+    
     
     this.setContent(ANTMessage.prototype.FILLER_BYTE_BUFFER);
     //this.create();

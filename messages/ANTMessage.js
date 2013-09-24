@@ -34,7 +34,23 @@ ANTMessage.prototype.FILLER_BYTE_BUFFER = new ArrayBuffer(1);
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);
 };
+    
+ANTMessage.prototype.TYPE = {
+    REQUEST : "request",
+    RESPONSE : "response" };
+    
+ANTMessage.prototype.getType = function ()
+{
+    return this.type;
+}
 
+ANTMessage.prototype.isResponse = function ()
+{
+    if (this.getType() === ANTMessage.prototype.TYPE.RESPONSE)
+        return true;
+    else
+        return false;
+}
 
 ANTMessage.prototype.toString = function () {
     return "ANT message:" +
@@ -42,7 +58,8 @@ ANTMessage.prototype.toString = function () {
         " length 0x" + this.length.toString(16) + " = "+this.length+
         " id 0x" + this.id.toString(16) + " = "+this.id+
         " content " + this.content + 
-        " CRC 0x" + this.CRC.toString(16)+" = "+this.CRC;
+        " CRC 0x" + this.CRC.toString(16)+" = "+this.CRC +
+        " type "+ this.getType();
 };
 
 ANTMessage.prototype.getContent = function () {

@@ -15,6 +15,10 @@ function NotificationStartup(data) {
 
     this.name = "Notification: Startup";
     this.id = ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP;
+   
+    this.type = ANTMessage.prototype.TYPE.RESPONSE;
+    
+    this.requestId = ANTMessage.prototype.MESSAGE.RESET_SYSTEM;
 
    // console.log("Created NotificationStartup", this);
 }
