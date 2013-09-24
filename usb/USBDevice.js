@@ -2,6 +2,8 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    
+    var Logger = require('logger');
 
 //var  util = require('util'),
 //    Duplex = require('stream').Duplex;
@@ -14,6 +16,9 @@ function USBDevice(options) {
     // Stream inherits from event emitter
 //    Duplex.call(this, options);
 //    this._burstBuffer = new Buffer(0);
+    this.options = options;
+    this.log = new Logger(options.log);
+  
 }
 
 //USBDevice.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : USBDevice,
@@ -34,13 +39,13 @@ USBDevice.prototype.EVENT = {
    
 };
 
+USBDevice.prototype.ANT_DEVICE_TIMEOUT = 12; // 11.11 ms to transfer 64 bytes (max. endpoint size) at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
 
 USBDevice.prototype.setBurstMode = function (value) {
     this.burstMode = value;
 };
 
-
-USBDevice.prototype.init = function (options,callback) {
+USBDevice.prototype.init = function (callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
 };
 
@@ -49,32 +54,6 @@ USBDevice.prototype.exit = function (callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
 };
 
-USBDevice.prototype.setLogging = function (logging) {
-    this._logging = logging;
-    if (this._logging)
-        this.log('log','USB logging ON');
-    else
-        this.log('log','USB logging OFF');
-};
-
-USBDevice.prototype.log = function (type) {
-    
-    if (this._logging) {
-        if (arguments.length === 2)
-            console[type](Date.now(), arguments[1]);
-        else
-            if (arguments.length === 3)
-                console[type](Date.now(), arguments[1], arguments[2]);
-        else
-            if (arguments.length === 4)
-                console[type](Date.now(), arguments[1], arguments[2], arguments[3]);
-         else
-            if (arguments.length === 5)
-                console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);
-        else
-            console[type](Date.now(), arguments);
-    }
-};
 
 // Sets device timeout in ms.
 USBDevice.prototype.setDeviceTimeout = function (timeout) {

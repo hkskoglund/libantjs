@@ -70,7 +70,7 @@ USBNode.prototype = Object.create(USBDevice.prototype, { constructor : { value :
 
 USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;  // Based on info in nRF24AP2 data sheet
 
-USBNode.prototype.ANT_DEVICE_TIMEOUT = 6; // 11.11 ms to transfer 64 (max. endpoint size) bytes at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms 
+
 
 USBNode.prototype.getINEndpointPacketSize = function () {
     return this.inEP.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;

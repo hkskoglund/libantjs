@@ -3,8 +3,12 @@
 define(function (require, exports, module) {
     
     var USBDevice = require('usb/USBDevice');
+       
     
-function USBChrome() {
+function USBChrome(options) {
+  
+    USBDevice.call(this,options);
+    
 }
 
 USBChrome.prototype = Object.create(USBDevice.prototype, { constructor : { value : USBChrome,
@@ -33,7 +37,7 @@ USBChrome.prototype.transfer = function (chunk, callback) {
             callback();
         }
         else {
-            this.log('error', "Tx failed", TXinformation);
+            this.log.log('error', "Tx failed", TXinformation);
             callback(new Error(chrome.runtime.lastError));
         }
 
@@ -46,7 +50,7 @@ USBChrome.prototype.transfer = function (chunk, callback) {
         "data" : chunk
     };
 
-    this.log('log',"TX ", TXinfo);
+    this.log.log('log',"TX ", TXinfo);
     chrome.usb.bulkTransfer(this.connectionHandle, TXinfo, onTX);
 };
 
@@ -66,11 +70,11 @@ USBChrome.prototype.listen = function (callback) {
         //console.timeEnd('RX');
         if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
             data =new Uint8Array(RXinfo.data);
-            this.log('log', "Rx", RXinfo, data );
+            this.log.log('log', "Rx", RXinfo, data );
             callback(undefined,data);
         }
         else {
-            this.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
+            this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
             callback(new Error(chrome.runtime.lastError));
         }
 
@@ -81,11 +85,11 @@ USBChrome.prototype.listen = function (callback) {
 
     function retry() {
         //console.time('RX');
-       // this.log('log',"retry", this.connectionHandle, RXinfo, onRX);
+       // this.log.log('log',"retry", this.connectionHandle, RXinfo, onRX);
           
         chrome.usb.bulkTransfer(this.connectionHandle,RXinfo, onRX);
     }
- this.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
+ this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
  
     retry.bind(this)();
 
@@ -94,11 +98,11 @@ USBChrome.prototype.listen = function (callback) {
 
 };
 
-USBChrome.prototype.init = function (options, callback) {
+USBChrome.prototype.init = function (callback) {
     
 //    var onData = function (error, data) {
 //        
-//        this.log('log', "Parse RX", error, data);
+//        this.log.log('log', "Parse RX", error, data);
 //        
 //        if (typeof data === "undefined")
 //            return;
@@ -108,11 +112,11 @@ USBChrome.prototype.init = function (options, callback) {
 //        switch (msgId) {
 //                
 //            case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
-//                this.log('log',"Notification startup");
+//                this.log.log('log',"Notification startup");
 //                break;
 //                
 //            default:
-//                this.log('error',"Not implemented parsing of msgId", msgId);
+//                this.log.log('error',"Not implemented parsing of msgId", msgId);
 //                break;
 //        }
 //
@@ -120,14 +124,14 @@ USBChrome.prototype.init = function (options, callback) {
 
     var onInterfaceClaimed = function () {
         
-        this.log('log',"Interface claimed", this.inEP, this.outEP);
+        this.log.log('log',"Interface claimed", this.inEP, this.outEP);
        
         callback();
     }.bind(this);
 
     var onInterfaceFound = function (interfaces) {
         if (interfaces && interfaces.length > 0) {
-            this.log('log',"Interface", interfaces[0]);
+            this.log.log('log',"Interface", interfaces[0]);
             if (interfaces[0].endpoints && interfaces[0].endpoints.length > 1) {
                 this.inEP = interfaces[0].endpoints[0];
                 this.outEP = interfaces[0].endpoints[1];
@@ -139,11 +143,11 @@ USBChrome.prototype.init = function (options, callback) {
     }.bind(this),
 
      onDeviceFound = function (devices) {
-        this.log('log',"devices", devices);
+        this.log.log('log',"devices", devices);
         //var devices = devices;
         if (devices) {
             if (devices.length > 0) {
-                this.log('log',"Device(s) found: " + devices.length);
+                this.log.log('log',"Device(s) found: " + devices.length);
                 this.connectionHandle = devices[0];
                 // chrome.usb.listInterfaces(ConnectionHandle handle, function callback)
                 chrome.usb.listInterfaces(devices[0], onInterfaceFound);
@@ -154,9 +158,9 @@ USBChrome.prototype.init = function (options, callback) {
        
     }.bind(this);
     
-    this.setLogging(options.logging);
+    
 
-    chrome.usb.findDevices({ "vendorId": options.vid, "productId": options.pid}, onDeviceFound);
+    chrome.usb.findDevices({ "vendorId": this.options.vid, "productId": this.options.pid}, onDeviceFound);
 };
     
     return USBChrome;

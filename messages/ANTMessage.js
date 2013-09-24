@@ -231,7 +231,7 @@ ANTMessage.prototype.MESSAGE = {
         sleep_message: { id: 0xc5, friendly: "Sleep message" },
 
     // Notification messages 
-        //0x6f: "Notification: Start up",
+        0x6F: "Notification: Start up",
         NOTIFICATION_STARTUP: 0x6F,
 
        // 0xae: "Notification: Serial error",
