@@ -14,6 +14,8 @@ function CapabilitiesMessage() {
 
     this.name = "Capabilities";
     this.id = ANTMessage.prototype.MESSAGE.CAPABILITIES;
+    this.type = ANTMessage.prototype.TYPE.RESPONSE;
+    this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
 
    // console.log("Created CapabilitiesMessage", this);
 }

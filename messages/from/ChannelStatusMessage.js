@@ -16,6 +16,8 @@ function ChannelStatusMessage() {
 
     this.name = "Channel status";
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_STATUS;
+    this.type = ANTMessage.prototype.TYPE.RESPONSE;
+    this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
 
     // console.log("Created ChannelStatusMessage", this);
 }

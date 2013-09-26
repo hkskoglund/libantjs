@@ -66,35 +66,44 @@ USBChrome.prototype.listen = function (callback) {
         "length": this.inEP.maximumPacketSize
     };
 
-    var onRX = function (RXinfo) {
+    var onRX = function _onRX(RXinfo) {
+          
+            var data;
+            //console.timeEnd('RX');
+            if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
+                data =new Uint8Array(RXinfo.data);
+                this.log.log('log', "Rx", RXinfo, data );
+               try {
+                  callback(undefined,data);
+                } catch (e)
+                {
+                 this.log.log('error','Got onRX error',e,e.stack);
+                }
+                     
+                 
+            }
+            else {
+                this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
+                callback(new Error(chrome.runtime.lastError.message));
+            }
+     
+         retry();
+         
         
-        var data;
-        //console.timeEnd('RX');
-        if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
-            data =new Uint8Array(RXinfo.data);
-            this.log.log('log', "Rx", RXinfo, data );
-            callback(undefined,data);
-        }
-        else {
-            this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
-            callback(new Error(chrome.runtime.lastError));
-        }
-
-        //console.log("About to retry listen this is ",this);
-        retry.call(this);
-
     }.bind(this);
 
-   var retry = function () {
+   var retry = function _retryBulkTransfer() {
         //console.time('RX');
        // this.log.log('log',"retry", this.connectionHandle, RXinfo, onRX);
-          
-        chrome.usb.bulkTransfer(this.connectionHandle,RXinfo, onRX);
+        
+                chrome.usb.bulkTransfer(this.connectionHandle,RXinfo, onRX);
+       
+        
     }.bind(this);
     
  this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
  
-    retry.call(this);
+    retry();
 
     
 

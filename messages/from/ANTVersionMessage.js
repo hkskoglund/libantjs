@@ -15,6 +15,8 @@ function ANTVersionMessage() {
 
     this.name = "ANT Version";
     this.id = ANTMessage.prototype.MESSAGE.ANT_VERSION;
+    this.type = ANTMessage.prototype.TYPE.RESPONSE;
+    this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
 
    // console.log("Created ANTVersionMessage", this);
 }
@@ -24,8 +26,14 @@ ANTVersionMessage.prototype = Object.create(ANTMessage.prototype);
 ANTVersionMessage.prototype.constructor = ANTVersionMessage;
 
 ANTVersionMessage.prototype.parse = function () {
-   
-      this.version = this.content.slice(0,-1).toString('utf8'); // Content is a 11 - bytes null terminated string - strip off the null
+   var version = this.content.subarray(0,-1),
+       versionStr = ''; // Content is a 11 - bytes null terminated string - strip off the null
+      //this.version = .toString('utf8'); // Node 0.10 
+    
+    for (var i=0; i<version.length; i++) 
+            versionStr += String.fromCharCode(version[i]);
+    
+    this.version = versionStr;
 
    // return this.message;
 
@@ -33,7 +41,7 @@ ANTVersionMessage.prototype.parse = function () {
 
 ANTVersionMessage.prototype.toString = function () {
     return this.name + " " + this.version;
-}
+};
 
 module.exports = ANTVersionMessage;
     return module.exports;

@@ -15,6 +15,8 @@ function ANTMessage(data) {
 
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
+    
+    
 
     if (data) {
         this.buffer = data;
@@ -251,26 +253,29 @@ ANTMessage.prototype.MESSAGE = {
         0x6F: "Notification: Start up",
         NOTIFICATION_STARTUP: 0x6F,
 
-       // 0xae: "Notification: Serial error",
+        0xAE: "Notification: Serial error",
         NOTIFICATION_SERIAL_ERROR: 0xAE,
 
     // Requested messages with REQUEST 0x4D 
     
+        0x3E : "ANT Version",
         ANT_VERSION:  0x3E,
 
-        //0x54: "Capabilities",
+        0x54: "Capabilities",
         CAPABILITIES:  0x54,
 
+        0x61: "Device Serial Number",
         DEVICE_SERIAL_NUMBER:  0x61,
 
         // Request/response
 
-        //0x4d: "Request",
+        0x4D: "Request",
         REQUEST: 0x4D,
 
-    //0x40: "Channel response/event",
+    0x40: "Channel response/event",
     CHANNEL_RESPONSE:  0x40,
     
+    0x52: "Channel Status",
     CHANNEL_STATUS: 0x52,
 
     // Config messages

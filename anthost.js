@@ -92,6 +92,9 @@ function Host() {
     // Timeouts for expected response
     this.timeout = {};
     
+    // Logging
+    this.log = new Logger(false);
+    
     // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc
     
         
@@ -152,8 +155,23 @@ function Host() {
   
     // Send a message, if a reply is not received, it will retry for 500ms. 
 this._sendMessage = function (message,callback) {
+    var timeMsg;
     
-  
+    if (message.id !== ANTMessage.prototype.MESSAGE.REQUEST) 
+       timeMsg = ANTMessage.prototype.MESSAGE[message.id];
+    
+    else {
+        this.log.log('log','Request for id ',message.responseId);
+        if (message.responseId)
+           timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
+        else
+            this.log.log('warn','Message has no responseId',message);
+    }
+    
+    if (timeMsg) {
+        this.log.log('log','Setting timer for ',timeMsg);
+        this.log.time(timeMsg);
+    }
 
 //    var timeoutRetryMessageID,
 //        timeoutMessageFailID,
@@ -248,7 +266,8 @@ this._sendMessage = function (message,callback) {
 //        if (!this.push(message))
 //            this.log.log('log','TX stream indicates overflow, attempt to push data beyond highWaterMark');
                     
-        //console.time('sendMessageUSBtransfer');
+        //this.log.time('sendMessageUSBtransfer');
+        this.log.time(ANTMessage.prototype.MESSAGE[message.id]);
         this.usb.transfer(message.getRawMessage(),usbTransferCB);
         
 //            // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
@@ -670,8 +689,10 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     
 // Initializes Host
 Host.prototype.init = function (options, initCB) {
+    // Logging
+    this.log.logging = options.log;
     
-    console.log("Host options",options);
+    this.log.log('log',"Host options",options);
     //console.trace();
     // options : {
     //   vid : 4047,
@@ -770,8 +791,7 @@ Host.prototype.init = function (options, initCB) {
     
     this.options = options;
     
-      // Logging
-    this.log = new Logger(options.log);
+    
         
     this.usb = options.usb;
    
@@ -790,7 +810,15 @@ Host.prototype.exit = function (callback) {
 
 Host.prototype.RXparse = function (error,data) {
     
-    //console.time('parse');
+    if (error) {
+        this.log.log('error',error);
+        //throw new Error(error);
+        return;
+    }
+    
+    //this.log.time('parse');
+    
+    
    
     var notification;
    
@@ -799,7 +827,8 @@ Host.prototype.RXparse = function (error,data) {
         length: data[1],
         id: data[2]
     };
-
+    
+   
     //var ANTmsg = new ANTMessage();
     //ANTmsg.setMessage(data, true);
     //if (ANTmsg.message)
@@ -872,7 +901,7 @@ Host.prototype.RXparse = function (error,data) {
 //
 //        //        if (ANTmsg.sequenceNr === 0x00) // First packet 
 //        //        {
-//        //            // console.time('burst');
+//        //            // this.log.time('burst');
 //        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
 //
 //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
@@ -979,11 +1008,8 @@ Host.prototype.RXparse = function (error,data) {
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
             
-            console.timeEnd('resetSystem');
-            
-            
-
             notification = new NotificationStartup(data);
+            this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
             this.log.log('log',notification.toString());
             this.lastNotificationStartup = notification;
             
@@ -1094,9 +1120,10 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
            
-            console.timeEnd('getChannelStatus');
+            
 
             var channelStatusMsg = new ChannelStatusMessage();
+            this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
             channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
             channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
@@ -1124,25 +1151,27 @@ Host.prototype.RXparse = function (error,data) {
 //
 //            // ANT device specific, i.e nRF24AP2
 //
-//        case ANTMessage.prototype.MESSAGE.ANT_VERSION:
-//
-//            var versionMsg = new ANTVersionMessage();
-//            versionMsg.setContent(data.slice(3, 3 + ANTmsg.length));
-//            versionMsg.parse();
-//
-////            if (!this.emit(ParseANTResponse.prototype.EVENT.ANT_VERSION, versionMsg))
-////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + versionMsg.toString());
-//
-//            break;
-//
+        case ANTMessage.prototype.MESSAGE.ANT_VERSION:
+
+            var versionMsg = new ANTVersionMessage();
+            this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
+            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+            versionMsg.parse();
+
+            this._responseCallback(versionMsg);
+
+            break;
+
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            console.timeEnd('getCapabilities');
+            
             var capabilitiesMsg = new CapabilitiesMessage();
+            this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
             capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
             capabilitiesMsg.parse();
             
             this.capabilities = capabilitiesMsg;
+            
             this.log.log('log',capabilitiesMsg.toString());
 
             this._responseCallback(capabilitiesMsg);
@@ -1170,8 +1199,9 @@ Host.prototype.RXparse = function (error,data) {
 
     var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
     if (data.length > nextExpectedSYNCIndex) {
+        
         // console.log(data.slice(nextExpectedSYNCIndex));
-        this.parse(data.slice(nextExpectedSYNCIndex));
+        this.RXparse(undefined,data.slice(nextExpectedSYNCIndex));
     }
 
 };
@@ -1185,7 +1215,7 @@ Host.prototype.resetSystem = function (callback) {
    
     if (this._setResponseCallback(msg,callback))
     {
-        console.time('resetSystem');
+        //this.log.time(msg.id);
         
         this._sendMessage(msg, function (error) { 
                                         if (error)
@@ -1208,20 +1238,20 @@ Host.prototype.getANTVersion = function (callback) {
 
     if (this._setResponseCallback(msg,callback))
     {
-        console.time('getANTVersion');
+       
         this._sendMessage(msg,  function (error) { if (error) this.log.log('error','Failed to send request for get ANT version',error); }.bind(this));
     }
        
 };
 
-// Send a request for device capabilities
+// Send a request for device capabilities◘
 Host.prototype.getCapabilities = function (callback) {
    
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
     
     if (this._setResponseCallback(msg,callback))
     {
-        console.time('getCapabilities');
+        
     this._sendMessage(msg, function (error) { if (error) this.log.log('error','Failed to send request for get capbilitites',error); }.bind(this));
     }
     
@@ -1299,7 +1329,6 @@ Host.prototype.getChannelStatus = function (channel, callback) {
     
     if (this._setResponseCallback(msg,callback))
     {
-        console.time('getChannelStatus');
         
         this._sendMessage(msg, function (error) { 
                                         if (error)

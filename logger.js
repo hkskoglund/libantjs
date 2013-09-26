@@ -7,21 +7,25 @@ define(function (require, exports, module) {
 
     function Logger(log)
     {
-        if (log)
-           this._logging = true;
-        else
-            this._logging = false;
-    }
         
-    Logger.prototype.set = function (log)
-    {
-        this._logging = log;
+        
+         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+        Object.defineProperty(this, "logging",
+                              { get : function(){ return this._logging; },
+                                set : function(newValue){ this._logging = newValue; } });
+        
+        if (log)
+           this.logging = true;
+        else
+            this.logging = false;
+       
     }
     
+        
     Logger.prototype.log = function (type)
     {
         //console.trace();
-        if (this._logging) {
+        if (this.logging) {
             if (arguments.length === 2)
                 console[type](Date.now(), arguments[1]);
             else
@@ -36,7 +40,20 @@ define(function (require, exports, module) {
             else
                 console[type](Date.now(), arguments);
         }
-    }
+    };
+    
+    Logger.prototype.time = function (name)
+    {
+        if (this.logging && console.time)
+            console.time(name);
+            
+    };
+    
+    Logger.prototype.timeEnd = function (name)
+    {
+        if (this.logging && console.timeEnd)
+                console.timeEnd(name);
+    };
 
     module.export = Logger;
     
