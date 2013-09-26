@@ -31,6 +31,7 @@ function ANTMessage(data) {
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
+ANTMessage.prototype.FILLER_BYTE = 0x00;
 ANTMessage.prototype.FILLER_BYTE_BUFFER = new ArrayBuffer(1);
 
 ANTMessage.prototype.isSYNCOK = function () {
@@ -44,7 +45,7 @@ ANTMessage.prototype.TYPE = {
 ANTMessage.prototype.getType = function ()
 {
     return this.type;
-}
+};
 
 ANTMessage.prototype.isResponse = function ()
 {
@@ -52,7 +53,7 @@ ANTMessage.prototype.isResponse = function ()
         return true;
     else
         return false;
-}
+};
 
 ANTMessage.prototype.toString = function () {
     return "ANT message:" +
@@ -272,11 +273,11 @@ ANTMessage.prototype.MESSAGE = {
         0x4D: "Request",
         REQUEST: 0x4D,
 
-    0x40: "Channel response/event",
-    CHANNEL_RESPONSE:  0x40,
+        0x40: "Channel response/RF event",
+        CHANNEL_RESPONSE:  0x40,
     
-    0x52: "Channel Status",
-    CHANNEL_STATUS: 0x52,
+        0x52: "Channel Status",
+        CHANNEL_STATUS: 0x52,
 
     // Config messages
     // All conf. commands receive a response, typically "RESPONSE_NO_ERROR"

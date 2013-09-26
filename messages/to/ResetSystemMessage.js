@@ -17,7 +17,7 @@ define(function (require, exports, module) {
         this.responseId = ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP;
         
         
-        this.setContent(ANTMessage.prototype.FILLER_BYTE_BUFFER);
+        this.setContent((new Uint8Array(1)).buffer);
         //this.create();
         //this.create(new Buffer([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]));
         // Seems like 24 bytes is tolerable, but 25 bytes gives notification "serial error" : message too large

@@ -11,6 +11,7 @@ function ChannelResponseMessage() {
 
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE;
     this.name = "Channel Response/RF event";
+    this.type = ANTMessage.prototype.TYPE.RESPONSE;
 
     //console.log("ChannelResponseMessage", this);
 
@@ -132,28 +133,28 @@ ChannelResponseMessage.prototype.getResponseOrEventMessage = function (messageId
         return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.content[2]];
     else
         return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[messageId];
-}
+};
 
 ChannelResponseMessage.prototype.getChannel = function () {
     return this.content[0];
-}
+};
 
 // Gets the initiating request message id
 ChannelResponseMessage.prototype.getRequestMessageId = function () {
     return this.content[1];
-}
+};
 
 ChannelResponseMessage.prototype.getMessageCode = function () {
     return this.content[2];
-}
+};
 
 ChannelResponseMessage.prototype.isRFEvent = function () {
     return (this.content[1] === 1);
-}
+};
 
 ChannelResponseMessage.prototype.isResponse = function () {
     return !this.isRFEvent();
-}
+};
 
 ChannelResponseMessage.prototype.parse = function () {
     var msg;
@@ -171,11 +172,11 @@ ChannelResponseMessage.prototype.parse = function () {
 
     this.message = { text: msg };
     
-}
+};
 
 ChannelResponseMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " "+this.message.text;
-}
+};
 
 module.exports = ChannelResponseMessage;
     return module.exports;

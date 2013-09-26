@@ -76,7 +76,6 @@ var
 
 // Host for USB ANT communication
 function Host() {
- 
     
     this._channel = []; // Alternative new Array(), jshint recommends []
     this._channelStatus = {};
@@ -99,13 +98,21 @@ function Host() {
     
         
  this._responseCallback = function (msg) {
-        
-        var msgCallback = this.callback[msg.id],
+     
+     var targetMessageId = msg.id;
+     
+     // Handle channel response
+     
+     if (targetMessageId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE) {
+         targetMessageId = msg.messageId; // Initiating message id, i.e libconfig
+         this.log.log('log','Initiating message id for channel response is ',targetMessageId);
+     }
+        var msgCallback = this.callback[targetMessageId],
             RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
         
-        if (this.timeout[msg.id]) {
-            clearTimeout(this.timeout[msg.id]);
-            delete this.timeout[msg.id];
+        if (this.timeout[targetMessageId]) {
+            clearTimeout(this.timeout[targetMessageId]);
+            delete this.timeout[targetMessageId];
         }
         else
           this.log.log('warn','No timeout registered for response '+msg.name);
@@ -116,11 +123,11 @@ function Host() {
         
          var cb = function ()
          {
-              delete this.callback[msg.id];
+              delete this.callback[targetMessageId];
               msgCallback(undefined,msg);
          }.bind(this);
             
-         if (msg.Id === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP)
+         if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP)
              setTimeout(cb,RESET_DELAY_TIMEOUT);
          else
              cb();
@@ -132,7 +139,7 @@ function Host() {
     // It also can be considered as a mutex - only allow send of request if there is no previously registered callback
     this._setResponseCallback = function (message,callback)
     {
-          var PROCESSING_DELAY = 60,
+          var PROCESSING_DELAY = 150,
               TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_DELAY,
               msgId = message.responseId;
         
@@ -161,7 +168,7 @@ this._sendMessage = function (message,callback) {
        timeMsg = ANTMessage.prototype.MESSAGE[message.id];
     
     else {
-        this.log.log('log','Request for id ',message.responseId);
+        this.log.log('log','Request for id ',message.responseId.toString(16));
         if (message.responseId)
            timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
         else
@@ -294,8 +301,8 @@ Host.prototype.VERSION = "0.1.0";
 // for event emitter
 Host.prototype.EVENT = {
 
-    LOG_MESSAGE: 'logMessage',
-    ERROR : 'error', 
+//    LOG_MESSAGE: 'logMessage',
+//    ERROR : 'error', 
 
     //SET_CHANNEL_ID: 'setChannelId',
 
@@ -638,50 +645,6 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     }.bind(this));
 };
     
-//     var doLibConfig = function (_doLibConfigCB) {
-//                if (!this.options || !this.capabilities)
-//                    _doLibConfigCB();
-//
-//                var libConfigOptions = this.options.libconfig,
-//                    libConfig, libConfigOptionsSplit;
-//
-//                if (typeof libConfigOptions === "undefined" || !this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
-//                    _doLibConfigCB();
-//
-//                libConfig = new LibConfig();
-//
-//
-//                if (typeof libConfigOptions === 'number')
-//                    libConfig.setFlagsByte(libConfigOptions);
-//
-//                else if (typeof libConfigOptions === 'string') {
-//
-//                    libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
-//
-//                    if (libConfigOptionsSplit.indexOf("channelid") !== -1)
-//                        libConfig.setEnableChannelId();
-//
-//                    if (libConfigOptionsSplit.indexOf("rssi") !== -1)
-//                        libConfig.setEnableRSSI();
-//
-//                    if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
-//                        libConfig.setEnableRXTimestamp();
-//                }
-//
-//                else _doLibConfigCB();
-//
-//                //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-//                this.libConfig(libConfig.getFlagsByte(),
-//                    function (error, serialNumberMsg) {
-//                        if (!error) {
-//                            this.libConfig = libConfig;
-//                            this.log.log('log', libConfig.toString());
-//                            _doLibConfigCB();
-//                        }
-//                        else
-//                            _doLibConfigCB(error);
-//                    }.bind(this));
-//            }.bind(this);
 
        
 
@@ -703,56 +666,101 @@ Host.prototype.init = function (options, initCB) {
     //   capabilities : true
     // }
     
+         var doLibConfig = function (_doLibConfigCB) {
+                if (!this.options || !this.capabilities)
+                    _doLibConfigCB();
+
+                var libConfigOptions = this.options.libconfig,
+                    libConfig, libConfigOptionsSplit;
+
+                if (typeof libConfigOptions === "undefined") {
+                    this.log.log('warn','No library configuration options specified for extended messaging');
+                    _doLibConfigCB();
+                    return;
+         }
+         
+          if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED) {
+              this.log.log('warn','Device does not have capability for extended messaging');
+                    _doLibConfigCB();
+                    return;
+          }
+         
+         
+                libConfig = new LibConfig();
+
+
+                if (typeof libConfigOptions === 'number')
+                    libConfig.setFlagsByte(libConfigOptions);
+
+                else if (typeof libConfigOptions === 'string') { // channelid, rssi, rxtimestamp
+
+                    libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
+
+                    if (libConfigOptionsSplit.indexOf("channelid") !== -1)
+                        libConfig.setEnableChannelId();
+
+                    if (libConfigOptionsSplit.indexOf("rssi") !== -1)
+                        libConfig.setEnableRSSI();
+
+                    if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
+                        libConfig.setEnableRXTimestamp();
+                }
+
+                else _doLibConfigCB();
+
+                //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
+                this.libConfig(libConfig.getFlagsByte(),
+                    function (error, serialNumberMsg) {
+                        if (!error) {
+                            this.libConfig = libConfig;
+                            this.log.log('log', libConfig.toString());
+                            _doLibConfigCB();
+                        }
+                        else
+                            _doLibConfigCB(error);
+                    }.bind(this));
+            }.bind(this);
+
+    
     var getANTVersionAndDeviceNumber = function (_getANTVersionAndDeviceNumberCB) {
                     this.getANTVersion(function (error, version) {
                         if (!error) {
                             this.log.log('log', version.toString());
 
                                 this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                                    if (!error) {
-                                        this.deviceSerialNumber = serialNumberMsg.serialNumber;
-                                        this.log.log('log', serialNumberMsg.toString());
-                                        //doLibConfig.call(this,function (error) {
-                                        //    getDeviceInfoCB(error);
-                                        //});
-                                        _getANTVersionAndDeviceNumberCB();
-                                        //callback();
-                                    } else
-                                        //initCB(error);
-                                        _getANTVersionAndDeviceNumberCB(error);
-                                }.bind(this));
-                        } else
-                            _getANTVersionAndDeviceNumberCB(error);
+                                    if (!error) 
+                                      this.log.log('log', serialNumberMsg.toString());
+                                    
+                                    _getANTVersionAndDeviceNumberCB(error);
+                               
                     }.bind(this));
-                }.bind(this);
+                   } else
+                       _getANTVersionAndDeviceNumberCB(error);
+        }.bind(this));
+    }.bind(this);
     
     var getDeviceInfo = function (getDeviceInfoCB) {
-
+        
                 this.getCapabilities(function (error, capabilities) {
                     if (!error) {
-                        
-                        //if (options.reset) {
-
+                     
+                      if (!options.reset) {
+                        // Get channel status if device is not reset
                         this.getChannelStatusAll(function (error) {
                             if (error)
                                 getDeviceInfoCB(error);
 
-                            getANTVersionAndDeviceNumber(function (error) {
-                                if (error)
-                                    getDeviceInfoCB(error);
-                                
-                                this.getChannelId(1,function (error, channelId) {
-                                    
-                                    getDeviceInfoCB(error);
-
-                                });
+                            getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
+                         
                             }.bind(this));
-                        
-                        }.bind(this));
-                    } else
+                      } else
+                          getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
+                       
+                   } else
                         getDeviceInfoCB(error);
-                }.bind(this));
-            }.bind(this);
+
+                    }.bind(this));
+    }.bind(this);
         
         
      var resetCapabilitiesLibConfig = function _resetSystem(callback) {
@@ -760,9 +768,15 @@ Host.prototype.init = function (options, initCB) {
         if (options.reset) {
             this.resetSystem(function (error, notification) {
                 if (!error) {
-                    getDeviceInfo(function (error) { callback(error); });
-                } else
+                    getDeviceInfo(function (error) { 
+                        if (!error)
+                          doLibConfig (function (error) { callback(error); });
+                        else
+                            callback(error);
+                    });
+                } else {           
                     callback(error);
+                }
             }.bind(this));
         }
         else
@@ -1038,7 +1052,7 @@ Host.prototype.RXparse = function (error,data) {
 //
 //            // Channel event or responses
 //
-//        case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
+        case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 //
 //            //var channelResponseMessage = antInstance.parseChannelResponse(data);
 //
@@ -1090,11 +1104,13 @@ Host.prototype.RXparse = function (error,data) {
 //            //// console.log("Channel response/EVENT", channelNr, channelResponseMessage,antInstance.channelConfiguration[channelNr]);
 //            //antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
 //
-//            var channelResponseMsg = new ChannelResponseMessage();
+            var channelResponseMsg = new ChannelResponseMessage();
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
-//            channelResponseMsg.setContent(data.slice(3, 3 + ANTmsg.length));
-//            channelResponseMsg.parse();
+            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+            channelResponseMsg.parse();
+            
+            this._responseCallback(channelResponseMsg);
 //
 //            // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
 //            //if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
@@ -1112,7 +1128,7 @@ Host.prototype.RXparse = function (error,data) {
 //            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
 //            //this.emit(ParseANTResponse.prototype.EVENT.LOG, channelResponseMsg.toString());
 //
-//            break;
+            break;
 //
 //            // Response messages to request 
 //
@@ -1120,8 +1136,6 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
            
-            
-
             var channelStatusMsg = new ChannelStatusMessage();
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
             channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
@@ -1177,18 +1191,19 @@ Host.prototype.RXparse = function (error,data) {
             this._responseCallback(capabilitiesMsg);
             
             break;
-//
-//        case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
-//           
-//            var serialNumberMsg = new DeviceSerialNumberMessage();
-//            serialNumberMsg.setContent(data.slice(3, 3 + ANTmsg.length));
-//            serialNumberMsg.parse();
-////
-////            if (!this.emit(ParseANTResponse.prototype.EVENT.DEVICE_SERIAL_NUMBER, serialNumberMsg))
-////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + serialNumberMsg.toString());
-//
-//            break;
-//
+
+        case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
+           
+            var serialNumberMsg = new DeviceSerialNumberMessage();
+             this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
+            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+            serialNumberMsg.parse();
+            this.deviceSerialNumber = serialNumberMsg.serialNumber;
+
+            this._responseCallback(serialNumberMsg);
+
+            break;
+
         default:
             //msgStr += "* NO parser specified *";
             this.log.log('log', "Unable to parse received data",data);
@@ -1244,15 +1259,14 @@ Host.prototype.getANTVersion = function (callback) {
        
 };
 
-// Send a request for device capabilities◘
+// Send a request for device capabilities
 Host.prototype.getCapabilities = function (callback) {
    
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
     
     if (this._setResponseCallback(msg,callback))
     {
-        
-    this._sendMessage(msg, function (error) { if (error) this.log.log('error','Failed to send request for get capbilitites',error); }.bind(this));
+        this._sendMessage(msg, function (error) { if (error) this.log.log('error','Failed to send request for get capbilitites',error); }.bind(this));
     }
     
         
@@ -1260,16 +1274,28 @@ Host.prototype.getCapabilities = function (callback) {
 
 // Send a request for device serial number
 Host.prototype.getDeviceSerialNumber = function (callback) {
+    
+    var fetchSerialNumber = function () { 
+        
+        if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
+             callback(new Error('Device does not have capability to determine serial number'));
+            return;
+        }
+                            
+        var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
+                            
+         if (this._setResponseCallback(msg,callback))
+            this._sendMessage(msg,  function (error) { if (error) this.log.log('error','Failed to send request for device serial number',error); }.bind(this));
+     }.bind(this);
 
     if (typeof this.capabilities === "undefined")
-        callback(new Error('Cannot determine if device has capability for serial number - getCapabilities should be run first'));
+    {
+        this.log.log('warn','Cannot determine if device has capability for serial number - getCapabilities should be run first, attempting to get capabilities now');
+        this.getCapabilities(function (error,capabilities) { if (!error) fetchSerialNumber(); else callback(error); });
+        
+    } else
+        fetchSerialNumber();
 
-    if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED) 
-        callback(new Error('Device does not have capability to determine serial number'));
-
-    var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
-
-        this._sendMessage(msg,  callback);
     
 };
 
@@ -1374,9 +1400,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
     var channelNumber = 0,
         msg;
 
-    if (!this.capabilities)
-        callback(new Error('Cannot determine max number of channels, capabilities object not available, call .getCapabilities first'));
-
     var  singleChannelStatus = function () {
         this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
             if (!error) {
@@ -1396,66 +1419,23 @@ Host.prototype.getChannelStatusAll = function (callback) {
                 callback(error);
         }.bind(this));
     }.bind(this);
-
-    this.log.log('log','Channel Network State');
-    singleChannelStatus();
+    
+    var fetchSingleChannelStatus = function () {
+    
+        this.log.log('log','Channel Network State');
+        singleChannelStatus();
+    }.bind(this);
+    
+    
+    if (!this.capabilities) {
+        this.log.log('warn','Cannot determine max number of channels, capabilities object not available, call .getCapabilities first - trying to getCapabilities now');
+        this.getCapabilities(function (error,capabilities) { if (!error) fetchSingleChannelStatus(); 
+                                                             else callback(error);  });
+    } else
+       fetchSingleChannelStatus();
 };
 
-    // Iterates from channelNrSeed and optionally closes channel
-    //Host.prototype.iterateChannelStatus = function (channelNrSeed, closeChannel, iterationFinishedCB) {
-    //    var self = this;
 
-    //    self.getChannelStatus(channelNrSeed, function error() {
-    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not retrive channel status");
-    //    },
-    //        function success() {
-
-    //            //if (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
-    //            //    self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING)
-    //            //    console.log(self.channelConfiguration[channelNrSeed].channelStatus.toString());
-
-    //            function reIterate() {
-    //                ++channelNrSeed;
-    //                if (channelNrSeed < self.capabilities.MAX_CHAN)
-    //                    self.iterateChannelStatus(channelNrSeed, closeChannel, iterationFinishedCB);
-    //                else {
-    //                    if (typeof iterationFinishedCB === "function")
-    //                        iterationFinishedCB();
-    //                    else
-    //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No iteration on channel status callback specified");
-    //                }
-    //            }
-
-    //            if (closeChannel && (self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.SEARCHING ||
-    //                   self.channelConfiguration[channelNrSeed].channelStatus.channelState === Host.prototype.CHANNEL_STATUS.TRACKING))
-    //                self.close(channelNrSeed, function error(err) {
-    //                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Could not close channel "+ err);
-    //                },
-    //                    function success() {
-    //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Channel " + channelNrSeed + " CLOSED.");
-    //                        reIterate();
-    //                    });
-    //            else
-    //                reIterate();
-    //        });
-
-    //};
-
-    // Associates a channel with a channel configuration
-    //Host.prototype.setChannelConfiguration = function (channel) {
-    //    var self = this;
-    //    //console.trace();
-
-    //    //console.log(Date.now() + "Configuration of channel nr ", channel.number);
-
-    //    if (typeof self.channelConfiguration === "undefined") {
-    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No channel configuration object available to attach channel to. getCapabilities should be run beforehand to get max. available channels for device");
-    //        return;
-    //    }
-
-    //    self.channelConfiguration[channel.number] = channel;
-    //    //console.log("CHANNEL CONFIGURATION",self.channelConfiguration);
-    //},
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
@@ -1468,7 +1448,9 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new LibConfigMessage(libConfig);
 
-        this._sendMessage(configurationMsg, callback);
+        if (this._setResponseCallback(configurationMsg,callback)){
+           this._sendMessage(configurationMsg, callback);
+        }
      
    
  };
