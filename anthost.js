@@ -180,81 +180,6 @@ this._sendMessage = function (message,callback) {
         this.log.time(timeMsg);
     }
 
-//    var timeoutRetryMessageID,
-//        timeoutMessageFailID,
-//        WAIT_FOR_RESPONSE_TIME = 500,// Wait 500 ms before creating error for failed response from ANT
-//        retryCounter=0,
-//
-//        // Listener for responses on event
-//        listener = function (responseMessage, channel, requestMsgId, msgCode) {
-//            //console.log("LISTENER CALLED",responseMessage.name);
-//
-//                        var processCB = function _processCB() {
-//                       
-//                                                this._responseParser.removeListener(event, listener);
-//               
-//                                                clearTimeout(timeoutRetryMessageID);
-//                                                clearTimeout(timeoutMessageFailID);
-//               
-//                                                callback(undefined, responseMessage);
-//                                        }.bind(this);
-//
-//
-//                        // If we got RESPONSE_NO_ERROR on sendMessage channel
-//                        if (typeof message.channel !== "undefined" && event === ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
-//                            message.channel === channel && message.id === requestMsgId && msgCode === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
-//                            processCB();
-//                        } // RESPONSE_NO_ERROR for message without channel, i.e setTransmitPower - using filler byte reported reply on channel 0
-//                        else if (event === ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT &&
-//                            message.id === requestMsgId && msgCode === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR)
-//                            processCB();
-//                        else if (event !== ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT) // i.e notification startup
-//                            processCB();
-//
-//            }.bind(this);
-//   
-//    this._responseParser.on(event, listener);
-//
-//    var estimatedRoundtripDelayForMessage = this.usb.getDirectANTChipCommunicationTimeout() * 2 + 5;
-//    //console.log("Estimated round trip delay for message : ", estimatedRoundtripDelayForMessage + " ms");
-//    //var estimatedRoundtripDelayForMessage = 1000;
-//
-//    timeoutMessageFailID = setTimeout(function () {
-//       // console.log("ERROR TIMEOUT")
-//        this._responseParser.removeListener(event, listener);
-//        clearTimeout(timeoutRetryMessageID);
-//
-//        //// This is mentioned in the spec., but probably occurs very rarely
-//        //// http://www.thisisant.com/forum/viewthread/4061/
-//        //// Flush ANT receive buffer - send 15 zero's
-//
-//        ////var zeroMsg = new ANTMessage();
-//        ////zeroMsg.id = 0x00;
-//            
-//        //var MAXBUFLEN = 15, zeroBuffer = new Buffer(MAXBUFLEN), errMsg = 'No event ' + event + ' for message ' + message.name + " in " + MAX_TIMESTAMP_DIFF + " ms.";
-//            
-//        //for (var i = 0; i < MAXBUFLEN; i++)
-//        //    zeroBuffer[i] = 0;
-//        ////zeroMsg.setContent(zeroBuffer);
-//
-//        //// zeroMsg length is 24 bytes now
-//        //// NO SYNC gives Notification Serial Error - First byte not SYNC
-//        //// Longer than 24 bytes -> Notification Serial Error - ANT Message too long
-//        //this.usb.write(zeroBuffer, function (error) {
-//        //    if (!error)
-//        //        this.log.log('log','Sent - 15 zero to ANT chip - Reset ANT receive state machine');
-//        //    else
-//        //        this.log.log('log','Failed : Reset ANT receive state machine ' +error);
-//
-//        //    // Timeout in case of notification serial errors propagated back via response parser
-//        //    setTimeout(function () { callback(new Error(errMsg)) }, estimatedRoundtripDelayForMessage);
-//
-//        //}.bind(this));
-//       
-//        //console.log("msg",message);
-//        callback(new Error('Failed to send: ' + message.name));
-//       
-//    }.bind(this), WAIT_FOR_RESPONSE_TIME);
 
      var usbTransferCB = function (error)
                           {
@@ -267,12 +192,7 @@ this._sendMessage = function (message,callback) {
                           }.bind(this);
                           
     var retry = function() {
-       
-       // this.log.log('log','Retry nr ' + retryCounter);
-      // TX -> generates a "readable" thats piped into FrameTransform
-//        if (!this.push(message))
-//            this.log.log('log','TX stream indicates overflow, attempt to push data beyond highWaterMark');
-                    
+  
         //this.log.time('sendMessageUSBtransfer');
         this.log.time(ANTMessage.prototype.MESSAGE[message.id]);
         this.usb.transfer(message.getRawMessage(),usbTransferCB);
@@ -1366,36 +1286,6 @@ Host.prototype.getChannelStatus = function (channel, callback) {
 
 
 
-
-
-// Called on first receive of broadcast from device/master
-//Host.prototype.getUpdatedChannelID = function (channel, errorCallback, successCallback) {
-//    var msgId, self = this;
-
-//    self.sendOnly(self.request(channel, ANTMessage.prototype.MESSAGE.set_channel_id.id),
-//        Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-//        //function validation(data) { msgId = data[2]; return (msgId === ANT_MESSAGE.set_channel_id.id); },
-//        function error(err) {
-//            if (typeof errorCallback === "function")
-//                errorCallback(err);
-//            else
-//                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no error callback");
-//        },
-//        function success() {
-//            self.read(Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback,
-//               function success(data) {
-//                   var msgId = data[2];
-//                   if (msgId !== ANTMessage.prototype.MESSAGE.set_channel_id.id)
-//                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected set channel id message response");
-//                   self.parse_response(data);
-//                   if (typeof successCallback === "function")
-//                       successCallback(data);
-//                   else
-//                       self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Found no success callback");
-//               });
-//        });
-//};
-
 Host.prototype.getChannelStatusAll = function (callback) {
     var channelNumber = 0,
         msg;
@@ -1843,169 +1733,169 @@ Host.prototype.getChannelStatusAll = function (callback) {
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
     // 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
-        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
-            self = this,
-            message = new ANTMessage(),
-            ack_msg = message.create_message(ANTMessage.prototype.MESSAGE.acknowledged_data, buf),
-            resendMsg;
+//    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
+//        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
+//            self = this,
+//            message = new ANTMessage(),
+//            ack_msg = message.create_message(ANTMessage.prototype.MESSAGE.acknowledged_data, buf),
+//            resendMsg;
+//
+//        // Add to retry queue -> will only be of length === 1
+//        resendMsg = {
+//            message: ack_msg,
+//            retry: 0,
+//            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
+//            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
+//
+//            timestamp: Date.now(),
+//
+//            retryCB : function _resendAckowledgedDataCB() {
+//
+//                if (resendMsg.timeoutID)  // If we already have a timeout running, reset
+//                    clearTimeout(resendMsg.timeoutID);
+//
+//                resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
+//                resendMsg.retry++;
+//
+//                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
+//                    resendMsg.lastRetryTimestamp = Date.now();
+//                    // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF 
+//                    self.sendOnly(ack_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
+//                        function error(err) {
+//                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
+//                            if (typeof errorCallback === "function")
+//                                errorCallback(err);
+//                            else
+//                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
+//                        },
+//                        function success() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
+//                } else {
+//                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
+//                    if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
+//                        resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
+//                    else
+//                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
+//                }
+//            }
+//        };
+//
+//        this.retryQueue[ucChannel].push(resendMsg);
+//
+//
+//        //console.log(Date.now() + " SETTING TIMEOUT ");
+//
+//        //resendMsg.timeoutCB = function () {
+//        //    //console.log(Date.now() + "TIMEOUT HANDLER FOR EVENT_TRANSFER_TX_COMPLETED/FAILED - NOT IMPLEMENTED");
+//        //    resendMsg.timeoutRetry++;
+//        //    if (resendMsg.timeoutRetry <= Host.prototype.TX_DEFAULT_RETRY)
+//        //        send();
+//        //    else
+//        //        console.log(Date.now() + " Reached maxium number of timeout retries");
+//        //};
+//
+//        resendMsg.retryCB();
+//
+//    };
 
-        // Add to retry queue -> will only be of length === 1
-        resendMsg = {
-            message: ack_msg,
-            retry: 0,
-            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
-            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
-
-            timestamp: Date.now(),
-
-            retryCB : function _resendAckowledgedDataCB() {
-
-                if (resendMsg.timeoutID)  // If we already have a timeout running, reset
-                    clearTimeout(resendMsg.timeoutID);
-
-                resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
-                resendMsg.retry++;
-
-                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
-                    resendMsg.lastRetryTimestamp = Date.now();
-                    // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF 
-                    self.sendOnly(ack_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-                        function error(err) {
-                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
-                            if (typeof errorCallback === "function")
-                                errorCallback(err);
-                            else
-                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
-                        },
-                        function success() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
-                } else {
-                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
-                    if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
-                        resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
-                    else
-                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
-                }
-            }
-        };
-
-        this.retryQueue[ucChannel].push(resendMsg);
-
-
-        //console.log(Date.now() + " SETTING TIMEOUT ");
-
-        //resendMsg.timeoutCB = function () {
-        //    //console.log(Date.now() + "TIMEOUT HANDLER FOR EVENT_TRANSFER_TX_COMPLETED/FAILED - NOT IMPLEMENTED");
-        //    resendMsg.timeoutRetry++;
-        //    if (resendMsg.timeoutRetry <= Host.prototype.TX_DEFAULT_RETRY)
-        //        send();
-        //    else
-        //        console.log(Date.now() + " Reached maxium number of timeout retries");
-        //};
-
-        resendMsg.retryCB();
-
-    };
-
-    // Send an individual packet as part of a bulk transfer
-    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
-
-        var buf,
-            burst_msg,
-            self = this,
-            message = new ANTMessage();
-
-        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
-
-        burst_msg = message.create_message(ANTMessage.prototype.MESSAGE.burst_transfer_data, buf);
-
-        // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
-        // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
-        // p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
-        // "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
-
-        self.sendOnly(burst_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
-    };
-
-    // p. 98 in spec.
-    // Sends bulk data
-    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName) {
-        var numberOfPackets = Math.ceil(pucData.length / 8),
-            packetNr,
-            lastPacket = numberOfPackets - 1,
-            sequenceNr,
-            channelNrField,
-            packet,
-            self = this,
-            burstMsg;
-
-        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Burst transfer of "+numberOfPackets+" packets (8-byte) on channel "+ucChannel+", length of payload is "+pucData.length+" bytes");
-
-        // Add to retry queue -> will only be of length === 1
-        burstMsg = {
-            timestamp: Date.now(),
-
-            message: {
-                buffer: pucData,
-                friendlyName: messageFriendlyName
-            },
-
-            retry: 0,
-
-            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
-            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
-        
-
-        };
-
-        //console.log(Date.now(), burstMsg);
-
-        this.burstQueue[ucChannel].push(burstMsg);
-
-        var error = function (err) {
-            self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
-        };
-
-        var success = function () {
-            //console.log(Date.now()+ " Sent burst packet to ANT engine for transmission");
-        };
-
-        function sendBurst() {
-
-            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
-                burstMsg.retry++;
-                burstMsg.lastRetryTimestamp = Date.now();
-
-                for (packetNr = 0; packetNr < numberOfPackets; packetNr++) {
-
-                    sequenceNr = packetNr % 4; // 3-upper bits Rolling from 0-3; 000 001 010 011 000 ....
-
-                    if (packetNr === lastPacket)
-                        sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
-
-                    channelNrField = (sequenceNr << 5) | ucChannel; // Add lower 5 bit (channel nr)
-
-                    // http://nodejs.org/api/buffer.html#buffer_class_method_buffer_concat_list_totallength
-                    if (packetNr === lastPacket)
-                        packet = pucData.slice(packetNr * 8, pucData.length);
-                    else
-                        packet = pucData.slice(packetNr * 8, packetNr * 8 + 8);
-
-                    self.sendBurstTransferPacket(channelNrField, packet,error,success);
-                }
-            } else {
-                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries of entire burst of "+ burstMsg.message.friendlyName);
-                if (typeof burstMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
-                    burstMsg.EVENT_TRANSFER_TX_FAILED_CB();
-                else
-                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
-            }
-        }
-
-        burstMsg.retryCB = function retry() { sendBurst(); };
-
-        sendBurst();
-    };
+//    // Send an individual packet as part of a bulk transfer
+//    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
+//
+//        var buf,
+//            burst_msg,
+//            self = this,
+//            message = new ANTMessage();
+//
+//        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
+//
+//        burst_msg = message.create_message(ANTMessage.prototype.MESSAGE.burst_transfer_data, buf);
+//
+//        // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
+//        // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
+//        // p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
+//        // "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
+//
+//        self.sendOnly(burst_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
+//    };
+//
+//    // p. 98 in spec.
+//    // Sends bulk data
+//    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName) {
+//        var numberOfPackets = Math.ceil(pucData.length / 8),
+//            packetNr,
+//            lastPacket = numberOfPackets - 1,
+//            sequenceNr,
+//            channelNrField,
+//            packet,
+//            self = this,
+//            burstMsg;
+//
+//        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Burst transfer of "+numberOfPackets+" packets (8-byte) on channel "+ucChannel+", length of payload is "+pucData.length+" bytes");
+//
+//        // Add to retry queue -> will only be of length === 1
+//        burstMsg = {
+//            timestamp: Date.now(),
+//
+//            message: {
+//                buffer: pucData,
+//                friendlyName: messageFriendlyName
+//            },
+//
+//            retry: 0,
+//
+//            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
+//            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
+//        
+//
+//        };
+//
+//        //console.log(Date.now(), burstMsg);
+//
+//        this.burstQueue[ucChannel].push(burstMsg);
+//
+//        var error = function (err) {
+//            self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
+//        };
+//
+//        var success = function () {
+//            //console.log(Date.now()+ " Sent burst packet to ANT engine for transmission");
+//        };
+//
+//        function sendBurst() {
+//
+//            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
+//                burstMsg.retry++;
+//                burstMsg.lastRetryTimestamp = Date.now();
+//
+//                for (packetNr = 0; packetNr < numberOfPackets; packetNr++) {
+//
+//                    sequenceNr = packetNr % 4; // 3-upper bits Rolling from 0-3; 000 001 010 011 000 ....
+//
+//                    if (packetNr === lastPacket)
+//                        sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
+//
+//                    channelNrField = (sequenceNr << 5) | ucChannel; // Add lower 5 bit (channel nr)
+//
+//                    // http://nodejs.org/api/buffer.html#buffer_class_method_buffer_concat_list_totallength
+//                    if (packetNr === lastPacket)
+//                        packet = pucData.slice(packetNr * 8, pucData.length);
+//                    else
+//                        packet = pucData.slice(packetNr * 8, packetNr * 8 + 8);
+//
+//                    self.sendBurstTransferPacket(channelNrField, packet,error,success);
+//                }
+//            } else {
+//                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries of entire burst of "+ burstMsg.message.friendlyName);
+//                if (typeof burstMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
+//                    burstMsg.EVENT_TRANSFER_TX_FAILED_CB();
+//                else
+//                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
+//            }
+//        }
+//
+//        burstMsg.retryCB = function retry() { sendBurst(); };
+//
+//        sendBurst();
+//    };
 
 //    if (runFromCommandLine) {
 //       
