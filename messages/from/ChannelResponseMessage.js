@@ -160,17 +160,17 @@ ChannelResponseMessage.prototype.parse = function () {
     var msg;
 
     this.channel = this.content[0];
-    this.messageId = this.content[1];
-    this.messageCode = this.content[2];
+    this.initiatingId = this.content[1];
+    this.responseCode = this.content[2];
     this.RFEvent = (this.content[1] === 1);
     this.responseEvent = this.getResponseOrEventMessage();
 
     if (this.RFEvent) // Set to 1 for RF event
         msg = "RF EVENT channel " + this.channel + " " + this.responseEvent + " ";
     else
-        msg = "RESPONSE channel " + this.channel + " to msg. id 0x" + this.messageId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.messageId] + " " + this.responseEvent;
+        msg = "RESPONSE channel " + this.channel + " to msg. id 0x" + this.initiatingId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.initiatingId] + " " + this.responseEvent;
 
-    this.message = { text: msg };
+    this.message = msg;
     
 };
 

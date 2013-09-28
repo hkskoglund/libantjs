@@ -1,3 +1,4 @@
+
 "use strict";
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -11,13 +12,9 @@ define(function (require, exports, module) {
 function ANTMessage(data) {
     //console.log("DATA", data);
    
-   // initStream.bind(this)();
-
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    
-
     if (data) {
         this.buffer = data;
         this.SYNC = data[0];
@@ -181,8 +178,9 @@ ANTMessage.prototype.getRawMessage = function () {
 //    console.trace();
 //    console.log("Standard msg",standardMessage);
     this.buffer = standardMessage.buffer; // Arraybuffer
-
-    return this.buffer;
+    this.standardMessage = standardMessage;
+    
+    return this.standardMessage;
     
 };
 

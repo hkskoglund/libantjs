@@ -49,15 +49,18 @@ USBChrome.prototype.transfer = function (chunk, callback) {
         "direction": this.outEP.direction,
         "endpoint": this.outEP.address,
         //"length": this.outEP.maximumPacketSize
-        "data" : chunk
+        "data" : chunk.buffer
     };
 
-    this.log.log('log',"TX ", TXinfo);
+    this.log.log('log',"TX ", TXinfo,chunk);
     chrome.usb.bulkTransfer(this.connectionHandle, TXinfo, onTX);
 };
 
 USBChrome.prototype.listen = function (callback) {
 
+    var transferErrorCount = 0,
+        MAX_TRANSFER_ERROR_COUNT = 10; // Count LIBUSB result codes other than completed === 0
+    
    // console.trace();
     
     var RXinfo = {
@@ -71,7 +74,8 @@ USBChrome.prototype.listen = function (callback) {
             var data;
             //console.timeEnd('RX');
             if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
-                data =new Uint8Array(RXinfo.data);
+                transferErrorCount = 0;
+                data = new Uint8Array(RXinfo.data);
                 this.log.log('log', "Rx", RXinfo, data );
                try {
                   callback(undefined,data);
@@ -83,11 +87,15 @@ USBChrome.prototype.listen = function (callback) {
                  
             }
             else {
+                 transferErrorCount++;
                 this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
                 callback(new Error(chrome.runtime.lastError.message));
             }
      
-         retry();
+        if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
+             retry();
+        else
+            callback(new Error('Too many attempts with error from LIBUSB. Cannot proceed.'));
          
         
     }.bind(this);
@@ -104,8 +112,6 @@ USBChrome.prototype.listen = function (callback) {
  this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
  
     retry();
-
-    
 
 
 };

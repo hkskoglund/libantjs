@@ -1,6 +1,6 @@
 /* global console: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
-"use strict";
+'use strict';
 
 //var requirejs = require('requirejs');
 //
@@ -89,30 +89,45 @@ function Host() {
     this.callback = {};
     
     // Timeouts for expected response
-    this.timeout = {};
+    this.resendTimeoutID = {};
     
     // Logging
     this.log = new Logger(false);
     
     // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc
-    
-        
+      
  this._responseCallback = function (msg) {
      
-     var targetMessageId = msg.id;
+     var targetMessageId = msg.id,
+         resendMessage = false,
+         cb = function (error)
+         {
+              delete this.callback[targetMessageId];
+              msgCallback(error,msg);
+         }.bind(this);
      
      // Handle channel response
      
      if (targetMessageId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE) {
-         targetMessageId = msg.messageId; // Initiating message id, i.e libconfig
-         this.log.log('log','Initiating message id for channel response is ',targetMessageId);
+         targetMessageId = msg.initiatingId; // Initiating message id, i.e libconfig
+         this.log.log('log','Initiating message id for channel response is 0x'+targetMessageId.toString(16)+ ' '+ANTMessage.prototype.MESSAGE[targetMessageId],msg);
+        if (msg.responseCode !== ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
+            this.log.log('warn','Normally a response no error is received, but got ',msg.message);
+            resendMessage = true;
+        }
+         
+         
      }
+     
+     if (resendMessage) // Should be resent in _sendMessage
+         return;
+     
         var msgCallback = this.callback[targetMessageId],
             RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
         
-        if (this.timeout[targetMessageId]) {
-            clearTimeout(this.timeout[targetMessageId]);
-            delete this.timeout[targetMessageId];
+        if (this.resendTimeoutID[targetMessageId]) {
+            clearTimeout(this.resendTimeoutID[targetMessageId]);
+            delete this.resendTimeoutID[targetMessageId];
         }
         else
           this.log.log('warn','No timeout registered for response '+msg.name);
@@ -120,55 +135,56 @@ function Host() {
      if (typeof msgCallback !== 'function')
             this.log.log('warn','No callback registered for '+msg +' '+ msg.toString());
         else {
-        
-         var cb = function ()
-         {
-              delete this.callback[targetMessageId];
-              msgCallback(undefined,msg);
-         }.bind(this);
-            
+       
          if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP)
              setTimeout(cb,RESET_DELAY_TIMEOUT);
          else
-             cb();
+             cb(undefined);
         }
       
     }.bind(this);
     
-    // Register response callback, its fired during parse
-    // It also can be considered as a mutex - only allow send of request if there is no previously registered callback
+    // Register response callback, its fired during RXparse
+    // It also can be considered as a mutex - only allow send of request if there is no previously registered callback for this particular request.
     this._setResponseCallback = function (message,callback)
     {
-          var PROCESSING_DELAY = 150,
-              TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_DELAY,
-              msgId = message.responseId;
+          var targetMsgId = message.responseId;
         
-         if (typeof this.callback[msgId] === "undefined") {
-          this.callback[msgId] = callback;
-             
-          this.timeout[msgId] = setTimeout(function ()
-                             {
-                                 this.log.log('warn','No '+message.name+' response received in '+TIMEOUT+' ms');
-                             }.bind(this),TIMEOUT);
-             return true;
-         }
-        else
-        {
-           // this.log.log('log','Awaiting response for a previous resetSystem message, this request is ignored');
-            callback(new Error('Awaiting response for a previous '+ message.name+' , this request is ignored'));
+        // Special handling of messages that have a channel response
+        
+        if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
+            targetMsgId = message.id; // Initiating message id, i.e lib config
+        
+         if (this.callback[targetMsgId] !== undefined) {
+              // this.log.log('log','Awaiting response for a previous resetSystem message, this request is ignored');
+            callback(new Error('Awaiting response for a previous '+ message.name+' , cannot register a new request callback'));
             return false;
-        }
+         }
+          
+          this.callback[targetMsgId] = callback;
+             
+         
+            return true;
+        
     }.bind(this); // bind sets the right context for the function, not necessary to use .call(this in function call
   
-    // Send a message, if a reply is not received, it will retry for 500ms. 
+    // Send a message to ANT
 this._sendMessage = function (message,callback) {
-    var timeMsg;
+    var timeMsg,
+        
+        PROCESSING_DELAY = 150,
+        TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_DELAY,
+        targetMsgId = message.responseId;
+    
+    // Set up timer for resend if no response is received
+        if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
+            targetMsgId = message.id; // Initiating message id
     
     if (message.id !== ANTMessage.prototype.MESSAGE.REQUEST) 
-       timeMsg = ANTMessage.prototype.MESSAGE[message.id];
+       timeMsg = ANTMessage.prototype.MESSAGE[targetMsgId];
     
     else {
-        this.log.log('log','Request for id ',message.responseId.toString(16));
+        //this.log.log('log','Request message for id 0x',message.responseId.toString(16));
         if (message.responseId)
            timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
         else
@@ -176,7 +192,7 @@ this._sendMessage = function (message,callback) {
     }
     
     if (timeMsg) {
-        this.log.log('log','Setting timer for ',timeMsg);
+       // this.log.log('log','Setting performance timer (time-timeEnd) for ',timeMsg);
         this.log.time(timeMsg);
     }
 
@@ -187,25 +203,30 @@ this._sendMessage = function (message,callback) {
                               if (error)
                                   this.log.log('error','TX failed of '+message.toString());
                               
-                              callback(error);
+                              // A response callback is already registered in _setResponseCallback to be called during RXparse
+                             // callback(error);
                               
                           }.bind(this);
                           
-    var retry = function() {
-  
+    var transferMessage = function() {
+
         //this.log.time('sendMessageUSBtransfer');
         this.log.time(ANTMessage.prototype.MESSAGE[message.id]);
-        this.usb.transfer(message.getRawMessage(),usbTransferCB);
         
-//            // http://nodejs.org/api/timers.html - Reason for timeout - don't call retry before estimated arrival for response
-//        timeoutRetryMessageID = setTimeout(function _retryTimerCB() {
-//            estimatedRoundtripDelayForMessage += 17; // Allow some more time if no response received
-//            setImmediate(retry.bind(this));
-//        }.bind(this), estimatedRoundtripDelayForMessage);
-//       
+        
+        
+        this.resendTimeoutID[targetMsgId] = setTimeout(function _responseTimeoutCB()
+                             {
+                                    if (this.callback[message.responseId] !== undefined)
+                                       this.log.log('warn','No response to request for '+message.name+ ' in '+TIMEOUT+' ms');
+//                                 // TO DO : Resend logic
+                             }.bind(this),TIMEOUT);
+        
+        this.usb.transfer(message.getRawMessage(),usbTransferCB);
+           
     }.bind(this);
 
-    retry();
+    transferMessage();
 
 }.bind(this);
     
@@ -587,22 +608,26 @@ Host.prototype.init = function (options, initCB) {
     // }
     
          var doLibConfig = function (_doLibConfigCB) {
-                if (!this.options || !this.capabilities)
-                    _doLibConfigCB();
+             
+                if (!this.options || !this.capabilities) {
+                    _doLibConfigCB(new Error('Could not find capabilities for extended messaging'));
+                    return;
+                }
 
                 var libConfigOptions = this.options.libconfig,
-                    libConfig, libConfigOptionsSplit;
+                    libConfig, 
+                    libConfigOptionsSplit;
 
                 if (typeof libConfigOptions === "undefined") {
                     this.log.log('warn','No library configuration options specified for extended messaging');
-                    _doLibConfigCB();
+                    _doLibConfigCB(new Error('No library configuration options specified for extended messaging'));
                     return;
          }
          
           if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED) {
               this.log.log('warn','Device does not have capability for extended messaging');
-                    _doLibConfigCB();
-                    return;
+                _doLibConfigCB(new Error('Device does not have capability for extended messaging'));
+                return;
           }
          
          
@@ -626,7 +651,7 @@ Host.prototype.init = function (options, initCB) {
                         libConfig.setEnableRXTimestamp();
                 }
 
-                else _doLibConfigCB();
+                else _doLibConfigCB(new Error('Unable to parse library configuration options'));
 
                 //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
                 this.libConfig(libConfig.getFlagsByte(),
@@ -949,9 +974,9 @@ Host.prototype.RXparse = function (error,data) {
             
 //            console.log("Notification startup ",notification);
 //            
-//            if (this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]) {
-//              clearTimeout(this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]);
-//                delete this.timeout[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
+//            if (this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]) {
+//              clearTimeout(this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]);
+//                delete this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
 //            }
 //            else
 //              this.log.log('warn','No timeout registered for response time for reset command');
@@ -1029,6 +1054,8 @@ Host.prototype.RXparse = function (error,data) {
 //            //data[5] = 0xF;
             channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
             channelResponseMsg.parse();
+            if (channelResponseMsg.initiatingId)
+              this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
             
             this._responseCallback(channelResponseMsg);
 //

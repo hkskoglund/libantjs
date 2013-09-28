@@ -6,7 +6,6 @@ define(function (require, exports, module) {
 
     var ANTMessage = require('messages/ANTMessage');
     
-    
     function LibConfigMessage(libConfig) {
     
         var msgBuffer = new Uint8Array(2);
@@ -19,7 +18,7 @@ define(function (require, exports, module) {
         this.id = ANTMessage.prototype.MESSAGE.LIBCONFIG;
         this.name = "Lib Config";
         this.type = ANTMessage.prototype.TYPE.REQUEST;
-        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a RESPONSE NO ERROR CHANNEL RESPONSE
+        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
         
         this.libConfig = libConfig;
     
