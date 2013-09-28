@@ -170,6 +170,10 @@ function Host() {
   
     // Send a message to ANT
 this._sendMessage = function (message,callback) {
+    
+    if (!this._setResponseCallback(message,callback))
+        return;
+    
     var timeMsg,
         
         PROCESSING_DELAY = 150,
@@ -1107,15 +1111,8 @@ Host.prototype.resetSystem = function (callback) {
 
     var msg = new ResetSystemMessage();
    
-    if (this._setResponseCallback(msg,callback))
-    {
-        //this.log.time(msg.id);
-        
-        this._sendMessage(msg, function (error) { 
-                                        if (error)
-                                            this.log.log('error','Failed to send reset system comand',error);
-                                        }.bind(this));
-    }
+        this._sendMessage(msg, callback);
+    
 };
 
 // Send request for channel ID 
@@ -1130,11 +1127,7 @@ Host.prototype.getANTVersion = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
-    if (this._setResponseCallback(msg,callback))
-    {
-       
-        this._sendMessage(msg,  function (error) { if (error) this.log.log('error','Failed to send request for get ANT version',error); }.bind(this));
-    }
+    this._sendMessage(msg,callback);
        
 };
 
@@ -1143,12 +1136,8 @@ Host.prototype.getCapabilities = function (callback) {
    
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
     
-    if (this._setResponseCallback(msg,callback))
-    {
-        this._sendMessage(msg, function (error) { if (error) this.log.log('error','Failed to send request for get capbilitites',error); }.bind(this));
-    }
+    this._sendMessage(msg, callback);
     
-        
 };
 
 // Send a request for device serial number
@@ -1163,8 +1152,8 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
                             
         var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
                             
-         if (this._setResponseCallback(msg,callback))
-            this._sendMessage(msg,  function (error) { if (error) this.log.log('error','Failed to send request for device serial number',error); }.bind(this));
+         
+            this._sendMessage(msg,  callback);
      }.bind(this);
 
     if (typeof this.capabilities === "undefined")
@@ -1232,15 +1221,8 @@ Host.prototype.getChannelStatus = function (channel, callback) {
     
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS));
     
-    if (this._setResponseCallback(msg,callback))
-    {
-        
-        this._sendMessage(msg, function (error) { 
-                                        if (error)
-                                            this.log.log('error','Failed to send get channel status',error);
-                                        }.bind(this));
-    }
-  
+     this._sendMessage(msg, callback);
+ 
 };
 
 
@@ -1291,15 +1273,10 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //        assert.equal(typeof this.capabilities, "object", "Capabilities not available");
 //        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED, "Extended messaging not supported on device");
 
-     var configurationMsg;
+     var configurationMsg = new LibConfigMessage(libConfig);
 
-        configurationMsg = new LibConfigMessage(libConfig);
-
-        if (this._setResponseCallback(configurationMsg,callback)){
-           this._sendMessage(configurationMsg, callback);
-        }
-     
-   
+    this._sendMessage(configurationMsg, callback);
+      
  };
 
     //// Only enables Channel ID extension of messages
