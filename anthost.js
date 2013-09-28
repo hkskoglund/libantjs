@@ -982,9 +982,7 @@ Host.prototype.RXparse = function (error,data) {
 //              this.log.log('warn','No timeout registered for response time for reset command');
             
             this._responseCallback(notification);
-            
-            
-
+     
             break;
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
@@ -998,57 +996,7 @@ Host.prototype.RXparse = function (error,data) {
 //            // Channel event or responses
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
-//
-//            //var channelResponseMessage = antInstance.parseChannelResponse(data);
-//
-//            //this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, channelResponseMessage);
-//
-//
-//            //msgStr += ANTMessage.prototype.MESSAGE.channel_response.friendly + " " + channelResponseMessage;
-//            //channelNr = data[3];
-//
-//            //// Handle retry of acknowledged data
-//            //if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_COMPLETED, data)) {
-//
-//            //    if (antInstance.retryQueue[channelNr].length >= 1) {
-//            //        resendMsg = antInstance.retryQueue[channelNr].shift();
-//            //        clearTimeout(resendMsg.timeoutID); // No need to call timeout callback now
-//            //        if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-//            //            resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-//            //        else
-//            //            this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after acknowledged data");
-//            //        //console.log(Date.now() + " TRANSFER COMPLETE - removing from retry-queue",resendMsg);
-//            //    }
-//
-//            //    if (antInstance.burstQueue[channelNr].length >= 1) {
-//            //        resendMsg = antInstance.burstQueue[channelNr].shift();
-//            //        if (typeof resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB === "function")
-//            //            resendMsg.EVENT_TRANSFER_TX_COMPLETED_CB();
-//            //        else
-//            //            antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " No transfer complete callback specified after burst");
-//            //    }
-//
-//            //} else if (antInstance.isEvent(ParseANTResponse.prototype.RESPONSE_EVENT_CODES.EVENT_TRANSFER_TX_FAILED, data)) {
-//            //    if (antInstance.retryQueue[channelNr].length >= 1) {
-//            //        resendMsg = antInstance.retryQueue[channelNr][0];
-//            //        this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending ACKNOWLEDGE message due to TX_FAILED, retry " + resendMsg.retry);
-//            //        resendMsg.retryCB();
-//            //    }
-//
-//            //    if (antInstance.burstQueue[channelNr].length >= 1) {
-//            //        burstMsg = antInstance.burstQueue[channelNr][0];
-//            //        this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Re-sending BURST message due to TX_FAILED " + burstMsg.message.friendlyName + " retry " + burstMsg.retry);
-//            //        burstMsg.retryCB();
-//            //    }
-//            //}
-//
-//            //// Call channel event/response-handler for each channel
-//
-//            //// OLD-way of calling callback antInstance.channelConfiguration[channelNr].channelResponseEvent(data);
-//
-//            //// console.log("Channel response/EVENT", channelNr, channelResponseMessage,antInstance.channelConfiguration[channelNr]);
-//            //antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, data, channelResponseMessage);
-//
+
             var channelResponseMsg = new ChannelResponseMessage();
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
@@ -1058,23 +1006,7 @@ Host.prototype.RXparse = function (error,data) {
               this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
             
             this._responseCallback(channelResponseMsg);
-//
-//            // It could be possible to make the emit event more specific by f.ex adding channel nr. + initiating message id., but maybe not necessary
-//            //if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg))
-//            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelResponse.toString());
-//
-//           // var type = channelResponseMsg.getResponseOrEventMessage();
-//
-//            //console.log("event type", type);
-//
-////            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode())) {
-////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + ParseANTResponse.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT);
-//                console.log("resp", channelResponseMsg);
-//            //}
-//            //this.emit(type, channelResponseMsg, channelResponseMsg.getChannel(), channelResponseMsg.getRequestMessageId(), channelResponseMsg.getMessageCode());
-//            //    this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + type);
-//            //this.emit(ParseANTResponse.prototype.EVENT.LOG, channelResponseMsg.toString());
-//
+
             break;
 //
 //            // Response messages to request 
@@ -1351,8 +1283,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
     } else
        fetchSingleChannelStatus();
 };
-
-
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
