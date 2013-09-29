@@ -5,13 +5,17 @@ define(function (require, exports, module) {
 
 var ANTMessage = require('messages/ANTMessage');
 
-function ChannelResponseMessage() {
+function ChannelResponseMessage(data) {
 
-    ANTMessage.call(this);
+    ANTMessage.call(this,data);
 
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE;
     this.name = "Channel Response/RF event";
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
+    
+    if (data)
+      this.parse();
+    
 
     //console.log("ChannelResponseMessage", this);
 
@@ -152,9 +156,6 @@ ChannelResponseMessage.prototype.isRFEvent = function () {
     return (this.content[1] === 1);
 };
 
-ChannelResponseMessage.prototype.isResponse = function () {
-    return !this.isRFEvent();
-};
 
 ChannelResponseMessage.prototype.parse = function () {
     var msg;
@@ -166,16 +167,16 @@ ChannelResponseMessage.prototype.parse = function () {
     this.responseEvent = this.getResponseOrEventMessage();
 
     if (this.RFEvent) // Set to 1 for RF event
-        msg = "RF EVENT channel " + this.channel + " " + this.responseEvent + " ";
+        msg = "RF EVENT C# " + this.channel + " " + this.responseEvent + " ";
     else
-        msg = "RESPONSE channel " + this.channel + " to msg. id 0x" + this.initiatingId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.initiatingId] + " " + this.responseEvent;
+        msg = "RESPONSE C# " + this.channel + " to ID# 0x" + this.initiatingId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.initiatingId] + " " + this.responseEvent;
 
     this.message = msg;
     
 };
 
 ChannelResponseMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " "+this.message.text;
+    return this.name + " ID# 0x" + this.id.toString(16) + " "+this.message;
 };
 
 module.exports = ChannelResponseMessage;

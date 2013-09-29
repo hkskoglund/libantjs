@@ -18,6 +18,8 @@ function setLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
 
     this.id = ANTMessage.prototype.MESSAGE.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT;
     this.name = "Set low priority search timeout";
+    this.type = ANTMessage.prototype.TYPE.REQUEST;
+    this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
 
     this.setContent(msgBuffer);
 

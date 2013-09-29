@@ -19,6 +19,8 @@ define(function (require, exports, module) {
     
         this.id = ANTMessage.prototype.MESSAGE.SET_PROXIMITY_SEARCH;
         this.name = "Set proximity search";
+        this.type = ANTMessage.prototype.TYPE.REQUEST;
+        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
     
         this.channel = channel;
         this.searchThreshold = searchThreshold;

@@ -6,18 +6,21 @@ var ANTMessage = require('messages/ANTMessage'),
     Channel = require('channel');
 
 
-function ChannelStatusMessage() {
+function ChannelStatusMessage(data) {
 
     //if (typeof data !== "undefined") {
     //    ANTMessage.call(this, data);
     //    this.parse();
     //} else
-        ANTMessage.call(this);
+        ANTMessage.call(this,data);
 
     this.name = "Channel status";
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_STATUS;
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
     this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
+    
+    if (data)
+        this.parse();
 
     // console.log("Created ChannelStatusMessage", this);
 }

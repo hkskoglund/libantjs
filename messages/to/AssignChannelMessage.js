@@ -14,14 +14,16 @@ function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignme
     var msgBuffer;
     
     if (extendedAssignment)
-        msgBuffer = new UInt8Array([channel,channelType,networkNumber,extendedAssignment]);
+        msgBuffer = new Uint8Array([channel,channelType,networkNumber,extendedAssignment]);
     else
-        msgBuffer = new UInt8Array([channel, channelType, networkNumber]);
+        msgBuffer = new Uint8Array([channel, channelType, networkNumber]);
 
     ANTMessage.call(this);
 
     this.id = ANTMessage.prototype.MESSAGE.ASSIGN_CHANNEL;
     this.name = "Assign Channel";
+    this.type = ANTMessage.prototype.TYPE.REQUEST;
+    this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
 
     this.channel = channel;
     this.channelType = channelType;

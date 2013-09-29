@@ -5,18 +5,21 @@ define(function (require, exports, module) {
 var ANTMessage = require('messages/ANTMessage');
   
 
-function ANTVersionMessage() {
+function ANTVersionMessage(data) {
 
     //if (typeof data !== "undefined") {
     //    ANTMessage.call(this, data);
     //    this.parse();
     //} else
-        ANTMessage.call(this);
+        ANTMessage.call(this,data);
 
     this.name = "ANT Version";
     this.id = ANTMessage.prototype.MESSAGE.ANT_VERSION;
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
     this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
+    
+    if (data)
+        this.parse();
 
    // console.log("Created ANTVersionMessage", this);
 }

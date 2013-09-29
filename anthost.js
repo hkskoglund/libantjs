@@ -1,7 +1,5 @@
 /* global console: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
-'use strict';
-
 //var requirejs = require('requirejs');
 //
 //requirejs.config({
@@ -22,8 +20,9 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+'use strict';
+   var
     
-var
     Logger = require('logger'),
     USBDevice = require('usb/USBDevice'),
     Channel = require('Channel'),
@@ -111,7 +110,8 @@ function Host() {
      if (targetMessageId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE) {
          targetMessageId = msg.initiatingId; // Initiating message id, i.e libconfig
          this.log.log('log','Initiating message id for channel response is 0x'+targetMessageId.toString(16)+ ' '+ANTMessage.prototype.MESSAGE[targetMessageId],msg);
-        if (msg.responseCode !== ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
+       
+         if (msg.responseCode !== ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
             this.log.log('warn','Normally a response no error is received, but got ',msg.message);
             resendMessage = true;
         }
@@ -1001,15 +1001,19 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
-            var channelResponseMsg = new ChannelResponseMessage();
+            var channelResponseMsg = new ChannelResponseMessage(data);
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
-            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-            channelResponseMsg.parse();
+//            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+//            channelResponseMsg.parse();
             if (channelResponseMsg.initiatingId)
               this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
             
-            this._responseCallback(channelResponseMsg);
+            // Handle channel response for channel configuration commands
+            if (!channelResponseMsg.isRFEvent())
+                this._responseCallback(channelResponseMsg);
+            else
+                this.log.log('log',channelResponseMsg.toString());
 
             break;
 //
@@ -1019,10 +1023,10 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
            
-            var channelStatusMsg = new ChannelStatusMessage();
+            var channelStatusMsg = new ChannelStatusMessage(data);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
-            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-            channelStatusMsg.parse();
+//            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+//            channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
             
            this._responseCallback(channelStatusMsg);
@@ -1050,10 +1054,10 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-            var versionMsg = new ANTVersionMessage();
+            var versionMsg = new ANTVersionMessage(data);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
-            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-            versionMsg.parse();
+//            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+//            versionMsg.parse();
 
             this._responseCallback(versionMsg);
 
@@ -1062,10 +1066,10 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
             
-            var capabilitiesMsg = new CapabilitiesMessage();
+            var capabilitiesMsg = new CapabilitiesMessage(data);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
-            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-            capabilitiesMsg.parse();
+//            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+//            capabilitiesMsg.parse();
             
             this.capabilities = capabilitiesMsg;
             

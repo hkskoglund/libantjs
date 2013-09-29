@@ -17,6 +17,8 @@ function SetChannelRFFreqMessage(channel, RFFreq) {
 
     this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_RFFREQ;
     this.name = "Set channel RF frequency";
+    this.type = ANTMessage.prototype.TYPE.REQUEST;
+    this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
 
     this.channel = channel;
     this.RFFreq = RFFreq;

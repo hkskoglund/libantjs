@@ -1,5 +1,5 @@
 
-// Allows using define in node.js
+// Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 

@@ -4,18 +4,21 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require, exports, module) {
 var ANTMessage = require('messages/ANTMessage');
 
-function CapabilitiesMessage() {
+function CapabilitiesMessage(data) {
 
     //if (typeof data !== "undefined") {
     //    ANTMessage.call(this, data);
     //    this.parse();
     //} else
-        ANTMessage.call(this);
+        ANTMessage.call(this,data);
 
     this.name = "Capabilities";
     this.id = ANTMessage.prototype.MESSAGE.CAPABILITIES;
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
     this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
+    
+    if (data)
+        this.parse();
 
    // console.log("Created CapabilitiesMessage", this);
 }

@@ -5,18 +5,21 @@ define(function (require, exports, module) {
     
     var  ANTMessage = require('messages/ANTMessage');
     
-    function DeviceSerialNumberMessage() {
+    function DeviceSerialNumberMessage(data) {
     
         //if (typeof data !== "undefined") {
         //    ANTMessage.call(this, data);
         //    this.parse();
         //} else 
-            ANTMessage.call(this);
+            ANTMessage.call(this,data);
     
         this.id = ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER;
         this.name = "Device Serial Number";
         this.type = ANTMessage.prototype.TYPE.RESPONSE;
         this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
+        
+        if (data)
+            this.parse();
     }
     
     DeviceSerialNumberMessage.prototype = Object.create(ANTMessage.prototype);
