@@ -1081,10 +1081,10 @@ Host.prototype.RXparse = function (error,data) {
 
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
            
-            var serialNumberMsg = new DeviceSerialNumberMessage();
+            var serialNumberMsg = new DeviceSerialNumberMessage(data);
              this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
-            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-            serialNumberMsg.parse();
+//            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+//            serialNumberMsg.parse();
             this.deviceSerialNumber = serialNumberMsg.serialNumber;
 
             this._responseCallback(serialNumberMsg);

@@ -1,13 +1,13 @@
-"use strict";
+/* global define: true, ArrayBuffer: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 
-function setLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
+function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
 
     var msgBuffer = new ArrayBuffer(2);
 
@@ -26,15 +26,15 @@ function setLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
     //console.log("setLowPrioriyChannelSearchTimeoutMessage", this);
 }
 
-setLowPrioriyChannelSearchTimeoutMessage.prototype = Object.create(ANTMessage.prototype);
+SetLowPrioriyChannelSearchTimeoutMessage.prototype = Object.create(ANTMessage.prototype);
 
-setLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = setLowPrioriyChannelSearchTimeoutMessage;
+SetLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = SetLowPrioriyChannelSearchTimeoutMessage;
 
 
-setLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function () {
+SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16);
 };
 
-module.exports = setLowPrioriyChannelSearchTimeoutMessage;
+module.exports = SetLowPrioriyChannelSearchTimeoutMessage;
     return module.exports;
 });

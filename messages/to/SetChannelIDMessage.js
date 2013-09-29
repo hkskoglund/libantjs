@@ -1,8 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, DataView: true, ArrayBuffer: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 

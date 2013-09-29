@@ -1,9 +1,9 @@
-"use strict";
+/* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    
+    "use strict";
     function HRMPage(broadcast) {
         this.timestamp = Date.now();
     
@@ -16,12 +16,12 @@ define(function (require, exports, module) {
     HRMPage.prototype.toString = function () {
         var msg = this.type + " P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
     
-        function addRRInterval(msg) {
+        var addRRInterval = function(msg) {
             if (this.RRInterval)
                 return " RR " + this.RRInterval.toFixed(1) + " ms";
             else
                 return "";
-        }
+        }.bind(this);
     
         switch (this.number) {
             case 4:
@@ -69,7 +69,7 @@ define(function (require, exports, module) {
     
         // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
         this.computedHeartRate = data[7];
-    }
+    };
     
     // Parses ANT+ pages the device uses paging
     HRMPage.prototype.parse = function (broadcast, previousHRMPage, usesPages) {
@@ -137,7 +137,7 @@ define(function (require, exports, module) {
                 throw new Error("Page " + this.number + " not supported");
                 //break;
         }
-    }
+    };
     
     // Page as JSON
     HRMPage.prototype.getJSON = function () {
@@ -146,7 +146,7 @@ define(function (require, exports, module) {
                      type: 'page',
                      page: this
                  });
-    }
+    };
     
     // Set RR interval based on previous heart event time and heart beat count
     HRMPage.prototype.setRRInterval = function (previousHeartBeatCount, previousHeartBeatEventTime) {
@@ -168,7 +168,7 @@ define(function (require, exports, module) {
             this.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
     
         }
-    }
+    };
     
     module.exports = HRMPage;
         return module.exports;

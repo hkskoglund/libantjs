@@ -1,7 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 var ANTMessage = require('messages/ANTMessage'),
     Channel = require('channel');
 
@@ -34,7 +35,7 @@ ChannelStatusMessage.prototype.STATE = {
     ASSIGNED: 0x01,
     SEARCHING: 0x02,
     TRACKING: 0x03
-}
+};
 
 ChannelStatusMessage.prototype.parse = function () {
     var status;
@@ -56,7 +57,7 @@ ChannelStatusMessage.prototype.parse = function () {
         case ChannelStatusMessage.prototype.STATE.ASSIGNED: this.channelStatus.stateMessage = "ASSIGNED"; break;
         case ChannelStatusMessage.prototype.STATE.SEARCHING: this.channelStatus.stateMessage = "SEARCHING"; break;
         case ChannelStatusMessage.prototype.STATE.TRACKING: this.channelStatus.stateMessage = "TRACKING"; break;
-        default: throw new Error('Unknown state for channel ' + this.channelStatus.state); break;
+        default: throw new Error('Unknown state for channel ' + this.channelStatus.state); 
     }
 
     //console.log("Channel status", this.channelNumber, this.channelStatus);
@@ -69,7 +70,7 @@ ChannelStatusMessage.prototype.parse = function () {
 
 ChannelStatusMessage.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
-}
+};
 
 module.exports = ChannelStatusMessage;
     return module.exports;

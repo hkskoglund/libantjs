@@ -1,7 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 function CapabilitiesMessage(data) {
@@ -207,7 +208,7 @@ CapabilitiesMessage.prototype.toString = function () {
         msg += "Selective data ";
   
     return msg;
-}
+};
 
 module.exports = CapabilitiesMessage;
     return module.exports;
