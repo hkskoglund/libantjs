@@ -1,14 +1,14 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, Uint8Array: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 
 function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
 
-    var msgBuffer = new ArrayBuffer(4),
+    var msgBuffer = new Uint8Array(4),
         pairingRequest = (deviceType & SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
     msgBuffer[0] = channel;
@@ -25,7 +25,7 @@ function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
     this.deviceType = deviceType;
     this.transmissionType = transmissionType;
 
-    this.setContent(msgBuffer);
+    this.setContent(msgBuffer.buffer);
 
     //console.log("SetSerialNumChannelIdMessage", this);
 }

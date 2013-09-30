@@ -1,14 +1,14 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, Uint8Array: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 
 function SetTransmitPowerMessage(transmitPower) {
 
-    var msgBuffer = new ArrayBuffer(2);
+    var msgBuffer = new Uint8Array(2);
 
     msgBuffer[0] = 0x00; // Filler
     msgBuffer[1] = transmitPower; // Range 0..4
@@ -18,7 +18,7 @@ function SetTransmitPowerMessage(transmitPower) {
     this.id = ANTMessage.prototype.MESSAGE.SET_TRANSMIT_POWER;
     this.name = "Set transmit power";
 
-    this.setContent(msgBuffer);
+    this.setContent(msgBuffer.buffer);
 
     //console.log("SetTransmitPowerMessage", this);
 }

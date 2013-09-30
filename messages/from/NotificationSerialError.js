@@ -1,13 +1,14 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 function NotificationSerialError(data) {
     ANTMessage.call(this, data);
     
-    console.log("Notification", data);
+   // console.log("Notification", data);
     this.parse();
 
     this.name = "Notification: Serial Error";
@@ -63,8 +64,8 @@ NotificationSerialError.prototype.parse = function () {
 
 NotificationSerialError.prototype.toString = function () {
     return this.name + " ID 0x" + this.id.toString(16) + " " + this.length + " " + this.message.text;
-}
+};
 
-module.exports = NotificationSerialError
+module.exports = NotificationSerialError;
 return module.exports;
 });

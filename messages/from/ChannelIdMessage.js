@@ -1,7 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, DataView: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 var ANTMessage = require('messages/ANTMessage'),
     //Channel = require('../../channel.js');
     ChannelId = require('messages/channelId');
@@ -68,7 +69,7 @@ ChannelIdMessage.prototype.parse = function () {
 
 ChannelIdMessage.prototype.toString = function () {
     return this.name + " C# " + this.channelNumber + " " + this.channelId.toString();
-}
+};
 
 module.exports = ChannelIdMessage;
     return module.exports;

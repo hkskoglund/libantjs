@@ -1,4 +1,4 @@
-/* global define: true, ArrayBuffer: true */
+/* global define: true, Uint8Array: true */
 
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
@@ -9,7 +9,7 @@ define(function (require, exports, module) {
     
     function SetProximitySearchMessage(channel, searchThreshold) {
     
-        var msgBuffer = new ArrayBuffer(2);
+        var msgBuffer = new Uint8Array(2);
             
         msgBuffer[0] = channel;
         msgBuffer[1] = searchThreshold; // 0 - disabled, 1:10 - closes to farthest
@@ -25,7 +25,7 @@ define(function (require, exports, module) {
         this.channel = channel;
         this.searchThreshold = searchThreshold;
     
-        this.setContent(msgBuffer);
+        this.setContent(msgBuffer.buffer);
     
         //console.log("SetProximitySearchMessage", this);
     }

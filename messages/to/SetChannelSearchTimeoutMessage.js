@@ -1,4 +1,4 @@
-/* global define: true, ArrayBuffer: true */
+/* global define: true, Uint8Array: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -8,7 +8,7 @@ define(function (require, exports, module) {
     
     function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
     
-        var msgBuffer = new ArrayBuffer(2);
+        var msgBuffer = new Uint8Array(2);
     
         msgBuffer[0] = channel;
         msgBuffer[1] = searchTimeout;
@@ -23,7 +23,7 @@ define(function (require, exports, module) {
         this.channel = channel;
         this.HPsearchTimeout = searchTimeout;
     
-        this.setContent(msgBuffer);
+        this.setContent(msgBuffer.buffer);
     
         //console.log("SetChannelSearchTimeoutMessage", this);
     }

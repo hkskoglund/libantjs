@@ -10,7 +10,7 @@ function SetChannelPeriodMessage(channel, messagePeriod) {
 
     var msgBuffer = new DataView(new ArrayBuffer(3));
 
-    msgBuffer[0] = channel;
+    msgBuffer.setUint8(0,channel);
     msgBuffer.setUint16(1,messagePeriod, true);
 
     ANTMessage.call(this);

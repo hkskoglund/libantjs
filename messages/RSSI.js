@@ -1,7 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, Int8Array: true, DataView: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 // Function names based on Dynastram Android SDK v 4.00 documentation
 function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
 

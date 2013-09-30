@@ -1,4 +1,4 @@
-/* global define: true, ArrayBuffer: true */
+/* global define: true, Uint8Array: true */
 
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
@@ -9,7 +9,7 @@ var ANTMessage = require('messages/ANTMessage');
 
 function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
 
-    var msgBuffer = new ArrayBuffer(2);
+    var msgBuffer = new Uint8Array(2);
 
     msgBuffer[0] = channel;
     msgBuffer[1] = searchTimeout;
@@ -21,7 +21,7 @@ function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
     this.type = ANTMessage.prototype.TYPE.REQUEST;
     this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
 
-    this.setContent(msgBuffer);
+    this.setContent(msgBuffer.buffer);
 
     //console.log("setLowPrioriyChannelSearchTimeoutMessage", this);
 }

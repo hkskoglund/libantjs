@@ -1,7 +1,8 @@
-"use strict"
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+    "use strict";
 var ANTMessage = require('messages/ANTMessage');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
@@ -30,32 +31,32 @@ NotificationStartup.prototype.constructor = NotificationStartup;
 NotificationStartup.prototype.POWER_ON_RESET ={
             BIT_MASK : 0x00,
             MESSAGE : 'POWER_ON_RESET'
-},
+};
 
  NotificationStartup.prototype.HARDWARE_RESET_LINE = {
             BIT_MASK : 0x01,
             MESSAGE : 'HARDWARE_RESET_LINE'
- },
+ };
 
  NotificationStartup.prototype.WATCH_DOG_RESET = {
             BIT_MASK : 1 << 2,
             MESSAGE : 'WATCH_DOG_RESET'
- },
+ };
 
 NotificationStartup.prototype.COMMAND_RESET = {
             BIT_MASK : 1 << 5,
             MESSAGE : 'COMMAND_RESET'
-},
+};
 
 NotificationStartup.prototype.SYNCHRONOUS_RESET = {
             BIT_MASK : 1 << 6,
             MESSAGE : 'SYNCHRONOUS_RESET'
-},
+};
 
 NotificationStartup.prototype.SUSPEND_RESET = {
             BIT_MASK: 1 << 7,
             MESSAGE: 'SUSPEND_RESET'
-}
+};
 
 
 NotificationStartup.prototype.parse = function () {
@@ -65,11 +66,11 @@ NotificationStartup.prototype.parse = function () {
     var startupMessage = this.content[0];
 
     if (startupMessage === NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK) {
-        msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE
+        msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE;
        // code = NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK;
     }
     else if (startupMessage === NotificationStartup.prototype.HARDWARE_RESET_LINE.BIT_MASK) {
-        msg = NotificationStartup.prototype.HARDWARE_RESET_LINE.MESSAGE
+        msg = NotificationStartup.prototype.HARDWARE_RESET_LINE.MESSAGE;
         //code = NotificationStartup.prototype.HARDWARE_RESET_LINE.BIT_MASK;
     }
     else if (startupMessage & NotificationStartup.prototype.WATCH_DOG_RESET.BIT_MASK) {
@@ -97,7 +98,7 @@ NotificationStartup.prototype.parse = function () {
 
 NotificationStartup.prototype.toString = function () {
     return this.name +" ID 0x"+this.id.toString(16)+" " + this.length+" "+this.message.text;
-}
+};
 
 module.exports = NotificationStartup;
     return module.exports;

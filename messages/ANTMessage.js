@@ -1,10 +1,10 @@
+/* global define: true, ArrayBuffer: true, Uint8Array: true */
 
-"use strict";
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 /* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
 */
@@ -126,7 +126,9 @@ ANTMessage.prototype.getRawMessage = function () {
     standardMessage[1] = content_len;
     standardMessage[2] = this.id;
     
-    standardMessage.set(new Uint8Array(this.content),3);
+    var contentArr = new Uint8Array(this.content);
+    console.log("Setting content of message to ",contentArr, this.content);
+    standardMessage.set(contentArr,3);
     
     
 

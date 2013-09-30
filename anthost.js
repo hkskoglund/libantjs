@@ -171,8 +171,11 @@ function Host() {
     // Send a message to ANT
 this._sendMessage = function (message,callback) {
     
-    if (!this._setResponseCallback(message,callback))
+    if (!this._setResponseCallback(message,callback)) // If response callback is set already, don't allow another request
+    {
+        this.log.log('warn','Already awaiting response for ',message);
         return;
+    }
     
     var timeMsg,
         
@@ -215,6 +218,7 @@ this._sendMessage = function (message,callback) {
     var transferMessage = function() {
 
         //this.log.time('sendMessageUSBtransfer');
+        this.log.log('log','Sending message ',message);
         this.log.time(ANTMessage.prototype.MESSAGE[message.id]);
         
         

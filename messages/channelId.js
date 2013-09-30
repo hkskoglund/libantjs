@@ -1,8 +1,8 @@
-"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+/* global define: true, DataView: true */
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-
+"use strict";
 // Function names based on Dynastram Android SDK v 4.00 documentation
 function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
     
@@ -18,24 +18,49 @@ function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
 
    // verify20BitDeviceNumber.bind(this)();
     
+    this._formatTransmissionType = function() {
+    var msg = "";
+
+    // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
+    switch (this.transmissionType & 0x03) {
+       // case 0x00: msg += "Reserved"; break;
+        case 0x01: msg += "Independent"; break; // Only one master and one slave participating
+        case 0x02: msg += "Shared 1 byte address (if supported)"; break;
+        case 0x03: msg += "Shared 2 byte address"; break;
+       // default: msg += "?"; break;
+    }
+
+    // Bit 2
+    if (this.usesANTPLUSGlobalDataPages()) {
+       // case 0: msg += " | ANT+ Global data pages not used"; break;
+         msg += " | ANT+ Global data pages"; 
+       // default: msg += " | ?"; break;
+    }
+
+    if (this.has20BitDeviceNumber())
+        msg += " | 20-bit D#";
+
+    return msg;
+}.bind(this);
+    
 }
 
 
 ChannelId.prototype.getDeviceNumber = function () {
     return this.deviceNumber;
-}
+};
 
 ChannelId.prototype.getDeviceType = function () {
     return this.deviceType;
-}
+};
 
 ChannelId.prototype.getTransmissionType = function () {
     return this.transmissionType;
-}
+};
 
 ChannelId.prototype.getPair = function () {
     return this.pair;
-}
+};
 
 // Parse channel ID if enabled via LIBConfig
 ChannelId.prototype.parse = function (extendedData) {
@@ -50,7 +75,7 @@ ChannelId.prototype.parse = function (extendedData) {
 
     this.pair = (this.deviceType & ChannelId.prototype.BITMASK_PAIR > 0) ? true : false;
 
-}
+};
 
 //function verify20BitDeviceNumber()
 //{
@@ -75,51 +100,28 @@ ChannelId.prototype.ANY_TRANSMISSION_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBE
 // Get the 2 least significatiant bit (LSB) of transmission type that determines whether the channel is independent or using 1/2-byte shared address
 ChannelId.prototype.getSharedAddressType = function () {
     return this.transmissionType & 0x03;
-}
+};
 
 ChannelId.prototype.SHARED_ADDRESS_TYPE = {
     INDEPENDENT_CHANNEL: 0x01,
     ADDRESS_1BYTE: 0x02,
     ADDRESS_2BYTE: 0x03
-}
-
-function formatTransmissionType() {
-    var msg = "";
-
-    // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
-    switch (this.transmissionType & 0x03) {
-       // case 0x00: msg += "Reserved"; break;
-        case 0x01: msg += "Independent"; break; // Only one master and one slave participating
-        case 0x02: msg += "Shared 1 byte address (if supported)"; break;
-        case 0x03: msg += "Shared 2 byte address"; break;
-       // default: msg += "?"; break;
-    }
-
-    // Bit 2
-    if (this.usesANTPLUSGlobalDataPages()) {
-       // case 0: msg += " | ANT+ Global data pages not used"; break;
-         msg += " | ANT+ Global data pages"; 
-       // default: msg += " | ?"; break;
-    }
-
-    if (this.has20BitDeviceNumber())
-        msg += " | 20-bit D#";
-
-    return msg;
 };
 
+
+
 ChannelId.prototype.has20BitDeviceNumber = function () {
-    return (this.transmissionType & 0xF0) >> 4
-}
+    return (this.transmissionType & 0xF0) >> 4;
+};
 
 ChannelId.prototype.usesANTPLUSGlobalDataPages = function () {
     return (this.transmissionType & parseInt("100",2))>>2;
-}
+};
 
 ChannelId.prototype.toString = function () {
     
-    return "CID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType.bind(this)()
-}
+    return "CID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + this._formatTransmissionType();
+};
 
 module.exports = ChannelId;
     return module.exports;
