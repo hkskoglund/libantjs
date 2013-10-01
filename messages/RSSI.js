@@ -1,4 +1,4 @@
-/* global define: true, Int8Array: true, DataView: true */
+/* global define: true, Int8Array: true, DataView: true, Uint8Array: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -19,12 +19,14 @@ function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
 }
 
 RSSI.prototype.parse = function (extendedData) {
-    this.measurementType = extendedData[0];
+    var extendedDataUint8 = new Uint8Array(extendedData); // Allows using [], which cannot be used on an ArrayBuffer
+    
+    this.measurementType = extendedDataUint8[0];
 
     if (this.measurementType !== RSSI.prototype.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
         return;
 
-    this.RSSIValue = extendedData[1];
+    this.RSSIValue = extendedDataUint8[1];
     this.thresholdConfigurationValue = (new DataView(extendedData)).getInt8(2); // Signed int (2's complement ?)
 };
 

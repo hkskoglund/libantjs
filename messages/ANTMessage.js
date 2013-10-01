@@ -20,7 +20,7 @@ function ANTMessage(data) {
         this.SYNC = data[0];
         this.length = data[1];
         this.id = data[2];
-        this.content = data.subarray(3, 3 + this.length);
+        this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
         //console.log("CONTENT", this.content);
         this.CRC = data[3 + this.length];
     } 

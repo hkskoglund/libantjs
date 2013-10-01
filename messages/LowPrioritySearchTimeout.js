@@ -9,8 +9,10 @@ define(function (require, exports, module) {
     "use strict";
     
     function LowPrioritySearchTimeout(timeout) {
-        if (!timeout)
-           this.timeout = LowPrioritySearchTimeout.prototype.DEFAULT;
+        if (typeof timeout === 'undefined') {
+          console.warn("No high priority timeout specified, setting it to default ",LowPrioritySearchTimeout.prototype.DEFAULT);
+            this.timeout = LowPrioritySearchTimeout.prototype.DEFAULT;
+        }
         else
             this.timeout = timeout;
     }

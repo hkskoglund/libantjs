@@ -949,12 +949,12 @@ Host.prototype.RXparse = function (error,data) {
 //
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
-            console.log(Date.now(),"Broadcast");
+           
             this.broadcast = new BroadcastDataMessage(data); 
 //
             //this.broadcast.parse(data.subarray(3,3+ANTmsg.length));
 //
-             this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data);
+             this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....
@@ -1109,7 +1109,7 @@ Host.prototype.RXparse = function (error,data) {
     if (data.length > nextExpectedSYNCIndex) {
         
         // console.log(data.slice(nextExpectedSYNCIndex));
-        this.RXparse(undefined,data.slice(nextExpectedSYNCIndex));
+        this.RXparse(undefined,data.buffer.slice(nextExpectedSYNCIndex));
     }
 
 };
@@ -1455,11 +1455,10 @@ Host.prototype.getChannelStatusAll = function (callback) {
         var configurationMsg;
 
         verifyRange(this.capabilities,'channel',channel);
-
+     
         configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
         this._sendMessage(configurationMsg,  callback);
-
 
     };
 

@@ -10,6 +10,8 @@ define(function (require, exports, module) {
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');
     
+   
+    
     function DeviceProfile_HRM(configuration) {
         //console.log("HRM configuration", configuration);
         DeviceProfile.call(this, configuration);
@@ -21,8 +23,8 @@ define(function (require, exports, module) {
             channelType: "slave",
             channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(24), // 60 seconds
-            HPsearchTimeout: new HighPrioritySearchTimeout(10), // 25 seconds n*2.5 s
+            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX), // 60 seconds
+            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED), // 25 seconds n*2.5 s
             //transmitPower: 3,
             //channelTxPower : 3,
             channelPeriod: 8070, // HRM
@@ -31,6 +33,8 @@ define(function (require, exports, module) {
             //broadcastScriptFileName : './deviceProfile/deviceProfileHRM.js'
     
         });
+        
+       // console.log("TESTING",this.parameters['slave'].HPsearchTimeout instanceof HighPrioritySearchTimeout);
     
         this.addConfiguration("slave16140", {
             networkKey: setting.networkKey["ANT+"],
