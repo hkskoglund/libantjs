@@ -4,6 +4,7 @@
 define(function (require, exports, module) {
 "use strict";
     var ANTMessage = require('messages/ANTMessage');
+        //HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout');
     
     
     function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
@@ -11,7 +12,10 @@ define(function (require, exports, module) {
         var msgBuffer = new Uint8Array(2);
     
         msgBuffer[0] = channel;
-        msgBuffer[1] = searchTimeout;
+        if (typeof searchTimeout !== 'number')
+          msgBuffer[1] = searchTimeout.getRawValue();
+        else
+            msgBuffer[1] = searchTimeout;
     
         ANTMessage.call(this);
     

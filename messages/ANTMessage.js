@@ -127,7 +127,7 @@ ANTMessage.prototype.getRawMessage = function () {
     standardMessage[2] = this.id;
     
     var contentArr = new Uint8Array(this.content);
-    console.log("Setting content of message to ",contentArr, this.content);
+    //console.log("Setting content of message to ",contentArr, this.content);
     standardMessage.set(contentArr,3);
     
     

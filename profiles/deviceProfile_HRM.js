@@ -6,7 +6,9 @@ define(function (require, exports, module) {
 
     var DeviceProfile = require('profiles/deviceProfile'),
         Page = require('profiles/HRMPage'),
-        setting = require('settings');
+        setting = require('settings'),
+        HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');
     
     function DeviceProfile_HRM(configuration) {
         //console.log("HRM configuration", configuration);
@@ -19,14 +21,14 @@ define(function (require, exports, module) {
             channelType: "slave",
             channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: 24, // 60 seconds
-            HPsearchTimeout: 10, // 25 seconds n*2.5 s
+            LPsearchTimeout: new LowPrioritySearchTimeout(24), // 60 seconds
+            HPsearchTimeout: new HighPrioritySearchTimeout(10), // 25 seconds n*2.5 s
             //transmitPower: 3,
             //channelTxPower : 3,
             channelPeriod: 8070, // HRM
             //channelPeriod : 8086, //SPDCAD
-            proximitySearch: 10,   // 0 - disabled 1 (nearest) - 10 (farthest)
-            broadcastScriptFileName : './deviceProfile/deviceProfileHRM.js'
+            //proximitySearch: 10,   // 0 - disabled 1 (nearest) - 10 (farthest)
+            //broadcastScriptFileName : './deviceProfile/deviceProfileHRM.js'
     
         });
     
@@ -42,7 +44,7 @@ define(function (require, exports, module) {
             //channelTxPower : 3,
             channelPeriod: 8070 * 2, // HRM
             //channelPeriod : 8086, //SPDCAD
-            proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+            //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
     
         });
     
@@ -58,7 +60,7 @@ define(function (require, exports, module) {
             //channelTxPower : 3,
             channelPeriod: 8070 * 4, // HRM
             //channelPeriod : 8086, //SPDCAD
-            proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+            //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
     
         });
     

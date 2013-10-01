@@ -1,4 +1,4 @@
-/* global console: true, clearTimeout: true, setTimeout: true, require: true, module:true */
+/* global define: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
 //var requirejs = require('requirejs');
 //
@@ -16,13 +16,17 @@
 
 // Allows using define in node.js
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
-/* global: console:true */
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 'use strict';
    var
     
+    // Data
+   
+    BroadcastDataMessage = require('messages/from/BroadcastDataMessage'),
+       
     Logger = require('logger'),
     USBDevice = require('usb/USBDevice'),
     Channel = require('Channel'),
@@ -284,10 +288,10 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
 Host.prototype.establishChannel = function (channelNumber, networkNumber, configurationName, channel, callback) {
     var parameters = channel.parameters[configurationName],
         //channelType,
-        masterChannel = channel.isMaster(configurationName),
+        isMasterChannel = channel.isMaster(configurationName),
         msg;
 
-    console.log("Conf.name", configurationName,parameters);
+   this.log.log('log','Establishing channel for configuration', configurationName,parameters, 'Master channel : '+isMasterChannel);
 
    
     //console.log("Options", parameters);
@@ -343,7 +347,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
     }
 
     // Slave - convert declarative syntax to channelId object
-    if (!(parameters.channelId instanceof ChannelId) && !masterChannel) { // Allow for channel Id. object literal with '*' as 0x00
+    if (!(parameters.channelId instanceof ChannelId) && !isMasterChannel) { // Allow for channel Id. object literal with '*' as 0x00
 
         if (typeof parameters.channelId.deviceNumber === "undefined" || parameters.channelId.deviceNumber === '*' || typeof parameters.channelId.deviceNumber !== 'number')
             parameters.channelId.deviceNumber = 0x00;
@@ -357,10 +361,10 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         parameters.channelId = new ChannelId(parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType);
     }
 
-    console.log("Master channel", masterChannel);
+  
 
     // Master - convert declarative syntax to channelId object
-    if (!(parameters.channelId instanceof ChannelId) && masterChannel) {
+    if (!(parameters.channelId instanceof ChannelId) && isMasterChannel) {
 
         if (typeof parameters.channelId.deviceNumber === "undefined") {
             callback(new Error('No device number specified in channel Id'));
@@ -531,7 +535,7 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             var setChannelSearchTimeout = function () {
                 // Default HP = 10 -> 25 seconds
-                if (!masterChannel && parameters.HPsearchTimeout) 
+                if (!isMasterChannel && parameters.HPsearchTimeout) 
                     this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response) {
                         if (!error) {
                             setLowPriorityChannelSearchTimeout();
@@ -546,22 +550,8 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
         
             var setLowPriorityChannelSearchTimeout = function () {
                 // Default LP = 2 -> 5 seconds
-                if (!masterChannel && parameters.LPsearchTimeout) 
+                if (!isMasterChannel && parameters.LPsearchTimeout) 
                     this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response) {
-                        if (!error) {
-                            this.log.log('log', response.toString());
-                            setProximitySearch();
-                        }
-                        else
-                            callback(error);
-                    }.bind(this));
-                else
-                    setProximitySearch();
-            }.bind(this);
-
-            var setProximitySearch = function () {
-                if (parameters.proximitySearch)
-                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
                         if (!error) {
                             this.log.log('log', response.toString());
                             openChannel();
@@ -572,6 +562,20 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
                 else
                     openChannel();
             }.bind(this);
+
+//            var setProximitySearch = function () {
+//                if (parameters.proximitySearch)
+//                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
+//                        if (!error) {
+//                            this.log.log('log', response.toString());
+//                            openChannel();
+//                        }
+//                        else
+//                            callback(error);
+//                    }.bind(this));
+//                else
+//                    openChannel();
+//            }.bind(this);
 
 
             var openChannel = function () {
@@ -595,10 +599,6 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 };
     
 
-       
-
-//            
-    
 // Initializes Host
 Host.prototype.init = function (options, initCB) {
     // Logging
@@ -913,7 +913,7 @@ Host.prototype.RXparse = function (error,data) {
 //
 //        //    break;
 //
-//        case ANTMessage.prototype.MESSAGE.BROADCAST_DATA:
+        case ANTMessage.prototype.MESSAGE.BROADCAST_DATA:
 //
 //        //    msgStr += ANTMessage.prototype.MESSAGE.broadcast_data.friendly + " ";
 //
@@ -949,11 +949,12 @@ Host.prototype.RXparse = function (error,data) {
 //
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
-//            this.broadcast = new BroadcastDataMessage(); 
+            console.log(Date.now(),"Broadcast");
+            this.broadcast = new BroadcastDataMessage(data); 
 //
-//            this.broadcast.parse(data.slice(3,3+ANTmsg.length));
+            //this.broadcast.parse(data.subarray(3,3+ANTmsg.length));
 //
-//            // console.log(Date.now(),this.broadcast.toString(), "Payload",this.broadcast.data);
+             this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data);
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....
@@ -969,7 +970,7 @@ Host.prototype.RXparse = function (error,data) {
 ////            if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, this.broadcast))
 ////              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + this.broadcast.toString());
 //
-//            break;
+            break;
 //
         // Notifications
 
@@ -1005,6 +1006,7 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
+            
             var channelResponseMsg = new ChannelResponseMessage(data);
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
@@ -1363,7 +1365,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
             if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
                 cb(new Error('Device does not support extended assignment'));
         }
-
+        
         this._sendMessage(configurationMsg, cb);
         //, function _validationCB(responseMessage) {
         //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
