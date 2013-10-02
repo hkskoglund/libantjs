@@ -65,15 +65,15 @@ define(function (require, exports, module) {
     // Parse channel ID if enabled via LIBConfig
     ChannelId.prototype.parse = function (extendedData) {
         
-        var extendedDataUint8 = new Uint8Array(extendedData);
+        //var extendedDataUint8 = new Uint8Array(extendedData);
         // | DN # af 41 | DT # 78 |T# 01
     
-        this.deviceNumber = (new DataView(extendedData)).getUint16(0,true);
-        this.deviceType = extendedDataUint8[2];
+        this.deviceNumber = (new DataView(extendedData.buffer)).getUint16(extendedData.byteOffset+0,true);
+        this.deviceType = extendedData[2];
     
         // From spec. p. 17 - "an 8-bit field used to define certain transmission characteristics of a device" - shared address, global data pages, 20 bit device number
     
-        this.transmissionType = extendedDataUint8[3];
+        this.transmissionType = extendedData[3];
     
         this.pair = (this.deviceType & ChannelId.prototype.BITMASK_PAIR > 0) ? true : false;
     

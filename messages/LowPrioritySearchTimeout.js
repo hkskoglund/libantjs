@@ -65,6 +65,11 @@ define(function (require, exports, module) {
         return this.timeout;
     };
     
+    LowPrioritySearchTimeout.prototype.toString = function ()
+    {
+       return this.getRawValue()+" "+this.convertToMilliseconds()+ ' ms.';
+    }
+    
     module.exports = LowPrioritySearchTimeout;
     
     return module.exports;

@@ -810,6 +810,12 @@ Host.prototype.RXparse = function (error,data) {
         id: data[2]
     };
     
+    // Check for valid SYNC byte at start
+    var   SYNCOK = (ANTmsg.SYNC === ANTMessage.prototype.SYNC);
+    if (!SYNCOK) {
+        this.log.log('error', 'Invalid SYNC byte '+ ANTmsg.SYNC + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length);
+        return;
+    }
    
     //var ANTmsg = new ANTMessage();
     //ANTmsg.setMessage(data, true);
@@ -819,8 +825,6 @@ Host.prototype.RXparse = function (error,data) {
     var OFFSET_CONTENT = 3,
         OFFSET_LENGTH = 1,
 
-        antInstance = this,
-       // self = this,
         firstSYNC = ANTmsg.SYNC,
         msgLength = ANTmsg.length,
        // msgID = ANTmsg.id,
@@ -837,18 +841,15 @@ Host.prototype.RXparse = function (error,data) {
         msgCRC = data[3 + ANTmsg.length],
         msgCallback;
     //    verifiedCRC = ANTmsg.getCRC(data),
-    //    SYNCOK = (ANTmsg.SYNC === ANTMessage.prototype.SYNC),
+    
     //    CRCOK = (msgCRC === verifiedCRC);
 
     //if (typeof msgCRC === "undefined")
     //    console.log("msgCRC undefined", "ANTmsg",ANTmsg, data);
 
-    //// Check for valid SYNC byte at start
+   
 
-    //if (!SYNCOK) {
-    //    this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, " Invalid SYNC byte "+ firstSYNC+ " expected "+ ANTMessage.prototype.SYNC+" cannot trust the integrety of data, thus discarding bytes:"+ data.length);
-    //    return;
-    //}
+    
 
     //// Check CRC
 
@@ -1117,7 +1118,8 @@ Host.prototype.RXparse = function (error,data) {
     }
 //
     // There might be more buffered data messages from ANT engine available (if commands/request are sent, but not read in awhile)
-
+    // Buffering is done by the LIBUSB user-mode driver
+    // TO DO : Verify i
     var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
     if (data.length > nextExpectedSYNCIndex) {
         

@@ -6,7 +6,7 @@
 define(function (require, exports, module) {
 "use strict";
 /* Standard message :
-       SYNC MSGLENGTH MSGID CHANNELNUMBER PAYLOAD (8 bytes) CRC
+       SYNC MSGLENGTH MSGID CHANNELNUMBER CONTENT (8 bytes) CRC
 */
 
 function ANTMessage(data) {
@@ -15,12 +15,13 @@ function ANTMessage(data) {
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    if (data) {
-        this.buffer = data;
+    if (data && data.constructor.name === 'Uint8Array') {
+        //this.buffer = data;
         this.SYNC = data[0];
         this.length = data[1];
         this.id = data[2];
-        this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
+        //this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
+        this.content = data.subarray(3,3+this.length);
         //console.log("CONTENT", this.content);
         this.CRC = data[3 + this.length];
     } 
@@ -197,11 +198,11 @@ ANTMessage.prototype.getRawMessage = function () {
 //    
 //}
 
-ANTMessage.prototype.getBuffer = function () {
-    return this.buffer;
-};
-
-ANTMessage.prototype.toBuffer = ANTMessage.prototype.getBuffer;
+//ANTMessage.prototype.getBuffer = function () {
+//    return this.buffer;
+//};
+//
+//ANTMessage.prototype.toBuffer = ANTMessage.prototype.getBuffer;
 
 // CheckSUM = XOR of all bytes in message
 ANTMessage.prototype.getCRC = function (messageBuffer) {

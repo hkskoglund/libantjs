@@ -36,6 +36,7 @@ define(function (require, exports, module) {
     };
     
     Channel.prototype.showConfiguration = function (name) {
+        var msg = '';
         var parameters = this.parameters[name];
     
         function format(number) {
@@ -57,12 +58,17 @@ define(function (require, exports, module) {
         }
     
         function formatSearchTimeout(searchTimeout) {
-            var friendlyFormat;
+            
+            var friendlyFormat,
+                value = searchTimeout;
     
             if (typeof searchTimeout === "undefined")
                 return 'undefined';
     
-                switch (searchTimeout) {
+            if (typeof searchTimeout !== 'number')
+                value = searchTimeout.getRawValue();
+            
+                switch (value) {
                     case 0:
                         friendlyFormat = "Disabled";
                         break;
@@ -70,10 +76,10 @@ define(function (require, exports, module) {
                         friendlyFormat = "Infinity";
                         break;
                     default:
-                        friendlyFormat = searchTimeout * 2.5 + "s";
+                        friendlyFormat = value * 2.5 + "s";
                         break;
               }
-    
+       
                 return friendlyFormat;
     
         }
@@ -89,9 +95,19 @@ define(function (require, exports, module) {
                 return Channel.prototype.EXTENDED_ASSIGNMENT[extendedAssignment];
         }
     
-        return name +" "+ parameters.channelId.toString()+
-            ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod)+ ' LP '+
-            formatSearchTimeout(parameters.LPsearchTimeout) + ' HP ' + formatSearchTimeout(parameters.HPsearchTimeout) + ' ext.Assign ' + formatExtendedAssignment(parameters.extendedAssignment);
+        msg =  name +" "+ parameters.channelId.toString()+
+            ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod);
+        
+        if (parameters.LPsearchTimeout)
+            msg += ' LP '+ formatSearchTimeout(parameters.LPsearchTimeout);
+        
+        if (parameters.HPsearchTimeout)
+            msg += ' HP ' + formatSearchTimeout(parameters.HPsearchTimeout);
+        
+        if (parameters.extendedAssignment)
+            msg += ' ext.Assign ' + formatExtendedAssignment(parameters.extendedAssignment);
+        
+        return msg;
     };
     //
     //

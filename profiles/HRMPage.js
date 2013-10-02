@@ -4,6 +4,7 @@
 
 define(function (require, exports, module) {
     "use strict";
+    
     function HRMPage(broadcast) {
         this.timestamp = Date.now();
     
@@ -57,14 +58,14 @@ define(function (require, exports, module) {
     
     // Parses common fields for all pages
     HRMPage.prototype.parseCommon = function (data) {
-        var dataView = new DataView(data.buffer);
+        var dataView = new DataView(data.buffer); // Remeber to use .byteOffset to address the right byte in the buffer
         
         // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
     
         this.changeToggle = (data[0] & 0x80) >> 7;
     
         // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
-        this.heartBeatEventTime = dataView.getUint16(4,true);
+        this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);
     
         // Counter for each heart beat event, rollover 255 counts
         this.heartBeatCount = data[6];
@@ -80,13 +81,6 @@ define(function (require, exports, module) {
         var data = broadcast.data, 
             dataView = new DataView(data.buffer);
         
-        // Check buffer
-        
-        if (data.length !== dataView.byteLength) {
-            console.error('Broadcast buffer data and underlying array buffer is not of same length, cannot proceed with parsing of broadcast');
-            return;
-        }
-       
         if (usesPages)
             this.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
         else
@@ -99,7 +93,7 @@ define(function (require, exports, module) {
     
                 this.type = "Main";
     
-                this.previousHeartBeatEventTime = dataView.getUint16(2,true);
+                this.previousHeartBeatEventTime = dataView.getUint16(data.byteOffset+2,true);
     
                 // Only calculate RR if there is less than 64 seconds between data pages and 1 beat difference between last reception of page
                 if (previousHRMPage.timestamp && (this.timestamp - previousHRMPage.timestamp) < 64000)
@@ -120,7 +114,7 @@ define(function (require, exports, module) {
                 this.type = "Background";
     
                 this.manufacturerID = data[1];
-                this.serialNumber = dataView.getUint16(2,true); // Upper 16-bits of a 32 bit serial number
+                this.serialNumber = dataView.getUint16(data.byteOffset+2,true); // Upper 16-bits of a 32 bit serial number
     
                 // Set the lower 2-bytes of serial number, if available in channel Id.
                 if (typeof broadcast.channelId !== "undefined" && typeof broadcast.channelId.deviceNumber !== "undefined")
@@ -131,7 +125,7 @@ define(function (require, exports, module) {
             case 1: // Background data page
                 this.type = "Background";
     
-                this.cumulativeOperatingTime = (dataView.getUint32(1,true) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
+                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+1,true) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
     
                 break;
     

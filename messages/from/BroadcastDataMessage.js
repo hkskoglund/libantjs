@@ -6,6 +6,8 @@ define(function (require, exports, module) {
     "use strict";
     var ANTMessage = require('messages/ANTMessage'),
         LibConfig = require('messages/libConfig'),
+        
+        // Extended data if requested by libconfig
         ChannelId = require('messages/channelId'),
         RSSI = require('messages/rssi'),
         RXTimestamp = require('messages/RXTimestamp');
@@ -36,21 +38,21 @@ define(function (require, exports, module) {
             dataView;
     
         this.channel = this.content[0];
-        this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
-    
+        //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
+        this.data = this.content.subarray(1,9);
         // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
         // 'Broadcast Data ID 0x4e C# 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
         //this.extendedDataMessage = () ? true : false;
         if (this.content.length > 9) {
             this.flagsByte = this.content[9];
-            this.extendedData = new Uint8Array(this.content.buffer.slice(10));
-    
+            //this.extendedData = new Uint8Array(this.content.buffer.slice(10));
+            this.extendedData = this.content.subarray(10);
             // Check for channel ID
             // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
             if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
                 this.channelId = new ChannelId();
-                this.channelId.parse(this.extendedData.buffer.slice(0, 4));
-    
+                //this.channelId.parse(this.extendedData.buffer.slice(0, 4));
+                this.channelId.parse(this.extendedData.subarray(0, 4));
                 // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
     //            sharedAddress = this.channelId.getSharedAddressType();
     //
@@ -67,15 +69,18 @@ define(function (require, exports, module) {
             if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) 
             {
                 this.RXTimestamp = new RXTimestamp();
-                this.RXTimestamp.parse(this.extendedData.buffer.slice(-2));
+               // this.RXTimestamp.parse(this.extendedData.buffer.slice(-2));
+                this.RXTimestamp.parse(this.extendedData.subarray(-2));
             }
             
             if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
-                this.RSSI.parse(this.extendedData.buffer.slice(0, 2));
+                //this.RSSI.parse(this.extendedData.buffer.slice(0, 2));
+                this.RSSI.parse(this.extendedData.subarray(0, 2));
             }
     
             if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
-                this.RSSI.parse(this.extendedData.buffer.slice(4, 7));
+                //this.RSSI.parse(this.extendedData.buffer.slice(4, 7));
+                this.RSSI.parse(this.extendedData.subarray(4, 7));
             }
         }
     

@@ -9,9 +9,9 @@ define(function (require, exports, module) {
         this.timestamp = rxTimestamp;
     }
     
-    RXTimestamp.prototype.parse = function (timestampBuffer) {
+    RXTimestamp.prototype.parse = function (timestamp) {
        
-        this.timestamp = (new DataView(timestampBuffer)).getUint16(0,true);
+        this.timestamp = (new DataView(timestamp.buffer)).getUint16(0+timestamp.byteOffset,true);
         
     };
     
