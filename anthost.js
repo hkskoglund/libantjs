@@ -74,19 +74,28 @@ define(function (require, exports, module) {
     ChannelStatusMessage = require('messages/from/ChannelStatusMessage'),
     
     ChannelId = require('messages/channelId');
+    
+    
+ 
 
   //  DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
 
 // Host for USB ANT communication
 function Host() {
     
-    this._channel = []; // Alternative new Array(), jshint recommends []
-    this._channelStatus = {};
-
-    this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
-    this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
-
-    this._mutex = {};
+    //
+    // { { 0 : { 
+    //          channel : channel,
+    //            status : ..}}}
+    //  
+    //
+    //
+    this._channel = {}; 
+   
+    
+//
+//    this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
+//    this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
 
     // Callbacks when response is received for a command
     this.callback = {};
@@ -97,7 +106,7 @@ function Host() {
     // Logging
     this.log = new Logger(false);
     
-    // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc
+    // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc, yet another approach could be to lift it to a module var (must be called with this bound to host instance)
       
  this._responseCallback = function (msg) {
      
@@ -413,8 +422,14 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
     this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
 
-    this._channel[channelNumber] = channel; // Associate channel with particular channel number on host
-
+    if (this._channel[channelNumber] === undefined)
+        this._channel[channelNumber] = {};
+    else
+       this.log.log('warn','Overwriting previous channel information for channel C# '+channelNumber,this._channel[channelNumber]); 
+    
+    this._channel[channelNumber].channel = channel; // Associate channel with particular channel number on host
+    this._channel[channelNumber].network = networkNumber;
+        
     this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
         if (!error) {
 
@@ -951,27 +966,25 @@ Host.prototype.RXparse = function (error,data) {
 //           
            
             this.broadcast = new BroadcastDataMessage(data); 
-//
-            //this.broadcast.parse(data.subarray(3,3+ANTmsg.length));
-//
-             this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
+
+             //this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....
 //
-//            // Send event to specific channel handler
-//        if (typeof this._channel[this.broadcast.channel] !== "undefined") {
-//           
-//            if (!this._channel[this.broadcast.channel].emit(ANTParser.prototype.EVENT.BROADCAST, this.broadcast))
-//                this.log.log('log',"No listener for : " + ANTParser.prototype.EVENT.BROADCAST + " on C# " + this.broadcast.channel);
-//        } else
-//            this.log.log('log','No channel on host is associated with ' + this.broadcast.toString());
-//            
-////            if(!this.emit(ParseANTResponse.prototype.EVENT.BROADCAST, this.broadcast))
-////              this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + this.broadcast.toString());
-//
+             // Send event to specific channel handler
+            if (typeof this._channel[this.broadcast.channel] !== "undefined") {
+               
+                if (typeof this._channel[this.broadcast.channel].channel.broadCast !== 'function') 
+                    this.log.log('warn',"No broadCast function available : on C# " + this.broadcast.channel);
+                else
+                    this._channel[this.broadcast.channel].channel.broadCast(this.broadcast);
+            } else
+                this.log.log('warn','No channel on host is associated with ' + this.broadcast.toString());
+            
+
             break;
-//
+
         // Notifications
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
@@ -1244,7 +1257,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
     var  singleChannelStatus = function () {
         this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
             if (!error) {
-                this._channelStatus[channelNumber] = statusMsg;
+                this._channel[channelNumber].status = statusMsg;
 
                 msg = channelNumber + '       ' + statusMsg.channelStatus.networkNumber + ' '+statusMsg.channelStatus.stateMessage;
                 this.log.log('log',msg);

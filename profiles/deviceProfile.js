@@ -9,8 +9,8 @@ define(function (require, exports, module) {
      
     
     function DeviceProfile(configuration) {
-        Channel.call(this);
-        this._configuration = configuration;
+        Channel.call(this, configuration);
+        //this._configuration = configuration;
        
     }
         

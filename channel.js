@@ -8,10 +8,13 @@ define(function (require, exports, module) {
 //events = require('events'),
 //   util = require('util');
 
-    function Channel() {
+    function Channel(configuration) {
        // events.EventEmitter.call(this);
         this.parameters = {};
-         this.log = new Logger();
+        if (configuration)
+         this.log = new Logger(configuration.log);
+        else
+          this.log = new Logger();
     }
     
     //util.inherits(Channel, events.EventEmitter);

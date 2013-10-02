@@ -81,7 +81,10 @@ USBChrome.prototype.listen = function (callback) {
                   callback(undefined,data);
                 } catch (e)
                 {
-                 this.log.log('error','Got onRX error',e,e.stack);
+                 if (this.log.logging)
+                     this.log.log('error','Got onRX error',e,e.stack);
+                    else
+                        console.error('Got onRX error',e,e.stack); // Force logging of serious error
                 }
                      
                  

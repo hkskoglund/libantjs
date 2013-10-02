@@ -1,4 +1,4 @@
-/* global define: true, setTimeout: true, clearTimeout: true */
+/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -174,7 +174,7 @@ define(function (require, exports, module) {
     // normal behaviour of a broadcast master -> just repeat last broadcast if no new data available, then go to sleep if no HR data received in {timeout} millisec.
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
     
-    DeviceProfile_HRM.prototype.broadCastDataParser = function (broadcast) {
+    DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
         //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
         var
@@ -183,8 +183,8 @@ define(function (require, exports, module) {
                TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
                TIMEOUT_DETERMINE_PAGE_TOGGLE = 1500,
                TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000, 
-               previousBroadcastDataCopy,
-               dataCopy = new Buffer(data.length),
+//               previousBroadcastDataCopy,
+//               dataCopy = new Uint8Array(data.length),
                RXTimestamp_Difference,
                JSONPage,
                previousRXTimestamp_Difference,
@@ -261,14 +261,29 @@ define(function (require, exports, module) {
     
         }
     
+        function equalBuffer(buf1,buf2)
+        {
+            var byteNr;
+            
+            //console.log("Buffer",buf1,buf2);
+            
+            if (buf1.length !== buf2.length)
+                return false;
+            
+            for (byteNr=0;byteNr<buf1.length;byteNr++) {
+                if (byteNr === 0 && ((buf1[byteNr] & 0x7F) !== (buf2[byteNr] & 0x7F))) // Don't let page toggle bit obscure comparison  - mask it please
+                        return false;
+                else if (buf1[byteNr] !== buf2[byteNr])
+                    return false;
+            }
+            return true;
+            
+        }
+        
         // FILTER - Skip duplicate messages from same master 
     
-        if (this.previousBroadcastData) {
-            previousBroadcastDataCopy= new Buffer(this.previousBroadcastData);
-            previousBroadcastDataCopy[0] = previousBroadcastDataCopy[0] & 0x7F; // Don't let page toggle bit obscure string comparison  - mask it please
-            dataCopy = new Buffer(data);
-            dataCopy[0] = dataCopy[0] & 0x7F;
-            if (previousBroadcastDataCopy.toString() === dataCopy.toString()) {
+        if (this.previousBroadcastData && equalBuffer(this.previousBroadcastData,data)) {
+           
                 this.currentTime = Date.now();
     
                 if (this.duplicateMessageCounter === 0)
@@ -283,8 +298,7 @@ define(function (require, exports, module) {
     
                 return;
             }
-        }
-    
+        
         if (this.duplicateMessageCounter > 0) {
             // console.log("Skipped " + this.duplicateMessageCounter + " duplicate messages from "+broadcast.channelId.toString());
             this.duplicateMessageCounter = 0;
@@ -298,14 +312,30 @@ define(function (require, exports, module) {
             if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
                 page.computedHeartRate = INVALID_HEART_RATE;
     
-            this.timeOutSetInvalidComputedHR = setTimeout(function () {
-                this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-                page.computedHeartRate = INVALID_HEART_RATE; 
-            }.bind(this), TIMEOUT_CLEAR_COMPUTED_HEARTRATE);
+       
+//            this.timeOutSetInvalidComputedHR = setTimeout(function () {
+//                this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
+//                this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
+//                page.computedHeartRate = INVALID_HEART_RATE; 
+//            }.bind(this), TIMEOUT_CLEAR_COMPUTED_HEARTRATE);
+            else 
+                if (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
+                {
+                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
+                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
+                    page.computedHeartRate = INVALID_HEART_RATE; 
+                }
         }
         else {
-            clearTimeout(this.timeOutSetInvalidComputedHR);
+            // Chrome Version 32.0.1657.2 canary Aura Web: Hmm, some times timeout is not cleared....
+            // Node : Seemed to work
+            // MDN : https://developer.mozilla.org/en-US/docs/Web/API/Window.setTimeout
+            // " Code executed by setTimeout() is run in a separate execution context to the function from which it was called"
+            // "It's important to note that the function or code snippet cannot be executed until the thread that called setTimeout() has terminated"
+            //clearTimeout(this.timeOutSetInvalidComputedHR);
+            this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
+          
         }
     
         if (this.state.pageToggle !== DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
@@ -313,6 +343,8 @@ define(function (require, exports, module) {
             page.parse(broadcast, this.previousPage, this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE);
     
             JSONPage = page.getJSON();
+            
+            //this.log.log('log',JSONPage);
 //    
 //            if (!this.emit(DeviceProfile_HRM.prototype.EVENT.PAGE, JSONPage)) // Let host take care of message, i.e sending on websocket
 //                this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'No listener for event ' + DeviceProfile_HRM.prototype.EVENT.PAGE + " P# " + page.number);
