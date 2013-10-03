@@ -64,7 +64,7 @@ define(function (require, exports, module) {
         var RXinfo = {
             "direction": this.inEP.direction,
             "endpoint": this.inEP.address | 128, // Raw endpoint address, as reported in bEndpoint descriptor
-            "length": this.inEP.maximumPacketSize
+            "length": this.inEP.maximumPacketSize // Can be increased limited by LIBUSB buffering mechanism
         };
     
         var onRX = function _onRX(RXinfo) {

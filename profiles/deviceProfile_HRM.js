@@ -360,6 +360,8 @@ define(function (require, exports, module) {
         this.previousPage.heartBeatEventTime = page.heartBeatEventTime;
         this.previousPage.changeToggle = page.changeToggle;
     
+        return JSONPage;
+        
         //console.timeEnd('broadcast');
     };
     

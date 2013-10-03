@@ -285,11 +285,7 @@ Host.prototype.getUnAssignedChannel = function () {
 
 
 Host.prototype.channelResponseRFevent = function (channelResponse) {
-//    if (typeof this._channel[channelResponse.channel] !== "undefined") {
-//        if (!this._channel[channelResponse.channel].emit(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
-//            this.log.log('log',"No listener for : " + ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
-//    } else
-//        this.log.log('log','No channel on host is associated with ' + channelResponse.toString());
+
 };
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
@@ -791,11 +787,13 @@ Host.prototype.exit = function (callback) {
 
 
 Host.prototype.RXparse = function (error,data) {
+//    data = new Uint8Array(1);
+//    data[0] = 164;
   var message,
       SYNC_OFFSET = 0,
       LENGTH_OFFSET = 1,
-      ID_OFFSET = 2,
-      totalMessageSize;
+      ID_OFFSET = 2;
+      
      
     if (error) {
         this.log.log('error',error);
@@ -811,32 +809,44 @@ Host.prototype.RXparse = function (error,data) {
         return;
     }
     
-    // Check for partial message that crossed the 64-byte max endpoint packet size boundary
+    
+    // Check for partial message that crossed LIBUSB transfer length boundary (typically multiple of max packet size for in endpoint)
     
     if (this.partialMessage) {
-        this.partialMessage.next = data.subarray(0,this.partialMessage.first[1]-(this.partialMessage.first.length-4));
-        //this.log.log('log',this.partialMessage);
+        var firstBufferLength = this.partialMessage.first[LENGTH_OFFSET];
+        if (typeof firstBufferLength === 'undefined')
+           firstBufferLength = data[0];
+        
+        this.partialMessage.next = data.subarray(0,firstBufferLength-(this.partialMessage.first.length-4));
+        this.log.log('log',this.partialMessage);
         message = new Uint8Array(this.partialMessage.first.length+this.partialMessage.next.length);
         message.set(this.partialMessage.first,0);
         message.set(this.partialMessage.next,this.partialMessage.first.length);
-        //this.log.log('log','Reconstructed ',message);
+        this.log.log('log','Reconstructed ',message);
         
-    } else
-        message = data.subarray(0,data[LENGTH_OFFSET]+4);
-   
-
-    totalMessageSize = message[LENGTH_OFFSET] + 4; 
-    
-    if (message[SYNC_OFFSET] === ANTMessage.prototype.SYNC) {
-        if (totalMessageSize > data.length) {
-             //this.log.log('warn','Partial message ',data,' length '+data.length);
-             this.partialMessage = {  first : data };
-             return;
-        }
     } else {
-         this.log.log('error', 'Invalid SYNC byte '+ message[SYNC_OFFSET] + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length+' byte offset ' +data.byteOffset,data);
+        if (typeof data[LENGTH_OFFSET] === 'undefined') {
+            this.log.log('warn','No message length found in partial message ',data);
+            message = data;
+            this.partialMessage = {  first : message };
+            return;
+        } else {
+            message = data.subarray(0,data[LENGTH_OFFSET]+4);
+            if (message.length < data[LENGTH_OFFSET]+4) {
+                this.partialMessage = {  first : message };
+                return;
+            }
+        
+        }
+    }
+    
+
+    if (message[SYNC_OFFSET] !== ANTMessage.prototype.SYNC) {
+     
+         this.log.log('error', 'Invalid SYNC byte '+ message[SYNC_OFFSET] + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length+' byte offset ' +data.byteOffset,data,message);
             return;
     }
+   
     
     var notification;
    
@@ -970,8 +980,11 @@ Host.prototype.RXparse = function (error,data) {
                
                 if (typeof this._channel[this.broadcast.channel].channel.broadCast !== 'function') 
                     this.log.log('warn',"No broadCast function available : on C# " + this.broadcast.channel);
-                else
-                    this._channel[this.broadcast.channel].channel.broadCast(this.broadcast);
+                else {
+                    var resultBroadcast = this._channel[this.broadcast.channel].channel.broadCast(this.broadcast);
+//                    if (resultBroadcast)
+//                        this.log.log('log',resultBroadcast);
+                }
             } else
                 this.log.log('warn','No channel on host is associated with ' + this.broadcast.toString());
             
@@ -1026,6 +1039,12 @@ Host.prototype.RXparse = function (error,data) {
                 this._responseCallback(channelResponseMsg);
             else
                 this.log.log('log',channelResponseMsg.toString());
+            
+            //    if (typeof this._channel[channelResponse.channel] !== "undefined") {
+//        if (!this._channel[channelResponse.channel].emit(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
+//            this.log.log('log',"No listener for : " + ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
+//    } else
+//        this.log.log('log','No channel on host is associated with ' + channelResponse.toString());
 
             break;
 //
@@ -1105,7 +1124,7 @@ Host.prototype.RXparse = function (error,data) {
 
         default:
             //msgStr += "* NO parser specified *";
-            this.log.log('log', "Unable to parse received data",data);
+            this.log.log('log', "Unable to parse received data",data, ' msg id ',message[ID_OFFSET]);
             break;
     }
 
@@ -1116,7 +1135,7 @@ Host.prototype.RXparse = function (error,data) {
         nextSYNCIndex = this.partialMessage.next.length;
         this.partialMessage = undefined;
     } else
-        nextSYNCIndex = totalMessageSize;
+        nextSYNCIndex = message.length;
     
     if (data.length > nextSYNCIndex)
     {
