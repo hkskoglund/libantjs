@@ -8,6 +8,8 @@ define(function (require, exports, module) {
     function USBChrome(options) {
       
         USBDevice.call(this,options);
+        if (options)
+            this.log.log('log','USB options',options);
         
     }
     
@@ -57,14 +59,17 @@ define(function (require, exports, module) {
     USBChrome.prototype.listen = function (rXparser) {
     
         var transferErrorCount = 0,
-            MAX_TRANSFER_ERROR_COUNT = 10; // Count LIBUSB result codes other than completed === 0
+            MAX_TRANSFER_ERROR_COUNT = 10,// Count LIBUSB result codes other than completed === 0
+            inlengthMax = this.options.length.in || this.inEP.maximumPacketSize; 
         
        // console.trace();
+       
+        this.log.log('log','RX packet max length  '+inlengthMax+' bytes');
         
         var RXinfo = {
             "direction": this.inEP.direction,
             "endpoint": this.inEP.address | 128, // Raw endpoint address, as reported in bEndpoint descriptor
-            "length": this.inEP.maximumPacketSize // Can be increased limited by LIBUSB buffering mechanism
+            "length":   inlengthMax // Can be increased limited by LIBUSB buffering mechanism
         };
     
         var onRX = function _onRX(RXinfo) {
@@ -110,7 +115,7 @@ define(function (require, exports, module) {
             
         }.bind(this);
         
-     this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max packet length is "+this.getINendpointPacketSize());
+     this.log.log('log', "Listening on RX endpoint, address "+RXinfo.endpoint+", max endpoint packet length is "+this.getINendpointPacketSize());
      
         retry();
     
