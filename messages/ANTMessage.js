@@ -8,14 +8,23 @@ define(function (require, exports, module) {
 /* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER CONTENT (8 bytes) CRC
 */
+    
+    var LibConfig = require('messages/libConfig'),
+        
+        // Extended data if requested by libconfig
+        ChannelId = require('messages/channelId'),
+        RSSI = require('messages/rssi'),
+        RXTimestamp = require('messages/RXTimestamp');
 
 function ANTMessage(data) {
-    //console.log("DATA", data);
+    
    
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
     if (data && data.constructor.name === 'Uint8Array') {
+//        if (data.byteOfset !== 0)
+//          console.warn("DATA", data,"byte offset",data.byteOffset);
         //this.buffer = data;
         this.SYNC = data[0];
         this.length = data[1];
@@ -24,6 +33,53 @@ function ANTMessage(data) {
         this.content = data.subarray(3,3+this.length);
         //console.log("CONTENT", this.content);
         this.CRC = data[3 + this.length];
+        
+        // Extended message
+        
+        // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
+        if ((this.id === ANTMessage.prototype.MESSAGE.BROADCAST_DATA || 
+             this.id === ANTMessage.prototype.MESSAGE.BURST_TRANSFER_DATA) &&
+             this.content.length > 9) {
+            
+            this.flagsByte = this.content[9];
+            //this.extendedData = new Uint8Array(this.content.buffer.slice(10));
+            this.extendedData = this.content.subarray(10);
+            // Check for channel ID
+            // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
+            if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
+                this.channelId = new ChannelId();
+                //this.channelId.parse(this.extendedData.buffer.slice(0, 4));
+                this.channelId.parse(this.extendedData.subarray(0, 4));
+                // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
+    //            sharedAddress = this.channelId.getSharedAddressType();
+    //
+    //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) {
+    //                this.sharedAddress = this.content[0]; // 1 byte is the shared address 0 = broadcast to all slaves
+    //                this.data = this.content.subarray(2, 9);
+    //
+    //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
+    //                this.sharedAddress = (new DataView(this.content,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
+    //                this.data = this.content.subarray(3, 9);
+    //            }
+            }
+    
+            if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) 
+            {
+                this.RXTimestamp = new RXTimestamp();
+               // this.RXTimestamp.parse(this.extendedData.buffer.slice(-2));
+                this.RXTimestamp.parse(this.extendedData.subarray(-2));
+            }
+            
+            if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+                //this.RSSI.parse(this.extendedData.buffer.slice(0, 2));
+                this.RSSI.parse(this.extendedData.subarray(0, 2));
+            }
+    
+            if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+                //this.RSSI.parse(this.extendedData.buffer.slice(4, 7));
+                this.RSSI.parse(this.extendedData.subarray(4, 7));
+            }
+        }
     } 
 }
 
@@ -338,15 +394,13 @@ ANTMessage.prototype.MESSAGE = {
         BROADCAST_DATA:  0x4e,
 
         0x4F: "Acknowledged Data",
-        acknowledged_data: { id: 0x4f, friendly: "Acknowledged data" },
+        ACKNOWLEDGED_DATA:  0x4F,
 
         0x50: "Burst Transfer Data",
-        burst_transfer_data: { id: 0x50, friendly: "Burst transfer data" },
+        BURST_TRANSFER_DATA: 0x50,
 
         0x72: "Advanced Burst Transfer Data",
-        advanced_burst_transfer_data: { id: 0x72, friendly: "Advanced burst transfer data" },
-
-
+        ADVANCED_BURST_TRANSFER_DATA:  0x72
 
 };
 

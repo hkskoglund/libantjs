@@ -54,7 +54,7 @@ define(function (require, exports, module) {
         chrome.usb.bulkTransfer(this.connectionHandle, TXinfo, onTX);
     };
     
-    USBChrome.prototype.listen = function (RXparser) {
+    USBChrome.prototype.listen = function (rXparser) {
     
         var transferErrorCount = 0,
             MAX_TRANSFER_ERROR_COUNT = 10; // Count LIBUSB result codes other than completed === 0
@@ -76,7 +76,7 @@ define(function (require, exports, module) {
                     data = new Uint8Array(RXinfo.data);
                     this.log.log('log', "Rx", RXinfo, data );
                    try {
-                      RXparser(undefined,data);
+                      rXparser(undefined,data);
                     } catch (e)
                     {
                      if (this.log.logging)
@@ -90,13 +90,13 @@ define(function (require, exports, module) {
                 else {
                      transferErrorCount++;
                     this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
-                    RXparser(new Error(chrome.runtime.lastError.message));
+                    rXparser(new Error(chrome.runtime.lastError.message));
                 }
          
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                  retry();
             else
-                RXparser(new Error('Too many attempts with error from LIBUSB. Cannot proceed.'));
+                rXparser(new Error('Too many attempts with error from LIBUSB. Cannot proceed.'));
              
             
         }.bind(this);
@@ -144,8 +144,13 @@ define(function (require, exports, module) {
         var onInterfaceClaimed = function () {
             
             this.log.log('log',"Interface claimed", this.inEP, this.outEP);
-           
-            callback();
+            try {
+               callback();
+            } catch (e)
+                {
+                    console.error(e,e.stack);
+                }
+                
         }.bind(this);
     
         var onInterfaceFound = function (interfaces) {
@@ -154,7 +159,9 @@ define(function (require, exports, module) {
                 if (interfaces[0].endpoints && interfaces[0].endpoints.length > 1) {
                     this.inEP = interfaces[0].endpoints[0];
                     this.outEP = interfaces[0].endpoints[1];
+                   
                     chrome.usb.claimInterface(this.connectionHandle, 0, onInterfaceClaimed);
+                     
                 }
             }
             else
@@ -180,6 +187,8 @@ define(function (require, exports, module) {
         
     
         chrome.usb.findDevices({ "vendorId": this.options.vid, "productId": this.options.pid}, onDeviceFound);
+   
+        
     };
         
         return USBChrome;

@@ -1,4 +1,4 @@
-/* global define: true, clearTimeout: true, setTimeout: true, require: true, module:true */
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
 //var requirejs = require('requirejs');
 //
@@ -791,7 +791,12 @@ Host.prototype.exit = function (callback) {
 
 
 Host.prototype.RXparse = function (error,data) {
-    
+  var message,
+      SYNC_OFFSET = 0,
+      LENGTH_OFFSET = 1,
+      ID_OFFSET = 2,
+      totalMessageSize;
+     
     if (error) {
         this.log.log('error',error);
         //throw new Error(error);
@@ -800,57 +805,42 @@ Host.prototype.RXparse = function (error,data) {
     
     //this.log.time('parse');
     
-    
-   
-    var notification;
-   
-    var ANTmsg = {
-        SYNC: data[0],
-        length: data[1],
-        id: data[2]
-    };
-    
-    // Check for valid SYNC byte at start
-    var   SYNCOK = (ANTmsg.SYNC === ANTMessage.prototype.SYNC);
-    if (!SYNCOK) {
-        this.log.log('error', 'Invalid SYNC byte '+ ANTmsg.SYNC + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length);
+    if (data === undefined)
+    {
+        this.log.log('error','Undefined data received in RX parser, may indicate problems with USB provider, i.e USBChrome');
         return;
     }
-   
-    //var ANTmsg = new ANTMessage();
-    //ANTmsg.setMessage(data, true);
-    //if (ANTmsg.message)
-    //  this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, ANTmsg.message.text);
-
-    var OFFSET_CONTENT = 3,
-        OFFSET_LENGTH = 1,
-
-        firstSYNC = ANTmsg.SYNC,
-        msgLength = ANTmsg.length,
-       // msgID = ANTmsg.id,
-        msgFlag, // Indicates if extended message info. is available and what info. to expect
-        msgStr = "",
-        msgCode,
-        channelNr,
-        channelID,
-        sequenceNr,
-        payloadData,
-        resendMsg,
-        burstMsg,
-        burstParser,
-        msgCRC = data[3 + ANTmsg.length],
-        msgCallback;
-    //    verifiedCRC = ANTmsg.getCRC(data),
     
-    //    CRCOK = (msgCRC === verifiedCRC);
-
-    //if (typeof msgCRC === "undefined")
-    //    console.log("msgCRC undefined", "ANTmsg",ANTmsg, data);
-
+    // Check for partial message that crossed the 64-byte max endpoint packet size boundary
+    
+    if (this.partialMessage) {
+        this.partialMessage.next = data.subarray(0,this.partialMessage.first[1]-(this.partialMessage.first.length-4));
+        //this.log.log('log',this.partialMessage);
+        message = new Uint8Array(this.partialMessage.first.length+this.partialMessage.next.length);
+        message.set(this.partialMessage.first,0);
+        message.set(this.partialMessage.next,this.partialMessage.first.length);
+        //this.log.log('log','Reconstructed ',message);
+        
+    } else
+        message = data.subarray(0,data[LENGTH_OFFSET]+4);
    
 
+    totalMessageSize = message[LENGTH_OFFSET] + 4; 
     
-
+    if (message[SYNC_OFFSET] === ANTMessage.prototype.SYNC) {
+        if (totalMessageSize > data.length) {
+             //this.log.log('warn','Partial message ',data,' length '+data.length);
+             this.partialMessage = {  first : data };
+             return;
+        }
+    } else {
+         this.log.log('error', 'Invalid SYNC byte '+ message[SYNC_OFFSET] + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length+' byte offset ' +data.byteOffset,data);
+            return;
+    }
+    
+    var notification;
+   
+  
     //// Check CRC
 
     //if (!CRCOK) {
@@ -859,8 +849,10 @@ Host.prototype.RXparse = function (error,data) {
     //    //return;
     //}
 
+    //if (ANTmsg.LENGTH+data.byteOffset < 64) 
+      
 
-    switch (ANTmsg.id) 
+    switch (message[ID_OFFSET]) 
     {
 
 //        //// Data
@@ -966,7 +958,7 @@ Host.prototype.RXparse = function (error,data) {
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
            
-            this.broadcast = new BroadcastDataMessage(data); 
+            this.broadcast = new BroadcastDataMessage(message); 
 
              //this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
 //
@@ -990,7 +982,7 @@ Host.prototype.RXparse = function (error,data) {
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
             
-            notification = new NotificationStartup(data);
+            notification = new NotificationStartup(message);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
             this.log.log('log',notification.toString());
             this.lastNotificationStartup = notification;
@@ -1010,7 +1002,7 @@ Host.prototype.RXparse = function (error,data) {
 
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-            notification = new NotificationSerialError(data);
+            notification = new NotificationSerialError(message);
             this.lastNotificationError = notification;
             this.log.log('log',"Notification serial error: ",notification.toString());
 
@@ -1021,7 +1013,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
             
-            var channelResponseMsg = new ChannelResponseMessage(data);
+            var channelResponseMsg = new ChannelResponseMessage(message);
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
 //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
@@ -1043,7 +1035,7 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
            
-            var channelStatusMsg = new ChannelStatusMessage(data);
+            var channelStatusMsg = new ChannelStatusMessage(message);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
 //            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            channelStatusMsg.parse();
@@ -1074,7 +1066,7 @@ Host.prototype.RXparse = function (error,data) {
 //
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-            var versionMsg = new ANTVersionMessage(data);
+            var versionMsg = new ANTVersionMessage(message);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
 //            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            versionMsg.parse();
@@ -1086,7 +1078,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
             
-            var capabilitiesMsg = new CapabilitiesMessage(data);
+            var capabilitiesMsg = new CapabilitiesMessage(message);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
 //            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            capabilitiesMsg.parse();
@@ -1101,7 +1093,7 @@ Host.prototype.RXparse = function (error,data) {
 
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
            
-            var serialNumberMsg = new DeviceSerialNumberMessage(data);
+            var serialNumberMsg = new DeviceSerialNumberMessage(message);
              this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
 //            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            serialNumberMsg.parse();
@@ -1116,17 +1108,23 @@ Host.prototype.RXparse = function (error,data) {
             this.log.log('log', "Unable to parse received data",data);
             break;
     }
-//
-    // There might be more buffered data messages from ANT engine available (if commands/request are sent, but not read in awhile)
-    // Buffering is done by the LIBUSB user-mode driver
-    // TO DO : Verify i
-    var nextExpectedSYNCIndex = 1 + ANTmsg.length + 2 + 1;
-    if (data.length > nextExpectedSYNCIndex) {
-        
-        // console.log(data.slice(nextExpectedSYNCIndex));
-        this.RXparse(undefined,data.buffer.slice(nextExpectedSYNCIndex));
-    }
 
+    // There might be more buffered messages from LIBUSB available 
+     var nextSYNCIndex;
+     
+    if (this.partialMessage) {
+        nextSYNCIndex = this.partialMessage.next.length;
+        this.partialMessage = undefined;
+    } else
+        nextSYNCIndex = totalMessageSize;
+    
+    if (data.length > nextSYNCIndex)
+    {
+        //this.log.log('log','Parsing next ANT message, expecting SYNC byte at byteOffset ', nextSYNCIndex,data);
+        // console.log(data.slice(nextExpectedSYNCIndex));
+        this.RXparse(undefined,data.subarray(nextSYNCIndex));
+    }
+    
 };
 
     
