@@ -290,7 +290,13 @@ Host.prototype.channelResponseRFevent = function (channelResponse) {
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
-Host.prototype.establishChannel = function (channelNumber, networkNumber, configurationName, channel, callback) {
+Host.prototype.establishChannel = function (channelInfo, callback) {
+    var     channelNumber = channelInfo.channelNumber, 
+    networkNumber = channelInfo.networkNumber,
+    configurationName = channelInfo.configurationName,
+    channel = channelInfo.channel,
+    open = channelInfo.open;
+
     var parameters = channel.parameters[configurationName],
         //channelType,
         isMasterChannel = channel.isMaster(configurationName),
@@ -591,14 +597,19 @@ Host.prototype.establishChannel = function (channelNumber, networkNumber, config
 
             var openChannel = function () {
                
+                // Attach etablished channel info (C#,N#,...)
+                channel.establish = channelInfo;
+                
+                if (open) {
                     this.openChannel(channelNumber,  function (error, response) {
                         if (!error) {
                             this.log.log('log', response.toString());
-                            callback();
+                            callback(undefined,channel);
                         }
                         else
-                            callback(error);
+                            callback(error,channel);
                     }.bind(this));
+                } else callback();
               
             }.bind(this);
 

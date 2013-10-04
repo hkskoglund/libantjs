@@ -95,7 +95,11 @@ define(function (require, exports, module) {
                 return Channel.prototype.EXTENDED_ASSIGNMENT[extendedAssignment];
         }
     
-        msg =  name +" "+ parameters.channelId.toString()+
+        msg =  name +" ";
+        if (parameters.description)
+            msg += parameters.description + " ";
+        
+        msg +=  parameters.channelId.toString()+
             ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod);
         
         if (parameters.LPsearchTimeout)

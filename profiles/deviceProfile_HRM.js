@@ -17,7 +17,7 @@ define(function (require, exports, module) {
         DeviceProfile.call(this, configuration);
         
         this.addConfiguration("slave", {
-           
+            description: "Default slave configuration for ANT+ HRM device profile",
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "slave",
@@ -263,28 +263,21 @@ define(function (require, exports, module) {
         // Compare buffers byte by byte
         function equalBuffer(buf1,buf2)
         {
-            var byteNr, equal = true;
+            var byteNr;
              
-            
-            
             if (buf1.length !== buf2.length)
                 return false;
             
             for (byteNr=0; byteNr < buf1.length; byteNr++) {
                 if (byteNr === 0 && ((buf1[byteNr] & 0x7F) !== (buf2[byteNr] & 0x7F))) // Don't let page toggle bit obscure comparison  - mask it please
-                { 
-                    equal = false;
-                    break;
-                }
-                 else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr]) {
-                     equal = false;
-                    break;
-                 }
+                    return false;
+                 else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr]) 
+                     return false;
             }
             
            // console.log("Buffer",buf1,buf2,equal);
             
-            return equal;
+            return true;
             
         }
         
