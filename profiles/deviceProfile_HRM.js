@@ -135,9 +135,8 @@ define(function (require, exports, module) {
 //    };
     
     
-    DeviceProfile_HRM.prototype.channelResponseRFevent = function (channelResponse) {
-        if (channelResponse.RFEvent)
-            console.log(Date.now(), "HRM got channel response/RF event", channelResponse);
+    DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
+           // this.log.log('log', 'HRM got', channelResponse);
     };
     
     //DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
@@ -261,22 +260,31 @@ define(function (require, exports, module) {
     
         }
     
+        // Compare buffers byte by byte
         function equalBuffer(buf1,buf2)
         {
-            var byteNr;
+            var byteNr, equal = true;
+             
             
-            //console.log("Buffer",buf1,buf2);
             
             if (buf1.length !== buf2.length)
                 return false;
             
-            for (byteNr=0;byteNr<buf1.length;byteNr++) {
+            for (byteNr=0; byteNr < buf1.length; byteNr++) {
                 if (byteNr === 0 && ((buf1[byteNr] & 0x7F) !== (buf2[byteNr] & 0x7F))) // Don't let page toggle bit obscure comparison  - mask it please
-                        return false;
-                else if (buf1[byteNr] !== buf2[byteNr])
-                    return false;
+                { 
+                    equal = false;
+                    break;
+                }
+                 else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr]) {
+                     equal = false;
+                    break;
+                 }
             }
-            return true;
+            
+           // console.log("Buffer",buf1,buf2,equal);
+            
+            return equal;
             
         }
         

@@ -790,9 +790,12 @@ Host.prototype.RXparse = function (error,data) {
 //    data = new Uint8Array(1);
 //    data[0] = 164;
   var message,
+      messageLength = data.length, // Uint8Array .length === .byteLength
       SYNC_OFFSET = 0,
       LENGTH_OFFSET = 1,
-      ID_OFFSET = 2;
+      ID_OFFSET = 2,
+      NUMBER_OF_FIXED_BYTES = 4, // SYNC LENGTH ID CRC
+      nextSYNCIndex;
       
      
     if (error) {
@@ -809,15 +812,15 @@ Host.prototype.RXparse = function (error,data) {
         return;
     }
     
-    
-    // Check for partial message that crossed LIBUSB transfer length boundary (typically multiple of max packet size for in endpoint)
+   
+    // Check for partial message that crosses LIBUSB transfer length boundary (typically multiple of max packet size for in endpoint)
     
     if (this.partialMessage) {
         var firstBufferLength = this.partialMessage.first[LENGTH_OFFSET];
-        if (typeof firstBufferLength === 'undefined')
+        if (typeof firstBufferLength === 'undefined') // Length is the first byte in new data buffer and SYNC the last byte of the previous buffer
            firstBufferLength = data[0];
         
-        this.partialMessage.next = data.subarray(0,firstBufferLength-(this.partialMessage.first.length-4));
+        this.partialMessage.next = data.subarray(0,firstBufferLength-(this.partialMessage.first.length-NUMBER_OF_FIXED_BYTES));
         this.log.log('log',this.partialMessage);
         message = new Uint8Array(this.partialMessage.first.length+this.partialMessage.next.length);
         message.set(this.partialMessage.first,0);
@@ -825,14 +828,14 @@ Host.prototype.RXparse = function (error,data) {
         this.log.log('log','Reconstructed ',message);
         
     } else {
-        if (typeof data[LENGTH_OFFSET] === 'undefined') {
+         if (typeof data[LENGTH_OFFSET] === 'undefined') {
             this.log.log('warn','No message length found in partial message ',data);
-            message = data;
+            message = data; // Only 1 SYNC byte
             this.partialMessage = {  first : message };
             return;
         } else {
-            message = data.subarray(0,data[LENGTH_OFFSET]+4);
-            if (message.length < data[LENGTH_OFFSET]+4) {
+            message = data.subarray(0,data[LENGTH_OFFSET]+NUMBER_OF_FIXED_BYTES);
+            if (message.length < data[LENGTH_OFFSET]+NUMBER_OF_FIXED_BYTES) {
                 this.partialMessage = {  first : message };
                 return;
             }
@@ -843,7 +846,7 @@ Host.prototype.RXparse = function (error,data) {
 
     if (message[SYNC_OFFSET] !== ANTMessage.prototype.SYNC) {
      
-         this.log.log('error', 'Invalid SYNC byte '+ message[SYNC_OFFSET] + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrety of data, thus discarding bytes:'+ data.length+' byte offset ' +data.byteOffset,data,message);
+         this.log.log('error', 'Invalid SYNC byte '+ message[SYNC_OFFSET] + ' expected '+ ANTMessage.prototype.SYNC+' cannot trust the integrity of data, discarding '+data.length +'bytes, byte offset of buffer ' +data.byteOffset,data,message);
             return;
     }
    
@@ -968,25 +971,25 @@ Host.prototype.RXparse = function (error,data) {
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
            
-            this.broadcast = new BroadcastDataMessage(message); 
+            var broadcast = new BroadcastDataMessage(message); 
 
              //this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....
 //
-             // Send event to specific channel handler
-            if (typeof this._channel[this.broadcast.channel] !== "undefined") {
+             // Send broad to specific channel handler
+            if (typeof this._channel[broadcast.channel] !== "undefined") {
                
-                if (typeof this._channel[this.broadcast.channel].channel.broadCast !== 'function') 
-                    this.log.log('warn',"No broadCast function available : on C# " + this.broadcast.channel);
+                if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function') 
+                    this.log.log('warn',"No broadCast function available : on C# " + broadcast.channel);
                 else {
-                    var resultBroadcast = this._channel[this.broadcast.channel].channel.broadCast(this.broadcast);
+                    var resultBroadcast = this._channel[broadcast.channel].channel.broadCast(broadcast);
 //                    if (resultBroadcast)
 //                        this.log.log('log',resultBroadcast);
                 }
             } else
-                this.log.log('warn','No channel on host is associated with ' + this.broadcast.toString());
+                this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
             
 
             break;
@@ -1037,14 +1040,20 @@ Host.prototype.RXparse = function (error,data) {
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
                 this._responseCallback(channelResponseMsg);
-            else
-                this.log.log('log',channelResponseMsg.toString());
+//            else
+//                this.log.log('log',channelResponseMsg.toString());
             
-            //    if (typeof this._channel[channelResponse.channel] !== "undefined") {
-//        if (!this._channel[channelResponse.channel].emit(ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, channelResponse))
-//            this.log.log('log',"No listener for : " + ANTParser.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT + " on C# " + channelResponse.channel);
-//    } else
-//        this.log.log('log','No channel on host is associated with ' + channelResponse.toString());
+            // Check for channel response callback
+           if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
+               
+               if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function') 
+                    this.log.log('warn',"No channelResponse function available : on C# " + channelResponseMsg.channel);
+                else {
+                  this._channel[channelResponseMsg.channel].channel.channelResponse(channelResponseMsg);
+                }
+
+            } else
+                this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());
 
             break;
 //
@@ -1095,8 +1104,7 @@ Host.prototype.RXparse = function (error,data) {
             break;
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
-
-            
+        
             var capabilitiesMsg = new CapabilitiesMessage(message);
             this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
 //            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
@@ -1129,7 +1137,7 @@ Host.prototype.RXparse = function (error,data) {
     }
 
     // There might be more buffered messages from LIBUSB available 
-     var nextSYNCIndex;
+    
      
     if (this.partialMessage) {
         nextSYNCIndex = this.partialMessage.next.length;
@@ -1141,7 +1149,7 @@ Host.prototype.RXparse = function (error,data) {
     {
         //this.log.log('log','Parsing next ANT message, expecting SYNC byte at byteOffset ', nextSYNCIndex,data);
         // console.log(data.slice(nextExpectedSYNCIndex));
-        this.RXparse(undefined,data.subarray(nextSYNCIndex));
+        return this.RXparse(undefined,data.subarray(nextSYNCIndex));
     }
     
 };

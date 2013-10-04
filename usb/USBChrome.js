@@ -148,7 +148,7 @@ define(function (require, exports, module) {
     
         var onInterfaceClaimed = function () {
             
-            this.log.log('log',"Interface claimed", this.inEP, this.outEP);
+            this.log.log('log',"Interface claimed, endpoint available", this.inEP, this.outEP);
             try {
                callback();
             } catch (e)
@@ -167,30 +167,37 @@ define(function (require, exports, module) {
                    
                     chrome.usb.claimInterface(this.connectionHandle, 0, onInterfaceClaimed);
                      
-                }
+                } else
+                    this.log.log('error','Failed to get in/out endpoint on interface');
             }
             else
                 callback(new Error("Did not find interface of device"));
         }.bind(this),
     
          onDeviceFound = function (devices) {
-            this.log.log('log',"devices", devices);
+            var chosenDevice = 0;
+            if (this.options && typeof this.options.device === 'undefined')
+                this.log.log('warn','No number for device specified, will choose the first (device 0)');
+            else 
+                chosenDevice = this.options.device;
+            
+            
+            this.log.log('log',"USB devices", devices);
             //var devices = devices;
             if (devices) {
                 if (devices.length > 0) {
-                    this.log.log('log',"Device(s) found: " + devices.length);
-                    this.connectionHandle = devices[0];
+                    
+                    this.connectionHandle = devices[chosenDevice];
+                    this.log.log('log',"Device(s) found: " + devices.length,' choosing device ',chosenDevice, this.connectionHandle);
                     // chrome.usb.listInterfaces(ConnectionHandle handle, function callback)
-                    chrome.usb.listInterfaces(devices[0], onInterfaceFound);
+                    chrome.usb.listInterfaces(devices[chosenDevice], onInterfaceFound);
                 } else 
-                    callback(new Error("Device could not be found"));
+                    callback(new Error("No devices was found"));
             } else 
                 callback(new Error("Did not request correct permissions"));
            
         }.bind(this);
         
-        
-    
         chrome.usb.findDevices({ "vendorId": this.options.vid, "productId": this.options.pid}, onDeviceFound);
    
         
