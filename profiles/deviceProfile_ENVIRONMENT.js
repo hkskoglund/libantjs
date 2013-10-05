@@ -63,6 +63,35 @@ define(function (require, exports, module) {
         DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_DEFAULT, // 4Hz
         DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ALTERNATIVE]; // 0.5 Hz low power
     
+    DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) {
+           // this.log.log('log', 'ENVIRONMENT got', channelResponse);
+    };
+    
+    DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
+   
+        var     data = broadcast.data,
+               //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
+           
+               TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000, 
+
+              // RXTimestamp_Difference,
+               JSONPage;
+              //previousRXTimestamp_Difference,
+            //   page = new Page(broadcast);// Page object is polymorphic (variable number of properties based on ANT+ page format)
+             
+    
+        this.receivedBroadcastCounter++;
+    
+        if (broadcast.channelId.deviceType !== DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE) {
+            this.log.log('log',"Received broadcast from non  ENVIRONMENT device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
+            return;
+        }
+        
+           if (this.isDuplicateMessage(data))
+            return;
+    };
+        
+    
     module.exports = DeviceProfile_ENVIRONMENT;
     return module.exports;
 });

@@ -48,9 +48,6 @@ define(function (require, exports, module) {
 //        this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent);
 //        this.on(DeviceProfile_HRM.prototype.EVENT.LOG, this.showLog);
     
-        this.duplicateMessageCounter = 0;
-    
-        this.receivedBroadcastCounter = 0;
     
         // "Objects are always considered having different class if they don't have exactly the same set of properties in the same order."
         // http://codereview.stackexchange.com/questions/28344/should-i-put-default-values-of-attributes-on-the-prototype-to-save-space/28360#28360
@@ -66,6 +63,21 @@ define(function (require, exports, module) {
             heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
             pageToggle : DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE, // Uses page toggle bit
         };
+        
+        this._setTimeoutDeterminePageToggle = function () {
+            var  TIMEOUT_DETERMINE_PAGE_TOGGLE = 1500;
+            
+            this.timeoutPageToggleID = setTimeout(function () {
+                if (this.receivedBroadcastCounter >= 2) // Require at least 2 messages to determine if page toggle bit is used
+                {
+                    this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.NO_PAGE_TOGGLE;
+                   this.log.log('log', 'HRM uses legacy format page 0 - page toggle bit (T) not toggeling after ' + this.receivedBroadcastCounter + ' broadcasts');
+                }
+                else 
+                    setTimeout(this._setTimeoutDeterminePageToggle,0);
+                
+            }.bind(this), TIMEOUT_DETERMINE_PAGE_TOGGLE);
+        }.bind(this);
     
     }
     
@@ -148,8 +160,8 @@ define(function (require, exports, module) {
             data = broadcast.data,
                //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
                TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
-               TIMEOUT_DETERMINE_PAGE_TOGGLE = 1500,
-               TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000, 
+            
+          
 //               previousBroadcastDataCopy,
 //               dataCopy = new Uint8Array(data.length),
                RXTimestamp_Difference,
@@ -201,24 +213,12 @@ define(function (require, exports, module) {
     
         // console.log("PAGE toggle", this.state.pageToggle);
     
-        var setTimeoutDeterminePageToggle = function () {
-           
-            this.timeoutPageToggleID = setTimeout(function () {
-                if (this.receivedBroadcastCounter >= 2) // Require at least 2 messages to determine if page toggle bit is used
-                {
-                    this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.NO_PAGE_TOGGLE;
-                   this.log.log('log', 'HRM uses legacy format page 0 - page toggle bit (T) not toggeling after ' + this.receivedBroadcastCounter + ' broadcasts');
-                }
-                else 
-                    setTimeout(setTimeoutDeterminePageToggle,0);
-                
-            }.bind(this), TIMEOUT_DETERMINE_PAGE_TOGGLE);
-        }.bind(this);
+        
     
         if (this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
     
             if (typeof this.previousPage.changeToggle === "undefined")
-                setTimeoutDeterminePageToggle.bind(this)();
+                this._setTimeoutDeterminePageToggle();
     
             if (page.changeToggle !== this.previousPage.changeToggle) {
                 clearTimeout(this.timeoutPageToggleID);
@@ -227,52 +227,10 @@ define(function (require, exports, module) {
             }
     
         }
-    
-        // Compare buffers byte by byte
-        function equalBuffer(buf1,buf2)
-        {
-            var byteNr;
-             
-            if (buf1.length !== buf2.length)
-                return false;
-            
-            for (byteNr=0; byteNr < buf1.length; byteNr++) {
-                if (byteNr === 0 && ((buf1[byteNr] & 0x7F) !== (buf2[byteNr] & 0x7F))) // Don't let page toggle bit obscure comparison  - mask it please
-                    return false;
-                 else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr]) 
-                     return false;
-            }
-            
-           // console.log("Buffer",buf1,buf2,equal);
-            
-            return true;
-            
-        }
+       
+        if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
+            return;
         
-        // FILTER - Skip duplicate messages from same master 
-    
-        if (this.previousBroadcastData && equalBuffer(this.previousBroadcastData,data)) {
-           
-                this.currentTime = Date.now();
-    
-                if (this.duplicateMessageCounter === 0)
-                    this.duplicateMessageStartTime = this.currentTime;
-    
-                if (this.currentTime - this.duplicateMessageStartTime >= TIMEOUT_DUPLICATE_MESSAGE_WARNING) {
-                    this.duplicateMessageStartTime = this.currentTime;
-                    this.log.log('log',"Duplicate message registered for " + TIMEOUT_DUPLICATE_MESSAGE_WARNING + " ms, may indicate lost heart rate data");
-                }
-    
-                this.duplicateMessageCounter++;
-    
-                return;
-            }
-        
-        if (this.duplicateMessageCounter > 0) {
-            // console.log("Skipped " + this.duplicateMessageCounter + " duplicate messages from "+broadcast.channelId.toString());
-            this.duplicateMessageCounter = 0;
-        }
-    
         // Set computedHeartRate to invalid (0x00) if heart beat counter stays the same for a specified timeout
     
         if (page.heartBeatCount === this.previousPage.heartBeatCount) {
