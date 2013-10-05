@@ -49,10 +49,24 @@ define(function (require, exports, module) {
         function formatMessagePeriod(messagePeriod)
         {
             var rate;
+            
+            function getInHz (period)
+            {
+                return period + " " + (32768 / period).toFixed(2) + "Hz";
+            }
+            
             if (typeof messagePeriod === "number") 
-                rate = messagePeriod + " " + (32768 / messagePeriod).toFixed(2) + "Hz"; 
-            else
-                rate = "Default";
+                rate = getInHz(messagePeriod); 
+            else if (Array.isArray(messagePeriod))
+            {
+                
+                rate = '';
+                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++) {
+                    rate += getInHz(messagePeriod[periodeNr]);
+                    if (periodeNr < len -1)
+                        rate += ',';
+                }
+            }
     
                return rate;
         }

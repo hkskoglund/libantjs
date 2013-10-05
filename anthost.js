@@ -295,6 +295,7 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
     networkNumber = channelInfo.networkNumber,
     configurationName = channelInfo.configurationName,
     channel = channelInfo.channel,
+    channelPeriod = channelInfo.channelPeriod,
     open = channelInfo.open;
 
     var parameters = channel.parameters[configurationName],
@@ -467,10 +468,21 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
                 }.bind(this));
             }.bind(this);
 
-            ////// Default 8192 = 4 Hz
+       
             var setChannelPeriod = function () {
-                if (parameters.channelPeriod)
-                    this.setChannelPeriod(channelNumber, parameters.channelPeriod, function (error, response) {
+                var cPeriod;
+                if (Array.isArray(parameters.channelPeriod)) // i.e [8192, 65535 ]
+                  cPeriod = channelPeriod || parameters.channelPeriod[0];
+                else
+                  cPeriod = channelPeriod || parameters.channelPeriod;
+                
+                if (cPeriod === undefined)
+                {
+                    callback(new Error('Channel period is undefined'));
+                    return;
+                }
+              
+                    this.setChannelPeriod(channelNumber, cPeriod, function (error, response) {
                         if (!error) {
                             this.log.log('log', response.toString());
                             setChannelSearchTimeout();
@@ -478,8 +490,7 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
                         else
                             callback(error);
                     }.bind(this));
-                else
-                    setChannelSearchTimeout();
+               
             }.bind(this);
 
             // Default 66 = 2466 MHz
@@ -1469,6 +1480,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
         var configurationMsg;
 
         verifyRange(this.capabilities,'channel',channel);
+        this.log.log('log','Channel period (Tch) is ',messagePeriod);
 
         configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
 

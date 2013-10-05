@@ -17,7 +17,7 @@ define(function (require, exports, module) {
         DeviceProfile.call(this, configuration);
         
         this.addConfiguration("slave", {
-            description: "Default slave configuration for ANT+ HRM device profile",
+            description: "Slave configuration for ANT+ HRM device profile",
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "slave",
@@ -25,62 +25,22 @@ define(function (require, exports, module) {
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
             LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX), // 60 seconds
             HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED), // 25 seconds n*2.5 s
-            //transmitPower: 3,
-            //channelTxPower : 3,
-            channelPeriod: 8070, // HRM
-            //channelPeriod : 8086, //SPDCAD
-            //proximitySearch: 10,   // 0 - disabled 1 (nearest) - 10 (farthest)
-            //broadcastScriptFileName : './deviceProfile/deviceProfileHRM.js'
-    
+          
+            channelPeriod: DeviceProfile_HRM.prototype.CHANNEL_PERIOD_ARRAY
+           
         });
         
-       // console.log("TESTING",this.parameters['slave'].HPsearchTimeout instanceof HighPrioritySearchTimeout);
-    
-        this.addConfiguration("slave16140", {
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: 24, // 60 seconds
-            HPsearchTimeout: 10, // 25 seconds n*2.5 s
-            //transmitPower: 3,
-            //channelTxPower : 3,
-            channelPeriod: 8070 * 2, // HRM
-            //channelPeriod : 8086, //SPDCAD
-            //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
-    
-        });
-    
-        this.addConfiguration("slave32280", {
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: 24, // 60 seconds
-            HPsearchTimeout: 10, // 25 seconds n*2.5 s
-            //transmitPower: 3,
-            //channelTxPower : 3,
-            channelPeriod: 8070 * 4, // HRM
-            //channelPeriod : 8086, //SPDCAD
-            //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
-    
-        });
-    
+       
         this.addConfiguration("master", {
+             description: "Master configuration for ANT+ HRM device profile",
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "master",
             channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: 0x01 }, // Independent channel
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            //LPsearchTimeout: 24, // 60 seconds
-            //HPsearchTimeout: 10, // 25 seconds n*2.5 s
-            //transmitPower: 3,
-            //channelTxPower : 3,
-            channelPeriod: 8070, // HRM
-            //channelPeriod : 8086, //SPDCAD
-            //proximitySearch: 10   // 0 - disabled 1 (nearest) - 10 (farthest)
+            
+            channelPeriod: DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT
+         
     
         });
     
@@ -112,6 +72,13 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
     
+    DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT = 8070;
+    DeviceProfile_HRM.prototype.CHANNEL_PERIOD_ARRAY = [
+        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT, 
+        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT*2,
+        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT*4
+    ];
+    
     DeviceProfile_HRM.prototype.STATE = {
         HR_EVENT: 1,
         NO_HR_EVENT: 0,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
@@ -123,7 +90,8 @@ define(function (require, exports, module) {
     
     DeviceProfile_HRM.prototype.DEVICE_TYPE = 0x78;
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
-    DeviceProfile_HRM.prototype.CHANNEL_PERIOD = 8070;
+    
+    
     
 //    DeviceProfile_HRM.prototype.EVENT = {
 //        BROADCAST: 'broadcast',
