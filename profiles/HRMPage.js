@@ -4,15 +4,21 @@
 
 define(function (require, exports, module) {
     "use strict";
+    var Page = require('profiles/Page');
     
     function HRMPage(broadcast) {
+        Page.call(this);
+        
         this.timestamp = Date.now();
     
         if (broadcast && broadcast.data) {
             this.channelId = broadcast.channelId;
-            this.parseCommon(broadcast.data);
+            this.parseCommonHRFields(broadcast.data);
         }
     }
+    
+    HRMPage.prototype = Object.create(Page.prototype); 
+    HRMPage.prototype.constructor = HRMPage; 
     
     HRMPage.prototype.toString = function () {
         var msg = this.type + " P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
@@ -57,7 +63,7 @@ define(function (require, exports, module) {
     };
     
     // Parses common fields for all pages
-    HRMPage.prototype.parseCommon = function (data) {
+    HRMPage.prototype.parseCommonHRFields = function (data) {
         var dataView = new DataView(data.buffer); // Remeber to use .byteOffset to address the right byte in the buffer
         
         // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)

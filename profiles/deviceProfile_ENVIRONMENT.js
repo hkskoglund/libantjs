@@ -1,4 +1,4 @@
-/* global define: true */
+/* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 // MAYBE : Support enabling ANT-FS if device is capable of it.
@@ -9,7 +9,9 @@ define(function (require, exports, module) {
     var DeviceProfile = require('profiles/deviceProfile'),
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');
+        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
+        TempPage0 = require('profiles/TemperaturePage0'),
+        TempPage1 = require('profiles/TemperaturePage1');
     
    
     
@@ -60,22 +62,22 @@ define(function (require, exports, module) {
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ALTERNATIVE = 65535;
     
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ARRAY = [
-        DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_DEFAULT, // 4Hz
-        DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ALTERNATIVE]; // 0.5 Hz low power
+    DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_DEFAULT, // 4Hz
+    DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ALTERNATIVE]; // 0.5 Hz low power
     
     DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) {
            // this.log.log('log', 'ENVIRONMENT got', channelResponse);
     };
     
     DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
-   
-        var     data = broadcast.data,
+    var  data = broadcast.data,
+         dataView = new DataView(data.buffer);
                //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
            
-               TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000, 
+             
 
               // RXTimestamp_Difference,
-               JSONPage;
+              // JSONPage;
               //previousRXTimestamp_Difference,
             //   page = new Page(broadcast);// Page object is polymorphic (variable number of properties based on ANT+ page format)
              
@@ -89,6 +91,31 @@ define(function (require, exports, module) {
         
            if (this.isDuplicateMessage(data))
             return;
+        
+        var page, pageNumber = data[0];
+            
+        switch (pageNumber) {
+             
+            // Device capabilities
+            case 0 : 
+                page = new TempPage0(data,dataView);
+                break;
+                
+            // Temperature
+            case 1: 
+                page = new TempPage1(data,dataView);
+                break;
+                
+            // TO DO : Common pages
+            default :
+                this.log.log('error','No support for page number',pageNumber);
+                break;
+                    
+            }
+        
+        return page;
+        
+        
     };
         
     
