@@ -1,11 +1,16 @@
-/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array */
+/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 'use strict'; 
 
     var DeviceProfile = require('profiles/deviceProfile'),
-        Page = require('profiles/HRMPage'),
+       // Page = require('profiles/HRMPage'),
+        HRMPage4 = require('profiles/HRMPage4'),
+        HRMPage0 = require('profiles/HRMPage0'), // Old legacy format
+        HRMPage1 = require('profiles/HRMPage1'),
+        HRMPage2 = require('profiles/HRMPage2'),
+        HRMPage3 = require('profiles/HRMPage3'),
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');
@@ -50,13 +55,15 @@ define(function (require, exports, module) {
         // http://stackoverflow.com/questions/17925726/clearing-up-the-hidden-classes-concept-of-v8
         // http://thibaultlaurens.github.io/javascript/2013/04/29/how-the-v8-engine-works/
         
-        this.previousPage = new Page();
-    
-        this.usesPages = false;
+//        this.previousPage = new Page();
     
         this.state = {
             heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
         };
+        
+        this.hrmPage4 = new HRMPage4({log : true});
+        
+        this.previousBroadcastData = undefined;
         
     }
     
@@ -123,51 +130,94 @@ define(function (require, exports, module) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
         //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
         var  data = broadcast.data,
+            dataView = new DataView(broadcast.data.buffer),
             TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
-            page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
+          //  page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
             INVALID_HEART_RATE = 0x00; 
     
         this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
       
-        // Set computedHeartRate to invalid (0x00) if heart beat counter stays the same
-    
-        if (page.heartBeatCount === this.previousPage.heartBeatCount) {
-            //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
-    
-            if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
-                page.computedHeartRate = INVALID_HEART_RATE;
-    
-            else 
-                if (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
-                {
-                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
-                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-                    page.computedHeartRate = INVALID_HEART_RATE; 
-                }
-        }
-        else {
-            this.lastHREventTime = Date.now();
-            this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
-        }
+//        // Set computedHeartRate to invalid (0x00) if heart beat counter stays the same
+//    
+//        if (page.heartBeatCount === this.previousPage.heartBeatCount) {
+//            //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
+//    
+//            if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
+//                page.computedHeartRate = INVALID_HEART_RATE;
+//    
+//            else 
+//                if (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
+//                {
+//                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
+//                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
+//                    page.computedHeartRate = INVALID_HEART_RATE; 
+//                }
+//        }
+//        else {
+//            this.lastHREventTime = Date.now();
+//            this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
+//        }
         
         if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
             return;
     
-        page.parse(broadcast, this.previousPage);
+       // 
+        
+        var page, pageNumber = data[0] & 0x7F;
+            
+        switch (pageNumber) {
+             
+            // MAIN
+            case 4 : 
+               page = new HRMPage4({log: true},data,dataView,this.previousPage);
+                 break;
+                
+            case 0 : // OLD
+                page = new HRMPage0({log: true},data,dataView,this.previousPage);
+                 break;
+                
+                
+            // BACKGROUND
+            case 3 : 
+                page = new HRMPage3({log:true},data,dataView);
+                break;
+                
+            case 2 : 
+                page = new HRMPage2({log:true},data,dataView,broadcast.channelId);
+                break;
+                
+            case 1 : 
+                page = new HRMPage1({log:true},data,dataView);
+                break;
+            
+            default : 
+                this.log.log('warn','Not able to handle page number',pageNumber);
+        }
+        
+          
+       // page.parse(broadcast, this.previousPage);
 
         //JSONPage = page.getJSON();
         
-        this.log.log('log', this.receivedBroadcastCounter+" "+page.toString());
+        if (page)
+            this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
         
         // Callback if higher level code wants page, i.e UI data-binding
-        this.onPage(page);
+        if (page)
+            this.onPage(page);
     
-        // Keep track of previous page state for calculation of RR
-        this.previousPage.timestamp = page.timestamp;
+    
+//        this.previousPage.timestamp = page.timestamp;
+       
+        // Used for skipping duplicate messages
         this.previousBroadcastData = data;
-        this.previousPage.heartBeatCount = page.heartBeatCount;
-        this.previousPage.heartBeatEventTime = page.heartBeatEventTime;
-        this.previousPage.changeToggle = page.changeToggle;
+        
+        // Keep track of previous page state for calculation of RR
+        if (page instanceof HRMPage4 || page instanceof HRMPage0)
+            this.previousPage = page;
+//        this.previousPage.heartBeatCount = page.heartBeatCount;
+//        this.previousPage.heartBeatEventTime = page.heartBeatEventTime;
+//        this.previousPage.changeToggle = page.changeToggle;
     
         //return JSONPage;
         
