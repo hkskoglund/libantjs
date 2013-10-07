@@ -43,12 +43,7 @@ define(function (require, exports, module) {
          
     
         });
-    
-//        this.on(DeviceProfile_HRM.prototype.EVENT.BROADCAST, this.broadCastDataParser);
-//        this.on(DeviceProfile_HRM.prototype.EVENT.CHANNEL_RESPONSE_RF_EVENT, this.channelResponseRFevent);
-//        this.on(DeviceProfile_HRM.prototype.EVENT.LOG, this.showLog);
-    
-    
+  
         // "Objects are always considered having different class if they don't have exactly the same set of properties in the same order."
         // http://codereview.stackexchange.com/questions/28344/should-i-put-default-values-of-attributes-on-the-prototype-to-save-space/28360#28360
         // "fields that are added to an object outside constructor or object literal, will not be stored directly on the object but in an array external to the object."
@@ -61,24 +56,8 @@ define(function (require, exports, module) {
     
         this.state = {
             heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
-            pageToggle : DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE, // Uses page toggle bit -> !old page 0 format
         };
         
-        this._setTimeoutDeterminePageToggle = function () {
-            var  TIMEOUT_DETERMINE_PAGE_TOGGLE = 1500;
-            
-            this.timeoutPageToggleID = setTimeout(function () {
-                if (this.receivedBroadcastCounter >= 2) // Require at least 2 messages to determine if page toggle bit is used
-                {
-                    this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.NO_PAGE_TOGGLE;
-                   this.log.log('log', 'HRM uses legacy format page 0 - page toggle bit (T) not toggeling after ' + this.receivedBroadcastCounter + ' broadcasts');
-                }
-                else 
-                    setTimeout(this._setTimeoutDeterminePageToggle,0);
-                
-            }.bind(this), TIMEOUT_DETERMINE_PAGE_TOGGLE);
-        }.bind(this);
-    
     }
     
     DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
@@ -94,27 +73,14 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.STATE = {
         HR_EVENT: 1,
         NO_HR_EVENT: 0,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
-//        DETERMINE_PAGE_TOGGLE: 1,
-//        NO_PAGE_TOGGLE: 0,
-//        PAGE_TOGGLE: 2
+
     };
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
     DeviceProfile_HRM.prototype.DEVICE_TYPE = 0x78;
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
     
-    
-    
-//    DeviceProfile_HRM.prototype.EVENT = {
-//        BROADCAST: 'broadcast',
-//        CHANNEL_RESPONSE_RF_EVENT: 'channelResponseRFEvent',
-//        PAGE : 'page',
-//        LOG : 'log'
-//        //RESPONSE: 'response',
-//        //RF_EVENT: 'RFevent'
-//    };
-    
-    
+
     DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
            // this.log.log('log', 'HRM got', channelResponse);
     };
@@ -156,64 +122,14 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
         //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
-        var
-            data = broadcast.data,
-               //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
-               TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
-            
-          
-//               previousBroadcastDataCopy,
-//               dataCopy = new Uint8Array(data.length),
-               RXTimestamp_Difference,
-//               JSONPage,
-               previousRXTimestamp_Difference,
-            
-               page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
-             
+        var  data = broadcast.data,
+            TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
+            page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
             INVALID_HEART_RATE = 0x00; 
     
         this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
-        
-        //if (typeof this.usesANTPLUSGlobalDataPages === "undefined") {
-        //    this.usesANTPLUSGlobalDataPages = broadcast.channelId.usesANTPLUSGlobalDataPages();
-        //    if (this.usesANTPLUSGlobalDataPages)
-        //        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM ANT+ global data pages are used, but no support for intepretation here.");
-        //    else
-        //        this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM ANT+ global data pages not used.");
-        //}
-    
-        //// Estimate channel period for master if RX timestamp extended broadcast information is available
-        //if (broadcast.RXTimestamp) {
-        //    if (typeof this.previousRXTimestamp === "undefined")
-        //        this.previousRXTimestamp = broadcast.RXTimestamp.timestamp;
-        //    else {
-        //        previousRXTimestamp_Difference = this.RXTimestamp_Difference;
-        //        this.RXTimestamp_Difference = broadcast.RXTimestamp.timestamp - this.previousRXTimestamp;
-        //        if (RXTimestamp_Difference < 0)
-        //            this.RXTimestamp_Difference += 0xFFFF;
-        //        this.page.channelPeriod = this.RXTimestamp_Difference;
-        //        this.page.channelPeriodHz = 32768 / this.RXTimestamp_Difference;
-        //        this.previousRXTimestamp = broadcast.RXTimestamp.timestamp;
-    
-        //        if (typeof previousRXTimestamp_Difference === "undefined")
-        //            this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, "HRM channel "+broadcast.channel+" channel period " + this.page.channelPeriod + " " + this.page.channelPeriodHz.toFixed(2) + " Hz");
-        //    }
-        //}
-    
-        //this.broadcast = broadcast;
-        //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
-    
-        // "The transmitter toggles the state of the toggle bit every fourth message if the transmitter is using any 
-        // of the page formats other than the page 0 data format". (ANT Device Profile HRM, p. 14) 
-        // "The receiver may not interpret bytes 0-3 until it has seen this bit set to both a 0 and a 1" (ANT+ HRM spec, p. 15) 
-        // http://www.thisisant.com/forum/viewthread/3896/
-    
-    
-       
-        if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
-            return;
-        
-        // Set computedHeartRate to invalid (0x00) if heart beat counter stays the same for a specified timeout
+      
+        // Set computedHeartRate to invalid (0x00) if heart beat counter stays the same
     
         if (page.heartBeatCount === this.previousPage.heartBeatCount) {
             //console.log(Date.now(), "No heart beat event registered"); // One case : happens often for background page page 4 -> page 2 transition
@@ -221,7 +137,6 @@ define(function (require, exports, module) {
             if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
                 page.computedHeartRate = INVALID_HEART_RATE;
     
-
             else 
                 if (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
                 {
@@ -231,29 +146,21 @@ define(function (require, exports, module) {
                 }
         }
         else {
-            // Chrome Version 32.0.1657.2 canary Aura Web: Hmm, some times timeout is not cleared....
-            // Node : Seemed to work
-            // MDN : https://developer.mozilla.org/en-US/docs/Web/API/Window.setTimeout
-            // " Code executed by setTimeout() is run in a separate execution context to the function from which it was called"
-            // "It's important to note that the function or code snippet cannot be executed until the thread that called setTimeout() has terminated"
-            //clearTimeout(this.timeOutSetInvalidComputedHR);
             this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
-          
         }
+        
+        if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
+            return;
     
-       
-    
-            page.parse(broadcast, this.previousPage);
-    
-            //JSONPage = page.getJSON();
-            
-           
-            this.log.log('log', this.receivedBroadcastCounter+" "+page.toString());
-            
-            this.onPage(page);
-    
-     
+        page.parse(broadcast, this.previousPage);
+
+        //JSONPage = page.getJSON();
+        
+        this.log.log('log', this.receivedBroadcastCounter+" "+page.toString());
+        
+        // Callback if higher level code wants page, i.e UI data-binding
+        this.onPage(page);
     
         // Keep track of previous page state for calculation of RR
         this.previousPage.timestamp = page.timestamp;
