@@ -282,22 +282,26 @@ Host.prototype.getUnAssignedChannel = function () {
     var channelNumber;
 };
 
-
-
-Host.prototype.channelResponseRFevent = function (channelResponse) {
-
-};
-
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
-Host.prototype.establishChannel = function (channelInfo, callback) {
+Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
     var     channelNumber = channelInfo.channelNumber, 
     networkNumber = channelInfo.networkNumber,
     configurationName = channelInfo.configurationName,
     channel = channelInfo.channel,
     channelPeriod = channelInfo.channelPeriod,
     open = channelInfo.open;
-
+    
+    // Set onPage callback - for device profile channels
+    
+    if (typeof onPageCB === 'function') {
+        if (typeof channel.setOnPageCB === 'function')
+            channel.setOnPageCB(onPageCB);
+        else
+            this.log.log('warn','Channel has no setOnPageCB function (only for device profile channels)',channel);
+    } else
+        this.log.log('error','Specified callback for on page from device profile is not a function',onPageCB);
+    
     var parameters = channel.parameters[configurationName],
         //channelType,
         isMasterChannel = channel.isMaster(configurationName),
@@ -1006,7 +1010,7 @@ Host.prototype.RXparse = function (error,data) {
                 if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function') 
                     this.log.log('warn',"No broadCast function available : on C# " + broadcast.channel);
                 else {
-                    var resultBroadcast = this._channel[broadcast.channel].channel.broadCast(broadcast);
+                    var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
 //                    if (resultBroadcast)
 //                        this.log.log('log',resultBroadcast);
                 }

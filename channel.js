@@ -196,13 +196,17 @@ define(function (require, exports, module) {
         SHARED_BIDIRECTIONAL_MASTER_CHANNEL: 0x30
     };
     
-    // Callbacks - NOOP
+    // Default 
     Channel.prototype.channelResponse = function (channelResponse)
     {
+        return undefined;
     };
     
+    // Default
     Channel.prototype.broadCast = function (broadcast)
     {
+        return undefined;
+      
     };
     
         module.exports = Channel;

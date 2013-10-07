@@ -85,9 +85,28 @@ define(function (require, exports, module) {
       return false;
 };
     
-
-        
    
+    
+ // Default behaviour just return JSON of broadcast
+   DeviceProfile.prototype.broadCast = function (broadcast)
+    {
+        // MAYBE return undefined;
+        return JSON.stringify(broadcast);
+    };
+    
+    DeviceProfile.prototype.setOnPageCB = function (callback)
+    {
+        this.log.log('log','Setting on page callback to ',callback);
+        this._onPageCB = callback;
+    };
+    
+    DeviceProfile.prototype.onPage = function (page)
+    {
+        if (typeof this._onPageCB === 'function')
+           this._onPageCB(page);
+        else
+            this.log.log('warn','No on page callback specified for page ',page);
+    };
     
     module.exports = DeviceProfile;
     

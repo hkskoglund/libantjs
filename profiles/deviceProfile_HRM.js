@@ -165,7 +165,7 @@ define(function (require, exports, module) {
 //               previousBroadcastDataCopy,
 //               dataCopy = new Uint8Array(data.length),
                RXTimestamp_Difference,
-               JSONPage,
+//               JSONPage,
                previousRXTimestamp_Difference,
                page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
                INVALID_HEART_RATE = 0x00; 
@@ -269,14 +269,12 @@ define(function (require, exports, module) {
     
             page.parse(broadcast, this.previousPage, this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE);
     
-            JSONPage = page.getJSON();
+            //JSONPage = page.getJSON();
             
-            //this.log.log('log',JSONPage);
-//    
-//            if (!this.emit(DeviceProfile_HRM.prototype.EVENT.PAGE, JSONPage)) // Let host take care of message, i.e sending on websocket
-//                this.emit(DeviceProfile_HRM.prototype.EVENT.LOG, 'No listener for event ' + DeviceProfile_HRM.prototype.EVENT.PAGE + " P# " + page.number);
-//    
+           
             this.log.log('log', this.receivedBroadcastCounter+" "+page.toString());
+            
+            this.onPage(page);
     
         }
     
@@ -287,7 +285,7 @@ define(function (require, exports, module) {
         this.previousPage.heartBeatEventTime = page.heartBeatEventTime;
         this.previousPage.changeToggle = page.changeToggle;
     
-        return JSONPage;
+        //return JSONPage;
         
         //console.timeEnd('broadcast');
     };
