@@ -85,6 +85,16 @@ define(function (require, exports, module) {
       return false;
 };
     
+    DeviceProfile.prototype.verifyDeviceType = function (deviceType,broadcast)
+    {
+        this.receivedBroadcastCounter++;
+    
+        if (broadcast.channelId.deviceType !== deviceType) {
+            this.log.log('log',"Received broadcast from device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
+            return false;
+        }
+       
+    };
    
     
  // Default behaviour just return JSON of broadcast

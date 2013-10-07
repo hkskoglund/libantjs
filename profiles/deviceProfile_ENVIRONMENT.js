@@ -11,7 +11,8 @@ define(function (require, exports, module) {
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
         TempPage0 = require('profiles/TemperaturePage0'),
-        TempPage1 = require('profiles/TemperaturePage1');
+        TempPage1 = require('profiles/TemperaturePage1'),
+        GenericPage = require('profiles/Page');
     
    
     
@@ -81,16 +82,11 @@ define(function (require, exports, module) {
               //previousRXTimestamp_Difference,
             //   page = new Page(broadcast);// Page object is polymorphic (variable number of properties based on ANT+ page format)
              
-    
-        this.receivedBroadcastCounter++;
-    
-        if (broadcast.channelId.deviceType !== DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE) {
-            this.log.log('log',"Received broadcast from non  ENVIRONMENT device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
+        if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE,broadcast))
             return;
-        }
-        
-           if (this.isDuplicateMessage(data))
-            return;
+      
+         if (this.isDuplicateMessage(broadcast.data))
+            return ;
         
         var page, pageNumber = data[0];
             
@@ -98,17 +94,20 @@ define(function (require, exports, module) {
              
             // Device capabilities
             case 0 : 
-                page = new TempPage0(data,dataView);
+                page = new TempPage0({log : true },data,dataView);
                 break;
                 
             // Temperature
             case 1: 
-                page = new TempPage1(data,dataView);
+                page = new TempPage1({ log : true },data,dataView);
                 break;
                 
             // TO DO : Common pages
             default :
-                this.log.log('error','No support for page number',pageNumber);
+                page = new GenericPage({ log : true},data,dataView);
+                if (!page)
+                    this.log.log('warn','Failed to parse content of page number',pageNumber,data);
+                
                 break;
                     
             }

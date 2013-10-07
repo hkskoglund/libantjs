@@ -290,17 +290,20 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
     configurationName = channelInfo.configurationName,
     channel = channelInfo.channel,
     channelPeriod = channelInfo.channelPeriod,
-    open = channelInfo.open;
+    open = channelInfo.open,
+    typeOnPageCB = typeof onPageCB;
     
     // Set onPage callback - for device profile channels
     
-    if (typeof onPageCB === 'function') {
+    if (typeOnPageCB === 'function') {
         if (typeof channel.setOnPageCB === 'function')
             channel.setOnPageCB(onPageCB);
         else
             this.log.log('warn','Channel has no setOnPageCB function (only for device profile channels)',channel);
-    } else
+    } else if (typeOnPageCB !== 'undefined')
         this.log.log('error','Specified callback for on page from device profile is not a function',onPageCB);
+    else if (typeOnPageCB === 'undefined')
+        this.log.log('warn','No onPageCB specified - its recommended to specify this callback if you want data pages from device profiles');
     
     var parameters = channel.parameters[configurationName],
         //channelType,

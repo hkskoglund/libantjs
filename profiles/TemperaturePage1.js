@@ -7,9 +7,11 @@ define(function (require, exports, module) {
     
     // Data page 1 - Temperature
     
-    function Page(data,dataView)
+    function Page(configuration,data,dataView)
     {
-        GenericPage.call(this);
+        GenericPage.call(this,configuration);
+        
+         this.type = GenericPage.prototype.TYPE.MAIN;
         
        if (data)
            this.parse(data,dataView);
@@ -69,8 +71,6 @@ define(function (require, exports, module) {
     {
          var supportedPages;
        
-        this.type = GenericPage.prototype.TYPE.MAIN;
-        
         // Byte 0 - page number
         
         this.number = data[Page.prototype.BYTE.PAGE_NUMBER];

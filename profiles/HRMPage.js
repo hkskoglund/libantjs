@@ -68,7 +68,7 @@ define(function (require, exports, module) {
         
         // Next 3 bytes are the same for every data page. (ANT+ HRM spec. p. 14, section 5.3)
     
-        this.changeToggle = (data[0] & 0x80) >> 7;
+        //this.changeToggle = (data[0] & 0x80) >> 7;
     
         // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
         this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);
@@ -81,23 +81,22 @@ define(function (require, exports, module) {
     };
     
     // Parses ANT+ pages the device uses paging
-    HRMPage.prototype.parse = function (broadcast, previousHRMPage, usesPages) {
+    HRMPage.prototype.parse = function (broadcast, previousHRMPage) {
        
         
         var data = broadcast.data, 
             dataView = new DataView(data.buffer);
         
-        if (usesPages)
-            this.number = data[0] & 0x7F;  // Bit 6-0, -> defines the definition of the following 3 bytes (byte 1,2,3)
-        else
-            this.number = 0;
+        
+            this.number = data[0] & 0x7F;  // Mask page toggle bit, if used
+       
     
         switch (this.number) {
     
             case 4:
                 // Main data page
     
-                this.type = "Main";
+                this.type = Page.prototype.TYPE.MAIN;
     
                 this.previousHeartBeatEventTime = dataView.getUint16(data.byteOffset+2,true);
     
@@ -108,7 +107,7 @@ define(function (require, exports, module) {
                 break;
     
             case 3: // Background data page
-                this.type = "Background";
+                this.type = Page.prototype.TYPE.BACKGROUND;
     
                 this.hardwareVersion = data[1];
                 this.softwareVersion = data[2];
@@ -117,7 +116,7 @@ define(function (require, exports, module) {
                 break;
     
             case 2: // Background data page - sent every 65'th message
-                this.type = "Background";
+                this.type = Page.prototype.TYPE.BACKGROUND;
     
                 this.manufacturerID = data[1];
                 this.serialNumber = dataView.getUint16(data.byteOffset+2,true); // Upper 16-bits of a 32 bit serial number
@@ -129,15 +128,15 @@ define(function (require, exports, module) {
                 break;
     
             case 1: // Background data page
-                this.type = "Background";
+                this.type = Page.prototype.TYPE.BACKGROUND;
     
                 this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+1,true) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
     
                 break;
     
             case 0: // Old legacy 
-                this.type = "Main";
-                delete this.changeToggle; // Doesnt use paging for bytes 1-3
+                this.type = Page.prototype.TYPE.MAIN;
+               
     
                 if (typeof previousHRMPage.heartBeatCount !== "undefined")
                     this.setRRInterval(previousHRMPage.heartBeatCount, previousHRMPage.heartBeatEventTime);

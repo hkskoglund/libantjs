@@ -5,8 +5,16 @@
 define(function (require, exports, module) {
     'use strict';
     
-     function Page() {
-          
+    var  Logger = require('logger');
+    
+     function Page(configuration,data,dataView) {
+          if (configuration)
+         this.log = new Logger(configuration.log);
+        else
+          this.log = new Logger();
+         
+         if (data)
+             return this.parseCommon(data,dataView);
      }
     
     Page.prototype.COMMON_PAGES = [0x50,0x51];
@@ -30,7 +38,8 @@ define(function (require, exports, module) {
              case 0x50: // 80 Common data page - Manufactorer's identification 
                 
 
-                this.type = "Background";
+                this.type = Page.prototype.TYPE.BACKGROUND;
+                 
                 this.HWRevision = data[3];
                 this.manufacturerID = dataView.getUint16(data.byteOffset+4,true);
                 this.modelNumber = dataView.getUint16LE(data.byteOffset+6,true);
@@ -39,9 +48,10 @@ define(function (require, exports, module) {
 
                 break;
                  
-                 case 0x51: // 81 Common data page - Product information 
+             case 0x51: // 81 Common data page - Product information 
                 
-                this.type = "Background";
+                this.type = Page.prototype.BACKGROUND
+                ;
                 this.SWRevision = data[3];
                 this.serialNumber = dataView.getUint32LE(data.byteOffset+4,true);
 
@@ -51,7 +61,14 @@ define(function (require, exports, module) {
 //                    console.log(Date.now() + " " + page.pageType + " " + page.dataPageNumber + " SW revision : " + page.SWRevision + " Serial number: " + page.serialNumber);
 
                 break;
+                 
+            default :
+                 this.log.log('error','Unable to parse page number ',this.number,data);
+                 break;
+                 
          }
+         
+       
              
      };
     

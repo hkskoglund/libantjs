@@ -8,9 +8,11 @@ define(function (require, exports, module) {
     // Data page 0 - General Information
     // "Provides general information about the device's capabilities", spec. p. 15
     
-    function Page(data,dataView)
+    function Page(configuration,data,dataView)
     {
-        GenericPage.call(this);
+        GenericPage.call(this,configuration);
+        
+         this.type = GenericPage.prototype.TYPE.MAIN;
         
        if (data)
            this.parse(data,dataView);
@@ -89,7 +91,7 @@ define(function (require, exports, module) {
     {
          var supportedPages;
        
-        this.type = GenericPage.prototype.TYPE.MAIN;
+       
         
         // Byte 0 - page number
         

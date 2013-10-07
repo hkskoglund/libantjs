@@ -61,7 +61,7 @@ define(function (require, exports, module) {
     
         this.state = {
             heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
-            pageToggle : DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE, // Uses page toggle bit
+            pageToggle : DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE, // Uses page toggle bit -> !old page 0 format
         };
         
         this._setTimeoutDeterminePageToggle = function () {
@@ -94,9 +94,9 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.STATE = {
         HR_EVENT: 1,
         NO_HR_EVENT: 0,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
-        DETERMINE_PAGE_TOGGLE: 1,
-        NO_PAGE_TOGGLE: 0,
-        PAGE_TOGGLE: 2
+//        DETERMINE_PAGE_TOGGLE: 1,
+//        NO_PAGE_TOGGLE: 0,
+//        PAGE_TOGGLE: 2
     };
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
@@ -167,16 +167,13 @@ define(function (require, exports, module) {
                RXTimestamp_Difference,
 //               JSONPage,
                previousRXTimestamp_Difference,
+            
                page = new Page(broadcast),// Page object is polymorphic (variable number of properties based on ANT+ page format)
-               INVALID_HEART_RATE = 0x00; 
+             
+            INVALID_HEART_RATE = 0x00; 
     
-        this.receivedBroadcastCounter++;
-    
-        if (broadcast.channelId.deviceType !== DeviceProfile_HRM.prototype.DEVICE_TYPE) {
-            this.log.log('log',"Received broadcast from non HRM device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
-            return;
-        }
-    
+        this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
+        
         //if (typeof this.usesANTPLUSGlobalDataPages === "undefined") {
         //    this.usesANTPLUSGlobalDataPages = broadcast.channelId.usesANTPLUSGlobalDataPages();
         //    if (this.usesANTPLUSGlobalDataPages)
@@ -207,26 +204,11 @@ define(function (require, exports, module) {
         //console.log(Date.now(), "C# " + broadcast.channel, broadcast.toString());
     
         // "The transmitter toggles the state of the toggle bit every fourth message if the transmitter is using any 
-        // of the page formats other than the page 0 data format -> page 4 format". (ANT Device Profile HRM, p. 14) 
+        // of the page formats other than the page 0 data format". (ANT Device Profile HRM, p. 14) 
         // "The receiver may not interpret bytes 0-3 until it has seen this bit set to both a 0 and a 1" (ANT+ HRM spec, p. 15) 
         // http://www.thisisant.com/forum/viewthread/3896/
     
-        // console.log("PAGE toggle", this.state.pageToggle);
     
-        
-    
-        if (this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
-    
-            if (typeof this.previousPage.changeToggle === "undefined")
-                this._setTimeoutDeterminePageToggle();
-    
-            if (page.changeToggle !== this.previousPage.changeToggle) {
-                clearTimeout(this.timeoutPageToggleID);
-                this.state.pageToggle = DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE;
-                this.log.log('log', 'HRM uses ANT+ pages - page toggle bit (T) transition after '+this.receivedBroadcastCounter+ ' broadcasts');
-            }
-    
-        }
        
         if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
             return;
@@ -239,12 +221,7 @@ define(function (require, exports, module) {
             if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
                 page.computedHeartRate = INVALID_HEART_RATE;
     
-       
-//            this.timeOutSetInvalidComputedHR = setTimeout(function () {
-//                this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
-//                this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-//                page.computedHeartRate = INVALID_HEART_RATE; 
-//            }.bind(this), TIMEOUT_CLEAR_COMPUTED_HEARTRATE);
+
             else 
                 if (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
                 {
@@ -265,9 +242,9 @@ define(function (require, exports, module) {
           
         }
     
-        if (this.state.pageToggle !== DeviceProfile_HRM.prototype.STATE.DETERMINE_PAGE_TOGGLE) {
+       
     
-            page.parse(broadcast, this.previousPage, this.state.pageToggle === DeviceProfile_HRM.prototype.STATE.PAGE_TOGGLE);
+            page.parse(broadcast, this.previousPage);
     
             //JSONPage = page.getJSON();
             
@@ -276,7 +253,7 @@ define(function (require, exports, module) {
             
             this.onPage(page);
     
-        }
+     
     
         // Keep track of previous page state for calculation of RR
         this.previousPage.timestamp = page.timestamp;
