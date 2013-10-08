@@ -28,12 +28,8 @@ define(function (require, exports, module) {
             LOCAL_TIME : { START_BIT : 4, LENGTH : 2 },
             UTC_TIME: { START_BIT : 2, LENGTH : 2 },
             DEFAULT_TRANSMISSION_RATE : { START_BIT : 0, LENGTH : 2}
-        },
-        
-        SUPPORTED_PAGES : {
-            PAGE1 : { START_BIT : 1, LENGTH : 1},
-            PAGE0 : { START_BIT : 0, LENGTH : 1}
         }
+        
     };
     
     // Bit mask to pinpoint BIT_FIELD
@@ -44,13 +40,8 @@ define(function (require, exports, module) {
             LOCAL_TIME : parseInt('00110000',2),
             UTC_TIME: parseInt('00001100',2),
             DEFAULT_TRANSMISSION_RATE : parseInt('00000011',2)
-        },
-        
-        SUPPORTED_PAGES : {
-          //  SUPPORTED_PAGES : 3, // 0b11
-            PAGE0 : 1, // 0b1
-            PAGE1 : 1 << 1  // 0b10
         }
+        
     };
     
     // Byte layout
@@ -90,16 +81,16 @@ define(function (require, exports, module) {
     Page.prototype.parse = function (data,dataView)
     {
          var supportedPages;
-       
-       
         
         // Byte 0 - page number
         
         this.number = data[Page.prototype.BYTE.PAGE_NUMBER];
 
         // Byte 1 - Reserved
+        // 0xFF
         
         // Byte 2 - Reserved
+        // 0xFF
         
         // Byte 3 - Transmission info
         
@@ -113,9 +104,11 @@ define(function (require, exports, module) {
         
         supportedPages = dataView.getUint32(data.byteOffset+Page.prototype.BYTE.SUPPORTED_PAGES,true);
         this.supportedPages = {
-               page0 : supportedPages & Page.prototype.BIT_MASK.SUPPORTED_PAGES.PAGE0,
-               page1 : (supportedPages & Page.prototype.BIT_MASK.SUPPORTED_PAGES.PAGE1) >> Page.prototype.BIT_FIELD.SUPPORTED_PAGES.PAGE1.START_BIT
-        };
+        value : supportedPages};
+        for (var bitNr = 0; bitNr < 32; bitNr++)
+            if (supportedPages & (1 << bitNr))
+                this.supportedPages['page'+bitNr] = true;
+       
     };
     
    Page.prototype.toString = function ()
@@ -123,10 +116,14 @@ define(function (require, exports, module) {
         var msg = this.type + " P# " + this.number + "Local time "+Page.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
             " UTC time "+Page.prototype.TRANSMISSION_INFO.UTC_TIME[this.transmissionInfo.UTCTime]+
             " Default transmission rate "+Page.prototype.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate]+
-            " Supported pages "+this.supportedPages.toString(2);
+            " Supported pages "+this.supportedPages.value.toString(2)+ " "+JSON.stringify(this.supportedPages);
        
         return msg;
    };
+    
+    module.exports = Page;
+    
+    return module.exports;
     
     
     

@@ -43,7 +43,7 @@ define(function (require, exports, module) {
     };
     
     Page.prototype.toString = function () {
-        var  msg = "Manufacturer " + this.manufacturerID + " serial num. : " + this.serialNumber;
+        var  msg = this.type + " P# " + this.number +" Manufacturer " + this.manufacturerID + " serial num. : " + this.serialNumber;
         
         return msg;
     };

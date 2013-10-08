@@ -39,7 +39,7 @@ define(function (require, exports, module) {
     };
     
     Page.prototype.toString = function () {
-       var msg = " HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
+       var msg = this.type + " P# " + this.number +" HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
         
         return msg;
     };

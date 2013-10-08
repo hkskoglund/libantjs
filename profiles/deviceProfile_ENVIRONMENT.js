@@ -73,15 +73,7 @@ define(function (require, exports, module) {
     DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
     var  data = broadcast.data,
          dataView = new DataView(data.buffer);
-               //deviceId = "DN_" + this.broadcast.channelId.deviceNumber + "DT_" + this.broadcast.channelId.deviceType + "T_" + this.broadcast.channelId.transmissionType,
-           
-             
-
-              // RXTimestamp_Difference,
-              // JSONPage;
-              //previousRXTimestamp_Difference,
-            //   page = new Page(broadcast);// Page object is polymorphic (variable number of properties based on ANT+ page format)
-             
+                 
         if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE,broadcast))
             return;
       
@@ -94,30 +86,41 @@ define(function (require, exports, module) {
              
             // Device capabilities
             case 0 : 
-                page = new TempPage0({log : true },data,dataView);
+                
+                page = new TempPage0({log : this.log.logging },data,dataView);
+                
                 break;
                 
             // Temperature
             case 1: 
-                page = new TempPage1({ log : true },data,dataView);
+                
+                page = new TempPage1({ log : this.log.logging },data,dataView);
+                
                 break;
                 
-            // TO DO : Common pages
             default :
-                page = new GenericPage({ log : true},data,dataView);
-                if (!page)
-                    this.log.log('warn','Failed to parse content of page number',pageNumber,data);
                 
+                page = new GenericPage({ log : this.log.logging },data,dataView);
+              
                 break;
                     
             }
         
-        return page;
+         if (page)
+            this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
+        
+        // Callback if higher level code wants page, i.e UI data-binding
+        if (page)
+            this.onPage(page);
+ 
+        // Used for skipping duplicate messages
+        this.previousBroadcastData = data;
         
         
     };
         
     
     module.exports = DeviceProfile_ENVIRONMENT;
+    
     return module.exports;
 });

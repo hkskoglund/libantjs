@@ -36,7 +36,7 @@ define(function (require, exports, module) {
     };
     
     Page.prototype.toString = function () {
-          var msg = " Cumulative operating time  " + this.cumulativeOperatingTime + " s = " + (this.cumulativeOperatingTime / 3600).toFixed(1) + " h";
+          var msg = this.type + " P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTime + " s = " + (this.cumulativeOperatingTime / 3600).toFixed(1) + " h";
         
         return msg;
     };
