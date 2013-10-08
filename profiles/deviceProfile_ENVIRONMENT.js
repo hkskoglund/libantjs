@@ -1,7 +1,7 @@
 /* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-// MAYBE : Support enabling ANT-FS if device is capable of it.
+// MAYBE, BUT LOW PRIORITY : Support enabling ANT-FS if device is capable of it.
 
 define(function (require, exports, module) {
 'use strict'; 

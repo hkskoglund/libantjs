@@ -105,8 +105,11 @@ define(function (require, exports, module) {
         var valueHour24LowMSN = hour24LowMSN & Page.prototype.BIT_MASK.VALUE_HOUR24_LOW_MSN;
         // bbb
         
-        this.hour24Low = ((valueHour24LowMSN << 8) | hour24LowLSB) * signHour24LowMSN * Page.prototype.UNIT.HOUR24_LOW;
-        
+        var valueHour24Low = (valueHour24LowMSN << 8) | hour24LowLSB;
+        if (valueHour24Low !== 0x800) // -0
+            this.hour24Low = valueHour24Low * signHour24LowMSN * Page.prototype.UNIT.HOUR24_LOW;
+        else
+            this.hour24Low = undefined;
         
         var hour24HighLSN = (data[Page.prototype.BYTE_OFFSET.HOUR24_HIGH_LSN] & Page.prototype.BIT_MASK.HOUR24_HIGH_LSN);
         // Byte 4 & 0000 1111
@@ -122,32 +125,39 @@ define(function (require, exports, module) {
         var value24HighMSB = hour24HighMSB & Page.prototype.BIT_MASK.VALUE_HOUR24_HIGH_MSB;
         // Byte 5 & 0b01111111
         
-        this.hour24High = ((value24HighMSB << 4) | hour24HighLSN) * signHour24HighMSB * Page.prototype.UNIT.HOUR24_HIGH;
-        
+        var value24High = (value24HighMSB << 4) | hour24HighLSN;
+        if (value24High !== 0x800)
+            this.hour24High = value24High * signHour24HighMSB * Page.prototype.UNIT.HOUR24_HIGH;
+        else
+            this.hour24High = undefined;
         //
         // Byte 6 -7
         //
         
-        this.currentTemp = dataView.getInt16(data.byteOffset+Page.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB,true)*Page.prototype.UNIT.CURRENT_TEMP;
+        var currentTempLSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB];
         
-//        var currentTempLSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB];
-//        
-//        //
-//        // Byte 7
-//        //
-//        var currentTempMSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_MSB];
-//        
-//        var signCurrentTempMSB = ((currentTempMSB & Page.prototype.BIT_MASK.SIGN_CURRENT_TEMP) >> Page.prototype.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT)  === 1 ?  -1 : 1;
-//        
-//        var valueCurrentTempMSB = currentTempMSB & Page.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
-//        
-//        this.currentTemp = ((valueCurrentTempMSB << 8) | currentTempLSB) * signCurrentTempMSB * Page.prototype.UNIT.CURRENT_TEMP;
+        //
+        // Byte 7
+        //
+        var currentTempMSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_MSB];
+        
+        var signCurrentTempMSB = ((currentTempMSB & Page.prototype.BIT_MASK.SIGN_CURRENT_TEMP) >> Page.prototype.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT)  === 1 ?  -1 : 1;
+        
+        var valueCurrentTempMSB = currentTempMSB & Page.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
+       
+        var valueCurrentTemp = (valueCurrentTempMSB << 8) | currentTempLSB;
+        
+        if (valueCurrentTemp !== 0x8000)
+            
+           this.currentTemp = valueCurrentTemp * signCurrentTempMSB * Page.prototype.UNIT.CURRENT_TEMP;
+        else
+            this.currentTemp = undefined;
     };
    
    Page.prototype.toString = function ()
    {
-        var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " 24H low " + this.hour24Low+ " 24H high "+
-            this.hour24High+ " Current Temp "+this.currentTemp;
+        var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " low (24H) " + this.hour24Low.toFixed(1)+ "°C high (24H) "+
+            this.hour24High.toFixed(1)+ "°C Current Temp "+this.currentTemp.toFixed(2)+ "°C";
        
         return msg;
    };
