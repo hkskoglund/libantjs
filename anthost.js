@@ -192,9 +192,11 @@ this._sendMessage = function (message,callback) {
     
     var timeMsg,
         
-        PROCESSING_DELAY = 150,
+        PROCESSING_DELAY = 10,
         TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_DELAY,
-        targetMsgId = message.responseId;
+        targetMsgId = message.responseId,
+        MAX_RETRY = this.options.maxTransferRetries || 5,
+        retryNr = 0;
     
     // Set up timer for resend if no response is received
         if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
@@ -231,16 +233,22 @@ this._sendMessage = function (message,callback) {
     var transferMessage = function() {
 
         //this.log.time('sendMessageUSBtransfer');
-        this.log.log('log','Sending message ',message);
-        this.log.time(ANTMessage.prototype.MESSAGE[message.id]);
+        if (retryNr === 0)
+           this.log.log('log','Sending message ',message);
+        else
+           this.log.log('warn','Retry '+retryNr+' sending message',message);
         
-        
+        this.log.time(ANTMessage.prototype.MESSAGE[message.id]); // Will keep first time on retries
         
         this.resendTimeoutID[targetMsgId] = setTimeout(function _responseTimeoutCB()
                              {
                                     if (this.callback[message.responseId] !== undefined)
                                        this.log.log('warn','No response to request for '+message.name+ ' in '+TIMEOUT+' ms');
-//                                 // TO DO : Resend logic
+                                     
+                                     // It should be quite safe to just start a new transfer now (assuming no response from device)
+                                     if (++retryNr <= MAX_RETRY) 
+                                         transferMessage();
+
                              }.bind(this),TIMEOUT);
         
         this.usb.transfer(message.getRawMessage(),usbTransferCB);
@@ -798,8 +806,9 @@ Host.prototype.init = function (options, initCB) {
     
     this.options = options;
     
+    if (typeof options.maxTransferRetries === 'undefined')
+        this.options.maxTransferRetries = 5;
     
-        
     this.usb = options.usb;
    
     this.usb.init(usbInitCB);

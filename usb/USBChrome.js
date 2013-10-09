@@ -122,7 +122,15 @@ define(function (require, exports, module) {
     
     };
     
-    USBChrome.prototype.init = function (callback) {
+    USBChrome.prototype.exit = function(callback)
+    {
+        chrome.usb.releaseInterface(this.connectionHandle,this.deviceInterface.interfaceNumber, function () {
+            chrome.usb.closeDevice(this.connectionHandle,callback); }.bind(this));
+                   
+    };
+    
+    USBChrome.prototype.init = function (callback)
+    {
         
     //    var onData = function (error, data) {
     //        
@@ -160,12 +168,14 @@ define(function (require, exports, module) {
     
         var onInterfaceFound = function (interfaces) {
             if (interfaces && interfaces.length > 0) {
-                this.log.log('log',"Interface", interfaces[0]);
+                this.log.log('log',"Interfaces", interfaces);
+                this.deviceInterface = interfaces[0];
                 if (interfaces[0].endpoints && interfaces[0].endpoints.length > 1) {
-                    this.inEP = interfaces[0].endpoints[0];
-                    this.outEP = interfaces[0].endpoints[1];
+                    
+                    this.inEP = this.deviceInterface.endpoints[0];
+                    this.outEP = this.deviceInterface.endpoints[1];
                    
-                    chrome.usb.claimInterface(this.connectionHandle, 0, onInterfaceClaimed);
+                    chrome.usb.claimInterface(this.connectionHandle, this.deviceInterface.interfaceNumber, onInterfaceClaimed);
                      
                 } else
                     this.log.log('error','Failed to get in/out endpoint on interface');
