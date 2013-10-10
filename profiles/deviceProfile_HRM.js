@@ -90,9 +90,9 @@ define(function (require, exports, module) {
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
     
 
-    DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
-            this.log.log('log', 'DeviceProfile HRM', channelResponse, channelResponse.toString());
-    };
+//    DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
+//            this.log.log('log', 'DeviceProfile HRM', channelResponse, channelResponse.toString());
+//    };
     
     //DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
     //    {

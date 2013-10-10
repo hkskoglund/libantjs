@@ -96,6 +96,9 @@ define(function (require, exports, module) {
        
     };
    
+    DeviceProfile.prototype.channelResponse = function (channelResponse) {
+            this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
+    };
     
  // Default behaviour just return JSON of broadcast
    DeviceProfile.prototype.broadCast = function (broadcast)
