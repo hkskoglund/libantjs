@@ -235,6 +235,10 @@ this._sendMessage = function (message,callback) {
                                      // It should be quite safe to just start a new transfer now (assuming no response from device)
                                      if (++retryNr <= MAX_RETRY) 
                                          transferMessage();
+                                     else {
+                                         this.log.log('log','Reached max. number of retries for transfer of message',message);
+                                         callback(new Error('Reached maximum number of retries for transfer of message'));
+                                     }
 
                              }.bind(this),TIMEOUT);
         
