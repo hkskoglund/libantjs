@@ -125,20 +125,26 @@ define(function (require, exports, module) {
     // normal behaviour of a broadcast master -> just repeat last broadcast if no new data available, then go to sleep if no HR data received in {timeout} millisec.
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
     
+    DeviceProfile_HRM.prototype.BIT_MASK = {
+        PAGE_TOGGLE : parseInt("10000000",2)
+    };
+    
     DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
         //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
         var data = broadcast.data,
             dataView = new DataView(broadcast.data.buffer),
             page, 
-            pageNumber = data[0] & 0x7F;
+            pageNumber = data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE;
         
         var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
               INVALID_HEART_RATE = 0x00;
+        
+        this.lastBroadcast = broadcast;
     
         this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
        
-        if (this.isDuplicateMessage(data,0x7F)) // Disregard/Mask bit 7 - Page toggle bit
+        if (this.isDuplicateMessage(data,DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE)) // Disregard/Mask bit 7 - Page toggle bit
             return;
     
         switch (pageNumber) {
@@ -151,7 +157,6 @@ define(function (require, exports, module) {
             case 0 : // OLD
                 page = new HRMPage0({log: this.log.logging},data,dataView,this.previousPage);
                  break;
-                
                 
             // BACKGROUND
             case 3 : 
@@ -173,7 +178,7 @@ define(function (require, exports, module) {
         
         //  Set computedHeartRate to invalid (0x00) if heart beat counter stays the same
     
-        if (page.heartBeatCount !== this.previousPage.heartBeatCount)
+        if ((this.previousPage === undefined) || (page.heartBeatCount !== this.previousPage.heartBeatCount))
         {
             this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
