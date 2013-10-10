@@ -182,19 +182,26 @@ define(function (require, exports, module) {
         {
             this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
-        } else  if  (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
-                {
-                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
-                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-                    page.computedHeartRate = INVALID_HEART_RATE; 
-                }
-        
-        if (page)
+         
+            if (page)
             this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
+            
+            // Callback if higher level code wants page, i.e UI data-binding
+            if (page)
+                this.onPage(page);
+            
+        }
+                   
         
-        // Callback if higher level code wants page, i.e UI data-binding
-        if (page)
-            this.onPage(page);
+//        else  if  (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
+//                {
+//                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
+//                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
+//                    page.computedHeartRate = INVALID_HEART_RATE; 
+//                    this.lastHREventTime = Date.now();
+//                }
+//        
+//        
  
         // Used for skipping duplicate messages
         this.previousBroadcastData = data;
