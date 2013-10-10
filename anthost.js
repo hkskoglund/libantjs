@@ -74,25 +74,12 @@ define(function (require, exports, module) {
     ChannelStatusMessage = require('messages/from/ChannelStatusMessage'),
     
     ChannelId = require('messages/channelId');
-    
-    
  
-
-  //  DeviceProfile_HRM = require('profiles/deviceProfile_HRM'), // Maybe: move to configuration file
-
 // Host for USB ANT communication
 function Host() {
     
-    //
-    // { { 0 : { 
-    //          channel : channel,
-    //            status : ..}}}
-    //  
-    //
-    //
     this._channel = {}; 
    
-    
 //
 //    this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
 //    this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
@@ -121,7 +108,7 @@ function Host() {
      // Handle channel response
      
      if (targetMessageId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE) {
-         targetMessageId = msg.initiatingId; // Initiating message id, i.e libconfig
+         targetMessageId = msg.initiatingId; // Initiating message id, i.e libconfig - configuration command
          this.log.log('log','Initiating message id for channel response is 0x'+targetMessageId.toString(16)+ ' '+ANTMessage.prototype.MESSAGE[targetMessageId],msg);
        
          if (msg.responseCode !== ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
@@ -286,9 +273,6 @@ Host.prototype.EVENT = {
 
 };
 
-Host.prototype.getUnAssignedChannel = function () {
-    var channelNumber;
-};
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
@@ -387,8 +371,6 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
 
         parameters.channelId = new ChannelId(parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType);
     }
-
-  
 
     // Master - convert declarative syntax to channelId object
     if (!(parameters.channelId instanceof ChannelId) && isMasterChannel) {
@@ -1386,14 +1368,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
     //};
 
-// Used to validate configuration commands 
-    function validateResponseNoError(message,msgRequestId) {
-        //console.log("args", arguments);
-        if (message instanceof ChannelResponseMessage && message.getRequestMessageId() === msgRequestId && message.getMessageCode() === ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR)
-            return true;
-        else
-            return false;
-    }
 
 // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
     Host.prototype.unAssignChannel = function (channelNr, callback) {
@@ -1405,19 +1379,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
         configurationMsg = new UnAssignChannelMessage();
 
         this._sendMessage(configurationMsg, callback);
-        //function (error, responseMessage) {
-        //    if (error)
-        //        callback(error)
-        //    else
-        //        callback(undefined, responseMessage);
-        //}.bind(this));
-        //, function _validationCB(responseMessage) {
-        //            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //        });
-    };
-
-    Host.prototype.setChannel = function (channelNumber, channel) {
-        this._channel[channelNumber] = channel;
+        
     };
 
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
@@ -1443,10 +1405,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
         }
         
         this._sendMessage(configurationMsg, cb);
-        //, function _validationCB(responseMessage) {
-        //    return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        //});
-
         
     };
 
@@ -1565,56 +1523,56 @@ Host.prototype.getChannelStatusAll = function (callback) {
     };
 
     // Set transmit power for all channels
-    Host.prototype.setTransmitPower = function (transmitPower, callback) {
-
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'transmitPower', transmitPower,0,4);
-
-        configurationMsg = new SetTransmitPowerMessage(transmitPower);
-
-        this._sendMessage(configurationMsg, callback);
-    };
+//    Host.prototype.setTransmitPower = function (transmitPower, callback) {
+//
+//        var configurationMsg;
+//
+//        verifyRange(this.capabilities,'transmitPower', transmitPower,0,4);
+//
+//        configurationMsg = new SetTransmitPowerMessage(transmitPower);
+//
+//        this._sendMessage(configurationMsg, callback);
+//    };
 
     // Set transmit power for individual channel
-    Host.prototype.setChannelTxPower = function (channel,transmitPower, callback) {
-
-        if (typeof this.capabilities === "undefined")
-            callback(new Error('getCapabilities should be run first to determine if device has capability for setting individual Tx power for a channel'));
-
-        if (!this.capabilities.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
-            callback(new Error('Device does not support setting individual Tx power for a channel'));
-
-            var configurationMsg;
-
-            verifyRange(this.capabilities,'channel', channel);
-            verifyRange(this.capabilities,'transmitPower', transmitPower, 0, 4);
-
-            configurationMsg = new SetChannelTxPowerMessage(channel, transmitPower);
-
-            this._sendMessage(configurationMsg, callback);
-        
-    };
+//    Host.prototype.setChannelTxPower = function (channel,transmitPower, callback) {
+//
+//        if (typeof this.capabilities === "undefined")
+//            callback(new Error('getCapabilities should be run first to determine if device has capability for setting individual Tx power for a channel'));
+//
+//        if (!this.capabilities.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
+//            callback(new Error('Device does not support setting individual Tx power for a channel'));
+//
+//            var configurationMsg;
+//
+//            verifyRange(this.capabilities,'channel', channel);
+//            verifyRange(this.capabilities,'transmitPower', transmitPower, 0, 4);
+//
+//            configurationMsg = new SetChannelTxPowerMessage(channel, transmitPower);
+//
+//            this._sendMessage(configurationMsg, callback);
+//        
+//    };
 
     // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
-    Host.prototype.setProximitySearch = function (channel, searchThreshold, callback) {
-
-        if (typeof this.capabilities === "undefined")
-            callback(new Error('getCapabilities should be run first to determine if device has capability for proximity search'));
-
-        if (!this.capabilities.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED) 
-            callback(new Error('Device does not support proximity search'));
-
-            var configurationMsg;
-
-            verifyRange(this.capabilities,'channel', channel);
-            verifyRange(this.capabilities,'searchThreshold', searchThreshold, 0, 10);
-
-            configurationMsg = new SetProximitySearchMessage(channel, searchThreshold);
-
-            this._sendMessage(configurationMsg, callback);
-           
-    };
+//    Host.prototype.setProximitySearch = function (channel, searchThreshold, callback) {
+//
+//        if (typeof this.capabilities === "undefined")
+//            callback(new Error('getCapabilities should be run first to determine if device has capability for proximity search'));
+//
+//        if (!this.capabilities.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED) 
+//            callback(new Error('Device does not support proximity search'));
+//
+//            var configurationMsg;
+//
+//            verifyRange(this.capabilities,'channel', channel);
+//            verifyRange(this.capabilities,'searchThreshold', searchThreshold, 0, 10);
+//
+//            configurationMsg = new SetProximitySearchMessage(channel, searchThreshold);
+//
+//            this._sendMessage(configurationMsg, callback);
+//           
+//    };
 
     //Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
     //    var openRxScan_channel_msg, self = this, message = new ANTMessage();
@@ -1639,48 +1597,9 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
     Host.prototype.closeChannel = function (channelNumber, callback) {
-        ////console.log("Closing channel "+ucChannel);
-        //var close_channel_msg, self = this;
-        //var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
-        ////console.log("Closing channel " + channel.number);
-        //close_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.close_channel, new Buffer([channel.number]));
-
-        //this.sendOnly(close_channel_msg, Host.prototype.ANT_DEFAULT_RETRY, 500, errorCallback,
-        //    function success() {
-        //        var retryNr = 0;
-
-        //        function retryEventChannelClosed() {
-
-        //            self.read(500, errorCallback,
-        //                function success(data) {
-        //                    retryNr = 0;
-
-        //                    if (!self.isEvent(Host.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
-        //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected event CHANNEL_CLOSED");
-        //                        retryNr++;
-        //                        if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
-        //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE,"Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get EVENT CHANNEL CLOSED from ANT device");
-        //                            retryEventChannelClosed();
-        //                        }
-        //                        else {
-        //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
-        //                            errorCallback();
-        //                        }
-        //                    }
-        //                    else
-        //                        successCallback();
-        //                });
-        //        }
-
       
-        //                                 // Wait for EVENT_CHANNEL_CLOSED
-        //                                 // If channel status is tracking -> can get broadcast data packet before channel close packet
-
-       
-
-
-        //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
-        //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
+       // Wait for EVENT_CHANNEL_CLOSED ?
+       // If channel status is tracking -> can get broadcast data packet before event channel closed packet
 
         var configurationMsg;
 
@@ -1688,15 +1607,13 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new CloseChannelMessage(channelNumber);
 
-        // To DO: register event handler for EVENT_CHANNEL_CLOSED before calling callback !!!
-
-        // this._
-        // TO DO : create a single function for configuration/control commands that receive RESPONSE_NO_ERROR ?
-
         this._sendMessage(configurationMsg, callback);
 
     };
 
+        //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
+        //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
+    
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
     // 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
