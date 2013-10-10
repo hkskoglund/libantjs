@@ -1078,8 +1078,8 @@ Host.prototype.RXparse = function (error,data) {
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
                 this._responseCallback(channelResponseMsg);
-//            else
-//                this.log.log('log',channelResponseMsg.toString());
+            else
+                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
             
             // Check for channel response callback
            if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
@@ -1191,9 +1191,7 @@ Host.prototype.RXparse = function (error,data) {
     }
     
 };
-
-    
-    
+  
 // Send a reset device command
 Host.prototype.resetSystem = function (callback) {
 
@@ -1640,7 +1638,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
-    Host.prototype.closeChannel = function (channel, callback) {
+    Host.prototype.closeChannel = function (channelNumber, callback) {
         ////console.log("Closing channel "+ucChannel);
         //var close_channel_msg, self = this;
         //var channel = this.channelConfiguration[channelNr], message = new ANTMessage();
@@ -1674,81 +1672,28 @@ Host.prototype.getChannelStatusAll = function (callback) {
         //                });
         //        }
 
-        //        function retryResponseNoError() {
-        //            self.read(500, errorCallback,
-        //                         function success(data) {
-        //                             if (!self.isResponseNoError(data, ANTMessage.prototype.MESSAGE.close_channel.id)) {
-        //                                 self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Expected response NO ERROR for close channel");
-        //                                 retryNr++;
-        //                                 if (retryNr < Host.prototype.ANT_RETRY_ON_CLOSE) {
-        //                                     self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Discarding "+data.inspect()+" from ANT engine packet queue. Retrying to get NO ERROR response from ANT device");
-        //                                     retryResponseNoError();
-        //                                 }
-        //                                 else {
-        //                                     self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries. Aborting.");
-        //                                     errorCallback();
-        //                                 }
-        //                             }
-        //                             else 
-        //                                 //self.parse_response(data);
-
+      
         //                                 // Wait for EVENT_CHANNEL_CLOSED
         //                                 // If channel status is tracking -> can get broadcast data packet before channel close packet
 
-        //                                 retryEventChannelClosed();
-
-        //                         });
-        //        }
-
-        //        if (typeof noVerifyResponseNoError === "undefined")
-        //            retryResponseNoError();
-        //        else
-        //            successCallback();
-        //    });
+       
 
 
         //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
         //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
 
-        // Check for specific event code
-        //Host.prototype.isEvent = function (code, data) {
-        //    var msgId = data[2], channelNr = data[3], eventOrResponse = data[4], eventCode = data[5], EVENT = 1;
-
-        //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && eventOrResponse === EVENT && code === eventCode);
-        //};
-
-        // Check if channel response is a no error for a specific requested message id
-        //Host.prototype.isResponseNoError = function (data, requestedMsgId) {
-        //    var msgId = data[2], msgRequested = data[4], msgCode = data[5];
-
-        //    //console.log(Date.now() + " Validation");
-        //    //console.log(data, requestedMsgId);
-
-        //    return (msgId === ANTMessage.prototype.MESSAGE.channel_response.id && msgCode === Host.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR && msgRequested === requestedMsgId);
-
-        //};
-
-
-
         var configurationMsg;
 
-        verifyRange(this.capabilities,'channel', channel);
+        verifyRange(this.capabilities,'channel', channelNumber);
 
-        configurationMsg = new CloseChannelMessage(channel);
+        configurationMsg = new CloseChannelMessage(channelNumber);
 
         // To DO: register event handler for EVENT_CHANNEL_CLOSED before calling callback !!!
 
         // this._
         // TO DO : create a single function for configuration/control commands that receive RESPONSE_NO_ERROR ?
 
-        this._sendMessage(configurationMsg, function (error, responseMessage) {
-            if (error)
-                callback('Failed to close channel nr. ' + channel);
-            else
-                callback(undefined, responseMessage);
-        }.bind(this), function _validationCB(responseMessage) {
-            return validateResponseNoError(responseMessage, configurationMsg.getMessageId());
-        });
+        this._sendMessage(configurationMsg, callback);
 
     };
 

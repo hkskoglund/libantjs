@@ -91,7 +91,7 @@ define(function (require, exports, module) {
     
 
     DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
-           // this.log.log('log', 'HRM got', channelResponse);
+            //this.log.log('log', 'DeviceProfile HRM channel response', channelResponse);
     };
     
     //DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
