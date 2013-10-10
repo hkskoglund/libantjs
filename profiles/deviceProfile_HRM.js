@@ -80,8 +80,8 @@ define(function (require, exports, module) {
     ];
     
     DeviceProfile_HRM.prototype.STATE = {
-        HR_EVENT: 1,
-        NO_HR_EVENT: 0,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
+        HR_EVENT: true,
+        NO_HR_EVENT: false,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
 
     };
     DeviceProfile_HRM.prototype.NAME = 'HRM';
@@ -182,19 +182,12 @@ define(function (require, exports, module) {
         {
             this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
-        } else {
-            
-            // Overwrite read computedHeartRate 
-            if (this.state.heartRateEvent === DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT)
-                page.computedHeartRate = INVALID_HEART_RATE;
-            
-            if  (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
+        } else  if  (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
                 {
                     this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
                     this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
                     page.computedHeartRate = INVALID_HEART_RATE; 
                 }
-        }
         
         if (page)
             this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
