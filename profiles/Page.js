@@ -50,6 +50,8 @@ define(function (require, exports, module) {
             
              case GenericPage.prototype.COMMON.PAGE80: // 80 Common data page - Manufactorer's identification
                 
+                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
+                 
                   // Byte 0
                 this.number = data[0];
                 
@@ -67,6 +69,8 @@ define(function (require, exports, module) {
                  
              case GenericPage.prototype.COMMON.PAGE81: // 81 Common data page - Product information 
                                
+                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
+                 
                 // Byte 3 Software revision - set by manufacturer
                  this.SWRevision = data[3];
                 
@@ -75,6 +79,8 @@ define(function (require, exports, module) {
        
                                           
                  break;
+                 
+                 // TO DO : Page 82
                  
             default :
                                           
@@ -95,18 +101,18 @@ define(function (require, exports, module) {
             
             case GenericPage.prototype.COMMON.PAGE80 :
                     
-                      msg = this.type + " P# " + this.number +" Manufacturer " + this.manufacturerID + " HW rev. "+this.HWRevision+ " Model nr. "+this.modelNumber;
+                      msg = this.type + " P# " + this.number +" Manufacturer " + this.manufacturerID + " HW revision "+this.HWRevision+ " Model nr. "+this.modelNumber;
        
                     break;
                     
             case GenericPage.prototype.COMMON.PAGE81 : 
                     
-                    msg = this.type + " P# " + this.number + " SW revision : " + this.SWRevision;
+                    msg = this.type + " P# " + this.number + " SW revision " + this.SWRevision;
        
                   if (this.serialNumber === GenericPage.prototype.NO_SERIAL_NUMBER)
                           msg += " No serial number";
                    else
-                       msg += " Serial number: " + this.serialNumber;
+                       msg += " Serial number " + this.serialNumber;
                     
                     break;
                     

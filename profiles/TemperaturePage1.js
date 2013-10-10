@@ -156,7 +156,7 @@ define(function (require, exports, module) {
    
    Page.prototype.toString = function ()
    {
-        var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " low (24H) " + this.hour24Low.toFixed(1)+ "°C high (24H) "+
+        var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " Low (24H) " + this.hour24Low.toFixed(1)+ "°C High (24H) "+
             this.hour24High.toFixed(1)+ "°C Current Temp "+this.currentTemp.toFixed(2)+ "°C";
        
         return msg;

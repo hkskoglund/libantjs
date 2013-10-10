@@ -93,6 +93,8 @@ define(function (require, exports, module) {
             this.log.log('log',"Received broadcast from device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
             return false;
         }
+        
+        return true;
        
     };
    

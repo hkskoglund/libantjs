@@ -74,7 +74,7 @@ define(function (require, exports, module) {
     var  data = broadcast.data,
          dataView = new DataView(data.buffer);
                  
-        if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE,broadcast))
+        if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast))
             return;
       
          if (this.isDuplicateMessage(broadcast.data))

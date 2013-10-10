@@ -56,22 +56,22 @@ define(function (require, exports, module) {
     Page.prototype.TRANSMISSION_INFO = {
         
         LOCAL_TIME : {
-            0 : "Local Time not supported",
-            1 : "Local Time Supported, not set",
-            2 : "Local Time Supported and set",
+            0 : "Not supported",
+            1 : "Supported, not set",
+            2 : "Supported and set",
             3 : "Reserved" 
         },
         
         UTC_TIME : {
-            0 : "System Time not supported",
-            1 : "UTC Time Supported, Not Set",
-            2 : "UTC Time Supported and Set",
+            0 : "Not supported",
+            1 : "Supported, Not Set",
+            2 : "Supported and Set",
             3 : "Reserved" 
         },
    
         DEFAULT_TRANSMISSION_RATE : {
-            0 : "Default transmission rate of 0.5 Hz",
-            1 : "Default transmission rate of 4 Hz",
+            0 : "0.5 Hz",
+            1 : "4 Hz",
             2 : "Reserved",
             3 : "Reserved" 
         }
@@ -113,10 +113,10 @@ define(function (require, exports, module) {
     
    Page.prototype.toString = function ()
    {
-        var msg = this.type + " P# " + this.number + "Local time "+Page.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
+        var msg = this.type + " P# " + this.number + " Local time "+Page.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
             " UTC time "+Page.prototype.TRANSMISSION_INFO.UTC_TIME[this.transmissionInfo.UTCTime]+
-            " Default transmission rate "+Page.prototype.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate]+
-            " Supported pages "+this.supportedPages.value.toString(2)+ " "+JSON.stringify(this.supportedPages);
+            " Tch "+Page.prototype.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate]+
+            " Pages 0b"+this.supportedPages.value.toString(2);
        
         return msg;
    };
