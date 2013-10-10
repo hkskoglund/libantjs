@@ -106,7 +106,7 @@ define(function (require, exports, module) {
     
     DeviceProfile.prototype.setOnPageCB = function (callback)
     {
-        this.log.log('log','Setting on page callback to ',callback);
+        this.log.log('log','Setting device profile on page callback to ',callback,this);
         this._onPageCB = callback;
     };
     

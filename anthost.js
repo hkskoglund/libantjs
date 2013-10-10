@@ -179,8 +179,8 @@ this._sendMessage = function (message,callback) {
     
     var timeMsg,
         
-        PROCESSING_DELAY = 10,
-        TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_DELAY,
+        PROCESSING_LATENCY = this.options.transferProcessingLatecy || 10,
+        TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_LATENCY,
         targetMsgId = message.responseId,
         MAX_RETRY = this.options.maxTransferRetries || 5,
         retryNr = 0;
@@ -208,6 +208,7 @@ this._sendMessage = function (message,callback) {
 
      var usbTransferCB = function (error)
                           {
+                              
                               //console.timeEnd('sendMessageUSBtransfer');
                               if (error)
                                   this.log.log('error','TX failed of '+message.toString());
@@ -221,7 +222,7 @@ this._sendMessage = function (message,callback) {
 
         //this.log.time('sendMessageUSBtransfer');
         if (retryNr === 0)
-           this.log.log('log','Sending message ',message);
+           this.log.log('log','Sending message ',message,'retry timeout in '+TIMEOUT+' ms.');
         else
            this.log.log('warn','Retry '+retryNr+' sending message',message);
         
@@ -242,6 +243,7 @@ this._sendMessage = function (message,callback) {
 
                              }.bind(this),TIMEOUT);
         
+      
         this.usb.transfer(message.getRawMessage(),usbTransferCB);
            
     }.bind(this);
@@ -1064,9 +1066,9 @@ Host.prototype.RXparse = function (error,data) {
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
                 this._responseCallback(channelResponseMsg);
-            else
-                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
-            
+//            else
+//                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
+//            
             // Check for channel response callback
            if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
                

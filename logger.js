@@ -24,7 +24,7 @@ define(function (require, exports, module) {
         
     Logger.prototype.log = function (type)
     {
-        //console.trace();
+       // console.trace();
         if (this.logging) {
             if (arguments.length === 2)
                 console[type](Date.now(), arguments[1]);
