@@ -816,7 +816,7 @@ Host.prototype.RXparse = function (error,data) {
 //    data = new Uint8Array(1);
 //    data[0] = 164;
   var message,
-      messageLength = data.length, // Uint8Array .length === .byteLength
+      messageLength, // Uint8Array .length === .byteLength
       SYNC_OFFSET = 0,
       LENGTH_OFFSET = 1,
       ID_OFFSET = 2,
@@ -837,6 +837,8 @@ Host.prototype.RXparse = function (error,data) {
         this.log.log('error','Undefined data received in RX parser, may indicate problems with USB provider, i.e USBChrome');
         return;
     }
+    
+    messageLength = data.length;
     
    
     // Check for partial message that crosses LIBUSB transfer length boundary (typically multiple of max packet size for in endpoint)

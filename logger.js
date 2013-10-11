@@ -26,7 +26,9 @@ define(function (require, exports, module) {
     {
        // console.trace();
         if (this.logging && console[type]) {
-            if (arguments.length === 2)
+            if (arguments.length === 2 && arguments[1] instanceof Error)
+                console[type](Date.now(), arguments[1].message, arguments[1]);
+            else  if (arguments.length === 2 && !(arguments[1] instanceof Error))
                 console[type](Date.now(), arguments[1]);
             else
                 if (arguments.length === 3)
