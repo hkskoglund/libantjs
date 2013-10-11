@@ -86,16 +86,21 @@ define(function (require, exports, module) {
                 
                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
                  
+                 // Byte 1-2 -reserved 0xFF
+                 
+                 // Byte 7
                 this.descriptive = {
                     coarseVoltage: data[7] & 0x0F,        // Bit 0-3
                     batteryStatus: (data[7] & 0x70) >> 4, // Bit 4-6
                     resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
                 };
 
-                var divisor = (this.resolution === 1) ? 2 : 16;
+                var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;
 
-
-                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3) & 0x00FFFFFF) / divisor; // 24 - bit only
+                // Byte 3-5
+                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3,true) & 0x00FFFFFF) * unit_multiplier; // 24 - bit only
+                 
+                 // Byte 6
                 this.fractionalBatteryVoltage = data[6] / 256; // Volt
                 if (this.descriptive.coarseVoltage === 0x0F)
                     this.batteryVoltage = "Invalid";
@@ -155,7 +160,6 @@ define(function (require, exports, module) {
                     default: batteryStatus += "? - " + this.descriptive.batteryStatus;
                 }
 
-              
                 var batteryVoltageToString = function (voltage) {
                     if (typeof voltage === "number")
                         return voltage.toFixed(1);
@@ -163,7 +167,17 @@ define(function (require, exports, module) {
                         return ""+voltage;
                 };
 
-                msg = this.type + " P# " + this.number + " Cumulative operating time (s) " + this.cumulativeOperatingTime + " Battery (V) " + batteryVoltageToString(this.batteryVoltage) + " Battery status: " + batteryStatus;
+                msg = this.type + " P# " + this.number+" Cumulative operating time ";
+                
+                if (this.cumulativeOperatingTime < 3600)
+                    msg += this.cumulativeOperatingTime.toFixed(1) + 's ';
+                else
+                    msg += (this.cumulativeOperatingTime/3600).toFixed(1)+ ' h';
+                
+                if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
+                  msg += " Battery (V) " + batteryVoltageToString(this.batteryVoltage);
+                
+                msg += " Battery status " + batteryStatus;
                 
                 break;
                 
