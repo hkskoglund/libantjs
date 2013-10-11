@@ -8,14 +8,16 @@ define(function (require, exports, module) {
     // Data page 0 - General Information
     // "Provides general information about the device's capabilities", spec. p. 15
     
-    function Page(configuration,data,dataView)
+    function Page(configuration,broadcast)
     {
-        GenericPage.call(this,configuration);
+          
+                
+        GenericPage.call(this,configuration,broadcast);
         
          this.type = GenericPage.prototype.TYPE.MAIN;
         
-       if (data)
-           this.parse(data,dataView);
+       if (broadcast.data)
+           this.parse(broadcast);
     }
     
     Page.prototype = Object.create(GenericPage.prototype); 
@@ -78,8 +80,9 @@ define(function (require, exports, module) {
     };
         
    
-    Page.prototype.parse = function (data,dataView)
+    Page.prototype.parse = function (broadcast)
     {
+          var  data = broadcast.data, dataView = new DataView(data.buffer);
          var supportedPages;
         
         // Byte 0 - page number

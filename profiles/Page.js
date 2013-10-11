@@ -5,15 +5,17 @@ define(function (require, exports, module) {
     
     var  Logger = require('logger');
       
-     function GenericPage(configuration,data,dataView) {
+     function GenericPage(configuration,broadcast) {
           if (configuration)
          this.log = new Logger(configuration.log);
         else
           this.log = new Logger();
          
-         if (data)
-          this.commonPage =  this.parse(data,dataView);
+         if (broadcast && broadcast.data)
+           this.channelId = broadcast.channelId.getUniqueId();
      }
+    
+    
     
     GenericPage.prototype.COMMON = {
         PAGE80 : 0x50,
@@ -33,8 +35,10 @@ define(function (require, exports, module) {
 //     };
     
      // Parsing of common pages
-     GenericPage.prototype.parse = function (data,dataView)
+     GenericPage.prototype.parse = function (broadcast)
      {
+         
+          var  data = broadcast.data, dataView = new DataView(data.buffer);
          
          // Byte 0 
          this.number = data[0];
@@ -76,8 +80,7 @@ define(function (require, exports, module) {
                 
                 // Byte 4 LSB - 7 MSB Serial Number - little endian
                  this.serialNumber = dataView.getUint32(data.byteOffset+4,true);
-       
-                                          
+                                      
                  break;
                  
                  // TO DO : Page 82
@@ -106,8 +109,7 @@ define(function (require, exports, module) {
                     this.batteryVoltage = "Invalid";
                 else
                     this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
-
-               
+ 
                 break;   
                  
             default :

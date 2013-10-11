@@ -71,36 +71,37 @@ define(function (require, exports, module) {
 //    };
 //    
     DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
-    var  data = broadcast.data,
-         dataView = new DataView(data.buffer);
-                 
+//    var  data = broadcast.data,
+//         dataView = new DataView(data.buffer);
+//                 
         if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast))
             return;
       
          if (this.isDuplicateMessage(broadcast.data))
             return ;
         
-        var page, pageNumber = data[0];
+        var page, pageNumber = broadcast.data[0];
             
         switch (pageNumber) {
              
             // Device capabilities
             case 0 : 
                 
-                page = new TempPage0({log : this.log.logging },data,dataView);
+                page = new TempPage0({log : this.log.logging },broadcast);
                 
                 break;
                 
             // Temperature
             case 1: 
                 
-                page = new TempPage1({ log : this.log.logging },data,dataView);
+                page = new TempPage1({ log : this.log.logging },broadcast);
                 
                 break;
                 
             default :
                 
-                page = new GenericPage({ log : this.log.logging },data,dataView);
+                page = new GenericPage({ log : this.log.logging });
+                page.parse(broadcast);
               
                 break;
                     

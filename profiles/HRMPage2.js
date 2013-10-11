@@ -4,21 +4,23 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,data,dataView,channelId) {
+    function Page(configuration,broadcast) {
        GenericPage.call(this,configuration);
     
          this.type = Page.prototype.TYPE.BACKGROUND;
           
-       if (data)
-           this.parse(data,dataView,channelId);
+       if (broadcast.data)
+           this.parse(broadcast);
     }
     
     Page.prototype = Object.create(GenericPage.prototype); 
     Page.prototype.constructor = Page; 
     
-    Page.prototype.parse = function (data,dataView,channelId)
+    Page.prototype.parse = function (broadcast)
     {
+        var channelId = broadcast.channelId;
         
+          var  data = broadcast.data, dataView = new DataView(data.buffer);
         this.number = data[0] & 0x7F;
         
         this.pageToggle = (data[0] & 0x80) >> 7;

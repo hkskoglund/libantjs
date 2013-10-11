@@ -132,10 +132,11 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
         //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
-        var data = broadcast.data,
-            dataView = new DataView(broadcast.data.buffer),
+        var 
+//        data = broadcast.data,
+//            dataView = new DataView(broadcast.data.buffer),
             page, 
-            pageNumber = data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE;
+            pageNumber = broadcast.data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE;
         
         var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
               INVALID_HEART_RATE = 0x00;
@@ -144,31 +145,31 @@ define(function (require, exports, module) {
     
         this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
        
-        if (this.isDuplicateMessage(data,DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE)) // Disregard/Mask bit 7 - Page toggle bit
+        if (this.isDuplicateMessage(broadcast.data,DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE)) // Disregard/Mask bit 7 - Page toggle bit
             return;
     
         switch (pageNumber) {
              
             // MAIN
             case 4 : 
-               page = new HRMPage4({log: this.log.logging},data,dataView,this.previousPage);
+               page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage);
                  break;
                 
             case 0 : // OLD
-                page = new HRMPage0({log: this.log.logging},data,dataView,this.previousPage);
+                page = new HRMPage0({log: this.log.logging},broadcast,this.previousPage);
                  break;
                 
             // BACKGROUND
             case 3 : 
-                page = new HRMPage3({log: this.log.logging},data,dataView);
+                page = new HRMPage3({log: this.log.logging},broadcast);
                 break;
                 
             case 2 : 
-                page = new HRMPage2({log: this.log.logging},data,dataView,broadcast.channelId);
+                page = new HRMPage2({log: this.log.logging},broadcast);
                 break;
                 
             case 1 : 
-                page = new HRMPage1({log: this.log.logging},data,dataView);
+                page = new HRMPage1({log: this.log.logging},broadcast);
                 break;
             
             default : 

@@ -35,6 +35,13 @@ define(function (require, exports, module) {
      
     }
     
+    ChannelId.prototype.getUniqueId = function ()
+    {
+        if (this.has20BitDeviceNumber())
+          return 'ant:'+this.deviceNumber20BIT+'.'+this.deviceType+'.'+this.transmissionType;
+        else
+          return 'ant:'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
+    }
     
     ChannelId.prototype.getDeviceNumber = function () {
         return this.deviceNumber;

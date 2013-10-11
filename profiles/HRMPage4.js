@@ -4,22 +4,22 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,data,dataView,previousPage) {
+    function Page(configuration,broadcast,previousPage) {
        GenericPage.call(this,configuration);
         
         this.type = GenericPage.prototype.TYPE.MAIN;
      
           
-       if (data)
-           this.parse(data,dataView,previousPage);
+       if (broadcast.data)
+           this.parse(broadcast,previousPage);
     }
     
     Page.prototype = Object.create(GenericPage.prototype); 
     Page.prototype.constructor = Page; 
     
-    Page.prototype.parse = function (data,dataView,previousPage)
+    Page.prototype.parse = function (broadcast,previousPage)
     {
-        
+          var  data = broadcast.data, dataView = new DataView(data.buffer);
         this.number = data[0] & 0x7F;
         
         this.pageToggle = (data[0] & 0x80) >> 7;
