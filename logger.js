@@ -25,7 +25,7 @@ define(function (require, exports, module) {
     Logger.prototype.log = function (type)
     {
        // console.trace();
-        if (this.logging) {
+        if (this.logging && console[type]) {
             if (arguments.length === 2)
                 console[type](Date.now(), arguments[1]);
             else
@@ -39,7 +39,8 @@ define(function (require, exports, module) {
                     console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);
             else
                 console[type](Date.now(), arguments);
-        }
+        } else if (!console[type])
+            console.warn(Date.now(),'Unknown console source '+type, arguments);
     };
     
     Logger.prototype.time = function (name)

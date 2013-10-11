@@ -25,7 +25,7 @@ define(function (require, exports, module) {
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_ENVIRONMENT.prototype.DEVICE_TYPE, transmissionType: '*' },
+            channelId: { deviceNumber: '*', deviceType: DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
             LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX), 
             HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
@@ -113,10 +113,7 @@ define(function (require, exports, module) {
         if (page)
             this.onPage(page);
  
-        // Used for skipping duplicate messages
-        this.previousBroadcastData = data;
-        
-        
+       
     };
         
     

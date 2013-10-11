@@ -13,11 +13,13 @@ define(function (require, exports, module) {
         //this._configuration = configuration;
         
         
-        this.duplicateMessageCounter = 0;
-    
+        this.duplicateBroadcast = {
+           counter : {},
+          };
+        
         this.receivedBroadcastCounter = 0;
         
-        this.previousBroadcastData = undefined; // Just declare property
+        this.previousBroadcastData = {}; // Just declare property
         
         
        
@@ -30,15 +32,20 @@ define(function (require, exports, module) {
     
     // FILTER - Skip duplicate messages from same master 
     DeviceProfile.prototype.isDuplicateMessage = function (data,BITMASK) {
-     var currentTime,
+     var 
+   
         TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000,
         bitmask = BITMASK,
+        pageNumber = data[0 & BITMASK],
+         previousPage = this.previousBroadcastData[pageNumber],
+      
          // Compare buffers byte by byte
          equalBuffer = function (buf1,buf2,useBitmask)
         {
             // Could have used bitmask from outer function via closure mechanism, but chose to pass is as a argument (could be moved without requiring context)
             
             var byteNr;
+            
            
              if (useBitmask === undefined)
                 useBitmask = 0xFF;
@@ -59,30 +66,29 @@ define(function (require, exports, module) {
             
         };
         
-        if (this.previousBroadcastData && equalBuffer(this.previousBroadcastData,data,bitmask)) {
+        if (this.previousBroadcastData[pageNumber] && equalBuffer(this.previousBroadcastData[pageNumber],data,bitmask)) {
            
-                currentTime = Date.now();
+                // If counter is not reset for page, do it now
+                if (this.duplicateBroadcast.counter[pageNumber] === undefined) 
+                    this.duplicateBroadcast.counter[pageNumber] = 0;
+            
+                this.duplicateBroadcast.counter[pageNumber]++;
     
-                if (this.duplicateMessageCounter === 0)
-                    this.duplicateMessageStartTime = this.currentTime;
-    
-                if (currentTime - this.duplicateMessageStartTime >= TIMEOUT_DUPLICATE_MESSAGE_WARNING) {
-                    this.duplicateMessageStartTime = this.currentTime;
-                    this.log.log('log',"Duplicate message registered for " + TIMEOUT_DUPLICATE_MESSAGE_WARNING + " ms, may indicate lost heart rate data");
-                }
-    
-                this.duplicateMessageCounter++;
-    
-                return true;
+              
             } else {
+              
                  
-                if (this.duplicateMessageCounter > 0) {
-                    // console.log("Skipped " + this.duplicateMessageCounter + " duplicate messages from "+broadcast.channelId.toString());
-                    this.duplicateMessageCounter = 0;
+                //console.log(this.duplicateBroadcast);
+                
+                if (this.duplicateBroadcast.counter[pageNumber] > 0) {
+                  // this.log.log('log','Skipped ' + this.duplicateBroadcast.counter[pageNumber]+ ' duplicate messages');
+                 this.duplicateBroadcast.counter[pageNumber] = 0;
                 }
             }
     
-      return false;
+        this.previousBroadcastData[pageNumber] = data;
+        
+      return this.duplicateBroadcast.counter[pageNumber]  > 0;
 };
     
     DeviceProfile.prototype.verifyDeviceType = function (deviceType,broadcast)

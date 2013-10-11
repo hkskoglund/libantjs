@@ -203,9 +203,9 @@ define(function (require, exports, module) {
 //        
 //        
  
-        // Used for skipping duplicate messages
-        this.previousBroadcastData = data;
-        
+//        // Used for skipping duplicate messages
+//        this.previousBroadcastData = data;
+//        
         // Keep track of previous page state for main page 4 and 0 - calculation of RR
         if (page instanceof HRMPage4 || page instanceof HRMPage0)
             this.previousPage = page;

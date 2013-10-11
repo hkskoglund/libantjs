@@ -17,7 +17,8 @@ define(function (require, exports, module) {
     
     GenericPage.prototype.COMMON = {
         PAGE80 : 0x50,
-        PAGE81 : 0x51 };
+        PAGE81 : 0x51,
+        PAGE82 : 0x52 }; // Battery status
     
     GenericPage.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
     
@@ -34,7 +35,6 @@ define(function (require, exports, module) {
      // Parsing of common pages
      GenericPage.prototype.parse = function (data,dataView)
      {
-          var page;
          
          // Byte 0 
          this.number = data[0];
@@ -82,6 +82,29 @@ define(function (require, exports, module) {
                  
                  // TO DO : Page 82
                  
+               case GenericPage.prototype.COMMON.PAGE82: // 82 Common data page - Battery Status
+                
+                this.type = GenericPage.prototype.TYPE.BACKGROUND;
+                 
+                this.descriptive = {
+                    coarseVoltage: data[7] & 0x0F,        // Bit 0-3
+                    batteryStatus: (data[7] & 0x70) >> 4, // Bit 4-6
+                    resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
+                };
+
+                var divisor = (this.resolution === 1) ? 2 : 16;
+
+
+                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3) & 0x00FFFFFF) / divisor; // 24 - bit only
+                this.fractionalBatteryVoltage = data[6] / 256; // Volt
+                if (this.descriptive.coarseVoltage === 0x0F)
+                    this.batteryVoltage = "Invalid";
+                else
+                    this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
+
+               
+                break;   
+                 
             default :
                                           
                  this.log.log('error','Unable to parse page number ',this.number+' 0x'+this.number.toString(16),data);
@@ -115,6 +138,35 @@ define(function (require, exports, module) {
                        msg += " Serial number " + this.serialNumber;
                     
                     break;
+                
+            case GenericPage.prototype.COMMON.PAGE82:
+                
+                 var batteryStatus = "";
+
+                switch (this.descriptive.batteryStatus) {
+                    case 0x00: batteryStatus += "Reserved"; break;
+                    case 0x01: batteryStatus += "New"; break;
+                    case 0x02: batteryStatus += "Good"; break;
+                    case 0x03: batteryStatus += "OK"; break;
+                    case 0x04: batteryStatus += "Low"; break;
+                    case 0x05: batteryStatus += "Critical"; break;
+                    case 0x06: batteryStatus += "Reserved"; break;
+                    case 0x07: batteryStatus += "Invalid"; break;
+                    default: batteryStatus += "? - " + this.descriptive.batteryStatus;
+                }
+
+              
+                var batteryVoltageToString = function (voltage) {
+                    if (typeof voltage === "number")
+                        return voltage.toFixed(1);
+                    else
+                        return ""+voltage;
+                };
+
+                msg = this.type + " P# " + this.number + " Cumulative operating time (s) " + this.cumulativeOperatingTime + " Battery (V) " + batteryVoltageToString(this.batteryVoltage) + " Battery status: " + batteryStatus;
+                
+                break;
+                
                     
             default :
                     this.log.log('error','Unable to construct string for page number',this.number);
