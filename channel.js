@@ -28,7 +28,20 @@ define(function (require, exports, module) {
                 conf.push(prop);
         
         return conf;
+        
+        
     };
+    
+//    Channel.prototype.setChannelId = function (name,deviceNumber,deviceType,transmissionType)
+//    {
+//        var param = this.parameters[name];
+//        
+//        if (!param) {
+//            this.log.log('error','No parameters for channel found for configuration '+name);
+//            return;
+//        }
+//        
+//    }
     
     Channel.prototype.addConfiguration = function (name, parameters)
     {

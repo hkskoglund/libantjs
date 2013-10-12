@@ -35,6 +35,7 @@ define(function (require, exports, module) {
     // Control ANT
     ResetSystemMessage = require('messages/to/ResetSystemMessage'),
     OpenChannelMessage = require('messages/to/OpenChannelMessage'),
+    OpenRxScanModeMessage = require('messages/to/OpenRxScanModeMessage'),
     CloseChannelMessage = require('messages/to/CloseChannelMessage'),
 
     // Notifications
@@ -425,6 +426,15 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
                 parameters.extendedAssignment = undefined;
                 break;
         }
+    
+    // If neccessary override channelNumber if channel type is 'Rx only'/'slave only' 
+    
+    if (parameters.RxScanMode && channelNumber !== 0)
+    {
+        this.log.log('log','C# ',channelNumber,' not allowed for continous Rx scan mode. Setting it to 0');
+        channelInfo.channelNumber = 0;
+        channelNumber = 0;
+    }
 
     this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
 
@@ -479,11 +489,18 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
                 else
                   cPeriod = channelPeriod || parameters.channelPeriod;
                 
-                if (cPeriod === undefined)
+                if (cPeriod === undefined && !parameters.RxScanMode)
                 {
+                    
                     callback(new Error('Channel period is undefined'));
                     return;
                 }
+                
+                if (parameters.RxScanMode)
+                {
+                    openRxScanMode();
+                }
+                else
               
                     this.setChannelPeriod(channelNumber, cPeriod, function (error, response) {
                         if (!error) {
@@ -616,6 +633,24 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
                 
                 if (open) {
                     this.openChannel(channelNumber,  function (error, response) {
+                        if (!error) {
+                            this.log.log('log', response.toString());
+                            callback(undefined,channel);
+                        }
+                        else
+                            callback(error,channel);
+                    }.bind(this));
+                } else callback();
+              
+            }.bind(this);
+            
+            var openRxScanMode = function () {
+               
+                // Attach etablished channel info (C#,N#,...)
+                channel.establish = channelInfo;
+                
+                if (open) {
+                    this.openRxScanMode(channelNumber,  function (error, response) {
                         if (!error) {
                             this.log.log('log', response.toString());
                             callback(undefined,channel);
@@ -1582,14 +1617,19 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //           
 //    };
 
-    //Host.prototype.openRxScanMode = function (channelNr, errorCallback, successCallback, noVerifyResponseNoError) {
-    //    var openRxScan_channel_msg, self = this, message = new ANTMessage();
-    //    var channel = this.channelConfiguration[channelNr];
-    //    //self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Opening channel " + channel.number);
-    //    openRxScan_channel_msg = message.create_message(ANTMessage.prototype.MESSAGE.open_rx_scan_mode, new Buffer([0]));
+   
+    
+     Host.prototype.openRxScanMode = function (channel, callback) {
+     
+        var configurationMsg;
 
-    //    this.sendAndVerifyResponseNoError(openRxScan_channel_msg, ANTMessage.prototype.MESSAGE.open_rx_scan_mode.id, errorCallback, successCallback, noVerifyResponseNoError);
-    //};
+        verifyRange(this.capabilities,'channel', channel);
+
+        configurationMsg = new OpenRxScanModeMessage(channel);
+
+        this._sendMessage(configurationMsg, callback);
+         
+    };
 
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
     Host.prototype.openChannel = function (channel, callback) {

@@ -301,8 +301,8 @@ ANTMessage.prototype.MESSAGE = {
         0x4C: "Close channel",
         CLOSE_CHANNEL:  0x4C,
 
-        0x5b: "Open RX scan mode",
-        open_rx_scan_mode: { id: 0x5b, friendly: "Open RX scan mode" },
+        0x5B: "Open RX scan mode",
+        OPEN_RX_SCAN_MODE : 0x5B,
 
         0xc5: "Sleep message",
         sleep_message: { id: 0xc5, friendly: "Sleep message" },
