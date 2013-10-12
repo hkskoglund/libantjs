@@ -498,7 +498,7 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
                 
                 if (parameters.RxScanMode)
                 {
-                    openRxScanMode();
+                    openChannel();
                 }
                 else
               
@@ -631,38 +631,24 @@ Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
                 // Attach etablished channel info (C#,N#,...)
                 channel.establish = channelInfo;
                 
-                if (open) {
-                    this.openChannel(channelNumber,  function (error, response) {
+                var openResponseHandler = function (error, response) {
                         if (!error) {
                             this.log.log('log', response.toString());
                             callback(undefined,channel);
                         }
                         else
                             callback(error,channel);
-                    }.bind(this));
+                    }.bind(this);
+                
+                if (open) {
+                    if (!parameters.RxScanMode)
+                      this.openChannel(channelNumber, openResponseHandler);
+                    else
+                        this.openRxScanMode(channelNumber, openResponseHandler); // channelNumber should be 0
                 } else callback();
               
             }.bind(this);
             
-            var openRxScanMode = function () {
-               
-                // Attach etablished channel info (C#,N#,...)
-                channel.establish = channelInfo;
-                
-                if (open) {
-                    this.openRxScanMode(channelNumber,  function (error, response) {
-                        if (!error) {
-                            this.log.log('log', response.toString());
-                            callback(undefined,channel);
-                        }
-                        else
-                            callback(error,channel);
-                    }.bind(this));
-                } else callback();
-              
-            }.bind(this);
-
-
         }
         else
             callback(error);
