@@ -4,17 +4,10 @@
 define(function (require, exports, module) {
     "use strict";
     // Function names based on Dynastram Android SDK v 4.00 documentation
+    
+    
     function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
        
-       this._check20BitDeviceNumber = function () {
-            var transferTypeMSN; 
-            
-                           if (this.has20BitDeviceNumber()) {
-                             transferTypeMSN  = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
-                                this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
-                            }
-        }.bind(this);
-        
         // Allow for new ChannelId(), when parsing broadcast data
         if (arguments.length === 0)
             return;
@@ -35,13 +28,22 @@ define(function (require, exports, module) {
      
     }
     
+    ChannelId.prototype._check20BitDeviceNumber = function () {
+            var transferTypeMSN; 
+            
+                           if (this.has20BitDeviceNumber()) {
+                             transferTypeMSN  = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
+                                this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
+                            }
+        };
+    
     ChannelId.prototype.getUniqueId = function ()
     {
         if (this.has20BitDeviceNumber())
           return 'ant:'+this.deviceNumber20BIT+'.'+this.deviceType+'.'+this.transmissionType;
         else
           return 'ant:'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
-    }
+    };
     
     ChannelId.prototype.getDeviceNumber = function () {
         return this.deviceNumber;

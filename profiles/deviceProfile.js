@@ -19,7 +19,7 @@ define(function (require, exports, module) {
         
         this.receivedBroadcastCounter = 0;
         
-        this.previousBroadcastData = {}; // Just declare property
+        this.previousBroadcast = {}; // Just declare property
         
         
        
@@ -31,14 +31,13 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.constructor = DeviceProfile;
     
     // FILTER - Skip duplicate messages from same master 
-    DeviceProfile.prototype.isDuplicateMessage = function (data,BITMASK) {
+    DeviceProfile.prototype.isDuplicateMessage = function (broadcast,BITMASK) {
      var 
    
-        TIMEOUT_DUPLICATE_MESSAGE_WARNING = 3000,
+       data = broadcast.data,
         bitmask = BITMASK,
-        pageNumber = data[0 & BITMASK],
-         previousPage = this.previousBroadcastData[pageNumber],
-      
+        pageIdentifier = broadcast.channelId.getUniqueId()+'.'+data[0 & BITMASK],
+        
          // Compare buffers byte by byte
          equalBuffer = function (buf1,buf2,useBitmask)
         {
@@ -66,13 +65,15 @@ define(function (require, exports, module) {
             
         };
         
-        if (this.previousBroadcastData[pageNumber] && equalBuffer(this.previousBroadcastData[pageNumber],data,bitmask)) {
+       // console.log("Page identifier",pageIdentifier);
+        
+        if (this.previousBroadcast[pageIdentifier] && equalBuffer(this.previousBroadcast[pageIdentifier],data,bitmask)) {
            
                 // If counter is not reset for page, do it now
-                if (this.duplicateBroadcast.counter[pageNumber] === undefined) 
-                    this.duplicateBroadcast.counter[pageNumber] = 0;
+                if (this.duplicateBroadcast.counter[pageIdentifier] === undefined) 
+                    this.duplicateBroadcast.counter[pageIdentifier] = 0;
             
-                this.duplicateBroadcast.counter[pageNumber]++;
+                this.duplicateBroadcast.counter[pageIdentifier]++;
     
               
             } else {
@@ -80,15 +81,15 @@ define(function (require, exports, module) {
                  
                 //console.log(this.duplicateBroadcast);
                 
-                if (this.duplicateBroadcast.counter[pageNumber] > 0) {
-                  // this.log.log('log','Skipped ' + this.duplicateBroadcast.counter[pageNumber]+ ' duplicate messages');
-                 this.duplicateBroadcast.counter[pageNumber] = 0;
+                if (this.duplicateBroadcast.counter[pageIdentifier] > 0) {
+                  // this.log.log('log','Skipped ' + this.duplicateBroadcast.counter[pageIdentifier]+ ' duplicate messages');
+                 this.duplicateBroadcast.counter[pageIdentifier] = 0;
                 }
             }
     
-        this.previousBroadcastData[pageNumber] = data;
+        this.previousBroadcast[pageIdentifier] = data;
         
-      return this.duplicateBroadcast.counter[pageNumber]  > 0;
+      return this.duplicateBroadcast.counter[pageIdentifier]  > 0;
 };
     
     DeviceProfile.prototype.verifyDeviceType = function (deviceType,broadcast)

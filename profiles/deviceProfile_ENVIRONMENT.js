@@ -13,9 +13,7 @@ define(function (require, exports, module) {
         TempPage0 = require('profiles/TemperaturePage0'),
         TempPage1 = require('profiles/TemperaturePage1'),
         GenericPage = require('profiles/Page');
-    
-   
-    
+      
     function DeviceProfile_ENVIRONMENT(configuration) {
       
         DeviceProfile.call(this, configuration);
@@ -46,13 +44,11 @@ define(function (require, exports, module) {
     
         });
         
-        
     }
     
     // Inherit
     DeviceProfile_ENVIRONMENT.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_ENVIRONMENT.prototype.constructor = DeviceProfile_ENVIRONMENT; 
-    
     
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
         DEVICE_TYPE : 25, // 0x19
@@ -77,7 +73,7 @@ define(function (require, exports, module) {
         if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast))
             return;
       
-         if (this.isDuplicateMessage(broadcast.data))
+         if (this.isDuplicateMessage(broadcast))
             return ;
         
         var page, pageNumber = broadcast.data[0];
@@ -113,11 +109,9 @@ define(function (require, exports, module) {
         // Callback if higher level code wants page, i.e UI data-binding
         if (page)
             this.onPage(page);
- 
-       
+  
     };
-        
-    
+       
     module.exports = DeviceProfile_ENVIRONMENT;
     
     return module.exports;

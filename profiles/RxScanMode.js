@@ -5,11 +5,13 @@ define(function (require, exports, module) {
 
 //
     var DeviceProfile = require('profiles/deviceProfile'),
-         setting = require('settings');
+         setting = require('settings'),
+        TEMPProfile = require('profiles/deviceProfile_ENVIRONMENT');
 //    var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
 //    var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
 //    var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
 //    var Channel = require('../channel.js');
+    
    
     function RxScanMode(configuration, deviceNumber, deviceType, transmissionType) {
         var devNum = deviceNumber || '*',
@@ -25,9 +27,11 @@ define(function (require, exports, module) {
             channelId: { deviceNumber: devNum, deviceType: devType, transmissionType: transType },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
             RxScanMode : true
-                 
-    
         });
+        
+        // Temperature profile to be used by all temperature sensors
+        
+        this.temperatureProfile = new TEMPProfile({ log : this.log.logging});
         
     }
     
@@ -35,26 +39,28 @@ define(function (require, exports, module) {
     RxScanMode.constructor = RxScanMode;
    
     RxScanMode.prototype.broadCast = function (broadcast) {
-            this.log.log('log',broadcast.channelId.toString());
-//            //channelID:
-//            //    { channelNumber: 0,
-//            //        deviceNumber: 51144,
-//            //        deviceTypeID: 124,
-//            //        transmissionType: 1,
-//            // TO DO : open channel for  this.channelID device profile
-//    
-//            var deviceProfile,
-//                self = this; // Emitting channel
-//    
-//            // console.log(Date.now(), "Continous scanning channel BROADCAST : ", data, this.channelID.toString());
-//    
-//            // Create new object for a new master
-//            if (typeof this.channelIDCache[this.channelID.toProperty] === "undefined") {
-//                this.channelIDCache[this.channelID.toProperty] = {};
-//                console.log(Date.now(), "New master", this.channelID.toString());
-//            }
-//    
-//            switch (this.channelID.deviceTypeID) {
+        if (!broadcast)
+        {
+            this.log.log('error','Undefined broadcast received');
+            return;
+        }
+        
+        if (!broadcast.channelId)
+        {
+            this.log.log('error','No channel id available for broadcast',broadcast);
+            return;
+        }
+        
+           // this.log.log('log',broadcast.channelId.toString(), broadcast.channelId);
+        
+            switch (broadcast.channelId.deviceType) 
+            {
+                    
+                case TEMPProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
+                    
+                    this.temperatureProfile.broadCast(broadcast);
+                    
+                    break;
 //    
 //                case DeviceProfile_HRM.prototype.DEVICE_TYPE:
 //                    this.deviceProfile.deviceProfile_HRM.channel = this;
@@ -82,7 +88,7 @@ define(function (require, exports, module) {
 //                default:
 //                    console.log(Date.now(), "Continous scanning channel BROADCAST : ", data, this.channelID);
 //                    break;
-//            }
+            }
     
         };
     
