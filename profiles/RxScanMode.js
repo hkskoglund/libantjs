@@ -10,18 +10,32 @@ define(function (require, exports, module) {
 //    var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
 //    var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
 //    var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
-//    var Channel = require('../channel.js');
-    
+
    
-    function RxScanMode(configuration, deviceNumber, deviceType, transmissionType) {
-        var devNum = deviceNumber || '*',
-            devType = deviceType || '*',
-            transType = transmissionType || '*';
+    function RxScanMode(configuration) {
+        var devNum =  '*',
+            devType = '*',
+            transType = '*';
         
         DeviceProfile.call(this,configuration);
-         
+        
+        if (configuration.channelId) {
+           devNum = configuration.channelId.deviceNumber || '*';
+           devType = configuration.channelId.deviceType || '*';
+           transType = configuration.channelId.transmissionType || '*';
+        } 
+        
          this.addConfiguration("slave", {
-            description: "Slave configuration Rx Scan Mode for any ANT+ devices",
+            description: "Slave configuration Rx Scan Mode for ANT+ devices",
+            networkKey: setting.networkKey["ANT+"],
+            channelType: "slave",
+            channelId: { deviceNumber: devNum, deviceType: devType, transmissionType: transType },
+            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
+            RxScanMode : true
+        });
+        
+        this.addConfiguration("slave only", {
+            description: "Slave only configuration Rx Scan Mode for ANT+ devices",
             networkKey: setting.networkKey["ANT+"],
             channelType: "slave only",
             channelId: { deviceNumber: devNum, deviceType: devType, transmissionType: transType },
@@ -31,7 +45,9 @@ define(function (require, exports, module) {
         
         // Temperature profile to be used by all temperature sensors
         
-        this.temperatureProfile = new TEMPProfile({ log : this.log.logging});
+        this.temperatureProfile = new TEMPProfile({ log : this.log.logging,
+                                                    onPage : configuration.onPage});
+        
         
     }
     

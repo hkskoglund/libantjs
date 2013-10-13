@@ -283,31 +283,39 @@ Host.prototype.EVENT = {
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
-Host.prototype.establishChannel = function (channelInfo, callback, onPageCB) {
+Host.prototype.establishChannel = function (channelInfo, callback) {
     var     channelNumber = channelInfo.channelNumber, 
     networkNumber = channelInfo.networkNumber,
     configurationName = channelInfo.configurationName,
     channel = channelInfo.channel,
     channelPeriod = channelInfo.channelPeriod,
-    open = channelInfo.open,
-    typeOnPageCB = typeof onPageCB;
+    open = channelInfo.open;
+   // typeOnPageCB = typeof onPageCB;
     
-    // Set onPage callback - for device profile channels
-    
-    if (typeOnPageCB === 'function') {
-        if (typeof channel.setOnPageCB === 'function')
-            channel.setOnPageCB(onPageCB);
-        else
-            this.log.log('warn','Channel has no setOnPageCB function (only for device profile channels)',channel);
-    } else if (typeOnPageCB !== 'undefined')
-        this.log.log('error','Specified callback for on page from device profile is not a function',onPageCB);
-    else if (typeOnPageCB === 'undefined')
-        this.log.log('warn','No onPageCB specified - its recommended to specify this callback if you want data pages from device profiles');
+//    // Set onPage callback - for device profile channels that get broadcast in ANT+ pages format
+//    
+//    if (typeOnPageCB === 'function') {
+//        if (typeof channel.setOnPageCB === 'function')
+//            channel.setOnPageCB(onPageCB);
+//        else
+//            this.log.log('warn','Channel has no setOnPageCB function (only for device profile channels)',channel);
+//    } else if (typeOnPageCB !== 'undefined')
+//        this.log.log('error','Specified callback for on page from device profile is not a function',onPageCB);
+//    else if (typeOnPageCB === 'undefined')
+//        this.log.log('warn','No onPageCB specified - its recommended to specify this callback if you want data pages from device profiles');
     
     var parameters = channel.parameters[configurationName],
         //channelType,
-        isMasterChannel = channel.isMaster(configurationName),
+        isMasterChannel,
         msg;
+        
+     if (parameters === undefined)
+     {
+        callback(new Error('Could not find configuration '+configurationName));
+        return;
+     }
+     
+     isMasterChannel = channel.isMaster(configurationName);
 
    this.log.log('log','Establishing channel for configuration', configurationName,parameters, 'Master channel : '+isMasterChannel);
 

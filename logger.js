@@ -40,6 +40,9 @@ define(function (require, exports, module) {
                 if (arguments.length === 5)
                     console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);
             else
+                if (arguments.length === 6)
+                    console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4],arguments[5]);
+            else
                 console[type](Date.now(), arguments);
         } else if (!console[type])
             console.warn(Date.now(),'Unknown console source '+type, arguments);

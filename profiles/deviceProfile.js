@@ -12,6 +12,8 @@ define(function (require, exports, module) {
         Channel.call(this, configuration);
         //this._configuration = configuration;
         
+        if (configuration.onPage)
+            this.setOnPage(configuration.onPage);
         
         this.duplicateBroadcast = {
            counter : {},
@@ -116,16 +118,24 @@ define(function (require, exports, module) {
         return JSON.stringify(broadcast);
     };
     
-    DeviceProfile.prototype.setOnPageCB = function (callback)
+    DeviceProfile.prototype.getOnPage = function ()
     {
-        this.log.log('log','Setting device profile on page callback to ',callback,this);
-        this._onPageCB = callback;
+        return this._onPage;
+    };
+    
+    DeviceProfile.prototype.setOnPage = function (callback)
+    {
+        if (typeof callback === 'function')  {
+            this.log.log('log','Setting ',this,'on page for ANT+ callback to ',callback);
+            this._onPage = callback;
+        } else
+            this.log.log('error','Callback for on page is not a function',typeof callback,callback);
     };
     
     DeviceProfile.prototype.onPage = function (page)
     {
-        if (typeof this._onPageCB === 'function')
-           this._onPageCB(page);
+        if (typeof this._onPage === 'function')
+           this._onPage(page);
         else
             this.log.log('warn','No on page callback specified for page ',page);
     };
