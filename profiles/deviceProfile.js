@@ -19,7 +19,7 @@ define(function (require, exports, module) {
            counter : {},
           };
         
-        this.receivedBroadcastCounter = 0;
+        this.receivedBroadcastCounter = {};
         
         this.previousBroadcast = {}; // Just declare property
         
@@ -96,7 +96,11 @@ define(function (require, exports, module) {
     
     DeviceProfile.prototype.verifyDeviceType = function (deviceType,broadcast)
     {
-        this.receivedBroadcastCounter++;
+        var sensorId = broadcast.channelId.getUniqueId();
+        if (typeof this.receivedBroadcastCounter[sensorId] !== 'undefined')
+          this.receivedBroadcastCounter[sensorId]++;
+        else
+            this.receivedBroadcastCounter[sensorId] = 1;
     
         if (broadcast.channelId.deviceType !== deviceType) {
             this.log.log('log',"Received broadcast from device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");

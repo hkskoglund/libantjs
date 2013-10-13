@@ -176,6 +176,8 @@ define(function (require, exports, module) {
                 else
                     msg += (this.cumulativeOperatingTime/3600).toFixed(1)+ ' h';
                 
+                msg += ' Battery reset ca. '+(new Date(Date.now()-this.cumulativeOperatingTime*1000)).toLocaleString();
+                
                 if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
                   msg += " Battery (V) " + batteryVoltageToString(this.batteryVoltage);
                 

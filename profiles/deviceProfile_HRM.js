@@ -185,7 +185,7 @@ define(function (require, exports, module) {
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
          
             if (page)
-            this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
+            this.log.log('log', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()],page,page.toString());
             
             // Callback if higher level code wants page, i.e UI data-binding
             if (page)

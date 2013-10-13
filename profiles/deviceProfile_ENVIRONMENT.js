@@ -96,7 +96,7 @@ define(function (require, exports, module) {
                 
             default :
                 
-                page = new GenericPage({ log : this.log.logging });
+                page = new GenericPage({ log : this.log.logging },broadcast);
                 page.parse(broadcast);
               
                 break;
@@ -104,7 +104,7 @@ define(function (require, exports, module) {
             }
         
          if (page)
-            this.log.log('log', this.receivedBroadcastCounter,page,page.toString());
+            this.log.log('log', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()],page,page.toString());
         
         // Callback if higher level code wants page, i.e UI data-binding
         if (page)

@@ -101,7 +101,7 @@ define(function (require, exports, module) {
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                  retry();
             else
-                rXparser(new Error('Too many attempts with error from LIBUSB. Cannot proceed.'));
+                rXparser(new Error('Too many attempts with error from LIBUSB. Listening on in endpoint stopped.'));
              
             
         }.bind(this);
