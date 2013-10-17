@@ -101,9 +101,9 @@ define(function (require, exports, module) {
 //                    this.deviceProfile.deviceProfile_SPDCAD.broadCastDataParser.call(this, data);
 //                    break;
 //    
-//                default:
-//                    console.log(Date.now(), "Continous scanning channel BROADCAST : ", data, this.channelID);
-//                    break;
+                default:
+                    this.log.log('log', 'Parsing not enabled, received',broadcast.data,'from '+broadcast.channelId.toString());
+                    break;
             }
     
         };

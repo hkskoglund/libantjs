@@ -61,7 +61,10 @@ define(function (require, exports, module) {
         
         VALUE_HOUR24_LOW_MSN : parseInt("0111",2),
         
-    
+        MAGNITUDE_LOW_HIGH : parseInt("011111111111",2),
+        
+        MAGNITUDE_CURRENT_TEMP : parseInt("0111111111111111",2)
+        
     };
           
    
@@ -97,7 +100,7 @@ define(function (require, exports, module) {
         
         // Signed Integer 1.5 byte
         // Sbbb bbbbbbbb
-       
+       // console.log("MSB",Number(data[4]).toString(2),"LSB",Number(data[3]).toString(2),data);
         var hour24LowMSN = (data[Page.prototype.BYTE_OFFSET.HOUR24_LOW_MSN] & Page.prototype.BIT_MASK.HOUR24_LOW_MSN) >> Page.prototype.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
         // Byte 4 & Sbbb 0000 >> 4
         
@@ -106,9 +109,20 @@ define(function (require, exports, module) {
         var valueHour24LowMSN = hour24LowMSN & Page.prototype.BIT_MASK.VALUE_HOUR24_LOW_MSN;
         // bbb
         
+        // Javascript : bitwise operators working on 32-bit 2's complement bigendian 
+        //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
+        
+        // Negative numbers are inverted (1's complement)
+            
         var valueHour24Low = (valueHour24LowMSN << 8) | hour24LowLSB;
-        if (valueHour24Low !== 0x800) // -0
+       
+        
+        if (valueHour24Low !== 0x800) // -0 
+        {
+             if (signHour24LowMSN === -1)
+                    valueHour24Low = (~valueHour24Low) & Page.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH; // Mask 11-bit magnitude of signed int for 1's complement form of negative integer
             this.hour24Low = valueHour24Low * signHour24LowMSN * Page.prototype.UNIT.HOUR24_LOW;
+        }
         else
             this.hour24Low = undefined;
         
@@ -127,8 +141,14 @@ define(function (require, exports, module) {
         // Byte 5 & 0b01111111
         
         var value24High = (value24HighMSB << 4) | hour24HighLSN;
-        if (value24High !== 0x800)
+        
+    
+        if (value24High !== 0x800) {
+             if (signHour24HighMSB === -1) 
+              value24High = (~value24High) & Page.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+            
             this.hour24High = value24High * signHour24HighMSB * Page.prototype.UNIT.HOUR24_HIGH;
+        }
         else
             this.hour24High = undefined;
         //
@@ -147,10 +167,17 @@ define(function (require, exports, module) {
         var valueCurrentTempMSB = currentTempMSB & Page.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
        
         var valueCurrentTemp = (valueCurrentTempMSB << 8) | currentTempLSB;
-        
+    
+       
         if (valueCurrentTemp !== 0x8000)
-            
+        {
+    
+             if (signCurrentTempMSB == -1)
+                valueCurrentTemp = (~valueCurrentTemp) & Page.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;  
+        
            this.currentTemp = valueCurrentTemp * signCurrentTempMSB * Page.prototype.UNIT.CURRENT_TEMP;
+        }
+    
         else
             this.currentTemp = undefined;
     };

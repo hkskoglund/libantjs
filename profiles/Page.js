@@ -11,8 +11,8 @@ define(function (require, exports, module) {
         else
           this.log = new Logger();
          
-         if (broadcast && broadcast.data)
-           this.channelId = broadcast.channelId.getUniqueId();
+         if (broadcast)
+           this.broadcast = broadcast;
      }
     
     
@@ -38,7 +38,23 @@ define(function (require, exports, module) {
      GenericPage.prototype.parse = function (broadcast)
      {
          
-          var  data = broadcast.data, dataView = new DataView(data.buffer);
+          var  data;
+         
+         if (!broadcast) {
+             this.log.log('error','Undefined broadcast received');
+             return;
+         }
+         
+         data = broadcast.data;
+         
+         
+         if (!data)
+         {
+             this.log.log('error','Received undefined data in broadcast');
+             return;
+         }
+         
+         var dataView = new DataView(data.buffer);
          
          // Byte 0 
          this.number = data[0];

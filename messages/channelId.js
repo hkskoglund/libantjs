@@ -39,10 +39,12 @@ define(function (require, exports, module) {
     
     ChannelId.prototype.getUniqueId = function ()
     {
-        if (this.has20BitDeviceNumber())
-          return 'ant:'+this.deviceNumber20BIT+'.'+this.deviceType+'.'+this.transmissionType;
-        else
-          return 'ant:'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
+        var pageScheme = 'ant';
+        
+        if (this.usesANTPLUSGlobalDataPages())
+            pageScheme += 'plus';
+        
+          return pageScheme+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
     };
     
     ChannelId.prototype.getDeviceNumber = function () {
@@ -156,7 +158,7 @@ define(function (require, exports, module) {
              
     }.bind(this);
         
-        return "CID 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
+        return "ChId 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
     };
     
     module.exports = ChannelId;
