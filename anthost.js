@@ -25,7 +25,7 @@ define(function (require, exports, module) {
     
     // Data
    
-    BroadcastDataMessage = require('messages/from/BroadcastDataMessage'),
+    BroadcastDataMessage = require('messages/BroadcastDataMessage'),
        
     Logger = require('logger'),
     USBDevice = require('usb/USBDevice'),
@@ -33,46 +33,46 @@ define(function (require, exports, module) {
     ANTMessage = require('messages/ANTMessage'),
 
     // Control ANT
-    ResetSystemMessage = require('messages/to/ResetSystemMessage'),
-    OpenChannelMessage = require('messages/to/OpenChannelMessage'),
-    OpenRxScanModeMessage = require('messages/to/OpenRxScanModeMessage'),
-    CloseChannelMessage = require('messages/to/CloseChannelMessage'),
+    ResetSystemMessage = require('messages/ResetSystemMessage'),
+    OpenChannelMessage = require('messages/OpenChannelMessage'),
+    OpenRxScanModeMessage = require('messages/OpenRxScanModeMessage'),
+    CloseChannelMessage = require('messages/CloseChannelMessage'),
 
     // Notifications
 
-    NotificationStartup = require('messages/from/NotificationStartup'),
-    NotificationSerialError = require('messages/from/NotificationSerialError'),
+    NotificationStartup = require('messages/NotificationStartup'),
+    NotificationSerialError = require('messages/NotificationSerialError'),
 
     // Request -response
 
-    RequestMessage = require('messages/to/RequestMessage'),
+    RequestMessage = require('messages/RequestMessage'),
 
-        CapabilitiesMessage = require('messages/from/CapabilitiesMessage'),
-        ANTVersionMessage = require('messages/from/ANTVersionMessage'),
-        DeviceSerialNumberMessage = require('messages/from/DeviceSerialNumberMessage'),
+        CapabilitiesMessage = require('messages/CapabilitiesMessage'),
+        ANTVersionMessage = require('messages/ANTVersionMessage'),
+        DeviceSerialNumberMessage = require('messages/DeviceSerialNumberMessage'),
 
     // Configuration
 
-    AssignChannelMessage = require('messages/to/AssignChannelMessage'),
-    UnAssignChannelMessage = require('messages/to/UnAssignChannelMessage'),
-    SetChannelIDMessage = require('messages/to/SetChannelIDMessage'),
-    SetChannelPeriodMessage = require('messages/to/SetChannelPeriodMessage'),
-    SetChannelSearchTimeoutMessage = require('messages/to/SetChannelSearchTimeoutMessage'),
-    SetLowPriorityChannelSearchTimeoutMessage = require('messages/to/SetLowPriorityChannelSearchTimeoutMessage'),
-    SetChannelRFFreqMessage = require('messages/to/SetChannelRFFreqMessage'),
-    SetNetworkKeyMessage = require('messages/to/SetNetworkKeyMessage'),
-    SetTransmitPowerMessage = require('messages/to/SetTransmitPowerMessage'),
-    SetChannelTxPowerMessage = require('messages/to/SetChannelTxPowerMessage'),
-    SetProximitySearchMessage = require('messages/to/SetProximitySearchMessage'),
-    SetSerialNumChannelIdMessage = require('messages/to/SetSerialNumChannelIdMessage'),
+    AssignChannelMessage = require('messages/AssignChannelMessage'),
+    UnAssignChannelMessage = require('messages/UnAssignChannelMessage'),
+    SetChannelIDMessage = require('messages/SetChannelIDMessage'),
+    SetChannelPeriodMessage = require('messages/SetChannelPeriodMessage'),
+    SetChannelSearchTimeoutMessage = require('messages/SetChannelSearchTimeoutMessage'),
+    SetLowPriorityChannelSearchTimeoutMessage = require('messages/SetLowPriorityChannelSearchTimeoutMessage'),
+    SetChannelRFFreqMessage = require('messages/SetChannelRFFreqMessage'),
+    SetNetworkKeyMessage = require('messages/SetNetworkKeyMessage'),
+    SetTransmitPowerMessage = require('messages/SetTransmitPowerMessage'),
+    SetChannelTxPowerMessage = require('messages/SetChannelTxPowerMessage'),
+    SetProximitySearchMessage = require('messages/SetProximitySearchMessage'),
+    SetSerialNumChannelIdMessage = require('messages/SetSerialNumChannelIdMessage'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
-    LibConfigMessage = require('messages/to/LibConfigMessage'),
+    LibConfigMessage = require('messages/LibConfigMessage'),
     LibConfig = require('messages/libConfig'),
    
 
-    ChannelResponseMessage = require('messages/from/ChannelResponseMessage'),
-    ChannelStatusMessage = require('messages/from/ChannelStatusMessage'),
+    ChannelResponseMessage = require('messages/ChannelResponseMessage'),
+    ChannelStatusMessage = require('messages/ChannelStatusMessage'),
     
     ChannelId = require('messages/channelId');
  
@@ -171,14 +171,15 @@ function Host() {
   
     // Send a message to ANT
 this._sendMessage = function (message,callback) {
-    
+   
     if (!this._setResponseCallback(message,callback)) // If response callback is set already, don't allow another request
-    {
-        this.log.log('warn','Already awaiting response for ',message);
+//    {
+//        this.log.log('warn','Already awaiting response for ',message);
         return;
-    }
+//    }
     
-    var timeMsg,
+    var 
+       timeMsg,
         
         PROCESSING_LATENCY = this.options.transferProcessingLatecy || 10,
         TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_LATENCY,
@@ -190,21 +191,21 @@ this._sendMessage = function (message,callback) {
         if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
             targetMsgId = message.id; // Initiating message id
     
-    if (message.id !== ANTMessage.prototype.MESSAGE.REQUEST) 
-       timeMsg = ANTMessage.prototype.MESSAGE[targetMsgId];
-    
-    else {
-        //this.log.log('log','Request message for id 0x',message.responseId.toString(16));
-        if (message.responseId)
-           timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
-        else
-            this.log.log('warn','Message has no responseId',message);
-    }
-    
-    if (timeMsg) {
-       // this.log.log('log','Setting performance timer (time-timeEnd) for ',timeMsg);
-        this.log.time(timeMsg);
-    }
+//    if (message.id !== ANTMessage.prototype.MESSAGE.REQUEST) 
+//       timeMsg = ANTMessage.prototype.MESSAGE[targetMsgId];
+//    
+//    else {
+//        //this.log.log('log','Request message for id 0x',message.responseId.toString(16));
+//        if (message.responseId)
+//           timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
+//        else
+//            this.log.log('warn','Message has no responseId',message);
+//    }
+//    
+//    if (timeMsg) {
+//       // this.log.log('log','Setting performance timer (time-timeEnd) for ',timeMsg);
+//        this.log.time(timeMsg);
+//    }
 
 
      var usbTransferCB = function (error)
@@ -1056,7 +1057,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
             
             notification = new NotificationStartup(message);
-            this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
+           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
             this.log.log('log',notification.toString());
             this.lastNotificationStartup = notification;
             
@@ -1092,7 +1093,7 @@ Host.prototype.RXparse = function (error,data) {
 //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            channelResponseMsg.parse();
             if (channelResponseMsg.initiatingId)
-              this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
+             // this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
             
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
@@ -1121,7 +1122,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
            
             var channelStatusMsg = new ChannelStatusMessage(message);
-            this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
+           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
 //            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
@@ -1152,18 +1153,19 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
             var versionMsg = new ANTVersionMessage(message);
-            this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
+           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
 //            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            versionMsg.parse();
 
             this._responseCallback(versionMsg);
+           
 
             break;
 
         case ANTMessage.prototype.MESSAGE.CAPABILITIES:
         
             var capabilitiesMsg = new CapabilitiesMessage(message);
-            this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
+          //  this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
 //            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            capabilitiesMsg.parse();
             
@@ -1178,7 +1180,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
            
             var serialNumberMsg = new DeviceSerialNumberMessage(message);
-             this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
+          //   this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
 //            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            serialNumberMsg.parse();
             this.deviceSerialNumber = serialNumberMsg.serialNumber;
@@ -1210,13 +1212,22 @@ Host.prototype.RXparse = function (error,data) {
     }
     
 };
-  
+    
+ 
 // Send a reset device command
 Host.prototype.resetSystem = function (callback) {
 
     var msg = new ResetSystemMessage();
-   
+    
         this._sendMessage(msg, callback);
+    
+    // return Promise?
+    // Promise - split responsibility for handling data in fullfilment-callback and error in rejected-callback
+    // registered with the .then method. Current callback strategy uses the "continuation"-callback style callback(err,data) like in node.js. 
+    // promise: when fullfilled -> calls fulfillment-callbacks in sequence
+    // Drawback: dependency on external library like i.e when,
+    // rewrite code that works
+    // Rather hard to understand the Promises/A+ specification
     
 };
 
