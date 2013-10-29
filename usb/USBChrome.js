@@ -213,7 +213,7 @@ define(function (require, exports, module) {
         
     };
         
-        return USBChrome;
+    return USBChrome;
     
   
 });
