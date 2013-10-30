@@ -228,7 +228,7 @@ this._sendMessage = function (message,callback) {
         else
            this.log.log('warn','Retry '+retryNr+' sending message',message);
         
-        this.log.time(ANTMessage.prototype.MESSAGE[message.id]); // Will keep first time on retries
+        //this.log.time(ANTMessage.prototype.MESSAGE[message.id]); // Will keep first time on retries
         
         this.resendTimeoutID[targetMsgId] = setTimeout(function _responseTimeoutCB()
                              {
@@ -729,9 +729,9 @@ Host.prototype.init = function (options, initCB) {
 
                 //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
                 this.libConfig(libConfig.getFlagsByte(),
-                    function (error, serialNumberMsg) {
+                    function (error, channelResponse) {
                         if (!error) {
-                            this.libConfig = libConfig;
+                            this.currentLibConfig = libConfig;
                             this.log.log('log', libConfig.toString());
                             _doLibConfigCB();
                         }

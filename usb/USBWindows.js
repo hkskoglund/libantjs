@@ -37,7 +37,15 @@ define(function (require, exports, module) {
 
       var _onAdded = function (deviceInformation) {
           this.log.log('log', deviceInformation.name + ' added (id: ' + deviceInformation.id + ')');
-          this.device.push({ deviceInformation: deviceInformation });
+          
+         //var i = _getIndexOf(this.device, deviceInformation);
+
+         var newLength = this.device.push({ deviceInformation: deviceInformation });
+         if (this.chosenDevice === newLength - 1)
+             useChosenDevice();
+
+        
+
       }.bind(this);
 
 
@@ -46,9 +54,19 @@ define(function (require, exports, module) {
 
           var i = _getIndexOf(this.device, deviceInformation);
 
-          if (i !== -1)
+          if (i !== -1) {
               this.device.splice(i, 1);
+              if (i === this.chosenDevice) {
+                  // Attempt release of resources
+                  if (this.dataReader) {
+                      this.dataReader.close();
 
+                      if (this.dataWriter)
+                          this.dataWriter.close();
+                  }
+              }
+          }
+         
       }.bind(this);
 
       var _onUpdated = function (deviceInformation) {
@@ -61,48 +79,55 @@ define(function (require, exports, module) {
 
       }.bind(this);
 
+      var foundUSBDevice = function _success(usbDevice) {
+          //this.log.log('log', usbDevice);
+          this.device[this.chosenDevice].usbDevice = usbDevice;
+
+          if (usbDevice.defaultInterface.bulkInPipes.length >= 1) {
+
+              this.device[this.chosenDevice].bulkInPipe = usbDevice.defaultInterface.bulkInPipes[0];
+              this.dataReader = new Windows.Storage.Streams.DataReader(this.device[this.chosenDevice].bulkInPipe.inputStream);
+          }
+          else
+              callback(new Error('No in bulk pipe found on interface'));
+
+          if (usbDevice.defaultInterface.bulkOutPipes.length >= 1) {
+              this.device[this.chosenDevice].bulkOutPipe = usbDevice.defaultInterface.bulkOutPipes[0];
+              this.dataWriter = new Windows.Storage.Streams.DataWriter(this.device[this.chosenDevice].bulkOutPipe.outputStream);
+          }
+          else
+              callback(new Error('No out bulk pipe found on interface'));
+
+          callback();
+
+      }.bind(this);
+
+      var notFoundUSBDevice = function _error(err) {
+          var msg = 'Failed to find USB device from id ' + this.device[this.chosenDevice].deviceInformation.id + ' ' + err.toString();
+          this.log.log('error', msg);
+          callback(new Error(msg)); // Using continuation callback-style ala Node
+
+      }.bind(this);
+
+      var useChosenDevice = function () {
+          
+          if (this.device.length > 0 && this.device[this.chosenDevice]) {
+
+              Windows.Devices.Usb.UsbDevice.fromIdAsync(this.device[this.chosenDevice].deviceInformation.id).then(foundUSBDevice, notFoundUSBDevice);
+
+          } else {
+              if (this.device.length === 0)
+                  callback(new Error('Failed to find any ANY device'));
+              else if (!this.device[this.chosenDevice])
+                  callback(new Error('Failed to find ANT device '+this.chosenDevice));
+          }
+      }.bind(this);
+
       var _onEnumerationComplete = function (event) {
-          this.log.log('log', 'USB device enumeration complete');
+          this.log.log('log', 'USB device enumeration complete, found ',this.device.length,' ANT devices');
           // TEST stopped state : this.ANTWatcher.stop();
-
-          var foundUSBDevice = function _success(usbDevice) {
-              this.log.log('log', usbDevice); 
-              this.device[this.chosenDevice].usbDevice = usbDevice;
-
-              if (usbDevice.defaultInterface.bulkInPipes.length >= 1) {
-                 
-                  this.device[this.chosenDevice].bulkInPipe = usbDevice.defaultInterface.bulkInPipes[0];
-                  this.dataReader = new Windows.Storage.Streams.DataReader(this.device[this.chosenDevice].bulkInPipe.inputStream);
-              }
-              else
-                  callback(new Error('No in bulk pipe found on interface'));
-
-              if (usbDevice.defaultInterface.bulkOutPipes.length >= 1) {
-                  this.device[this.chosenDevice].bulkOutPipe = usbDevice.defaultInterface.bulkOutPipes[0];
-                  this.dataWriter = new Windows.Storage.Streams.DataWriter(this.device[this.chosenDevice].bulkOutPipe.outputStream);
-              }
-              else
-                  callback(new Error('No out bulk pipe found on interface'));
-
-              callback();
-                     
-          }.bind(this);
-
-          var notFoundUSBDevice = function _error(err)
-          {
-              var msg = 'Failed to find USB device from id ' + this.device[this.chosenDevice].deviceInformation.id +' '+ err.toString();
-              this.log.log('error', msg);
-              callback(new Error(msg)); // Using continuation callback-style ala Node
-
-          }.bind(this);
+        
          
-            if (this.device.length > 0) {
-             
-                Windows.Devices.Usb.UsbDevice.fromIdAsync(this.device[this.chosenDevice].deviceInformation.id).then(foundUSBDevice, notFoundUSBDevice);
-
-            }
-              
-
       }.bind(this);
 
       var _onStopped = function (event) {
@@ -112,8 +137,8 @@ define(function (require, exports, module) {
         // Private
       function _getIndexOf(deviceArr, deviceInformation) {
 
-          for (var i = 0; i < deviceArr; i++)
-              if (deviceArr[i].id === deviceInformation.id)
+          for (var i = 0; i < deviceArr.length; i++)
+              if (deviceArr[i].deviceInformation.id === deviceInformation.id)
                   return i;
 
           return -1;
@@ -157,6 +182,8 @@ define(function (require, exports, module) {
     
     USBWindows.prototype.listen = function (rxParser) {
        
+        var transferErrorCount = 0,
+            MAX_TRANSFER_ERROR_COUNT = 10;
 
         var success =  function _success(bytesRead) {
 
@@ -171,10 +198,29 @@ define(function (require, exports, module) {
 
         var error = function _error(err) {
             this.log.log('error', 'RX', err);
+            transferErrorCount++;
+            if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
+                retry();
+            else
+                this.log.log('error', 'Too many failed attempts to read from device, reading stopped');
+
         }.bind(this);
 
         var retry = function _bulkInTransfer() {
-                        this.readingPromise = this.dataReader.loadAsync(this.options.length.in || 64).then(success, error);
+            try {
+                this.readingPromise = this.dataReader.loadAsync(this.options.length.in || 64).then(success, error);
+            }
+            catch (e)
+            {
+                this.log.log('error', 'Failed loadAsync', e);
+                transferErrorCount++;
+                if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
+                    retry();
+                else
+                    this.log.log('error','Too many attempts to loadAsync bulk data from in endpoint, stopping');
+                
+
+            }
                     }.bind(this);
 
         retry();
@@ -183,20 +229,27 @@ define(function (require, exports, module) {
 
     };
     
-    USBWindows.prototype.transfer = function (chunk, successCallback) {
-       
+    USBWindows.prototype.transfer = function (chunk, callback) {
+       // At the moment : Higher level code in anthost will attempt resend of message if no response is received
 
         this.dataWriter.writeBytes(chunk);
 
         var success = function _success(bytesWritten) {
             this.log.log('log', 'Tx', chunk);
+            callback();
         }.bind(this),
 
             error =  function _error(err) {
                 this.log.log('error', 'Tx', err);
+                callback(err);
             }.bind(this);
 
-        this.writingPormise = this.dataWriter.storeAsync().then(success, error);
+        var retry = function _retry() {
+
+            this.writingPormise = this.dataWriter.storeAsync().then(success, error);
+        }.bind(this);
+
+        retry();
 
     };
     
