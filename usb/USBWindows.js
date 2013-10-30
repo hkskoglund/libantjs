@@ -81,6 +81,42 @@ define(function (require, exports, module) {
 
       var foundUSBDevice = function _success(usbDevice) {
           //this.log.log('log', usbDevice);
+
+          var deviceInfoid = this.device[this.chosenDevice].deviceInformation.id;
+
+          // deviceAccessStatus based on "Custom USB Access" sample
+          var deviceAccessStatus = Windows.Devices.Enumeration.DeviceAccessInformation.createFromId(deviceInfoid).currentStatus;
+
+          switch (deviceAccessStatus) {
+              case Windows.Devices.Enumeration.DeviceAccessStatus.deniedByUser:
+                  this.log.log('error', "Access to the device was blocked by the user : " + deviceInfoid);
+
+                  break;
+              case Windows.Devices.Enumeration.DeviceAccessStatus.deniedBySystem:
+                  // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
+                  // This status does not cover the case where the device is already opened by another app.
+                  this.log.log('error', "Access to the device was blocked by the system : " + deviceInfoid);
+
+                  break;
+
+              case Windows.Devices.Enumeration.DeviceAccessStatus.allowed:
+                  this.log.log('log', 'Access to device allowed by user');
+                  break;
+
+              case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
+              default:
+                  // Most likely the device is opened by another app, but cannot be sure
+                  this.log.log('error', "Unknown error, possibly opened by another app : " + deviceInfoid);
+
+                  break;
+          }
+
+          if (usbDevice === null)
+          {
+              callback(new Error('Device found, but received no further device handle to get interface'));
+              return;
+          }
+
           this.device[this.chosenDevice].usbDevice = usbDevice;
 
           if (usbDevice.defaultInterface.bulkInPipes.length >= 1) {
@@ -88,16 +124,21 @@ define(function (require, exports, module) {
               this.device[this.chosenDevice].bulkInPipe = usbDevice.defaultInterface.bulkInPipes[0];
               this.dataReader = new Windows.Storage.Streams.DataReader(this.device[this.chosenDevice].bulkInPipe.inputStream);
           }
-          else
+          else {
               callback(new Error('No in bulk pipe found on interface'));
+              return; // Too serious to conitnue
+          }
 
           if (usbDevice.defaultInterface.bulkOutPipes.length >= 1) {
               this.device[this.chosenDevice].bulkOutPipe = usbDevice.defaultInterface.bulkOutPipes[0];
               this.dataWriter = new Windows.Storage.Streams.DataWriter(this.device[this.chosenDevice].bulkOutPipe.outputStream);
           }
-          else
+          else {
               callback(new Error('No out bulk pipe found on interface'));
+              return;
+          }
 
+         
           callback();
 
       }.bind(this);
@@ -245,8 +286,12 @@ define(function (require, exports, module) {
             }.bind(this);
 
         var retry = function _retry() {
-
-            this.writingPormise = this.dataWriter.storeAsync().then(success, error);
+            try {
+                this.writingPormise = this.dataWriter.storeAsync().then(success, error);
+            } catch (e)
+            {
+                this.log.log('error', 'Failed to storeAsync', e);
+            }
         }.bind(this);
 
         retry();
