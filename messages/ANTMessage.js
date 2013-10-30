@@ -22,7 +22,7 @@ function ANTMessage(data) {
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    if (data && data.constructor.name === 'Uint8Array') {
+    if (data) {
 //        if (data.byteOfset !== 0)
 //          console.warn("DATA", data,"byte offset",data.byteOffset);
         //this.buffer = data;
