@@ -124,8 +124,13 @@ function Host() {
          return;
      
         var msgCallback = this.callback[targetMessageId],
-            RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
+            RESET_DELAY_TIMEOUT;
         
+       if (typeof this.options.resetDelay !== "number")
+         RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
+     else
+         RESET_DELAY_TIMEOUT = this.options.resetDelay;
+     
         if (this.resendTimeoutID[targetMessageId]) {
             clearTimeout(this.resendTimeoutID[targetMessageId]);
             delete this.resendTimeoutID[targetMessageId];
@@ -137,8 +142,14 @@ function Host() {
             this.log.log('warn','No callback registered for '+msg +' '+ msg.toString());
         else {
        
-         if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP)
-             setTimeout(cb,RESET_DELAY_TIMEOUT);
+            
+            
+         if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP) {
+              if (RESET_DELAY_TIMEOUT > 0)
+                setTimeout(cb, RESET_DELAY_TIMEOUT); // ASYNC-call, let hosting environment schedule new timer event
+             else
+                 cb(); // SYNC-call
+         }
          else
              cb(undefined);
         }
