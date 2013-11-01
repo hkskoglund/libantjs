@@ -1,4 +1,4 @@
-/* global define: true, console: true */
+/* global define: true, console: true, Uint8Array: true */
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -25,17 +25,40 @@ define(function (require, exports, module) {
     Logger.prototype.log = function (type)
     {
        // console.trace();
+      var formatUint8Array = function (arg)
+        {
+            if (arg instanceof Uint8Array) {
+                var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32;
+                for (i = 0; i < arg.length; i++) {
+                    if (i < MAX_BYTES_TO_FORMAT)
+                        msg += arg[i].toString(16) + ' ';
+                    else {
+                        msg += '...>';
+                        break;
+                    }
+                }
+
+                if (i === arg.length)
+                    msg += '>';
+
+                return msg;
+            } else
+                return arg;
+            };
+        
         if (this.logging && console[type]) {
             if (arguments.length === 2 && arguments[1] instanceof Error)
                 console[type](Date.now(), arguments[1].stack);
             else  if (arguments.length === 2 && !(arguments[1] instanceof Error))
-                console[type](Date.now(), arguments[1]);
+          
+                   console[type](Date.now(), arguments[1]);
+          
             else
                 if (arguments.length === 3)
                     console[type](Date.now(), arguments[1], arguments[2]);
             else
                 if (arguments.length === 4)
-                    console[type](Date.now(), arguments[1], arguments[2], arguments[3]);
+                    console[type](Date.now(), arguments[1], formatUint8Array(arguments[2]), arguments[3]);
              else
                 if (arguments.length === 5)
                     console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);

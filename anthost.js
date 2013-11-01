@@ -1042,7 +1042,7 @@ Host.prototype.RXparse = function (error,data) {
            
             var broadcast = new BroadcastDataMessage(message); 
 
-             //this.log.log('log',this.broadcast.toString(), "Payload",this.broadcast.data, this.broadcast);
+             this.log.log('log',broadcast.toString());
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....
