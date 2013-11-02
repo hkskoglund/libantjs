@@ -123,14 +123,14 @@ function Host() {
      if (resendMessage) // Should be resent in _sendMessage
          return;
      
-        var msgCallback = this.callback[targetMessageId],
-            RESET_DELAY_TIMEOUT;
-        
-       if (typeof this.options.resetDelay !== "number")
+     var msgCallback = this.callback[targetMessageId],
+         RESET_DELAY_TIMEOUT;
+     
+     if (typeof this.options.resetDelay !== "number")
          RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
      else
          RESET_DELAY_TIMEOUT = this.options.resetDelay;
-     
+        
         if (this.resendTimeoutID[targetMessageId]) {
             clearTimeout(this.resendTimeoutID[targetMessageId]);
             delete this.resendTimeoutID[targetMessageId];
@@ -142,16 +142,15 @@ function Host() {
             this.log.log('warn','No callback registered for '+msg +' '+ msg.toString());
         else {
        
-            
-            
          if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP) {
-              if (RESET_DELAY_TIMEOUT > 0)
+            
+             if (RESET_DELAY_TIMEOUT > 0)
                 setTimeout(cb, RESET_DELAY_TIMEOUT); // ASYNC-call, let hosting environment schedule new timer event
              else
                  cb(); // SYNC-call
          }
-         else
-             cb(undefined);
+         else cb();
+        
         }
       
     }.bind(this);
@@ -678,6 +677,10 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
 
 // Initializes Host
 Host.prototype.init = function (options, initCB) {
+
+    this.options = options;
+    this.usb = options.usb;
+
     // Logging
     this.log.logging = options.log;
     
@@ -692,119 +695,117 @@ Host.prototype.init = function (options, initCB) {
     //   capabilities : true
     // }
     
-         var doLibConfig = function (_doLibConfigCB) {
-             
-                if (!this.options || !this.capabilities) {
-                    _doLibConfigCB(new Error('Could not find capabilities for extended messaging'));
-                    return;
+    var doLibConfig = function (_doLibConfigCB) {
+
+        if (!this.options || !this.capabilities) {
+            _doLibConfigCB(new Error('Could not find capabilities for extended messaging'));
+            return;
+        }
+
+        var libConfigOptions = this.options.libconfig,
+            libConfig,
+            libConfigOptionsSplit;
+
+        if (typeof libConfigOptions === "undefined") {
+            this.log.log('warn', 'No library configuration options specified for extended messaging');
+            _doLibConfigCB(new Error('No library configuration options specified for extended messaging'));
+            return;
+        }
+
+        if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED) {
+            this.log.log('warn', 'Device does not have capability for extended messaging');
+            _doLibConfigCB(new Error('Device does not have capability for extended messaging'));
+            return;
+        }
+
+
+        libConfig = new LibConfig();
+
+
+        if (typeof libConfigOptions === 'number')
+            libConfig.setFlagsByte(libConfigOptions);
+
+        else if (typeof libConfigOptions === 'string') { // channelid, rssi, rxtimestamp
+
+            libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
+
+            if (libConfigOptionsSplit.indexOf("channelid") !== -1)
+                libConfig.setEnableChannelId();
+
+            if (libConfigOptionsSplit.indexOf("rssi") !== -1)
+                libConfig.setEnableRSSI();
+
+            if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
+                libConfig.setEnableRXTimestamp();
+        }
+
+        else _doLibConfigCB(new Error('Unable to parse library configuration options'));
+
+        //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
+        this.libConfig(libConfig.getFlagsByte(),
+            function (error, channelResponse) {
+                if (!error) {
+                    this.currentLibConfig = libConfig;
+                    this.log.log('log', libConfig.toString());
+                    _doLibConfigCB();
                 }
+                else
+                    _doLibConfigCB(error);
+            }.bind(this));
+    }.bind(this);
 
-                var libConfigOptions = this.options.libconfig,
-                    libConfig, 
-                    libConfigOptionsSplit;
-
-                if (typeof libConfigOptions === "undefined") {
-                    this.log.log('warn','No library configuration options specified for extended messaging');
-                    _doLibConfigCB(new Error('No library configuration options specified for extended messaging'));
-                    return;
-         }
-         
-          if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED) {
-              this.log.log('warn','Device does not have capability for extended messaging');
-                _doLibConfigCB(new Error('Device does not have capability for extended messaging'));
-                return;
-          }
-         
-         
-                libConfig = new LibConfig();
-
-
-                if (typeof libConfigOptions === 'number')
-                    libConfig.setFlagsByte(libConfigOptions);
-
-                else if (typeof libConfigOptions === 'string') { // channelid, rssi, rxtimestamp
-
-                    libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
-
-                    if (libConfigOptionsSplit.indexOf("channelid") !== -1)
-                        libConfig.setEnableChannelId();
-
-                    if (libConfigOptionsSplit.indexOf("rssi") !== -1)
-                        libConfig.setEnableRSSI();
-
-                    if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
-                        libConfig.setEnableRXTimestamp();
-                }
-
-                else _doLibConfigCB(new Error('Unable to parse library configuration options'));
-
-                //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-                this.libConfig(libConfig.getFlagsByte(),
-                    function (error, channelResponse) {
-                        if (!error) {
-                            this.currentLibConfig = libConfig;
-                            this.log.log('log', libConfig.toString());
-                            _doLibConfigCB();
-                        }
-                        else
-                            _doLibConfigCB(error);
-                    }.bind(this));
-            }.bind(this);
-
-    
     var getANTVersionAndDeviceNumber = function (_getANTVersionAndDeviceNumberCB) {
-                    this.getANTVersion(function (error, version) {
-                        if (!error) {
-                            this.log.log('log', version.toString());
+        this.getANTVersion(function (error, version) {
+            if (!error) {
+                this.log.log('log', version.toString());
 
-                                this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                                    if (!error) 
-                                      this.log.log('log', serialNumberMsg.toString());
-                                    
-                                    _getANTVersionAndDeviceNumberCB(error);
-                               
-                    }.bind(this));
-                   } else
-                       _getANTVersionAndDeviceNumberCB(error);
+                this.getDeviceSerialNumber(function (error, serialNumberMsg) {
+                    if (!error)
+                        this.log.log('log', serialNumberMsg.toString());
+
+                    _getANTVersionAndDeviceNumberCB(error);
+
+                }.bind(this));
+            } else
+                _getANTVersionAndDeviceNumberCB(error);
         }.bind(this));
     }.bind(this);
-    
-    var getDeviceInfo = function (getDeviceInfoCB) {
-        
-                this.getCapabilities(function (error, capabilities) {
-                    if (!error) {
-                     
-                      if (!options.reset) {
-                        // Get channel status if device is not reset
-                        this.getChannelStatusAll(function (error) {
-                            if (error)
-                                getDeviceInfoCB(error);
 
-                            getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
-                         
-                            }.bind(this));
-                      } else
-                          getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
-                       
-                   } else
-                        getDeviceInfoCB(error);
+    var getDeviceInfo = function (getDeviceInfoCB) {
+
+        this.getCapabilities(function (error, capabilities) {
+            if (!error) {
+
+                if (!options.reset) {
+                    // Get channel status if device is not reset
+                    this.getChannelStatusAll(function (error) {
+                        if (error)
+                            getDeviceInfoCB(error);
+
+                        getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
 
                     }.bind(this));
+                } else
+                    getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
+
+            } else
+                getDeviceInfoCB(error);
+
+        }.bind(this));
     }.bind(this);
-        
-        
-     var resetCapabilitiesLibConfig = function _resetSystem(callback) {
+
+    var resetCapabilitiesLibConfig = function _resetSystem(callback) {
 
         if (options.reset) {
             this.resetSystem(function (error, notification) {
                 if (!error) {
-                    getDeviceInfo(function (error) { 
+                    getDeviceInfo(function (error) {
                         if (!error)
-                          doLibConfig (function (error) { callback(error); });
+                            doLibConfig(function (error) { callback(error); });
                         else
                             callback(error);
                     });
-                } else {           
+                } else {
                     callback(error);
                 }
             }.bind(this));
@@ -813,32 +814,30 @@ Host.prototype.init = function (options, initCB) {
             getDeviceInfo(function (error) { callback(error); });
 
     }.bind(this);
-        
-    
+
     var usbInitCB = function _usbInitCB(error) {
 
         if (error)
             initCB(error);
-        else
-        {
+        else {
             // Start listening for data on in endpoint and send it to host parser
             // Binding parse callback to this/host, otherwise this is undefined when
             // called from listen in strict mode and this cannot be used in parse
+
+
             
             this.usb.listen(this.RXparse.bind(this));
-            
+
             resetCapabilitiesLibConfig(initCB);
         }
-        
-     }.bind(this);
+
+    }.bind(this);
     
-    
-    this.options = options;
     
     if (typeof options.maxTransferRetries === 'undefined')
         this.options.maxTransferRetries = 5;
     
-    this.usb = options.usb;
+    
    
     this.usb.init(usbInitCB);
 

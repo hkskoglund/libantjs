@@ -28,10 +28,14 @@ define(function (require, exports, module) {
       var formatUint8Array = function (arg)
         {
             if (arg instanceof Uint8Array) {
-                var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32;
+                var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
                 for (i = 0; i < arg.length; i++) {
-                    if (i < MAX_BYTES_TO_FORMAT)
-                        msg += arg[i].toString(16) + ' ';
+                    if (i < MAX_BYTES_TO_FORMAT) {
+                        if (arg[i] < 10)
+                            prefix = '0';
+                        else prefix = '';
+                        msg += prefix+arg[i].toString(16) + ' ';
+                    }
                     else {
                         msg += '...>';
                         break;
