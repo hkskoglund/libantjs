@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
@@ -130,8 +130,8 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.setOnPage = function (callback)
     {
         if (typeof callback === 'function')  {
-            this.log.log('log','Setting ',this,'on page for ANT+ callback to ',callback);
             this._onPage = callback;
+            this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
         } else
             this.log.log('error','Callback for on page is not a function',typeof callback,callback);
     };

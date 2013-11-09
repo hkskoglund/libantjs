@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -66,6 +66,11 @@ USBDevice.prototype.listen = function (successCallback) {
 
 USBDevice.prototype.transfer = function (chunk, successCallback) {
     throw new Error('Func. shoule be overridden in descendant objects');
+};
+
+USBDevice.prototype.getDeviceWatcher = function () {
+    //throw new Error('Func. should be overridden in descendants objects');
+    return undefined;
 };
 
 module.exports = USBDevice;

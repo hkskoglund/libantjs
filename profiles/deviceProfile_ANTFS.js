@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 //console.log(module);
 
 var DeviceProfile = require('./deviceProfile.js');

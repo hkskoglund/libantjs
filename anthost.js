@@ -1,4 +1,4 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
+﻿/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
 //var requirejs = require('requirejs');
 //
@@ -180,7 +180,8 @@ function Host() {
     }.bind(this); // bind sets the right context for the function, not necessary to use .call(this in function call
   
     // Send a message to ANT
-this._sendMessage = function (message,callback) {
+    this._sendMessage = function (message, callback) {
+
    
     if (!this._setResponseCallback(message,callback)) // If response callback is set already, don't allow another request
 //    {
@@ -262,7 +263,10 @@ this._sendMessage = function (message,callback) {
 
     transferMessage();
 
-}.bind(this);
+    }.bind(this);
+
+    // For verifying CRC
+    this._ANTMessage = new ANTMessage();
     
 }
 
@@ -923,12 +927,22 @@ Host.prototype.RXparse = function (error,data) {
    
   
     //// Check CRC
+    
+    var receivedCRC = message[message[LENGTH_OFFSET] + 3];
+    if (typeof receivedCRC === 'undefined')
+    {
+        this.log.log('Unable to get CRC of ANT message', message);
+        return;
+    }
 
-    //if (!CRCOK) {
-    //    console.log("CRC failure - allow passthrough");
-    //    //this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "CRC failure - verified CRC " + verifiedCRC.toString(16) + " message CRC" + msgCRC.toString(16));
-    //    //return;
-    //}
+    var CRC = this._ANTMessage.getCRC(message);
+
+    if (receivedCRC !== CRC)
+    {
+        this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC)
+        return;
+    }
+
 
     //if (ANTmsg.LENGTH+data.byteOffset < 64) 
       

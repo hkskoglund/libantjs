@@ -1,4 +1,4 @@
-/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
+﻿/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {

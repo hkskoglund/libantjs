@@ -1,4 +1,4 @@
-/* global define: true, ArrayBuffer: true, Uint8Array: true */
+﻿/* global define: true, ArrayBuffer: true, Uint8Array: true */
 
 
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -22,7 +22,7 @@ function ANTMessage(data) {
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    if (data) {
+    if (data ) {
 //        if (data.byteOfset !== 0)
 //          console.warn("DATA", data,"byte offset",data.byteOffset);
         //this.buffer = data;

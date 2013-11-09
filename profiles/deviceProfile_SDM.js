@@ -1,4 +1,4 @@
-var DeviceProfile = require('./deviceProfile.js');
+﻿var DeviceProfile = require('./deviceProfile.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
 var ANT = require('libant');

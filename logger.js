@@ -1,4 +1,4 @@
-/* global define: true, console: true, Uint8Array: true */
+﻿/* global define: true, console: true, Uint8Array: true */
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -24,8 +24,8 @@ define(function (require, exports, module) {
         
     Logger.prototype.log = function (type)
     {
-       // console.trace();
-      var formatUint8Array = function (arg)
+        // console.trace();
+        var formatUint8Array = function (arg)
         {
             if (arg instanceof Uint8Array) {
                 var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
@@ -49,28 +49,26 @@ define(function (require, exports, module) {
             } else
                 return arg;
             };
-        
+
         if (this.logging && console[type]) {
             if (arguments.length === 2 && arguments[1] instanceof Error)
                 console[type](Date.now(), arguments[1].stack);
-            else  if (arguments.length === 2 && !(arguments[1] instanceof Error))
-          
-                   console[type](Date.now(), arguments[1]);
-          
+            else if (arguments.length === 2 && !(arguments[1] instanceof Error)) 
+                    console[type](Date.now(), arguments[1]);
             else
                 if (arguments.length === 3)
                     console[type](Date.now(), arguments[1], arguments[2]);
-            else
-                if (arguments.length === 4)
-                    console[type](Date.now(), arguments[1], formatUint8Array(arguments[2]), arguments[3]);
-             else
-                if (arguments.length === 5)
-                    console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4]);
-            else
-                if (arguments.length === 6)
-                    console[type](Date.now(), arguments[1], arguments[2], arguments[3],arguments[4],arguments[5]);
-            else
-                console[type](Date.now(), arguments);
+                else
+                    if (arguments.length === 4)
+                        console[type](Date.now(), arguments[1], formatUint8Array(arguments[2]), arguments[3]);
+                    else
+                        if (arguments.length === 5)
+                            console[type](Date.now(), arguments[1], arguments[2], arguments[3], arguments[4]);
+                        else
+                            if (arguments.length === 6)
+                                console[type](Date.now(), arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]);
+                            else
+                                console[type](Date.now(), arguments);
         } else if (!console[type])
             console.warn(Date.now(),'Unknown console source '+type, arguments);
     };

@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 define(function (require, exports, module) {
 'use strict'; 
@@ -45,8 +45,7 @@ define(function (require, exports, module) {
         
         // Temperature profile to be used by all temperature sensors
         
-        this.temperatureProfile = new TEMPProfile({ log : this.log.logging,
-                                                    onPage : configuration.onPage});
+        this.temperatureProfile = new TEMPProfile({ log : this.log.logging, onPage : configuration.onPage});
         
         
     }

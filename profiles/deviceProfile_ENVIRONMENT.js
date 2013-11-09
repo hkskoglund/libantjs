@@ -1,4 +1,4 @@
-/* global define: true, DataView: true */
+﻿/* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 // MAYBE, BUT LOW PRIORITY : Support enabling ANT-FS if device is capable of it.
@@ -103,12 +103,16 @@ define(function (require, exports, module) {
                     
             }
         
-         if (page)
-            this.log.log('log', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()],page,page.toString());
-        
-        // Callback if higher level code wants page, i.e UI data-binding
-        if (page)
+        if (page) {
+
+            page.timestamp = Date.now();
+
+            this.log.log('info', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()], page, page.toString());
+            
             this.onPage(page);
+
+        }
+            
   
     };
        
