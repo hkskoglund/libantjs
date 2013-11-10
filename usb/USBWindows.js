@@ -70,10 +70,13 @@ define(function (require, exports, module) {
         var vid = parseInt(deviceInformation.id.substr(12,4),16)
         var pid = parseInt(deviceInformation.id.substr(21,4),16);
 
+        this.state = "searching_for_device_among_known_devices";
+
         for (devNum = 0; devNum < knownDevices.length; devNum++) {
 
             if (knownDevices[devNum].vid === vid && knownDevices[devNum].pid === pid)
             {
+              
                 // Update current deviceId
                 this.options.deviceId = deviceInformation.id;
                         
@@ -91,6 +94,7 @@ define(function (require, exports, module) {
     };
 
     USBWindows.prototype._notFoundANTDevice =   function (err) {
+        this.state = 'failed_to_find_usbdevice';
         var msg = 'Failed to find USB device from id ' + this.deviceId + ' ' + err.toString();
         this.log.log('error', msg);
         this._initCallback(new Error(msg)); // Using continuation callback-style ala Node
@@ -98,7 +102,9 @@ define(function (require, exports, module) {
     };
 
     USBWindows.prototype._foundANTDevice =  function (usbDevice) {
-        //this.log.log('log', usbDevice);
+        this.log.log('log', 'Found ANT USB device',usbDevice);
+
+        this.state = 'found_usbdevice';
 
         var deviceInfoid = this.options.deviceId;
 
@@ -160,6 +166,18 @@ define(function (require, exports, module) {
         this._initCallback();
 
     };
+
+    USBWindows.prototype._getIndexOfEnumeratedDevice = function (deviceInformation) {
+        var devNum, len = this.enumeratedDevice.length;
+        for (devNum = 0;devNum<len;devNum++)
+        {
+            if (deviceInformation.id === this.enumeratedDevice[devNum].id)
+                return devNum;
+        }
+
+        return -1;
+
+    }
   
     USBWindows.prototype._initializeDeviceWatcher = function () {
         // returns an AQS - Advanced Query String for finding the device
@@ -187,9 +205,11 @@ define(function (require, exports, module) {
 
             this.enumeratedDevice.push(deviceInformation);
 
+            // if this matches our search deviceId (last known deviceId), try get a handle for bulk in/out
 
             if (this.options.deviceId && this.options.deviceId === deviceInformation.id) {
 
+                this.state = "added_getting_usbdevice";
                 // Device was added, get handle for bulk in/out
                 Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
 
@@ -206,58 +226,37 @@ define(function (require, exports, module) {
         var _onRemoved = function (deviceInformation) {
             this.log.log('log', 'USB device removed (id: ' + deviceInformation.id + ')');
 
-            if (this.deviceId && this.deviceId === deviceInformation.id) {
-                this.log.log('log', 'Canceling I/O to device id ' + deviceInformation.id);
-                // Attempt to stop I/O
-                if (this.readingPromise) {
-                    this.readingPromise.cancel();
-                    this.readingPromise = undefined;
-                }
+            // Remove device and free resources
 
-                if (this.writingPromise) {
-                    this.writingPromise.cancel();
-                    this.writingPromise = undefined;
-                }
+            var removedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
 
-                // Attempt release of resources
-                if (this.dataReader) {
+            if (removedIndex !== -1)
+              this.enumeratedDevice.splice(removedIndex, 1);
 
-                    this.dataReader.close();
-                    this.dataReader = undefined;
-                }
+            if (this.options.deviceId && this.options.deviceId === deviceInformation.id) {
 
-                if (this.dataWriter) {
-                    this.dataWriter.close();
-                    this.dataWriter = undefined;
-                }
+                this.releaseDevice();
             }
+            
 
         }.bind(this);
 
         var _onUpdated = function (deviceInformation) {
             this.log.log('log', deviceInformation.name + ' updated (id: ' + deviceInformation.id + ')');
 
-            //var i = _getIndexOf(this.device, deviceInformation);
+            var updatedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
 
-            //if (i !== -1)
-            //    this.device[i].deviceInformation = deviceInformation;
+            if (updatedIndex !== -1)
+               this.enumeratedDevice[updatedIndex] = deviceInformation;
 
         }.bind(this);
 
 
         var _onEnumerationComplete = function (event) {
 
-            this.log.log('log', 'USB device enumeration complete');
+            this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
 
-            if (typeof this.ANTdevice !== 'object')
-            {
-                this.log.log('warn', 'Enumeration failed to find USB ANT with device id '+this.options.deviceId);
-                
-                for (var devNum=0, len=this.enumeratedDevice.length; devNum<len; devNum++)
-                {
-                    this._tryFindANTDeviceFromKnownDevices(this.enumeratedDevice[devNum]);
-                }
-            }
+           
 
             // TEST stopped state : this.ANTWatcher.stop();
 
@@ -265,7 +264,7 @@ define(function (require, exports, module) {
         }.bind(this);
 
         var _onStopped = function (event) {
-            this.log.log('log', 'Stopped USB device watching');
+            this.log.log('log', 'Stopped ANT USB device watching');
         }.bind(this);
 
      
@@ -311,15 +310,54 @@ define(function (require, exports, module) {
         // Enable sharing of callback for all methods
         this._initCallback = callback;
 
-        if (!this.ANTWatcher)
+      //  if (!this.ANTWatcher)
             this._initializeDeviceWatcher();
-        else {
-            // i.e resume application from suspended state
-            this.ANTWatcher.start();
-            callback();
-        }
+        //else {
+        //    // i.e resume application from suspended state
+        //    this.ANTWatcher.start();
+        //    callback();
+        //}
 
     };
+
+    USBWindows.prototype.releaseDevice = function () {
+        // Stop any I/O that may currently by active on the device
+        this.log.log('log', 'Canceling reading on ANT in endpoint');
+
+        if (this.readingPromise) {
+            this.readingPromise.cancel();
+            //this.readingPromise = undefined;
+           
+        }
+
+        this.log.log('log', 'Canceling writing to ANT out endpoint');
+        if (this.writingPromise) {
+            this.writingPromise.cancel();
+            //this.writingPromise = undefined;
+            // this.dataWriter.close();
+            // this.dataWriter = null;
+        }
+
+        // Attempt release of resources
+        if (this.dataReader) {
+
+            this.dataReader.close();
+           // this.dataReader = undefined;
+        }
+
+        if (this.dataWriter) {
+            this.dataWriter.close();
+            //this.dataWriter = undefined;
+        }
+
+
+
+        if (this.ANTdevice) {
+            this.log.log('log', 'Closing ANT device');
+            this.ANTdevice.close();
+            //this.ANTdevice = undefined;
+        }
+    }
 
     USBWindows.prototype.exit = function (callback) {
 
@@ -328,31 +366,8 @@ define(function (require, exports, module) {
         if (this.ANTWatcher)
             this.ANTWatcher.stop();
 
-        // Stop any I/O that may currently by active on the device
-        this.log.log('log', 'Canceling reading on ANT in endpoint');
-
-        if (this.readingPromise) {
-            this.readingPromise.cancel();
-            this.readingPromise = undefined;
-            // this.dataReader.close();
-            // this.dataReader = null;
-        }
-
-        this.log.log('log', 'Canceling writing to ANT out endpoint');
-        if (this.writingPromise) {
-            this.writingPromise.cancel();
-            this.writingPromise = undefined;
-            // this.dataWriter.close();
-            // this.dataWriter = null;
-        }
-
+        this.releaseDevice();
         
-
-        if (this.ANTdevice) {
-            this.log.log('log', 'Closing ANT device');
-            this.ANTdevice.close();
-        }
-
         callback();
 
     };
