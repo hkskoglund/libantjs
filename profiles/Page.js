@@ -98,9 +98,7 @@ define(function (require, exports, module) {
                  this.serialNumber = dataView.getUint32(data.byteOffset+4,true);
                                       
                  break;
-                 
-                 // TO DO : Page 82
-                 
+             
                case GenericPage.prototype.COMMON.PAGE82: // 82 Common data page - Battery Status
                 
                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
@@ -130,9 +128,10 @@ define(function (require, exports, module) {
                  
             default :
                                           
-                 this.log.log('error','Unable to parse page number ',this.number+' 0x'+this.number.toString(16),data);
+                this.log.log('error', 'Unable to parse page number ', this.number + ' 0x' + this.number.toString(16), data);
+                return -1;
                                           
-                 break;
+                 //break;
                  
          }
        

@@ -407,6 +407,7 @@ define(function (require, exports, module) {
 
         var retry = function _bulkInTransfer() {
             try {
+                //delete this.readingPromise;
                 this.readingPromise = this.dataReader.loadAsync(REQUESTED_TRANSFER_SIZE).then(success, error);
 
             }
@@ -457,6 +458,7 @@ define(function (require, exports, module) {
 
         var retry = function _retry() {
             try {
+               // delete this.writingPromise;
                 this.writingPormise = this.dataWriter.storeAsync().then(success, error);
             } catch (e) {
                 this.log.log('error', 'Failed storeAsync HOST -> ANT', e);

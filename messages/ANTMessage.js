@@ -86,7 +86,7 @@ function ANTMessage(data) {
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
 ANTMessage.prototype.FILLER_BYTE = 0x00;
-ANTMessage.prototype.FILLER_BYTE_BUFFER = new ArrayBuffer(1);
+
 
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);

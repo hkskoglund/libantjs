@@ -1083,7 +1083,7 @@ Host.prototype.RXparse = function (error,data) {
             notification = new NotificationStartup(message);
            // this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
             this.log.log('log',notification.toString());
-            this.lastNotificationStartup = notification;
+            // NOT USED this.lastNotificationStartup = notification;
             
 //            console.log("Notification startup ",notification);
 //            
@@ -1101,7 +1101,7 @@ Host.prototype.RXparse = function (error,data) {
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
             notification = new NotificationSerialError(message);
-            this.lastNotificationError = notification;
+            // NOT USED this.lastNotificationError = notification;
             this.log.log('log',"Notification serial error: ",notification.toString());
 
             break;
@@ -1224,7 +1224,7 @@ Host.prototype.RXparse = function (error,data) {
      
     if (this.partialMessage) {
         nextSYNCIndex = this.partialMessage.next.length;
-        this.partialMessage = undefined;
+       delete this.partialMessage; // Remove from heap
     } else
         nextSYNCIndex = message.length;
     

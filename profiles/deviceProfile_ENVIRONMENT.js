@@ -97,7 +97,9 @@ define(function (require, exports, module) {
             default :
                 
                 page = new GenericPage({ log : this.log.logging },broadcast);
-                page.parse(broadcast);
+                if (page.parse(broadcast) === -1) // Not a common page
+                    page = undefined;
+                
               
                 break;
                     

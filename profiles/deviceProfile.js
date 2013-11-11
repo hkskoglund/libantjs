@@ -21,7 +21,7 @@ define(function (require, exports, module) {
         
         this.receivedBroadcastCounter = {};
         
-        this.previousBroadcast = {}; // Just declare property
+        this.previousPageBroadcast = {}; // Just declare property
         
         
        
@@ -33,29 +33,36 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.constructor = DeviceProfile;
     
     // FILTER - Skip duplicate messages from same master 
-    DeviceProfile.prototype.isDuplicateMessage = function (broadcast,BITMASK) {
+    DeviceProfile.prototype.isDuplicateMessage = function (broadcast) {
      var 
    
        data = broadcast.data,
-        bitmask = BITMASK,
-        pageIdentifier = broadcast.channelId.getUniqueId()+'.'+data[0 & BITMASK],
+        bitmask,
+         isHRM = broadcast.channelId.deviceType === 120 ? true : false,
+        
+        pageIdentifier = broadcast.channelId.getUniqueId()+'.',
         
          // Compare buffers byte by byte
-         equalBuffer = function (buf1,buf2,useBitmask)
+         equalBuffer = function (buf1,buf2)
         {
             // Could have used bitmask from outer function via closure mechanism, but chose to pass is as a argument (could be moved without requiring context)
             
-            var byteNr;
+             var byteNr,
+                 applyBitmask;
             
            
-             if (useBitmask === undefined)
-                useBitmask = 0xFF;
+             if (!isHRM)
+                 applyBitmask = 0xFF;
+             else
+                 applyBitmask = 0x7F;
            
             if (buf1.length !== buf2.length)
                 return false;
             
-            for (byteNr=0; byteNr < buf1.length; byteNr++) {
-                if (byteNr === 0 && ((buf1[byteNr] & useBitmask) !== (buf2[byteNr] & useBitmask))) 
+            for (byteNr = 0; byteNr < buf1.length; byteNr++) {
+              
+                if (byteNr === 0 && ((buf1[byteNr] & applyBitmask) !== (buf2[byteNr] & applyBitmask)))
+               
                     return false;
                  else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr]) 
                      return false;
@@ -67,9 +74,19 @@ define(function (require, exports, module) {
             
         };
         
-       // console.log("Page identifier",pageIdentifier);
+        // console.log("Page identifier",pageIdentifier);
+
+        // HRM has page toggle bit
+     if (isHRM) {
+       
+         pageIdentifier += (data[0] & 0x7F); // Stip off msb bit 
         
-        if (this.previousBroadcast[pageIdentifier] && equalBuffer(this.previousBroadcast[pageIdentifier],data,bitmask)) {
+     }
+     else
+         pageIdentifier += data[0];
+
+        
+        if (this.previousPageBroadcast[pageIdentifier] && equalBuffer(this.previousPageBroadcast[pageIdentifier],data)) {
            
                 // If counter is not reset for page, do it now
                 if (this.duplicateBroadcast.counter[pageIdentifier] === undefined) 
@@ -89,7 +106,8 @@ define(function (require, exports, module) {
                 }
             }
     
-        this.previousBroadcast[pageIdentifier] = data;
+        delete this.previousPageBroadcast[pageIdentifier]; // Explicit removal from heap of previous data
+        this.previousPageBroadcast[pageIdentifier] = data;
         
       return this.duplicateBroadcast.counter[pageIdentifier]  > 0;
 };
@@ -97,15 +115,16 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.verifyDeviceType = function (deviceType,broadcast)
     {
         var sensorId = broadcast.channelId.getUniqueId();
-        if (typeof this.receivedBroadcastCounter[sensorId] !== 'undefined')
-          this.receivedBroadcastCounter[sensorId]++;
-        else
-            this.receivedBroadcastCounter[sensorId] = 1;
-    
+      
         if (broadcast.channelId.deviceType !== deviceType) {
             this.log.log('log',"Received broadcast from device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
             return false;
         }
+
+        if (typeof this.receivedBroadcastCounter[sensorId] !== 'undefined')
+            this.receivedBroadcastCounter[sensorId]++;
+        else
+            this.receivedBroadcastCounter[sensorId] = 1;
         
         return true;
        
