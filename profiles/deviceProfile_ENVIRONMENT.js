@@ -96,10 +96,13 @@ define(function (require, exports, module) {
                 
             default :
                 
+                // Check for common page 80,...
                 page = new GenericPage({ log : this.log.logging },broadcast);
                 if (page.parse(broadcast) === -1) // Not a common page
+                {
+                    this.log.log('error', 'Failed to parse page ' + page.number, 'broadcast ', broadcast);
                     page = undefined;
-                
+                }
               
                 break;
                     

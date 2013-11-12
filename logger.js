@@ -24,6 +24,9 @@ define(function (require, exports, module) {
         
     Logger.prototype.log = function (type)
     {
+        var now = new Date(),
+            nowStr = now.getTime() + ' ' + now.toLocaleTimeString();
+
         // console.trace();
         var formatUint8Array = function (arg)
         {
@@ -52,25 +55,25 @@ define(function (require, exports, module) {
 
         if (this.logging && console[type]) {
             if (arguments.length === 2 && arguments[1] instanceof Error)
-                console[type](Date.now(), arguments[1].stack);
+                console[type](nowStr, arguments[1].stack);
             else if (arguments.length === 2 && !(arguments[1] instanceof Error)) 
-                    console[type](Date.now(), arguments[1]);
+                    console[type](nowStr, arguments[1]);
             else
                 if (arguments.length === 3)
-                    console[type](Date.now(), arguments[1], arguments[2]);
+                    console[type](nowStr, arguments[1], arguments[2]);
                 else
                     if (arguments.length === 4)
-                        console[type](Date.now(), arguments[1], formatUint8Array(arguments[2]), arguments[3]);
+                        console[type](nowStr, arguments[1], formatUint8Array(arguments[2]), arguments[3]);
                     else
                         if (arguments.length === 5)
-                            console[type](Date.now(), arguments[1], arguments[2], arguments[3], arguments[4]);
+                            console[type](nowStr, arguments[1], arguments[2], arguments[3], arguments[4]);
                         else
                             if (arguments.length === 6)
-                                console[type](Date.now(), arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]);
+                                console[type](nowStr, arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]);
                             else
-                                console[type](Date.now(), arguments);
+                                console[type](nowStr, arguments);
         } else if (!console[type])
-            console.warn(Date.now(),'Unknown console source '+type, arguments);
+            console.warn(nowStr,'Unknown console source '+type, arguments);
     };
     
     Logger.prototype.time = function (name)

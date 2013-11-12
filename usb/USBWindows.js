@@ -314,13 +314,20 @@ define(function (require, exports, module) {
         // Enable sharing of callback for all methods
         this._initCallback = callback;
 
-      //  if (!this.ANTWatcher)
-            this._initializeDeviceWatcher();
-        //else {
-        //    // i.e resume application from suspended state
-        //    this.ANTWatcher.start();
-        //    callback();
-        //}
+
+        if (!this.ANTWatcher)
+            this._initializeDeviceWatcher(); // Cold start
+        else {
+            //var _initCB = function () {
+            //     this.ANTWatcher.removeEventListener("enumerationcompleted", _initCB);
+            //    callback();
+            //}.bind(this);
+            //// i.e resume application from suspended state
+            //this.ANTWatcher.addEventListener("enumerationcompleted", _initCB);
+
+            this.ANTWatcher.start();
+           
+        }
 
     };
 
