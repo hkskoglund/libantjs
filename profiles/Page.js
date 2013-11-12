@@ -112,11 +112,31 @@ define(function (require, exports, module) {
                     resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
                 };
 
+               
+                switch (this.descriptive.batteryStatus) {
+                    case 0x00: this.batteryStatusString = "Reserved"; break;
+                    case 0x01: this.batteryStatusString = "New"; break;
+                    case 0x02: this.batteryStatusString = "Good"; break;
+                    case 0x03: this.batteryStatusString = "OK"; break;
+                    case 0x04: this.batteryStatusString = "Low"; break;
+                    case 0x05: this.batteryStatusString = "Critical"; break;
+                    case 0x06: this.batteryStatusString = "Reserved"; break;
+                    case 0x07: this.batteryStatusString = "Invalid"; break;
+                    default: this.batteryStatusString = "? - " + this.descriptive.batteryStatus;
+                }
+
                 var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;
 
                 // Byte 3-5
                 this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3,true) & 0x00FFFFFF) * unit_multiplier; // 24 - bit only
-                 
+                if (this.cumulativeOperatingTime < 3600)
+                    this.cumulativeOperatingTimeString = this.cumulativeOperatingTime.toFixed(1) + 's ';
+                else
+                   this.cumulativeOperatingTimeString = (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
+
+                this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
+
+
                  // Byte 6
                 this.fractionalBatteryVoltage = data[6] / 256; // Volt
                 if (this.descriptive.coarseVoltage === 0x0F)
@@ -163,19 +183,7 @@ define(function (require, exports, module) {
                 
             case GenericPage.prototype.COMMON.PAGE82:
                 
-                 var batteryStatus = "";
-
-                switch (this.descriptive.batteryStatus) {
-                    case 0x00: batteryStatus += "Reserved"; break;
-                    case 0x01: batteryStatus += "New"; break;
-                    case 0x02: batteryStatus += "Good"; break;
-                    case 0x03: batteryStatus += "OK"; break;
-                    case 0x04: batteryStatus += "Low"; break;
-                    case 0x05: batteryStatus += "Critical"; break;
-                    case 0x06: batteryStatus += "Reserved"; break;
-                    case 0x07: batteryStatus += "Invalid"; break;
-                    default: batteryStatus += "? - " + this.descriptive.batteryStatus;
-                }
+                
 
                 var batteryVoltageToString = function (voltage) {
                     if (typeof voltage === "number")
@@ -186,17 +194,12 @@ define(function (require, exports, module) {
 
                 msg = this.type + " P# " + this.number+" Cumulative operating time ";
                 
-                if (this.cumulativeOperatingTime < 3600)
-                    msg += this.cumulativeOperatingTime.toFixed(1) + 's ';
-                else
-                    msg += (this.cumulativeOperatingTime/3600).toFixed(1)+ ' h';
-                
-                msg += ' Battery reset ca. '+(new Date(Date.now()-this.cumulativeOperatingTime*1000)).toLocaleString();
+                msg += this.cumulativeOperatingTimeString+' Battery reset ca. '+this.lastBatteryReset;
                 
                 if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
                   msg += " Battery (V) " + batteryVoltageToString(this.batteryVoltage);
                 
-                msg += " Battery status " + batteryStatus;
+                msg += " Battery status " + this.batteryStatusString;
                 
                 break;
                 

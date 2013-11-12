@@ -158,12 +158,15 @@ define(function (require, exports, module) {
             this.dataWriter = new Windows.Storage.Streams.DataWriter(usbDevice.defaultInterface.bulkOutPipes[0].outputStream);
         }
         else {
-            this._initCallback(new Error('No out bulk pipe found on interface'));
+          
+                this._initCallback(new Error('No out bulk pipe found on interface'));
+           
             return;
         }
 
 
-        this._initCallback();
+        
+           this._initCallback();
 
     };
 
@@ -264,6 +267,7 @@ define(function (require, exports, module) {
         }.bind(this);
 
         var _onStopped = function (event) {
+            this.enumeratedDevice = [];
             this.log.log('log', 'Stopped ANT USB device watching');
         }.bind(this);
 
@@ -339,16 +343,16 @@ define(function (require, exports, module) {
         }
 
         // Attempt release of resources
-        if (this.dataReader) {
+        //if (this.dataReader) {
 
-            this.dataReader.close();
-           // this.dataReader = undefined;
-        }
+        //    this.dataReader.close();
+        //   // this.dataReader = undefined;
+        //}
 
-        if (this.dataWriter) {
-            this.dataWriter.close();
-            //this.dataWriter = undefined;
-        }
+        //if (this.dataWriter) {
+        //    this.dataWriter.close();
+        //    //this.dataWriter = undefined;
+        //}
 
 
 
@@ -359,16 +363,18 @@ define(function (require, exports, module) {
         }
     }
 
-    USBWindows.prototype.exit = function (callback) {
+    USBWindows.prototype.exit = function () {
 
         // Stop wathcing from ANT devices
+
+
 
         if (this.ANTWatcher)
             this.ANTWatcher.stop();
 
         this.releaseDevice();
         
-        callback();
+       // callback();
 
     };
 
@@ -437,13 +443,19 @@ define(function (require, exports, module) {
     USBWindows.prototype.transfer = function (chunk, callback) {
         // At the moment : Higher level code in anthost will attempt resend of message if no response is received
 
-        if (this.dataWriter)
-          this.dataWriter.writeBytes(chunk);
-        else
+        try 
         {
-            callback(new Error('No data writer available, cannot transfer USB data '))
-            //this.log.log('error', 'Tx - No data writer available');
-            //return;
+            if (this.dataWriter)
+                this.dataWriter.writeBytes(chunk);
+            else
+            {
+                callback(new Error('No data writer available, cannot transfer USB data '))
+                //this.log.log('error', 'Tx - No data writer available');
+                //return;
+            }
+        } catch (e) {
+            this.log.log('error', 'Failed writeBytes to dataWriter for ANT USB', e);
+            callback(e);
         }
 
         var success = function _success(bytesWritten) {
