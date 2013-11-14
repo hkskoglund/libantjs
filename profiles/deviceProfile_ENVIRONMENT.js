@@ -100,7 +100,10 @@ define(function (require, exports, module) {
                 page = new GenericPage({ log : this.log.logging },broadcast);
                 if (page.parse(broadcast) === -1) // Not a common page
                 {
-                    this.log.log('error', 'Failed to parse page ' + page.number, 'broadcast ', broadcast);
+                    // Issue : Receive page 2 for temp sensor (does not exist)
+                    //  May indicate that a broadcast from another sensor is sent with the wrong channelId in extended data...
+                    // Page 2 should be page 1 -> maybe a bit error?, CRC is OK
+                    if (this.log.logging) this.log.log('error', 'Failed to parse page ' + page.number + ' broadcast', broadcast.toString());
                     page = undefined;
                 }
               
@@ -112,7 +115,7 @@ define(function (require, exports, module) {
 
             page.timestamp = Date.now();
 
-            this.log.log('info', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()], page, page.toString());
+            if (this.log.logging) this.log.log('info', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()], page, page.toString());
             
             this.onPage(page);
 

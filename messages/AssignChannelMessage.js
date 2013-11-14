@@ -28,7 +28,8 @@ function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignme
     this.channel = channel;
     this.channelType = channelType;
     this.networkNumber = networkNumber;
-    this.extendedAssignment = extendedAssignment;
+    if (extendedAssignment)
+      this.extendedAssignment = extendedAssignment;
 
     this.setContent(msgBuffer.buffer);
 
@@ -41,7 +42,10 @@ AssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
 AssignChannelMessage.prototype.constructor = AssignChannelMessage;
 
 AssignChannelMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType] + " extended assignment " + this.extendedAssignment;
+    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
+    if (this.extendedAssignment)
+        msg += " extended assignment " + this.extendedAssignment;
+    return msg;
 };
 
 module.exports = AssignChannelMessage;

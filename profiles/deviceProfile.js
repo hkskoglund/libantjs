@@ -116,8 +116,8 @@ define(function (require, exports, module) {
     {
         var sensorId = broadcast.channelId.getUniqueId();
       
-        if (broadcast.channelId.deviceType !== deviceType) {
-            this.log.log('log',"Received broadcast from device type 0x"+ broadcast.channelId.deviceType.toString(16)+ " routing of broadcast is wrong!");
+        if (broadcast.channelId.deviceType !== deviceType ) {
+            if (this.log.logging) this.log.log('log', "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
             return false;
         }
 
@@ -131,7 +131,7 @@ define(function (require, exports, module) {
     };
    
     DeviceProfile.prototype.channelResponse = function (channelResponse) {
-            this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
+        if (this.log.logging) this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
     };
     
  // Default behaviour just return JSON of broadcast
@@ -150,8 +150,8 @@ define(function (require, exports, module) {
     {
         if (typeof callback === 'function')  {
             this._onPage = callback;
-            this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
-        } else
+            if (this.log.logging) this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
+        } else if (this.log.logging)
             this.log.log('error','Callback for on page is not a function',typeof callback,callback);
     };
     
@@ -159,7 +159,7 @@ define(function (require, exports, module) {
     {
         if (typeof this._onPage === 'function')
            this._onPage(page);
-        else
+        else if (this.log.logging)
             this.log.log('warn','No on page callback specified for page ',page);
     };
     

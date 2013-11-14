@@ -38,11 +38,10 @@ ChannelStatusMessage.prototype.STATE = {
 };
 
 ChannelStatusMessage.prototype.parse = function () {
-    var status;
+    var status = this.content[1];;
 
     this.channelNumber = this.content[0];
 
-    status = this.content[1];
     this.channelStatus = {
         value: status,
         state: status & parseInt("00000011", 2), // Lower 2 bits
@@ -69,7 +68,8 @@ ChannelStatusMessage.prototype.parse = function () {
 };
 
 ChannelStatusMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " ";
+    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
+        this.channelStatus.stateMessage;
 };
 
 module.exports = ChannelStatusMessage;

@@ -15,13 +15,13 @@ define(function (require, exports, module) {
         // this.chosenDevice = options.device || 0;
 
 
-        if (options)
+        if (options && this.log.logging)
             this.log.log('log', 'USB options', options);
 
       
-        if (!options.deviceId)
+        if (!options.deviceId && this.log.logging)
             this.log.log('warn', 'No default device id specified');
-        else
+        else if (this.log.logging)
             this.log.log('log', 'Will try to connect to device id ', options.deviceId);
 
 
@@ -80,7 +80,8 @@ define(function (require, exports, module) {
                 // Update current deviceId
                 this.options.deviceId = deviceInformation.id;
                         
-                this.log.log('log', 'Found '+knownDevices[devNum].name+' with vid ' + vid + ' pid ' + pid + ' among known devices, trying to use this device by convention without involving user');
+                if (this.log.logging)
+                    this.log.log('log', 'Found ' + knownDevices[devNum].name + ' with vid ' + vid + ' pid ' + pid + ' among known devices, trying to use this device by convention without involving user');
                 Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
 
                  break;
@@ -96,13 +97,15 @@ define(function (require, exports, module) {
     USBWindows.prototype._notFoundANTDevice =   function (err) {
         this.state = 'failed_to_find_usbdevice';
         var msg = 'Failed to find USB device from id ' + this.deviceId + ' ' + err.toString();
-        this.log.log('error', msg);
+        if (this.log.logging)
+            this.log.log('error', msg);
         this._initCallback(new Error(msg)); // Using continuation callback-style ala Node
 
     };
 
     USBWindows.prototype._foundANTDevice =  function (usbDevice) {
-        this.log.log('log', 'Found ANT USB device',usbDevice);
+        if (this.log.logging)
+            this.log.log('log', 'Found ANT USB device', usbDevice);
 
         this.state = 'found_usbdevice';
 
@@ -113,24 +116,28 @@ define(function (require, exports, module) {
 
         switch (deviceAccessStatus) {
             case Windows.Devices.Enumeration.DeviceAccessStatus.deniedByUser:
-                this.log.log('error', "USB Device-Access: Access to the device was blocked by the user : " + deviceInfoid);
+                if (this.log.logging)
+                    this.log.log('error', "USB Device-Access: Access to the device was blocked by the user : " + deviceInfoid);
 
                 break;
             case Windows.Devices.Enumeration.DeviceAccessStatus.deniedBySystem:
                 // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                 // This status does not cover the case where the device is already opened by another app.
-                this.log.log('error', "USB Device-Access: Access to the device was blocked by the system : " + deviceInfoid);
+                if (this.log.logging)
+                    this.log.log('error', "USB Device-Access: Access to the device was blocked by the system : " + deviceInfoid);
 
                 break;
 
             case Windows.Devices.Enumeration.DeviceAccessStatus.allowed:
-                this.log.log('info', 'USB Device-Access: Access to device allowed by user');
+                if (this.log.logging)
+                    this.log.log('info', 'USB Device-Access: Access to device allowed by user');
                 break;
 
             case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
             default:
                 // Most likely the device is opened by another app, but cannot be sure
-                this.log.log('error', "USB Device-Access: Unknown error, possibly opened by another app : " + deviceInfoid);
+                if (this.log.logging)
+                    this.log.log('error', "USB Device-Access: Unknown error, possibly opened by another app : " + deviceInfoid);
 
                 break;
         }
@@ -204,7 +211,8 @@ define(function (require, exports, module) {
 
         var _onAdded = function (deviceInformation) {
 
-            this.log.log('log', deviceInformation.name + ' added (id: ' + deviceInformation.id + ')');
+            if (this.log.logging)
+                this.log.log('log', deviceInformation.name + ' added (id: ' + deviceInformation.id + ')');
 
             this.enumeratedDevice.push(deviceInformation);
 
@@ -227,7 +235,8 @@ define(function (require, exports, module) {
 
 
         var _onRemoved = function (deviceInformation) {
-            this.log.log('log', 'USB device removed (id: ' + deviceInformation.id + ')');
+            if (this.log.logging)
+                this.log.log('log', 'USB device removed (id: ' + deviceInformation.id + ')');
 
             // Remove device and free resources
 
@@ -245,7 +254,8 @@ define(function (require, exports, module) {
         }.bind(this);
 
         var _onUpdated = function (deviceInformation) {
-            this.log.log('log', deviceInformation.name + ' updated (id: ' + deviceInformation.id + ')');
+            if (this.log.logging)
+                this.log.log('log', deviceInformation.name + ' updated (id: ' + deviceInformation.id + ')');
 
             var updatedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
 
@@ -257,7 +267,8 @@ define(function (require, exports, module) {
 
         var _onEnumerationComplete = function (event) {
 
-            this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
+            if (this.log.logging)
+                this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
 
            
 
@@ -268,7 +279,8 @@ define(function (require, exports, module) {
 
         var _onStopped = function (event) {
             this.enumeratedDevice = [];
-            this.log.log('log', 'Stopped ANT USB device watching');
+            if (this.log.logging)
+                this.log.log('log', 'Stopped ANT USB device watching');
         }.bind(this);
 
      
@@ -333,7 +345,8 @@ define(function (require, exports, module) {
 
     USBWindows.prototype.releaseDevice = function () {
         // Stop any I/O that may currently by active on the device
-        this.log.log('log', 'Canceling reading on ANT in endpoint');
+        if (this.log.logging)
+            this.log.log('log', 'Canceling reading on ANT in endpoint');
 
         if (this.readingPromise) {
             this.readingPromise.cancel();
@@ -341,7 +354,8 @@ define(function (require, exports, module) {
            
         }
 
-        this.log.log('log', 'Canceling writing to ANT out endpoint');
+        if (this.log.logging)
+            this.log.log('log', 'Canceling writing to ANT out endpoint');
         if (this.writingPromise) {
             this.writingPromise.cancel();
             //this.writingPromise = undefined;
@@ -364,7 +378,8 @@ define(function (require, exports, module) {
 
 
         if (this.ANTdevice) {
-            this.log.log('log', 'Closing ANT device');
+            if (this.log.logging)
+                this.log.log('log', 'Closing ANT device');
             this.ANTdevice.close();
             //this.ANTdevice = undefined;
         }
@@ -401,20 +416,31 @@ define(function (require, exports, module) {
 
             var iBuffer = this.dataReader.readBuffer(bytesRead);
             var buf = new Uint8Array(iBuffer);  // Convet from Windows.Storage.Streams.Ibuffer to Uint8Array
-            this.log.log('log', "Rx", buf, bytesRead + ' bytes read');
+            if (this.log.logging)
+                this.log.log('log', "Rx", buf, bytesRead + ' bytes read');
+
+            if (this.log.logging && console && console.time)
+                console.time('RXparse');
+
             rxParser(undefined, buf);
+
+            if (this.log.logging && console && console.timeEnd)
+                console.timeEnd('RXparse');
 
             retry();
 
         }.bind(this);
 
         var error = function _error(err) {
-            this.log.log('error', 'RX', err, err.stack);
+            if (this.log.logging)
+                this.log.log('error', 'RX', err, err.stack);
             transferErrorCount++;
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                 retry();
             else
-                this.log.log('error', 'Too many failed attempts to read from device, reading stopped');
+                if (this.log.logging)
+                   
+                        this.log.log('error', 'Too many failed attempts to read from device, reading stopped');
 
         }.bind(this);
 
@@ -431,7 +457,8 @@ define(function (require, exports, module) {
                 //    retry();
                 //else
 
-                this.log.log('error', 'Failed loadAsync ANT -> HOST', e);
+                if (this.log.logging)
+                    this.log.log('error', 'Failed loadAsync ANT -> HOST', e);
 
             }
         }.bind(this);
@@ -439,7 +466,8 @@ define(function (require, exports, module) {
         MAX_IN_PACKET_SIZE = this.ANTdevice.defaultInterface.bulkInPipes[0].endpointDescriptor.maxPacketSize || 64;
         REQUESTED_TRANSFER_SIZE = this.options.length.in || MAX_IN_PACKET_SIZE
 
-        this.log.log('log', 'Requested transfer size on in endpoint is ' + REQUESTED_TRANSFER_SIZE + ' bytes');
+        if (this.log.logging)
+            this.log.log('log', 'Requested transfer size on in endpoint is ' + REQUESTED_TRANSFER_SIZE + ' bytes');
 
         retry();
 
@@ -461,17 +489,20 @@ define(function (require, exports, module) {
                 //return;
             }
         } catch (e) {
-            this.log.log('error', 'Failed writeBytes to dataWriter for ANT USB', e);
+            if (this.log.logging)
+                this.log.log('error', 'Failed writeBytes to dataWriter for ANT USB', e);
             callback(e);
         }
 
         var success = function _success(bytesWritten) {
-            this.log.log('log', 'Tx', chunk, bytesWritten + ' bytes written');
+            if (this.log.logging)
+                this.log.log('log', 'Tx', chunk, bytesWritten + ' bytes written');
             callback();
         }.bind(this),
 
             error = function _error(err) {
-                this.log.log('error', 'Tx', err);
+                if (this.log.logging)
+                    this.log.log('error', 'Tx', err);
                 callback(err);
             }.bind(this);
 
@@ -480,7 +511,8 @@ define(function (require, exports, module) {
                // delete this.writingPromise;
                 this.writingPormise = this.dataWriter.storeAsync().then(success, error);
             } catch (e) {
-                this.log.log('error', 'Failed storeAsync HOST -> ANT', e);
+                if (this.log.logging)
+                    this.log.log('error', 'Failed storeAsync HOST -> ANT', e);
             }
         }.bind(this);
 

@@ -24,6 +24,8 @@ define(function (require, exports, module) {
         
     Logger.prototype.log = function (type)
     {
+        console.time('logger');
+
         var now = new Date(),
             nowStr = now.getTime() + ' ' + now.toLocaleTimeString();
 
@@ -73,7 +75,8 @@ define(function (require, exports, module) {
                             else
                                 console[type](nowStr, arguments);
         } else if (!console[type])
-            console.warn(nowStr,'Unknown console source '+type, arguments);
+            console.warn(nowStr, 'Unknown console source ' + type, arguments);
+        console.timeEnd('logger');
     };
     
     Logger.prototype.time = function (name)

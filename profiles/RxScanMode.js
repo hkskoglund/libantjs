@@ -101,7 +101,8 @@ define(function (require, exports, module) {
 //                    break;
 //    
                 default:
-                    this.log.log('log', 'Parsing not enabled, received',broadcast.data,'from '+broadcast.channelId.toString());
+                    if (this.log.logging)
+                        this.log.log('warn', 'Parsing not enabled, received', broadcast.data, 'from ' + broadcast.channelId.toString());
                     break;
             }
     

@@ -10,7 +10,7 @@ var ANTMessage = require('messages/ANTMessage');
 function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
 
     if (!requestedMessageId)
-        throw new TypeError('no request message id. specified');
+        throw new TypeError('No request message id. specified');
 
     var msgBuffer = new Uint8Array([channel || 0, requestedMessageId]);
 
@@ -54,7 +54,14 @@ RequestMessage.prototype = Object.create(ANTMessage.prototype);
 RequestMessage.prototype.constructor = RequestMessage;
 
 RequestMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id " + this.requestedMessageId + " NVMaddr " + this.NVMaddr + "NVMsize" + this.NVMsize;
+    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id " + this.responseId;
+    if (this.NVMaddr)
+        msg += " NVMaddr " + this.NVMaddr;
+    if (this.NVMsize)
+        msg += " NVMsize " + this.NVMsize;
+
+    return msg;
+    
 };
 
 module.exports = RequestMessage;

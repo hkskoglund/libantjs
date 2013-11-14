@@ -26,6 +26,7 @@ function ANTMessage(data) {
 //        if (data.byteOfset !== 0)
 //          console.warn("DATA", data,"byte offset",data.byteOffset);
         //this.buffer = data;
+        this.USBBuffer = data;
         this.SYNC = data[0];
         this.length = data[1];
         this.id = data[2];
