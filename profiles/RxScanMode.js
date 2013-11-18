@@ -6,9 +6,9 @@ define(function (require, exports, module) {
 //
     var DeviceProfile = require('profiles/deviceProfile'),
          setting = require('settings'),
-        TEMPProfile = require('profiles/deviceProfile_ENVIRONMENT');
+        TEMPProfile = require('profiles/deviceProfile_ENVIRONMENT'),
 //    var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
-//    var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
+     SDMProfile = require('profiles/deviceProfile_SDM');
 //    var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
 
    
@@ -44,8 +44,10 @@ define(function (require, exports, module) {
         });
         
         // Temperature profile to be used by all temperature sensors
-        
-        this.temperatureProfile = new TEMPProfile({ log : this.log.logging, onPage : configuration.onPage});
+      
+        this.temperatureProfile = new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage });
+
+        this.SDMProfile = new SDMProfile({ log: this.log.logging, onPage: configuration.onPage });
         
         
     }
@@ -82,7 +84,33 @@ define(function (require, exports, module) {
 //                    //console.log("CHANNEL HRM", this.deviceProfile.deviceProfile_HRM.channel);
 //                    //this.deviceProfile.channel = this;
 //                    this.deviceProfile.deviceProfile_HRM.broadCastDataParser.call(this, data);
-//                    break;
+                    //                    break;
+
+                case SDMProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
+
+//                    this.SDMProfile.test();
+
+                    this.SDMProfile.broadCast(broadcast);
+
+                    //this.countBroadcast(broadcast.channelId.sensorId);
+
+                    //if (this.isDuplicateMessage(broadcast))
+                    //    break;
+
+                    //if (broadcast.channelId.transmissionType !== 1) {
+                    //    if (this.log.logging)
+                    //      this.log.log('warn', 'Expected transmission type 1 for SDM/footpod device', broadcast);
+                    //}
+                       
+                    //else {
+                    //    if (this.receivedBroadcastCounter[broadcast.channelId.sensorId] > 1)
+                    //        this._onPage({ timestamp: Date.now(), broadcast: broadcast });
+                    //    else
+                    //        if (this.log.logging) this.log.log('warn', 'Skipping', broadcast);
+                    //}
+                    
+
+                    break;
 //    
 //                case DeviceProfile_SDM.prototype.DEVICE_TYPE:
 //                   // console.log("THIS.deviceProfile", this.deviceProfile.deviceProfile_SDM);

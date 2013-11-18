@@ -12,7 +12,14 @@ define(function (require, exports, module) {
           this.log = new Logger();
          
          if (broadcast)
-           this.broadcast = broadcast;
+             this.broadcast = broadcast;
+
+         this.descriptive = {
+             coarseVoltage: undefined,        // Bit 0-3
+             batteryStatus: undefined, // Bit 4-6
+             resoultion: undefined // Bit 7 0 = 16 s, 1 = 2 s
+         };
+
      }
     
     
@@ -37,13 +44,16 @@ define(function (require, exports, module) {
      // Parsing of common pages
      GenericPage.prototype.parse = function (broadcast)
      {
-         
+        
+
           var  data;
          
          if (!broadcast) {
              this.log.log('error','Undefined broadcast received');
              return;
-         }
+         } else
+
+             this.broadcast = broadcast;
          
          data = broadcast.data;
          
@@ -106,12 +116,10 @@ define(function (require, exports, module) {
                  // Byte 1-2 -reserved 0xFF
                  
                  // Byte 7
-                this.descriptive = {
-                    coarseVoltage: data[7] & 0x0F,        // Bit 0-3
-                    batteryStatus: (data[7] & 0x70) >> 4, // Bit 4-6
-                    resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
-                };
-
+                this.descriptive.coarseVoltage = data[7] & 0x0F;        // Bit 0-3
+                this.descriptive.batteryStatus = (data[7] & 0x70) >> 4;
+                this.descriptive.resoultion = (data[7] & 0x80) >> 7; // Bit 7 0 = 16 s, 1 = 2 s
+           
                
                 switch (this.descriptive.batteryStatus) {
                     case 0x00: this.batteryStatusString = "Reserved"; break;
@@ -155,7 +163,14 @@ define(function (require, exports, module) {
                  
          }
        
-      };
+     };
+
+     GenericPage.prototype._batteryVoltageToString = function (voltage) {
+         if (typeof voltage === "number")
+             return voltage.toFixed(1);
+         else
+             return "" + voltage;
+     };
     
     
     GenericPage.prototype.toString = function ()
@@ -182,22 +197,14 @@ define(function (require, exports, module) {
                     break;
                 
             case GenericPage.prototype.COMMON.PAGE82:
-                
-                
-
-                var batteryVoltageToString = function (voltage) {
-                    if (typeof voltage === "number")
-                        return voltage.toFixed(1);
-                    else
-                        return ""+voltage;
-                };
+             
 
                 msg = this.type + " P# " + this.number+" Cumulative operating time ";
                 
                 msg += this.cumulativeOperatingTimeString+' Battery reset ca. '+this.lastBatteryReset;
                 
                 if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
-                  msg += " Battery (V) " + batteryVoltageToString(this.batteryVoltage);
+                  msg += " Battery (V) " + this._batteryVoltageToString(this.batteryVoltage);
                 
                 msg += " Battery status " + this.batteryStatusString;
                 

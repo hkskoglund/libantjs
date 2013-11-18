@@ -9,7 +9,9 @@ define(function (require, exports, module) {
 //   util = require('util');
 
     function Channel(configuration) {
-       // events.EventEmitter.call(this);
+        // events.EventEmitter.call(this);
+        this.options = configuration;
+
         this.parameters = {};
         if (configuration)
          this.log = new Logger(configuration.log);

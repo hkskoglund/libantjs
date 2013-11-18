@@ -14,9 +14,20 @@ define(function (require, exports, module) {
                 
         GenericPage.call(this,configuration,broadcast);
         
-         this.type = GenericPage.prototype.TYPE.MAIN;
+        this.type = GenericPage.prototype.TYPE.MAIN;
+
+        this.transmissionInfo = {
+            localTime : undefined,
+            UTCTime: undefined,
+            defaultTransmissionRate: undefined
+        };
+
+        this.supportedPages = {
+            value: undefined
+        };
+
         
-       if (broadcast.data)
+       if (broadcast && broadcast.data)
            this.parse(broadcast);
     }
     
@@ -83,7 +94,9 @@ define(function (require, exports, module) {
     Page.prototype.parse = function (broadcast)
     {
           var  data = broadcast.data, dataView = new DataView(data.buffer);
-         var supportedPages;
+          var supportedPages;
+
+          this.broadcast = broadcast;
         
         // Byte 0 - page number
         
@@ -97,21 +110,20 @@ define(function (require, exports, module) {
         
         // Byte 3 - Transmission info
         
-        this.transmissionInfo =  {
-                    localTime : (data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.LOCAL_TIME) >> Page.prototype.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT,
-                    UTCTime : (data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.UTC_TIME) >> Page.prototype.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT,
-                    defaultTransmissionRate : data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.DEFAULT_TRANSMISSION_RATE
-                };
+        this.transmissionInfo.localTime = (data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.LOCAL_TIME) >> Page.prototype.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
+        this.transmissionInfo.UTCTime = (data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.UTC_TIME) >> Page.prototype.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
+        this.transmissionInfo.defaultTransmissionRate = data[Page.prototype.BYTE.TRANSMISSION_INFO] & Page.prototype.BIT_MASK.DEFAULT_TRANSMISSION_RATE;
+      
         
         // Byte 4 - 7  - Supported pages
         
         supportedPages = dataView.getUint32(data.byteOffset+Page.prototype.BYTE.SUPPORTED_PAGES,true);
-        this.supportedPages = {
-        value : supportedPages};
+        this.supportedPages.value = supportedPages;
+     
         for (var bitNr = 0; bitNr < 32; bitNr++)
             if (supportedPages & (1 << bitNr))
-                this.supportedPages['page'+bitNr] = true;
-       
+                this.supportedPages['page' + bitNr] = true;
+      
     };
     
    Page.prototype.toString = function ()

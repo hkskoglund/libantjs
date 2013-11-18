@@ -157,8 +157,11 @@ ChannelResponseMessage.prototype.isRFEvent = function () {
 };
 
 
-ChannelResponseMessage.prototype.parse = function () {
+ChannelResponseMessage.prototype.parse = function (data) {
     var msg;
+
+    if (data)
+        this.mainParse(data);
 
     this.channel = this.content[0];
     this.initiatingId = this.content[1];

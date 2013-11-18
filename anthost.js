@@ -93,7 +93,12 @@ function Host() {
     
     // Logging
     this.log = new Logger(false);
-    
+
+    // Declare/reuse broadcast to minimize garbage collection
+    this.broadcast = new BroadcastDataMessage();
+
+    this.channelResponseMessage = new ChannelResponseMessage();
+   
     // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc, yet another approach could be to lift it to a module var (must be called with this bound to host instance)
       
  this._responseCallback = function (msg) {
@@ -140,8 +145,10 @@ function Host() {
         else if (this.log.logging)
           this.log.log('warn','No timeout registered for response '+msg.name);
         
-     if (typeof msgCallback !== 'function' && this.log.logging)
-            this.log.log('warn','No callback registered for '+msg +' '+ msg.toString());
+        if (typeof msgCallback !== 'function' ) {
+            if (this.log.logging) this.log.log('warn', 'No callback registered for ' + msg + ' ' + msg.toString());
+        }
+            
         else {
        
          if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP) {
@@ -226,9 +233,9 @@ function Host() {
                           {
                               
                               //console.timeEnd('sendMessageUSBtransfer');
-                              if (error && this.log.logging)
-                                  this.log.log('error','TX failed of '+message.toString());
-                              
+         if (error) {
+             if (this.log.logging)   this.log.log('error', 'TX failed of ' + message.toString());
+         }
                               // A response callback is already registered in _setResponseCallback to be called during RXparse
                              // callback(error);
                               
@@ -237,8 +244,10 @@ function Host() {
     var transferMessage = function() {
 
         //this.log.time('sendMessageUSBtransfer');
-        if (retryNr === 0 && this.log.logging)
-           this.log.log('log','Sending message ',message,'retry timeout in '+TIMEOUT+' ms.');
+        if (retryNr === 0 ) {
+          if (this.log.logging)  this.log.log('log', 'Sending message ', message, 'retry timeout in ' + TIMEOUT + ' ms.');
+        }
+         
         else if (this.log.logging)
            this.log.log('warn','Retry '+retryNr+' sending message',message);
         
@@ -246,8 +255,10 @@ function Host() {
         
         this.resendTimeoutID[targetMsgId] = setTimeout(function _responseTimeoutCB()
                              {
-                                    if (this.callback[message.responseId] !== undefined && this.log.logging)
-                                       this.log.log('warn','No response to request for '+message.name+ ' in '+TIMEOUT+' ms');
+            if (this.callback[message.responseId] !== undefined) {
+               if (this.log.logging) this.log.log('warn', 'No response to request for ' + message.name + ' in ' + TIMEOUT + ' ms');
+            }
+                                      
                                      
                                      // It should be quite safe to just start a new transfer now (assuming no response from device)
                                      if (++retryNr <= MAX_RETRY) 
@@ -786,8 +797,10 @@ Host.prototype.init = function (options, initCB) {
                     this.log.log('log', version.toString());
 
                 this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                    if (!error && this.log.logging)
-                        this.log.log('log', serialNumberMsg.toString());
+                    if (!error ) {
+                        if (this.log.logging) this.log.log('log', serialNumberMsg.toString());
+                    }
+                       
 
                     _getANTVersionAndDeviceNumberCB(error);
 
@@ -1079,7 +1092,9 @@ Host.prototype.RXparse = function (error, data) {
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
            
-            var broadcast = new BroadcastDataMessage(message); 
+            //var broadcast = new BroadcastDataMessage(message); 
+            var broadcast = this.broadcast;
+            broadcast.parse(message);
 
             if (this.log.logging)
                 this.log.log('log', broadcast.toString());
@@ -1090,9 +1105,12 @@ Host.prototype.RXparse = function (error, data) {
              // Send broad to specific channel handler
             if (typeof this._channel[broadcast.channel] !== "undefined") {
                
-                if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function' && this.log.logging) 
-                    this.log.log('warn',"No broadCast function available : on C# " + broadcast.channel);
+                if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function') {
+                   if (this.log.logging) this.log.log('warn', "No broadCast function available : on C# " + broadcast.channel);
+                }
+                    
                 else {
+                    broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
                     var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
 //                    if (resultBroadcast)
 //                        this.log.log('log',resultBroadcast);
@@ -1140,7 +1158,9 @@ Host.prototype.RXparse = function (error, data) {
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
             
-            var channelResponseMsg = new ChannelResponseMessage(message);
+            var channelResponseMsg = this.channelResponseMessage;
+            channelResponseMsg.parse(message);
+
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
 //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
@@ -1157,8 +1177,10 @@ Host.prototype.RXparse = function (error, data) {
             // Check for channel response callback
            if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
                
-               if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' && this.log.logging) 
-                    this.log.log('warn',"No channelResponse function available : on C# " + channelResponseMsg.channel);
+               if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ) {
+                 if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
+               }
+                   
                 else {
                   this._channel[channelResponseMsg.channel].channel.channelResponse(channelResponseMsg);
                 }

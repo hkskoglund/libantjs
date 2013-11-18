@@ -37,14 +37,14 @@ define(function (require, exports, module) {
                             }
         };
     
-    ChannelId.prototype.getUniqueId = function ()
+    ChannelId.prototype.getUniqueId = function (networkNr,channelNr)
     {
         var pageScheme = 'ant';
         
-        if (this.usesANTPLUSGlobalDataPages())
-            pageScheme += 'plus';
+        //if (this.usesANTPLUSGlobalDataPages())
+        //    pageScheme += 'plus';
         
-          return pageScheme+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
+          return pageScheme+':'+networkNr+'.'+channelNr+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
     };
     
     ChannelId.prototype.getDeviceNumber = function () {
@@ -69,7 +69,8 @@ define(function (require, exports, module) {
         //var extendedDataUint8 = new Uint8Array(extendedData);
         // | DN # af 41 | DT # 78 |T# 01
     
-        this.deviceNumber = (new DataView(extendedData.buffer)).getUint16(extendedData.byteOffset+0,true);
+        this.deviceNumber = (new DataView(extendedData.buffer)).getUint16(extendedData.byteOffset + 0, true);
+
         this.deviceType = extendedData[2];
     
         // From spec. p. 17 - "an 8-bit field used to define certain transmission characteristics of a device" - shared address, global data pages, 20 bit device number
@@ -79,6 +80,8 @@ define(function (require, exports, module) {
         this.pair = (this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR > 0) ? true : false;
         
         this._check20BitDeviceNumber();
+
+       // this.sensorId = this.getUniqueId();
     
     };
     

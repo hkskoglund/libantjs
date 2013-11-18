@@ -18,76 +18,89 @@ define(function (require, exports, module) {
 
 function ANTMessage(data) {
     
+    this.channelId = new ChannelId();
+    this.RXTimestamp = new RXTimestamp();
    
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    if (data ) {
-//        if (data.byteOfset !== 0)
-//          console.warn("DATA", data,"byte offset",data.byteOffset);
-        //this.buffer = data;
-        this.USBBuffer = data;
-        this.SYNC = data[0];
-        this.length = data[1];
-        this.id = data[2];
-        //this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
-        this.content = data.subarray(3,3+this.length);
-        //console.log("CONTENT", this.content);
-        this.CRC = data[3 + this.length];
-        
-        // Extended message
-        
-        // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
-        if ((this.id === ANTMessage.prototype.MESSAGE.BROADCAST_DATA || 
-             this.id === ANTMessage.prototype.MESSAGE.BURST_TRANSFER_DATA) &&
-             this.content.length > 9) {
-            
-            this.flagsByte = this.content[9];
-            //this.extendedData = new Uint8Array(this.content.buffer.slice(10));
-            this.extendedData = this.content.subarray(10);
-            // Check for channel ID
-            // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
-            if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
-                this.channelId = new ChannelId();
-                //this.channelId.parse(this.extendedData.buffer.slice(0, 4));
-                this.channelId.parse(this.extendedData.subarray(0, 4));
-                // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
-    //            sharedAddress = this.channelId.getSharedAddressType();
-    //
-    //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) {
-    //                this.sharedAddress = this.content[0]; // 1 byte is the shared address 0 = broadcast to all slaves
-    //                this.data = this.content.subarray(2, 9);
-    //
-    //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
-    //                this.sharedAddress = (new DataView(this.content,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
-    //                this.data = this.content.subarray(3, 9);
-    //            }
-            }
+    if (data ) 
+        this.mainParse(data)
     
-            if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) 
-            {
-                this.RXTimestamp = new RXTimestamp();
-               // this.RXTimestamp.parse(this.extendedData.buffer.slice(-2));
-                this.RXTimestamp.parse(this.extendedData.subarray(-2));
-            }
-            
-            if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
-                //this.RSSI.parse(this.extendedData.buffer.slice(0, 2));
-                this.RSSI.parse(this.extendedData.subarray(0, 2));
-            }
-    
-            if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
-                //this.RSSI.parse(this.extendedData.buffer.slice(4, 7));
-                this.RSSI.parse(this.extendedData.subarray(4, 7));
-            }
-        }
-    } 
 }
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
 
 ANTMessage.prototype.FILLER_BYTE = 0x00;
 
+
+ANTMessage.prototype.mainParse = function (data)
+{
+    //        if (data.byteOfset !== 0)
+    //          console.warn("DATA", data,"byte offset",data.byteOffset);
+    //this.buffer = data;
+    this.USBBuffer = data;
+    this.SYNC = data[0];
+    this.length = data[1];
+    this.id = data[2];
+    //this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
+    this.content = data.subarray(3, 3 + this.length);
+    //console.log("CONTENT", this.content);
+    this.CRC = data[3 + this.length];
+
+    // Extended message
+
+    // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
+    if ((this.id === ANTMessage.prototype.MESSAGE.BROADCAST_DATA ||
+         this.id === ANTMessage.prototype.MESSAGE.BURST_TRANSFER_DATA) &&
+         this.content.length > 9) {
+
+        this.flagsByte = this.content[9];
+        //this.extendedData = new Uint8Array(this.content.buffer.slice(10));
+        this.extendedData = this.content.subarray(10); // Subarray creates a view to underlying arraybuffer
+        // Check for channel ID
+        // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
+        if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
+            if (!this.channelId)
+                this.channelId = new ChannelId();
+            //this.channelId.parse(this.extendedData.buffer.slice(0, 4));
+            this.channelId.parse(this.extendedData.subarray(0, 4));
+
+            // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
+            //            sharedAddress = this.channelId.getSharedAddressType();
+            //
+            //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) {
+            //                this.sharedAddress = this.content[0]; // 1 byte is the shared address 0 = broadcast to all slaves
+            //                this.data = this.content.subarray(2, 9);
+            //
+            //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
+            //                this.sharedAddress = (new DataView(this.content,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
+            //                this.data = this.content.subarray(3, 9);
+            //            }
+        }
+
+        if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) {
+            if (!this.RXTimestamp)
+                this.RXTimestamp = new RXTimestamp();
+            // this.RXTimestamp.parse(this.extendedData.buffer.slice(-2));
+            this.RXTimestamp.parse(this.extendedData.subarray(-2));
+        }
+
+        if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            //this.RSSI.parse(this.extendedData.buffer.slice(0, 2));
+            if (!this.RSSI)
+                this.RSSI = new RSSI();
+            this.RSSI.parse(this.extendedData.subarray(0, 2));
+        }
+
+        if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            //this.RSSI.parse(this.extendedData.buffer.slice(4, 7));
+            if (!this.RSSI)
+                this.RSSI = new RSSI();
+            this.RSSI.parse(this.extendedData.subarray(4, 7));
+        }
+    }
+}
 
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);

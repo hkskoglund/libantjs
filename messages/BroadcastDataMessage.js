@@ -22,10 +22,13 @@ define(function (require, exports, module) {
     BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
     
     // Spec. p. 91
-    BroadcastDataMessage.prototype.parse = function () {
+    BroadcastDataMessage.prototype.parse = function (data) {
         var sharedAddress,
             dataView;
     
+        if (data)
+            this.mainParse(data); // in ANTMessage
+
         this.channel = this.content[0];
         //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
         this.data = this.content.subarray(1,9);

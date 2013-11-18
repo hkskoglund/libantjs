@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+﻿/* global define: true */
 
 define(function (require, exports, module) {
     'use strict';
@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         
         this.type = GenericPage.prototype.TYPE.MAIN;
         
-       if (broadcast.data)
+       if (broadcast && broadcast.data)
            this.parse(broadcast);
     }
     
@@ -76,9 +76,11 @@ define(function (require, exports, module) {
         
     Page.prototype.parse = function (broadcast)
     {
-         var  data = broadcast.data, dataView = new DataView(data.buffer);
-         var supportedPages;
-       
+        var data = broadcast.data;
+            //dataView = new DataView(data.buffer);
+        
+        this.broadcast = broadcast;
+
         // Byte 0 - page number
         
         this.number = data[Page.prototype.BYTE_OFFSET.PAGE_NUMBER];

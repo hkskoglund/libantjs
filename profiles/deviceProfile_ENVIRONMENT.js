@@ -43,7 +43,13 @@ define(function (require, exports, module) {
             channelPeriod: DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ARRAY         
     
         });
-        
+
+        this.delayedPages = {};
+
+        this.tempPage0 = new TempPage0(configuration);
+        this.tempPage1 = new TempPage1(configuration);
+        this.genericPage = new GenericPage(configuration);
+     
     }
     
     // Inherit
@@ -68,36 +74,70 @@ define(function (require, exports, module) {
 //    
     DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
 //    var  data = broadcast.data,
-//         dataView = new DataView(data.buffer);
-//                 
+        //         dataView = new DataView(data.buffer);
+
+        //                 
+        
+        var page,
+            
+            pageNumber = broadcast.data[0],
+            sensorId = broadcast.channelId.sensorId,
+            pageIdentifier = sensorId + '.' + pageNumber,
+            BROADCAST_LIMIT_BEFORE_UI_UPDATE = 2,// Set limit before accepting update of UI - seems like a stable sensor/master
+            delayedPageNr,
+            delayedPagesLength;
+
+       
+           
+        // Don't process broadcast with wrong device type
         if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast))
             return;
+
+        this.countBroadcast(sensorId);
       
-         if (this.isDuplicateMessage(broadcast))
-            return ;
-        
-        var page, pageNumber = broadcast.data[0];
+        // Don't process duplicate broadcast
+        if (this.isDuplicateMessage(broadcast)) {
+
+            // Process delayed pages when limit for acceptable/stable sensor is passed
+            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE) {
+
+                // FIFO
+                if (this.delayedPages[sensorId])
+                    for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
+                        this.onPage(this.delayedPages[sensorId].shift());
+                    }
+            }
+      
+            return;
+
+        }
+            
             
         switch (pageNumber) {
              
-            // Device capabilities
+            // Device capabilities - why main page?
             case 0 : 
                 
-                page = new TempPage0({log : this.log.logging },broadcast);
+                // page = new TempPage0({log : this.log.logging },broadcast);
+                page = this.tempPage0;
+                page.parse(broadcast);
                 
                 break;
                 
             // Temperature
             case 1: 
                 
-                page = new TempPage1({ log : this.log.logging },broadcast);
+                // page = new TempPage1({ log : this.log.logging },broadcast);
+                page = this.tempPage1;
+                page.parse(broadcast);
                 
                 break;
                 
             default :
                 
                 // Check for common page 80,...
-                page = new GenericPage({ log : this.log.logging },broadcast);
+               
+                page = this.genericPage;
                 if (page.parse(broadcast) === -1) // Not a common page
                 {
                     // Issue : Receive page 2 for temp sensor (does not exist)
@@ -114,11 +154,18 @@ define(function (require, exports, module) {
         if (page) {
 
             page.timestamp = Date.now();
-
-            if (this.log.logging) this.log.log('info', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()], page, page.toString());
+           
+            if (this.log.logging) this.log.log('info', sensorId+' B#'+this.receivedBroadcastCounter[sensorId], page, page.toString());
+           
+            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
+                this.onPage(page);
+            else if (this.log.logging) {
+                this.log.log('warn', 'Delaying page, broadcast for temperature sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
+                if (this.delayedPages[sensorId] === undefined)
+                    this.delayedPages[sensorId] = [];
+                this.delayedPages[sensorId].push(page); // Queue for later processing if sensor is accepted for UI
+            }
             
-            this.onPage(page);
-
         }
             
   
