@@ -9,8 +9,19 @@ define(function (require, exports, module) {
     
          this.type = Page.prototype.TYPE.BACKGROUND;
           
+//        
+//        this.broadcast = undefined;
+//        this.number = undefined;
+//        this.pageToggle = undefined;
+//        this.heartBeatEventTime = undefined;
+//        this.heartBeatCount = undefined;
+//        this.computedHeartRate = undefined;
+//        this.manufacturerID = undefined;
+//        this.serialNumber = undefined;
+        
        if (broadcast.data)
            this.parse(broadcast);
+        
     }
     
     Page.prototype = Object.create(GenericPage.prototype); 
@@ -21,6 +32,9 @@ define(function (require, exports, module) {
         var channelId = broadcast.channelId;
         
           var  data = broadcast.data, dataView = new DataView(data.buffer);
+        
+        this.broadcast = broadcast;
+        
         this.number = data[0] & 0x7F;
         
         this.pageToggle = (data[0] & 0x80) >> 7;

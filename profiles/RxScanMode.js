@@ -7,7 +7,7 @@ define(function (require, exports, module) {
     var DeviceProfile = require('profiles/deviceProfile'),
          setting = require('settings'),
         TEMPProfile = require('profiles/deviceProfile_ENVIRONMENT'),
-//    var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
+        HRMProfile = require('profiles/deviceProfile_HRM'),
      SDMProfile = require('profiles/deviceProfile_SDM');
 //    var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
 
@@ -49,6 +49,8 @@ define(function (require, exports, module) {
 
         this.SDMProfile = new SDMProfile({ log: this.log.logging, onPage: configuration.onPage });
         
+        this.HRMProfile = new HRMProfile({ log: this.log.logging, onPage: configuration.onPage });
+        
         
     }
     
@@ -78,13 +80,12 @@ define(function (require, exports, module) {
                     this.temperatureProfile.broadCast(broadcast);
                     
                     break;
-//    
-//                case DeviceProfile_HRM.prototype.DEVICE_TYPE:
-//                    this.deviceProfile.deviceProfile_HRM.channel = this;
-//                    //console.log("CHANNEL HRM", this.deviceProfile.deviceProfile_HRM.channel);
-//                    //this.deviceProfile.channel = this;
-//                    this.deviceProfile.deviceProfile_HRM.broadCastDataParser.call(this, data);
-                    //                    break;
+   
+                case HRMProfile.prototype.DEVICE_TYPE:
+                   
+                     this.HRMProfile.broadCast(broadcast);
+                    
+                    break;
 
                 case SDMProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 

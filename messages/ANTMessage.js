@@ -18,14 +18,20 @@ define(function (require, exports, module) {
 
 function ANTMessage(data) {
     
-    this.channelId = new ChannelId();
-    this.RXTimestamp = new RXTimestamp();
+    // Extended data - channelID, RX timestamp and RSSI
+    
+//    this.channelId = new ChannelId();
+       this.channelId = undefined;
+//    this.RXTimestamp = new RXTimestamp();
+       this.RXTimestamp = undefined;
+    
+    this.RSSI = undefined;
    
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
     
-    if (data ) 
-        this.mainParse(data)
+    if (data) 
+        this.mainParse(data);
     
 }
 
@@ -100,7 +106,7 @@ ANTMessage.prototype.mainParse = function (data)
             this.RSSI.parse(this.extendedData.subarray(4, 7));
         }
     }
-}
+};
 
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);

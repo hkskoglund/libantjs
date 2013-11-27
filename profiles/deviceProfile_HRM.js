@@ -65,6 +65,9 @@ define(function (require, exports, module) {
         // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
         //this.hrmPage4 = new HRMPage4({log : true});
         
+        
+        
+        
         this.previousBroadcastData = undefined;
         
     }
@@ -126,8 +129,12 @@ define(function (require, exports, module) {
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
     
     DeviceProfile_HRM.prototype.BIT_MASK = {
-        PAGE_TOGGLE : parseInt("10000000",2)
+        PAGE_TOGGLE : parseInt("01111111",2)
     };
+    
+    DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
+    
+    
     
     DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
         //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
@@ -136,24 +143,25 @@ define(function (require, exports, module) {
 //        data = broadcast.data,
 //            dataView = new DataView(broadcast.data.buffer),
             page, 
-            pageNumber = broadcast.data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE;
+            pageNumber = broadcast.data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE,
+             sensorId = broadcast.channelId.sensorId;
         
-        var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
-              INVALID_HEART_RATE = 0x00;
-        
-        this.lastBroadcast = broadcast;
-    
+       // var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
+            
         this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
+        
+        this.countBroadcast(sensorId);
        
-        if (this.isDuplicateMessage(broadcast.data,DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE)) // Disregard/Mask bit 7 - Page toggle bit
+        if (this.isDuplicateMessage(broadcast))
             return;
     
         switch (pageNumber) {
              
             // MAIN
             case 4 : 
-               page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage);
-                 break;
+                 page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage);
+                
+                break;
                 
             case 0 : // OLD
                 page = new HRMPage0({log: this.log.logging},broadcast,this.previousPage);
@@ -185,7 +193,7 @@ define(function (require, exports, module) {
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
          
             if (page)
-            this.log.log('log', this.receivedBroadcastCounter[broadcast.channelId.getUniqueId()],page,page.toString());
+               this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
             
             // Callback if higher level code wants page, i.e UI data-binding
             if (page)

@@ -95,9 +95,9 @@ function Host() {
     this.log = new Logger(false);
 
     // Declare/reuse broadcast to minimize garbage collection
-    this.broadcast = new BroadcastDataMessage();
+   // this.broadcast = new BroadcastDataMessage();
 
-    this.channelResponseMessage = new ChannelResponseMessage();
+   // this.channelResponseMessage = new ChannelResponseMessage();
    
     // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e Host.prototype._privateFunc, yet another approach could be to lift it to a module var (must be called with this bound to host instance)
       
@@ -885,7 +885,7 @@ Host.prototype.init = function (options, initCB) {
 
 // Exit host
 Host.prototype.exit = function (callback) {
-   
+  
     this.usb.exit(callback);
 
 };
@@ -1092,8 +1092,8 @@ Host.prototype.RXparse = function (error, data) {
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
            
-            //var broadcast = new BroadcastDataMessage(message); 
-            var broadcast = this.broadcast;
+            var broadcast = new BroadcastDataMessage(message); 
+           // var broadcast = this.broadcast;
             broadcast.parse(message);
 
             if (this.log.logging)
@@ -1157,9 +1157,9 @@ Host.prototype.RXparse = function (error, data) {
 //
         case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
 
-            
-            var channelResponseMsg = this.channelResponseMessage;
-            channelResponseMsg.parse(message);
+            var channelResponseMsg = new ChannelResponseMessage(message);
+            //var channelResponseMsg = this.channelResponseMessage;
+            //channelResponseMsg.parse(message);
 
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;

@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 // MAYBE, BUT LOW PRIORITY : Support enabling ANT-FS if device is capable of it.
@@ -79,6 +79,7 @@ define(function (require, exports, module) {
         //                 
         
         var page,
+            delayedPage,
             
             pageNumber = broadcast.data[0],
             sensorId = broadcast.channelId.sensorId,
@@ -98,14 +99,18 @@ define(function (require, exports, module) {
         // Don't process duplicate broadcast
         if (this.isDuplicateMessage(broadcast)) {
 
-            // Process delayed pages when limit for acceptable/stable sensor is passed
-            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE) {
+//            // Process delayed pages when limit for acceptable/stable sensor is passed
+            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
 
                 // FIFO
-                if (this.delayedPages[sensorId])
+               
                     for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
-                        this.onPage(this.delayedPages[sensorId].shift());
+                        delayedPage = this.delayedPages[sensorId].shift();
+                        if (this.log.logging) this.log.log('warn',delayedPage.broadcast.channelId.sensorId,'Updating UI for delayed page index '+delayedPageNr,delayedPage);
+                        this.onPage(delayedPage);
                     }
+                    
+                    delete this.delayedPages[sensorId];
             }
       
             return;
@@ -159,8 +164,8 @@ define(function (require, exports, module) {
            
             if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
                 this.onPage(page);
-            else if (this.log.logging) {
-                this.log.log('warn', 'Delaying page, broadcast for temperature sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
+            else  {
+                if (this.log.logging) this.log.log('warn', sensorId+' B# ' + this.receivedBroadcastCounter[sensorId] +' Delaying page',page,'threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
                 if (this.delayedPages[sensorId] === undefined)
                     this.delayedPages[sensorId] = [];
                 this.delayedPages[sensorId].push(page); // Queue for later processing if sensor is accepted for UI

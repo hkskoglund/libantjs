@@ -19,6 +19,9 @@ define(function (require, exports, module) {
     Page.prototype.parse = function (broadcast)
     {
           var  data = broadcast.data, dataView = new DataView(data.buffer);
+        
+        this.broadcast = broadcast;
+        
         this.number = data[0] & 0x7F;
         
         this.pageToggle = (data[0] & 0x80) >> 7;
