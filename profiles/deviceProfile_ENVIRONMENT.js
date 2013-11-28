@@ -1,4 +1,4 @@
-/* global define: true, DataView: true */
+﻿/* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 // MAYBE, BUT LOW PRIORITY : Support enabling ANT-FS if device is capable of it.
@@ -46,9 +46,9 @@ define(function (require, exports, module) {
 
         this.delayedPages = {};
 
-        this.tempPage0 = new TempPage0(configuration);
-        this.tempPage1 = new TempPage1(configuration);
-        this.genericPage = new GenericPage(configuration);
+        //this.tempPage0 = new TempPage0(configuration);
+        //this.tempPage1 = new TempPage1(configuration);
+        //this.genericPage = new GenericPage(configuration);
      
     }
     
@@ -96,45 +96,43 @@ define(function (require, exports, module) {
 
         this.countBroadcast(sensorId);
       
-        // Don't process duplicate broadcast
-        if (this.isDuplicateMessage(broadcast)) {
+        // Process delayed pages when limit for acceptable/stable sensor is passed
+        if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
 
-//            // Process delayed pages when limit for acceptable/stable sensor is passed
-            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
+            // FIFO
 
-                // FIFO
-               
-                    for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
-                        delayedPage = this.delayedPages[sensorId].shift();
-                        if (this.log.logging) this.log.log('warn',delayedPage.broadcast.channelId.sensorId,'Updating UI for delayed page index '+delayedPageNr,delayedPage);
-                        this.onPage(delayedPage);
-                    }
-                    
-                    delete this.delayedPages[sensorId];
+            for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
+                delayedPage = this.delayedPages[sensorId].shift();
+                if (this.log.logging) this.log.log('warn', delayedPage.broadcast.channelId.sensorId, 'Updating UI for delayed page index ' + delayedPageNr, delayedPage);
+                this.onPage(delayedPage);
             }
-      
-            return;
 
+            delete this.delayedPages[sensorId];
         }
-            
+
+        // Don't process duplicate broadcast
+        if (this.isDuplicateMessage(broadcast)) 
+
+            return;
+  
             
         switch (pageNumber) {
              
             // Device capabilities - why main page?
             case 0 : 
                 
-                // page = new TempPage0({log : this.log.logging },broadcast);
-                page = this.tempPage0;
-                page.parse(broadcast);
+                 page = new TempPage0({log : this.log.logging },broadcast);
+               // page = this.tempPage0;
+               // page.parse(broadcast);
                 
                 break;
                 
             // Temperature
             case 1: 
                 
-                // page = new TempPage1({ log : this.log.logging },broadcast);
-                page = this.tempPage1;
-                page.parse(broadcast);
+                 page = new TempPage1({ log : this.log.logging },broadcast);
+                //page = this.tempPage1;
+                //page.parse(broadcast);
                 
                 break;
                 
@@ -142,7 +140,9 @@ define(function (require, exports, module) {
                 
                 // Check for common page 80,...
                
-                page = this.genericPage;
+                //page = this.genericPage;
+                page = new GenericPage({ log: this.log.logging });
+
                 if (page.parse(broadcast) === -1) // Not a common page
                 {
                     // Issue : Receive page 2 for temp sensor (does not exist)
