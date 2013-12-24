@@ -196,8 +196,10 @@ define(function (require, exports, module) {
                this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
             
             // Callback if higher level code wants page, i.e UI data-binding
-            if (page)
+            if (page) {
+                page.timestamp = this.lastHREventTime;
                 this.onPage(page);
+            }
             
         }
                    

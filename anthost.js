@@ -978,7 +978,7 @@ Host.prototype.RXparse = function (error, data) {
 
     if (receivedCRC !== CRC)
     {
-        if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC)
+        if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
         return;
     }
 
@@ -1092,10 +1092,20 @@ Host.prototype.RXparse = function (error, data) {
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 //           
            
-            var broadcast = new BroadcastDataMessage(message); 
+            var broadcast = new BroadcastDataMessage(); 
            // var broadcast = this.broadcast;
             broadcast.parse(message);
-
+            
+//            // TEST RSSI
+//            
+//            broadcast.RSSI.measurementType = 0x20; // dBm
+//            broadcast.RSSI.RSSIValue = 0;
+// Spec. p. 61 9.4.3 "Output power level settings" nRF24AP2-USB
+//           0 = -18dBm, 1= -12dBm, 2= -6dBm, 3 = 0dBm (= 1mW)
+            
+//            broadcast.RSSI.thresholdConfigurationValue = -128; // off 
+//             broadcast.RSSI.thresholdConfigurationValue = 3; 
+//            
             if (this.log.logging)
                 this.log.log('log', broadcast.toString());
 //
@@ -1735,6 +1745,12 @@ Host.prototype.getChannelStatusAll = function (callback) {
       
        // Wait for EVENT_CHANNEL_CLOSED ?
        // If channel status is tracking -> can get broadcast data packet before event channel closed packet
+
+        // Do we have a channel configuration available? 
+        if (this._channel[channelNumber] === undefined)  {
+            callback(new Error('Cannot close channel. No channel configuration available for channel ' + channelNumber));
+            return;
+        }
 
         var configurationMsg;
 

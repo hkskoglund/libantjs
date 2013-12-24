@@ -20,14 +20,16 @@ function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
 
 RSSI.prototype.parse = function (extendedData) {
     //var extendedDataUint8 = new Uint8Array(extendedData); // Allows using [], which cannot be used on an ArrayBuffer
+    var extendedDataView = new DataView(extendedData.buffer);
     
     this.measurementType = extendedData[0];
 
     if (this.measurementType !== RSSI.prototype.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
         return;
 
-    this.RSSIValue = extendedData[1];
-    this.thresholdConfigurationValue = (new DataView(extendedData.buffer)).getInt8(extendedData.byteOffset+2); // Signed int (2's complement ?)
+    this.RSSIValue = extendedDataView.getInt8(extendedData.byteOffset+1);
+    
+    this.thresholdConfigurationValue = extendedDataView.getInt8(extendedData.byteOffset+2); // Signed int (2's complement ?)
 };
 
 RSSI.prototype.getRawMeasurementType = function () {
@@ -43,7 +45,7 @@ RSSI.prototype.getThresholdConfigDB = function () {
 };
 
 RSSI.prototype.toString = function () {
-    return "RSSI " + this.RSSIValue +" "+RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Threshold " + this.thresholdConfigurationValue+" dB";
+    return "RSSI " + this.RSSIValue +" "+RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue+" dBm";
 };
 
 // http://en.wikipedia.org/wiki/DBm 

@@ -57,7 +57,7 @@ define(function (require, exports, module) {
 
         if (this.logging && console[type]) {
             if (arguments.length === 2 && arguments[1] instanceof Error)
-                console[type](nowStr, arguments[1].stack);
+                console[type](nowStr, arguments[1]);
             else if (arguments.length === 2 && !(arguments[1] instanceof Error)) 
                     console[type](nowStr, arguments[1]);
             else
