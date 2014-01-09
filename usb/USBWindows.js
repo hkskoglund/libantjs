@@ -216,19 +216,7 @@ define(function (require, exports, module) {
 
             this.enumeratedDevice.push(deviceInformation);
 
-            // if this matches our search deviceId (last known deviceId), try get a handle for bulk in/out
-
-            if (this.options.deviceId && this.options.deviceId === deviceInformation.id) {
-
-                this.state = "added_getting_usbdevice";
-                // Device was added, get handle for bulk in/out
-                Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
-
-            } else if (!this.options.deviceId) {
-                this._tryFindANTDeviceFromKnownDevices(deviceInformation);
-               
-            }
-
+            
            
 
         }.bind(this);
@@ -266,11 +254,39 @@ define(function (require, exports, module) {
 
 
         var _onEnumerationComplete = function (event) {
+            var deviceInformation;
 
             if (this.log.logging)
                 this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
 
-           
+            // If no default device Id, or no ANT device found, then pick the first enumerated device by default
+            if (this.enumeratedDevice && this.enumeratedDevice.length && (!this.options.deviceId   || (this.options.deviceId && !this.ANTdevice))) {
+                this._tryFindANTDeviceFromKnownDevices(this.enumeratedDevice[0]);
+
+            }
+
+            // if this matches our search deviceId (last known deviceId), try get a handle for bulk in/out
+
+            else if (this.options.deviceId ) {
+
+                this.state = "added_getting_usbdevice";
+                
+                for (var devNum = 0; devNum < this.enumeratedDevice.length; devNum++) {
+                    deviceInformation = this.enumeratedDevice[devNum];
+                    if (this.options.deviceId === deviceInformation.id) {
+
+                        if (this.log.logging)
+                            this.log.log('log', 'Match on ' + deviceInformation.name + ' ' + deviceInformation.properties['System.Devices.DeviceInstanceId'])
+
+                        // Device was added, get handle for bulk in/out
+                        Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
+                        break;
+
+                    }
+                }
+                
+            }
+
 
             // TEST stopped state : this.ANTWatcher.stop();
 

@@ -46,10 +46,14 @@ CapabilitiesMessage.prototype.parse = function () {
    
     this.MAX_CHAN =  this.content[0];
     this.MAX_NET = this.content[1];
-    var  standardOptions = this.content[2],
+    var standardOptions = this.content[2],
+      
     advancedOptions = this.content[3],
-    advancedOptions2 = this.content[4],
-    advancedOptions3 = this.content[5];
+
+    // Advanced options2 and 3 probably 16-bit
+    advancedOptions2 = this.content[4], // this.content[5] === 0
+    
+    advancedOptions3 = this.content[6]; // this.content[7] === 0
     
     this.standardOptions = {
         value: "MSB " + standardOptions.toString(2) + " " + standardOptions,
