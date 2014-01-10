@@ -36,10 +36,18 @@ define(function (require, exports, module) {
         this.computedHeartRate = data[7];
        
         this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+1,true) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
+
+        // Must look up to generic page through prototype chain (only 1 level should not affect performance considerably)
+        this.cumulativeOperatingTimeString = this.toStringCumulativeOperatingTime(this.cumulativeOperatingTime);
+
+        this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
+
+
     };
     
+    // Override default .toString on Object.prototype
     Page.prototype.toString = function () {
-          var msg = this.type + " P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTime + " s = " + (this.cumulativeOperatingTime / 3600).toFixed(1) + " h";
+          var msg = this.type + " P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;
         
         return msg;
     };

@@ -137,11 +137,8 @@ define(function (require, exports, module) {
 
                 // Byte 3-5
                 this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3,true) & 0x00FFFFFF) * unit_multiplier; // 24 - bit only
-                if (this.cumulativeOperatingTime < 3600)
-                    this.cumulativeOperatingTimeString = this.cumulativeOperatingTime.toFixed(1) + 's ';
-                else
-                   this.cumulativeOperatingTimeString = (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
-
+                this.cumulativeOperatingTimeString = this.toStringCumulativeOperatingTime(this.cumulativeOperatingTime);
+                
                 this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
 
 
@@ -164,6 +161,14 @@ define(function (require, exports, module) {
          }
        
      };
+
+     GenericPage.prototype.toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
+         if (cumulativeOperatingTime < 3600)
+             return cumulativeOperatingTime.toFixed(1) + 's ';
+         else
+             return (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
+
+     }
 
      GenericPage.prototype._batteryVoltageToString = function (voltage) {
          if (typeof voltage === "number")
