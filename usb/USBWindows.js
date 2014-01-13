@@ -380,16 +380,16 @@ define(function (require, exports, module) {
         }
 
         // Attempt release of resources
-        //if (this.dataReader) {
+        if (this.dataReader) {
 
-        //    this.dataReader.close();
-        //   // this.dataReader = undefined;
-        //}
+            this.dataReader.close();
+           // this.dataReader = undefined;
+        }
 
-        //if (this.dataWriter) {
-        //    this.dataWriter.close();
-        //    //this.dataWriter = undefined;
-        //}
+        if (this.dataWriter) {
+            this.dataWriter.close();
+            //this.dataWriter = undefined;
+        }
 
 
 
@@ -397,7 +397,7 @@ define(function (require, exports, module) {
             if (this.log.logging)
                 this.log.log('log', 'Closing ANT device');
             this.ANTdevice.close();
-            //this.ANTdevice = undefined;
+            this.ANTdevice = undefined; // Found no method to determine state (closed)
         }
     }
 
@@ -463,7 +463,8 @@ define(function (require, exports, module) {
         var retry = function _bulkInTransfer() {
             try {
                 //delete this.readingPromise;
-                this.readingPromise = this.dataReader.loadAsync(REQUESTED_TRANSFER_SIZE).then(success, error);
+                if (this.ANTdevice)
+                  this.readingPromise = this.dataReader.loadAsync(REQUESTED_TRANSFER_SIZE).then(success, error);
 
             }
             catch (e) {
@@ -524,8 +525,9 @@ define(function (require, exports, module) {
 
         var retry = function _retry() {
             try {
-               // delete this.writingPromise;
-                this.writingPormise = this.dataWriter.storeAsync().then(success, error);
+                // delete this.writingPromise;
+                if (this.ANTdevice)
+                   this.writingPromise = this.dataWriter.storeAsync().then(success, error);
             } catch (e) {
                 if (this.log.logging)
                     this.log.log('error', 'Failed storeAsync HOST -> ANT', e);

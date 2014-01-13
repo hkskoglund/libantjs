@@ -52,8 +52,10 @@ define(function (require, exports, module) {
         this.serialNumber = dataView.getUint16(data.byteOffset+2,true); // Upper 16-bits of a 32 bit serial number
     
         // Set the lower 2-bytes of serial number, if available in channel Id.
-        if (typeof channelId !== "undefined" && typeof channelId.deviceNumber !== "undefined")
+        if (typeof channelId !== "undefined" && typeof channelId.deviceNumber !== "undefined") {
             this.serialNumber = (this.serialNumber << 16) | channelId.deviceNumber;
+            
+        }
     
       
     };
