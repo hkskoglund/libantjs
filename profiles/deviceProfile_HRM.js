@@ -26,7 +26,7 @@ define(function (require, exports, module) {
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: '*' },
+            channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
             LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX), // 60 seconds
             HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED), // 25 seconds n*2.5 s
@@ -41,7 +41,7 @@ define(function (require, exports, module) {
             networkKey: setting.networkKey["ANT+"],
             //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
             channelType: "master",
-            channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_HRM.prototype.DEVICE_TYPE, transmissionType: 0x01 }, // Independent channel
+            channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: DeviceProfile_HRM.prototype.CHANNEL_ID.TRANSMISSION_TYPE }, // Independent channel
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
             
             channelPeriod: DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT
@@ -75,6 +75,7 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
     
+    // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute
     DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT = 8070;
     DeviceProfile_HRM.prototype.CHANNEL_PERIOD_ARRAY = [
         DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT, 
@@ -89,8 +90,10 @@ define(function (require, exports, module) {
     };
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
-    DeviceProfile_HRM.prototype.DEVICE_TYPE = 0x78;
-    // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute 
+    DeviceProfile_HRM.prototype.CHANNEL_ID = {
+        DEVICE_TYPE: 0x78,
+        TRANSMISSION_TYPE : 0x01
+    }
     
 
 //    DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
@@ -148,7 +151,7 @@ define(function (require, exports, module) {
         
        // var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
             
-        this.verifyDeviceType(DeviceProfile_HRM.prototype.DEVICE_TYPE,broadcast);
+        this.verifyDeviceType(DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast);
         
         this.countBroadcast(sensorId);
        
