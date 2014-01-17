@@ -10,8 +10,8 @@ define(function (require, exports, module) {
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
-        TempPage0 = require('profiles/TemperaturePage0'),
-        TempPage1 = require('profiles/TemperaturePage1'),
+        TempPage0 = require('profiles/environment/TemperaturePage0'),
+        TempPage1 = require('profiles/environment/TemperaturePage1'),
         GenericPage = require('profiles/Page');
       
     function DeviceProfile_ENVIRONMENT(configuration) {

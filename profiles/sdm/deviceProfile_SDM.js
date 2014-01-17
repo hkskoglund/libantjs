@@ -5,8 +5,8 @@
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
-        SDMPage1 = require('profiles/SDMPage1'),
-        SDMPage2 = require('profiles/SDMPage2'),
+        SDMPage1 = require('profiles/sdm/SDMPage1'),
+        SDMPage2 = require('profiles/sdm/SDMPage2'),
         GenericPage = require('profiles/Page');
 
 

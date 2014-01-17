@@ -6,10 +6,10 @@ define(function (require, exports, module) {
     //
     var DeviceProfile = require('profiles/deviceProfile'),
         setting = require('settings'),
-        TEMPProfile = require('profiles/deviceProfile_ENVIRONMENT'),
-        HRMProfile = require('profiles/deviceProfile_HRM'),
-        SDMProfile = require('profiles/deviceProfile_SDM'),
-        SPDCADProfile = require('profiles/deviceProfile_SPDCAD');
+        TEMPProfile = require('profiles/environment/deviceProfile_ENVIRONMENT'),
+        HRMProfile = require('profiles/hrm/deviceProfile_HRM'),
+        SDMProfile = require('profiles/sdm/deviceProfile_SDM'),
+        SPDCADProfile = require('profiles/spdcad/deviceProfile_SPDCAD');
 
 
     function RxScanMode(configuration) {

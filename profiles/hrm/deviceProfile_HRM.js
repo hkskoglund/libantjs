@@ -6,11 +6,11 @@ define(function (require, exports, module) {
 
     var DeviceProfile = require('profiles/deviceProfile'),
        // Page = require('profiles/HRMPage'),
-        HRMPage4 = require('profiles/HRMPage4'),
-        HRMPage0 = require('profiles/HRMPage0'), // Old legacy format
-        HRMPage1 = require('profiles/HRMPage1'),
-        HRMPage2 = require('profiles/HRMPage2'),
-        HRMPage3 = require('profiles/HRMPage3'),
+        HRMPage4 = require('profiles/hrm/HRMPage4'),
+        HRMPage0 = require('profiles/hrm/HRMPage0'), // Old legacy format
+        HRMPage1 = require('profiles/hrm/HRMPage1'),
+        HRMPage2 = require('profiles/hrm/HRMPage2'),
+        HRMPage3 = require('profiles/hrm/HRMPage3'),
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');

@@ -6,7 +6,7 @@ define(function (require, exports, module) {
          setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
-        SPDCADPage0 = require('profiles/SPDCADPage0');
+        SPDCADPage0 = require('profiles/spdcad/SPDCADPage0');
 
 
     function DeviceProfile_SPDCAD(configuration) {
@@ -90,7 +90,18 @@ define(function (require, exports, module) {
         page = new SPDCADPage0({ log: this.log.logging }, broadcast);
         page.parse(broadcast);
 
-        
+        if (page) {
+
+            page.timestamp = Date.now();
+
+            if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
+
+            //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
+            //    this.onPage(page);
+            //else if (this.log.logging)
+            //    this.log.log('warn', 'Skipping page, broadcast for SPDCAD sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
+
+        }
 
 
         // console.log(Date.now() + " SPDCAD broad cast data ", data);
@@ -252,6 +263,9 @@ define(function (require, exports, module) {
         ////console.log(Date.now(), page);
 
         //  }
+
+
+
     };
 
     module.exports = DeviceProfile_SPDCAD;

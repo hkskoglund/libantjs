@@ -48,18 +48,17 @@ define(function (require, exports, module) {
 
         this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + Page.prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
 
-       
+        // Cadence
+
+
     };
 
    
-
     Page.prototype.toString = function () {
-        //var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
+        var msg = this.type + " P# " + this.number + " cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount +
+            ' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount;
 
-        //if (this.RRInterval)
-        //    msg += " RR " + this.RRInterval.toFixed(1) + " ms";
-
-        //return msg;
+        return msg;
     };
 
     module.exports = Page;
