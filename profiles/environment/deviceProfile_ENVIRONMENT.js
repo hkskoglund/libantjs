@@ -49,6 +49,8 @@ define(function (require, exports, module) {
         //this.tempPage0 = new TempPage0(configuration);
         //this.tempPage1 = new TempPage1(configuration);
         //this.genericPage = new GenericPage(configuration);
+
+       
      
     }
     
@@ -70,7 +72,9 @@ define(function (require, exports, module) {
     
 //    DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) {
 //            this.log.log('log', 'DeviceProfile ENVIRONMENT', channelResponse, channelResponse.toString());
-//    };
+    //    };
+
+   
 //    
     DeviceProfile_ENVIRONMENT.prototype.broadCast = function (broadcast) {
 //    var  data = broadcast.data,

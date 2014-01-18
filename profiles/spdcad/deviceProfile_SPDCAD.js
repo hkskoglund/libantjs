@@ -38,6 +38,10 @@ define(function (require, exports, module) {
             channelPeriod: DeviceProfile_SPDCAD.prototype.CHANNEL_PERIOD.DEFAULT
 
         });
+
+        // Used for calculation of cadence and speed
+        // Using an object literal allows for tracking multiple sensors by indexing with sensorId (based on channelId)
+        this.previousPage = {};
     }
 
     //Inherit
@@ -87,12 +91,9 @@ define(function (require, exports, module) {
 
         }
 
-        page = new SPDCADPage0({ log: this.log.logging }, broadcast);
+        page = new SPDCADPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
         page.parse(broadcast);
-
-        if (page) {
-
-            page.timestamp = Date.now();
+        
 
             if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
 
@@ -101,39 +102,11 @@ define(function (require, exports, module) {
             //else if (this.log.logging)
             //    this.log.log('warn', 'Skipping page, broadcast for SPDCAD sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
 
-        }
+        
 
+        this.previousPage[sensorId] = page;
 
-        // console.log(Date.now() + " SPDCAD broad cast data ", data);
-
-        //var receivedTimestamp = Date.now(),
-        //   self = this,// Will be cannel configuration
-
-        //// 0 = SYNC, 1= Msg.length, 2 = Msg. id (broadcast), 3 = channel nr , 4= start of page  ...
-        // startOfPageIndex = 4,
-
-        // dataPageNumber = 0,
-
-        // prevPage,
-
-        // page = {
-
-        //     // Time of last valid bike cadence event
-        //     bikeCadenceEventTime: data.readUInt16LE(startOfPageIndex), // 1/1024 seconds - rollover 64 seconds
-
-        //     // Total number of pedal revolutions
-        //     cumulativeCadenceRevolutionCount: data[startOfPageIndex + 2], // Rollover 65535
-
-        //     // Time of last valid bike speed event
-        //     bikeSpeedEventTime: data.readUInt16LE(startOfPageIndex + 4), // 1/1024 seconds - rollover 64 seconds
-
-        //     // Total number of speed revolution
-        //     cumulativeSpeedRevolutionCount: data.readUInt16LE(startOfPageIndex + 6)
-        // },
-
-        // timestampDifference,
-        // numberOfEventTimeRollovers = 0;  // # of 64 seconds rollovers for cadence/speed event time
-
+       
         //// Add header
         //page.dataPageNumber = dataPageNumber, // Combined cadence/speed only has page 0 
         //page.timestamp = receivedTimestamp,

@@ -20,10 +20,9 @@ define(function (require, exports, module) {
         this.previousPageBroadcast = {}; // Just declare property
 
 
-
     }
 
-    // Inherit from Channel
+    
     DeviceProfile.prototype = Object.create(Channel.prototype);
 
     DeviceProfile.prototype.constructor = DeviceProfile;
@@ -159,6 +158,14 @@ define(function (require, exports, module) {
         else if (this.log.logging)
             this.log.log('warn', 'No on page callback specified for page ', page);
     };
+
+   
+    DeviceProfile.prototype.toString = function ()
+    {
+        if (this.CHANNEL_ID && (this.CHANNEL_ID.DEVICE_TYPE !== undefined || this.CHANNEL_ID.DEVICE_TYPE !== null))
+            return " Device Type " + this.CHANNEL_ID.DEVICE_TYPE;
+       
+    }
 
     module.exports = DeviceProfile;
 

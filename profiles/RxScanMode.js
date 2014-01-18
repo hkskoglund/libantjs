@@ -43,23 +43,48 @@ define(function (require, exports, module) {
             RxScanMode: true
         });
 
-        // Temperature profile to be used by all temperature sensors
+        // Temperature profile reused all temperature sensors
 
-        this.temperatureProfile = new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage });
+        //this.temperatureProfile = new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage });
 
-        this.SDMProfile = new SDMProfile({ log: this.log.logging, onPage: configuration.onPage });
+        //this.SDMProfile = new SDMProfile({ log: this.log.logging, onPage: configuration.onPage });
 
-        this.HRMProfile = new HRMProfile({ log: this.log.logging, onPage: configuration.onPage });
+        //this.HRMProfile = new HRMProfile({ log: this.log.logging, onPage: configuration.onPage });
 
-        this.SPDCADProfile = new SPDCADProfile({ log: this.log.logging, onPage: configuration.onPage });
+        //this.SPDCADProfile = new SPDCADProfile({ log: this.log.logging, onPage: configuration.onPage });
 
+        this.profile = {}; // indexed by device type
+
+        this.addProfile(new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage }));
+        this.addProfile(new SDMProfile({ log: this.log.logging, onPage: configuration.onPage }));
+        this.addProfile(new HRMProfile({ log: this.log.logging, onPage: configuration.onPage }));
+        this.addProfile(new SPDCADProfile({ log: this.log.logging, onPage: configuration.onPage }));
 
     }
 
     RxScanMode.prototype = Object.create(DeviceProfile.prototype);
     RxScanMode.constructor = RxScanMode;
 
+    RxScanMode.prototype.addProfile = function (profile) {
+        var deviceType;
+        if (profile) {
+            deviceType = profile.CHANNEL_ID.DEVICE_TYPE;
+            if (deviceType === undefined || deviceType === null) {
+                if (this.log.logging)
+                    this.log.log('error', 'Could not retrive device type channel id on profile', profile);
+
+            } else {
+                this.profile[deviceType] = profile;
+                if (this.log.logging)
+                    this.log.log('info', 'Added profile for device type '+deviceType+' to RX SCAN mode channel', profile);
+            }
+        }
+        else if (this.log.logging)
+            this.log.log('error', 'Attempt to add an Undefined or Null profile is not allowed');
+    }
+
     RxScanMode.prototype.broadCast = function (broadcast) {
+        var currentProfile;
         if (!broadcast) {
             this.log.log('error', 'Undefined broadcast received');
             return;
@@ -72,37 +97,13 @@ define(function (require, exports, module) {
 
         // this.log.log('log',broadcast.channelId.toString(), broadcast.channelId);
 
-        switch (broadcast.channelId.deviceType) {
+        currentProfile = this.profile[broadcast.channelId.deviceType];
 
-            case TEMPProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
-
-                this.temperatureProfile.broadCast(broadcast);
-
-                break;
-
-            case HRMProfile.prototype.DEVICE_TYPE:
-
-                this.HRMProfile.broadCast(broadcast);
-
-                break;
-
-            case SDMProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
-
-               
-                this.SDMProfile.broadCast(broadcast);
-
-                break;
-                
-            case SPDCADProfile.prototype.CHANNEL_ID.DEVICE_TYPE :   
-               
-                this.SPDCADProfile.broadCast(broadcast);
-                break;
-          
-            default:
-                if (this.log.logging)
-                    this.log.log('warn', 'Parsing not enabled, received', broadcast.data, 'from ' + broadcast.channelId.toString());
-                break;
-        }
+        if (currentProfile)
+            currentProfile.broadCast(broadcast);
+        else
+            if (this.log.logging)
+                this.log.log('warn', 'No profile registered for device type on RX SCAN channel', broadcast.data, 'from ' + broadcast.channelId.toString());
 
     };
 
