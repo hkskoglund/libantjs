@@ -227,8 +227,8 @@ define(function (require, exports, module) {
     };
     
     GenericPage.prototype.TYPE = {
-        MAIN : "Main",
-        BACKGROUND : "Background"
+        MAIN : "main",
+        BACKGROUND : "background"
     };
     
     module.exports = GenericPage;

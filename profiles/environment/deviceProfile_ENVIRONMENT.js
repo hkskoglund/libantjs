@@ -46,18 +46,15 @@ define(function (require, exports, module) {
 
         this.delayedPages = {};
 
-        //this.tempPage0 = new TempPage0(configuration);
-        //this.tempPage1 = new TempPage1(configuration);
-        //this.genericPage = new GenericPage(configuration);
+        this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY); // Update each minute
 
-       
-     
     }
     
-    // Inherit
     DeviceProfile_ENVIRONMENT.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_ENVIRONMENT.prototype.constructor = DeviceProfile_ENVIRONMENT; 
     
+    DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 15000;
+
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
         DEVICE_TYPE : 25, // 0x19
         TRANSMISSION_TYPE : 0x05 // Low nibble
@@ -101,18 +98,18 @@ define(function (require, exports, module) {
         this.countBroadcast(sensorId);
       
         // Process delayed pages when limit for acceptable/stable sensor is passed
-        if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
+        //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
 
-            // FIFO
+        //    // FIFO
 
-            for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
-                delayedPage = this.delayedPages[sensorId].shift();
-                if (this.log.logging) this.log.log('warn', delayedPage.broadcast.channelId.sensorId, 'Updating UI for delayed page index ' + delayedPageNr, delayedPage);
-                this.onPage(delayedPage);
-            }
+        //    for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
+        //        delayedPage = this.delayedPages[sensorId].shift();
+        //        if (this.log.logging) this.log.log('warn', delayedPage.broadcast.channelId.sensorId, 'Updating UI for delayed page index ' + delayedPageNr, delayedPage);
+        //        this.onPage(delayedPage);
+        //    }
 
-            delete this.delayedPages[sensorId];
-        }
+        //    delete this.delayedPages[sensorId];
+        //}
 
         // Don't process duplicate broadcast
         if (this.isDuplicateMessage(broadcast)) 
@@ -162,18 +159,25 @@ define(function (require, exports, module) {
         
         if (page) {
 
-            page.timestamp = Date.now();
+            this.addPage(page);
            
             if (this.log.logging) this.log.log('info', sensorId+' B#'+this.receivedBroadcastCounter[sensorId], page, page.toString());
            
-            if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
-                this.onPage(page);
-            else  {
-                if (this.log.logging) this.log.log('warn', sensorId+' B# ' + this.receivedBroadcastCounter[sensorId] +' Delaying page',page,'threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
-                if (this.delayedPages[sensorId] === undefined)
-                    this.delayedPages[sensorId] = [];
-                this.delayedPages[sensorId].push(page); // Queue for later processing if sensor is accepted for UI
-            }
+          
+              
+
+            //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE) {
+
+          
+
+            //   // this.onPage(page);
+            //}
+            //else {
+            //    if (this.log.logging) this.log.log('warn', sensorId + ' B# ' + this.receivedBroadcastCounter[sensorId] + ' Delaying page', page, 'threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
+            //    if (this.delayedPages[sensorId] === undefined)
+            //        this.delayedPages[sensorId] = [];
+            //    this.delayedPages[sensorId].push(page); // Queue for later processing if sensor is accepted for UI
+            //}
             
         }
             

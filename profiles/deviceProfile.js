@@ -5,7 +5,8 @@
 define(function (require, exports, module) {
     "use strict";
 
-    var Channel = require('channel');
+    var Channel = require('channel'),
+        GenericPage = require('profiles/Page');
 
 
     function DeviceProfile(configuration) {
@@ -19,13 +20,80 @@ define(function (require, exports, module) {
 
         this.previousPageBroadcast = {}; // Just declare property
 
+        // Storage for parsed received main and background pages for each sensorId
+        this.pages = {}
+
+        // Timers
+
+        this.timer = {}
+       
+
 
     }
 
-    
     DeviceProfile.prototype = Object.create(Channel.prototype);
-
     DeviceProfile.prototype.constructor = DeviceProfile;
+
+    DeviceProfile.prototype.requestPageUpdate = function (timeout) {
+       
+        var pageNr, len,
+            backgroundPages,
+            mainPages,
+            LIMIT = 2, // Filter out possible "noise"
+            handler =  function () {
+               
+                for (var sensorId in this.pages)
+                {
+
+                    if (this.receivedBroadcastCounter[sensorId] >= LIMIT) {
+                        
+
+                        mainPages = this.pages[sensorId][GenericPage.prototype.TYPE.MAIN];
+                        for (pageNr = 0, len = mainPages.length; pageNr < len; pageNr++)
+                            this.onPage(mainPages[pageNr]);
+
+
+                        if (mainPages.length > 0)
+                            mainPages = []; // Now pages are candidates for garbage removal
+
+                        backgroundPages = this.pages[sensorId][GenericPage.prototype.TYPE.BACKGROUND];
+                        for (pageNr = 0, len = backgroundPages.length; pageNr < len; pageNr++)
+                            this.onPage(backgroundPages[pageNr]);
+
+                        if (backgroundPages.length > 0)
+                            backgroundPages = []; // Now pages are candidates for garbage removal
+                    }
+                }
+            }.bind(this);
+
+        // In case requestPageUpdate is called more than one time
+        if (this.timer.onPage) {
+            if (this.log && this.log.logging) this.log.log('warn', 'requestPageUpdate should only be called one time');
+            clearInterval(this.timer.onPage);
+        }
+
+        this.timer.onPage = setInterval(handler,timeout);
+         
+        if (this.log && this.log.logging) this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
+
+        setTimeout(handler,5000); // Run fast update first time
+
+    }
+
+    DeviceProfile.prototype.addPage = function (page) {
+        var sensorId = page.broadcast.channelId.sensorId;
+
+        page.timestamp = Date.now();
+
+        if (this.pages[sensorId])
+            this.pages[sensorId][page.type].push(page);
+        else {
+            this.pages[sensorId] = {};
+            for (var type in GenericPage.prototype.TYPE)
+                this.pages[sensorId][GenericPage.prototype.TYPE[type]] = [];
+
+        }
+    }
 
     // FILTER - Skip duplicate messages from same master 
     DeviceProfile.prototype.isDuplicateMessage = function (broadcast) {
