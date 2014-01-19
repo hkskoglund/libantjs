@@ -54,14 +54,14 @@ define(function (require, exports, module) {
 
 
                         if (mainPages.length > 0)
-                            mainPages = []; // Now pages are candidates for garbage removal
+                            this.pages[sensorId][GenericPage.prototype.TYPE.MAIN] = []; // Now pages are candidates for garbage removal
 
                         backgroundPages = this.pages[sensorId][GenericPage.prototype.TYPE.BACKGROUND];
                         for (pageNr = 0, len = backgroundPages.length; pageNr < len; pageNr++)
                             this.onPage(backgroundPages[pageNr]);
 
                         if (backgroundPages.length > 0)
-                            backgroundPages = []; // Now pages are candidates for garbage removal
+                            this.pages[sensorId][GenericPage.prototype.TYPE.BACKGROUND] = []; // Now pages are candidates for garbage removal
                     }
                 }
             }.bind(this);
