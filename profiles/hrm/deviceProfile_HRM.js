@@ -69,11 +69,15 @@ define(function (require, exports, module) {
         
         
         this.previousBroadcastData = undefined;
+
+        this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY);
         
     }
     
     DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
+
+    DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
     
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute
     DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT = 8070;
@@ -195,13 +199,11 @@ define(function (require, exports, module) {
             this.lastHREventTime = Date.now();
             this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
          
-            if (page)
+            if (page) {
                this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
             
-            // Callback if higher level code wants page, i.e UI data-binding
-            if (page) {
-                page.timestamp = this.lastHREventTime;
-                this.onPage(page);
+               // page.timestamp = this.lastHREventTime;
+                this.addPage(page);
             }
             
         }

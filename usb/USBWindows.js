@@ -429,6 +429,15 @@ define(function (require, exports, module) {
             REQUESTED_TRANSFER_SIZE;
 
         var success = function _success(bytesRead) {
+            if (bytesRead === 0)
+            {
+                if (this.log && this.log.logging)
+                    this.log.log('warn', 'Rx - no bytes received');
+
+                // Don't let rxParser run on 0 data
+
+                return;
+            }
 
             var iBuffer = this.dataReader.readBuffer(bytesRead);
             var buf = new Uint8Array(iBuffer);  // Convet from Windows.Storage.Streams.Ibuffer to Uint8Array

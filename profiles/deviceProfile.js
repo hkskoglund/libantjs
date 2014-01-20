@@ -26,6 +26,11 @@ define(function (require, exports, module) {
         // Timers
 
         this.timer = {}
+
+        // Reference to pages by page number index
+
+        this.pageNumberPages = {};
+
        
 
 
@@ -37,8 +42,10 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.requestPageUpdate = function (timeout) {
        
         var pageNr, len,
-            backgroundPages,
-            mainPages,
+            currentPages,
+            pageNumberReference,
+            latestPage,
+            typeValue,
             LIMIT = 2, // Filter out possible "noise"
             handler =  function () {
                
@@ -47,21 +54,47 @@ define(function (require, exports, module) {
 
                     if (this.receivedBroadcastCounter[sensorId] >= LIMIT) {
                         
+                        // Initialize for new sensor id
+                       
+                        if (!this.pageNumberPages[sensorId])
+                            this.pageNumberPages[sensorId] = {};
 
-                        mainPages = this.pages[sensorId][GenericPage.prototype.TYPE.MAIN];
-                        for (pageNr = 0, len = mainPages.length; pageNr < len; pageNr++)
-                            this.onPage(mainPages[pageNr]);
+                        for (var type in GenericPage.prototype.TYPE) {
+                            typeValue = GenericPage.prototype.TYPE[type];
+
+                            this.pageNumberPages[sensorId][typeValue] = {};
 
 
-                        if (mainPages.length > 0)
-                            this.pages[sensorId][GenericPage.prototype.TYPE.MAIN] = []; // Now pages are candidates for garbage removal
+                            currentPages = this.pages[sensorId][typeValue];
+                            for (len = currentPages.length, pageNr = len - 1; pageNr >= 0 ; pageNr--) {
+                                pageNumberReference = this.pageNumberPages[sensorId][typeValue][currentPages[pageNr].number];
+                                if (!pageNumberReference) {
+                                    pageNumberReference = [];
+                                    this.pageNumberPages[sensorId][typeValue][currentPages[pageNr].number] = pageNumberReference;
+                                }
+                                pageNumberReference.push(currentPages[pageNr]);
+                                //   this.onPage(currentPages[pageNr]);
+                            }
 
-                        backgroundPages = this.pages[sensorId][GenericPage.prototype.TYPE.BACKGROUND];
-                        for (pageNr = 0, len = backgroundPages.length; pageNr < len; pageNr++)
-                            this.onPage(backgroundPages[pageNr]);
+                            // Only send the latest available page number
+                            for (var pageNumber in this.pageNumberPages[sensorId][typeValue]) {
+                                // TO DO : check for undefined pageNumber
+                                if (pageNumber === undefined || pageNumber === null)
+                                {
+                                    if (this.log && this.log.logging)
+                                        this.log.log('warn', 'Undefined or null page number for sensor id ' + sensorId + ' page type ' + typeValue);
+                                }
+                                latestPage = this.pageNumberPages[sensorId][typeValue][pageNumber][0];
+                                if (latestPage)
+                                    this.onPage(latestPage);
+                            }
 
-                        if (backgroundPages.length > 0)
-                            this.pages[sensorId][GenericPage.prototype.TYPE.BACKGROUND] = []; // Now pages are candidates for garbage removal
+                            if (currentPages.length > 0)
+                                this.pages[sensorId][typeValue] = []; // Now pages are candidates for garbage removal
+
+                        }
+
+                      
                     }
                 }
             }.bind(this);
@@ -76,7 +109,7 @@ define(function (require, exports, module) {
          
         if (this.log && this.log.logging) this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
 
-        setTimeout(handler,5000); // Run fast update first time
+        setTimeout(handler,1000); // Run fast update first time
 
     }
 

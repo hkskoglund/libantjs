@@ -42,6 +42,8 @@ define(function (require, exports, module) {
         // Used for calculation of cadence and speed
         // Using an object literal allows for tracking multiple sensors by indexing with sensorId (based on channelId)
         this.previousPage = {};
+
+        this.requestPageUpdate(DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY);
     }
 
     //Inherit
@@ -49,6 +51,8 @@ define(function (require, exports, module) {
     // So DeviceProfile_SPDCAD.prototype = DeviceProfile.prototype is not the right way to do proper inheritance
     DeviceProfile_SPDCAD.prototype = Object.create(DeviceProfile.prototype);
     DeviceProfile_SPDCAD.constructor = DeviceProfile_SPDCAD;
+
+    DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
 
     DeviceProfile_SPDCAD.prototype.NAME = 'SPDCAD';
 
@@ -73,10 +77,8 @@ define(function (require, exports, module) {
             // does not conform to the standard ANT+ message definition"
             pageNumber = 0, // No page number in message format
             sensorId = broadcast.channelId.sensorId,
-            pageIdentifier = sensorId + '.' + pageNumber,
-            BROADCAST_LIMIT_BEFORE_UI_UPDATE = 4; // ca 1 second with ca 4 Hz period
-
-
+            pageIdentifier = sensorId + '.' + pageNumber;
+            
         // Don't process broadcast with wrong device type
         if (!this.verifyDeviceType(DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))
             return;
@@ -95,7 +97,9 @@ define(function (require, exports, module) {
         page.parse(broadcast);
         
 
-            if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
+        if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
+
+        this.addPage(page);
 
             //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
             //    this.onPage(page);

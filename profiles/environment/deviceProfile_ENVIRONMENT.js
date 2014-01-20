@@ -46,14 +46,14 @@ define(function (require, exports, module) {
 
         this.delayedPages = {};
 
-        this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY); // Update each minute
+        this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY); 
 
     }
     
     DeviceProfile_ENVIRONMENT.prototype = Object.create(DeviceProfile.prototype); 
     DeviceProfile_ENVIRONMENT.prototype.constructor = DeviceProfile_ENVIRONMENT; 
     
-    DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 15000;
+    DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 5000;
 
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
         DEVICE_TYPE : 25, // 0x19
@@ -77,19 +77,10 @@ define(function (require, exports, module) {
 //    var  data = broadcast.data,
         //         dataView = new DataView(data.buffer);
 
-        //                 
-        
         var page,
-            delayedPage,
-            
             pageNumber = broadcast.data[0],
             sensorId = broadcast.channelId.sensorId,
-            pageIdentifier = sensorId + '.' + pageNumber,
-            BROADCAST_LIMIT_BEFORE_UI_UPDATE = 2,// Set limit before accepting update of UI - seems like a stable sensor/master
-            delayedPageNr,
-            delayedPagesLength;
-
-       
+            pageIdentifier = sensorId + '.' + pageNumber;
            
         // Don't process broadcast with wrong device type
         if (!this.verifyDeviceType(DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast))
@@ -97,26 +88,11 @@ define(function (require, exports, module) {
 
         this.countBroadcast(sensorId);
       
-        // Process delayed pages when limit for acceptable/stable sensor is passed
-        //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE && this.delayedPages[sensorId]) {
-
-        //    // FIFO
-
-        //    for (delayedPageNr = 0, delayedPagesLength = this.delayedPages[sensorId].length ; delayedPageNr < delayedPagesLength; delayedPageNr++) {
-        //        delayedPage = this.delayedPages[sensorId].shift();
-        //        if (this.log.logging) this.log.log('warn', delayedPage.broadcast.channelId.sensorId, 'Updating UI for delayed page index ' + delayedPageNr, delayedPage);
-        //        this.onPage(delayedPage);
-        //    }
-
-        //    delete this.delayedPages[sensorId];
-        //}
-
         // Don't process duplicate broadcast
         if (this.isDuplicateMessage(broadcast)) 
 
             return;
   
-            
         switch (pageNumber) {
              
             // Device capabilities - why main page?
@@ -163,22 +139,6 @@ define(function (require, exports, module) {
            
             if (this.log.logging) this.log.log('info', sensorId+' B#'+this.receivedBroadcastCounter[sensorId], page, page.toString());
            
-          
-              
-
-            //if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE) {
-
-          
-
-            //   // this.onPage(page);
-            //}
-            //else {
-            //    if (this.log.logging) this.log.log('warn', sensorId + ' B# ' + this.receivedBroadcastCounter[sensorId] + ' Delaying page', page, 'threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
-            //    if (this.delayedPages[sensorId] === undefined)
-            //        this.delayedPages[sensorId] = [];
-            //    this.delayedPages[sensorId].push(page); // Queue for later processing if sensor is accepted for UI
-            //}
-            
         }
             
   

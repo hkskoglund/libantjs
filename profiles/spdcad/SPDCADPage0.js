@@ -76,7 +76,7 @@ define(function (require, exports, module) {
 
 
             if (bikeCadenceEventTimeRollover)
-                bikeCadenceEventTimeDifference = 0xFFFF - this.bikeCadenceEventTime + this.previousPage.bikeCadenceEventTime;
+                bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime);
             else
                 bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime;
 
@@ -87,6 +87,8 @@ define(function (require, exports, module) {
 
                 this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
             }
+
+
         }
 
     };
