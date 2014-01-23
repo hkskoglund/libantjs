@@ -7,8 +7,9 @@ define(function (require, exports, module) {
     function Page(configuration,broadcast,previousPage) {
        GenericPage.call(this,configuration);
         
-        this.type = GenericPage.prototype.TYPE.MAIN;
-     
+       this.type = GenericPage.prototype.TYPE.MAIN;
+
+       this.profile = broadcast.profile;
           
        if (broadcast.data)
            this.parse(broadcast,previousPage);
@@ -56,7 +57,7 @@ define(function (require, exports, module) {
             heartBeatEventTimeDiff = this.heartBeatEventTime - previousPage.heartBeatEventTime;
     
             if (heartBeatEventTimeDiff < 0) // Roll over
-                heartBeatEventTimeDiff += 0xFFFF;
+                heartBeatEventTimeDiff += 65536;
     
             if (typeof this.previousHeartBeatEventTime === "undefined")  // Old legacy format doesnt have previous heart beat event time
                 this.previousHeartBeatEventTime = previousPage.heartBeatEventTime;

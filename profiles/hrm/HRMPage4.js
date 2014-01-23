@@ -9,7 +9,8 @@ define(function (require, exports, module) {
         
         this.type = GenericPage.prototype.TYPE.MAIN;
      
-          
+        this.profile = broadcast.profile;
+
        if (broadcast.data)
            this.parse(broadcast,previousPage);
     }
@@ -44,6 +45,8 @@ define(function (require, exports, module) {
     
     // Set RR interval based on previous heart event time and heart beat count
     Page.prototype.setRRInterval = function (previousPage) {
+
+       
         // Skip, if previous page not available
         if (!previousPage)
             return;
@@ -51,17 +54,15 @@ define(function (require, exports, module) {
         var heartBeatCountDiff = this.heartBeatCount - previousPage.heartBeatCount,
             heartBeatEventTimeDiff;
     
-        if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
+        if (heartBeatCountDiff < 0)  // Toggle 255 -> 0 should give 1 beat difference
             heartBeatCountDiff += 256;
     
+         // Only calculate RR for one beat difference 
         if (heartBeatCountDiff === 1) {
-            heartBeatEventTimeDiff = this.heartBeatEventTime - previousPage.heartBeatEventTime;
+            heartBeatEventTimeDiff = this.heartBeatEventTime - this.previousHeartBeatEventTime;
     
-            if (heartBeatEventTimeDiff < 0) // Roll over
-                heartBeatEventTimeDiff += 0xFFFF;
-    
-            if (typeof this.previousHeartBeatEventTime === "undefined")  // Old legacy format doesnt have previous heart beat event time
-                this.previousHeartBeatEventTime = previousPage.heartBeatEventTime;
+            if (heartBeatEventTimeDiff < 0) // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
+                heartBeatEventTimeDiff += 65536;
     
             this.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
     

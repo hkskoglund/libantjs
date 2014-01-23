@@ -41,12 +41,16 @@ define(function (require, exports, module) {
 
     DeviceProfile.prototype.requestPageUpdate = function (timeout) {
        
-        var pageNr, len,
+        var aggregatedRR,
+            RRInterval,
+            receivedPageNr,
+            dataPageNumber,
+            len,
             currentPages,
-            pageNumberReference,
+            receivedPagesByPageNr,
             latestPage,
             typeValue,
-            LIMIT = 2, // Filter out possible "noise"
+            LIMIT = 2, // Filter out possible "noise" from sensors that come and go quickly
             handler =  function () {
                
                 for (var sensorId in this.pages)
@@ -60,31 +64,69 @@ define(function (require, exports, module) {
                             this.pageNumberPages[sensorId] = {};
 
                         for (var type in GenericPage.prototype.TYPE) {
-                            typeValue = GenericPage.prototype.TYPE[type];
+
+                            typeValue = GenericPage.prototype.TYPE[type]; // "main" or "background"
 
                             this.pageNumberPages[sensorId][typeValue] = {};
 
+                            // Organize pages by page number (by default available on sensors conforming to ANT+ message format)
+                            
 
                             currentPages = this.pages[sensorId][typeValue];
-                            for (len = currentPages.length, pageNr = len - 1; pageNr >= 0 ; pageNr--) {
-                                pageNumberReference = this.pageNumberPages[sensorId][typeValue][currentPages[pageNr].number];
-                                if (!pageNumberReference) {
-                                    pageNumberReference = [];
-                                    this.pageNumberPages[sensorId][typeValue][currentPages[pageNr].number] = pageNumberReference;
+
+                            for (len = currentPages.length, receivedPageNr = 0; receivedPageNr < len ; receivedPageNr++) {
+
+                                dataPageNumber = currentPages[receivedPageNr].number; // If .number is not available will index by "undefined"
+                                receivedPagesByPageNr = this.pageNumberPages[sensorId][typeValue][dataPageNumber];
+
+                                if (!receivedPagesByPageNr) {
+                                    receivedPagesByPageNr = [];
+                                    this.pageNumberPages[sensorId][typeValue][dataPageNumber] = receivedPagesByPageNr;
                                 }
-                                pageNumberReference.push(currentPages[pageNr]);
-                                //   this.onPage(currentPages[pageNr]);
+
+                               
+
+                                receivedPagesByPageNr.push(currentPages[receivedPageNr]);
+                              
                             }
 
-                            // Only send the latest available page number
+                            // Traverse pages number, and call callback (e.g handler in UI) with the latest page
+
                             for (var pageNumber in this.pageNumberPages[sensorId][typeValue]) {
-                                // TO DO : check for undefined pageNumber
+                                
                                 if (pageNumber === undefined || pageNumber === null)
                                 {
                                     if (this.log && this.log.logging)
                                         this.log.log('warn', 'Undefined or null page number for sensor id ' + sensorId + ' page type ' + typeValue);
                                 }
-                                latestPage = this.pageNumberPages[sensorId][typeValue][pageNumber][0];
+
+                                len = this.pageNumberPages[sensorId][typeValue][pageNumber].length;
+                                latestPage = this.pageNumberPages[sensorId][typeValue][pageNumber][len-1];
+
+                                // Aggregate RR interval data
+
+                                if (latestPage && typeValue === GenericPage.prototype.TYPE.MAIN && this.CHANNEL_ID.DEVICE_TYPE === 120 && (latestPage.RRInterval >= 0)) {
+                                  
+                                    aggregatedRR = [];
+                                    for (receivedPageNr = 0; receivedPageNr < len; receivedPageNr++)
+                                    {
+                                        RRInterval = this.pageNumberPages[sensorId][typeValue][pageNumber][receivedPageNr].RRInterval;
+                                        if (RRInterval >= 0) {
+                                            aggregatedRR.push(RRInterval);
+                                            //if (this.log && this.log.logging)
+                                            //    this.log.log('info', receivedPageNr, RRInterval);
+                                        }
+                                        //else
+                                        //{
+                                        //    if (this.log && this.log.logging)
+                                        //        this.log.log('error', 'Was expecting an RR interval on page', this.pageNumberPages[sensorId][typeValue][pageNumber][receivedPageNr])
+                                        //}
+
+                                    }
+                                       
+                                    latestPage.aggregatedRR = aggregatedRR;
+                                }
+                                
                                 if (latestPage)
                                     this.onPage(latestPage);
                             }
@@ -117,6 +159,7 @@ define(function (require, exports, module) {
         var sensorId = page.broadcast.channelId.sensorId;
 
         page.timestamp = Date.now();
+       
 
         if (this.pages[sensorId])
             this.pages[sensorId][page.type].push(page);

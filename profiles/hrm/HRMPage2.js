@@ -7,7 +7,8 @@ define(function (require, exports, module) {
     function Page(configuration,broadcast) {
        GenericPage.call(this,configuration);
     
-         this.type = Page.prototype.TYPE.BACKGROUND;
+       this.type = Page.prototype.TYPE.BACKGROUND;
+       this.profile = broadcast.profile;
           
 //        
 //        this.broadcast = undefined;

@@ -5,13 +5,17 @@ define(function (require, exports, module) {
     var GenericPage = require('profiles/Page');
 
     function Page(configuration, broadcast, previousPage) {
+
         GenericPage.call(this, configuration);
 
         this.type = GenericPage.prototype.TYPE.MAIN;
+
         this.previousPage = previousPage;
+
         this.timestamp = Date.now();
 
-       
+        this.profile = broadcast.profile;
+
         if (broadcast.data)
             this.parse(broadcast);
     }
@@ -19,7 +23,7 @@ define(function (require, exports, module) {
     Page.prototype = Object.create(GenericPage.prototype);
     Page.prototype.constructor = Page;
 
-    // ANT+ Message byte layout
+    // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
     Page.prototype.BYTE = {
         BIKE_CADENCE_EVENT_TIME: 0,
         CUMULATIVE_CADENCE_REVOLUTION_COUNT: 2,
@@ -71,6 +75,7 @@ define(function (require, exports, module) {
             }
 
             cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < this.previousPage.cumulativeCadenceRevolutionCount);
+            cumulativeSpeedRevolutionCountRollover = (this.cumulativeSpeedRevolutionCount < this.previousPage.cumulativeSpeedRevolutionCount);
             bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < this.previousPage.bikeCadenceEventTime);
             bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < this.previousPage.bikeSpeedEventTime);
 
@@ -81,22 +86,46 @@ define(function (require, exports, module) {
                 bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime;
 
             // RPM - rounds pr minute
-            if (cumulativeCadenceRevolutionCountRollover)
-                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
-            else if (this.cumulativeCadenceRevolutionCount !== this.previousPage.cumulativeCadenceRevolutionCount && bikeCadenceEventTimeDifference > 0) {
 
-                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+            // CADENCE
+
+            if (bikeCadenceEventTimeDifference) {
+                if (cumulativeCadenceRevolutionCountRollover)
+                    this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                else 
+                    this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                
+            }
+
+            
+            if (bikeSpeedEventTimeRollover)
+                bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime);
+            else
+                bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime;
+
+            // SPEED
+            // The speed equation does not multiply with the wheel circumphence calibration factor (in meters)
+            // Higher-lever code, e.g viewmodel should take this into account
+
+            if (bikeSpeedEventTimeDifference) {
+                if (cumulativeSpeedRevolutionCountRollover)
+                    this.unCalibratedSpeed =  1024 * (0xFFFF - this.cumulativeSpeedRevolutionCount + this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
+                else
+                    this.unCalibratedSpeed =  1024 * (this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
             }
 
 
+           
         }
 
     };
 
    
     Page.prototype.toString = function () {
-        var msg = this.type + " P# " + this.number + " cadence (rpm) "+this.cadence+ " cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount +
-            ' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount;
+        var calibrationFactor = 2.07;
+        var speed = calibrationFactor * this.unCalibratedSpeed;
+        var msg = this.type + " P# " + this.number + " cadence (rpm) "+this.cadence+" cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount +
+            'speed (m/s)'+speed+' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount+ ' speed calibration factor (m) '+calibrationFactor;
 
         return msg;
     };

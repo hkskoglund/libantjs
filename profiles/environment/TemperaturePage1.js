@@ -12,6 +12,8 @@ define(function (require, exports, module) {
         GenericPage.call(this,configuration,broadcast);
         
         this.type = GenericPage.prototype.TYPE.MAIN;
+
+        this.profile = broadcast.profile;
         
        if (broadcast && broadcast.data)
            this.parse(broadcast);

@@ -68,7 +68,10 @@ define(function (require, exports, module) {
     }
 
 
-    DeviceProfile_SPDCAD.prototype.WHEEL_CIRCUMFERENCE = 2096; // in mm. -> should be able to configure in a file...
+    DeviceProfile_SPDCAD.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
+
+    // SPDCAD one of the old device profiles without common pages conforming to the ANT+ message format
+    DeviceProfile_SPDCAD.prototype.hasCommonPages = false;
 
     DeviceProfile_SPDCAD.prototype.broadCast = function (broadcast) {
 
@@ -78,6 +81,8 @@ define(function (require, exports, module) {
             pageNumber = 0, // No page number in message format
             sensorId = broadcast.channelId.sensorId,
             pageIdentifier = sensorId + '.' + pageNumber;
+
+        broadcast.profile = this;
             
         // Don't process broadcast with wrong device type
         if (!this.verifyDeviceType(DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))
@@ -94,6 +99,7 @@ define(function (require, exports, module) {
         }
 
         page = new SPDCADPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
+       
         page.parse(broadcast);
         
 

@@ -27,7 +27,8 @@ define(function (require, exports, module) {
         //console.time('logger');
 
         var now = new Date(),
-            nowStr = now.getTime() + ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is expensive on performance - maybe candidate for removal
+            nowStr = now.getTime();
+        //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
         var formatUint8Array = function (arg)

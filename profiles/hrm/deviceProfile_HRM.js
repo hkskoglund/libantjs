@@ -55,11 +55,7 @@ define(function (require, exports, module) {
         // http://stackoverflow.com/questions/17925726/clearing-up-the-hidden-classes-concept-of-v8
         // http://thibaultlaurens.github.io/javascript/2013/04/29/how-the-v8-engine-works/
         
-//        this.previousPage = new Page();
-    
-        this.state = {
-            heartRateEvent: DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT,
-        };
+
         
         // Purpose : More performance - does not need to generate a new HRM page Object for each broadcast
         // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
@@ -71,6 +67,8 @@ define(function (require, exports, module) {
         this.previousBroadcastData = undefined;
 
         this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY);
+
+        this.previousPage = {};
         
     }
     
@@ -87,11 +85,11 @@ define(function (require, exports, module) {
         DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT*4
     ];
     
-    DeviceProfile_HRM.prototype.STATE = {
-        HR_EVENT: true,
-        NO_HR_EVENT: false,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
+    //DeviceProfile_HRM.prototype.STATE = {
+    //    HR_EVENT: true,
+    //    NO_HR_EVENT: false,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
 
-    };
+    //};
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
     DeviceProfile_HRM.prototype.CHANNEL_ID = {
@@ -100,36 +98,6 @@ define(function (require, exports, module) {
     }
     
 
-//    DeviceProfile_HRM.prototype.channelResponse = function (channelResponse) {
-//            this.log.log('log', 'DeviceProfile HRM', channelResponse, channelResponse.toString());
-//    };
-    
-    //DeviceProfile_HRM.prototype.channelResponseEvent = function (data)
-    //    {
-    //        var self = this, antInstance = this.ANT, reOpeningTimeout = 5000;
-    
-    //        if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data)) {
-    //            console.log(Date.now() + " Channel " + self.channel.number + " search timed out.");
-    //            //setTimeout(function handler() {
-    //            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
-    //            //        function successCB() { });
-    //            //}, reOpeningTimeout);
-    //        }
-    
-    //        else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data)) {
-    //           // console.log(Date.now() + " Channel " + self.number + " is closed.");
-    
-    //            //if (antInstance.inTransfer) {
-    //            //    console.log("Cancelling transfer");
-    //            //    antInstance.inTransfer.cancel(); // Cancel listener on inendpoint
-    //            //}
-    //            //setTimeout(function handler() {
-    //            //    antInstance.open(self.number, function errorCB(error) { console.log(Date.now() + " Failed to reopen channel " + self.number, error); },
-    //            //        function successCB() { });
-    //            //}, reOpeningTimeout);
-    //        }
-    //    }
-    
     // HRM sends out pages in page 4 * 64, background page 1 (for 1 second), page 4 *64, background page 2 (1 s.), page 4*64, background page 3 (1 s),....
     // When no HR data is sent from HR sensor, only background pages are sent each channel period; b1*64,b2*64,b3*64,b1*64,..... in accordance with the
     // normal behaviour of a broadcast master -> just repeat last broadcast if no new data available, then go to sleep if no HR data received in {timeout} millisec.
@@ -166,12 +134,12 @@ define(function (require, exports, module) {
              
             // MAIN
             case 4 : 
-                 page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage);
+                 page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage[sensorId]);
                 
                 break;
                 
             case 0 : // OLD
-                page = new HRMPage0({log: this.log.logging},broadcast,this.previousPage);
+                page = new HRMPage0({log: this.log.logging},broadcast,this.previousPage[sensorId]);
                  break;
                 
             // BACKGROUND
@@ -192,13 +160,7 @@ define(function (require, exports, module) {
                 break;
         }
         
-        //  Set computedHeartRate to invalid (0x00) if heart beat counter stays the same
-    
-        if ((this.previousPage === undefined) || (page.heartBeatCount !== this.previousPage.heartBeatCount))
-        {
-            this.lastHREventTime = Date.now();
-            this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.HR_EVENT;
-         
+       
             if (page) {
                this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
             
@@ -206,25 +168,11 @@ define(function (require, exports, module) {
                 this.addPage(page);
             }
             
-        }
-                   
         
-//        else  if  (this.lastHREventTime && (Date.now() > this.lastHREventTime+TIMEOUT_CLEAR_COMPUTED_HEARTRATE))
-//                {
-//                    this.log.log('warn','No heart rate event registered in the last ',TIMEOUT_CLEAR_COMPUTED_HEARTRATE+ 'ms.');
-//                    this.state.heartRateEvent = DeviceProfile_HRM.prototype.STATE.NO_HR_EVENT;
-//                    page.computedHeartRate = INVALID_HEART_RATE; 
-//                    this.lastHREventTime = Date.now();
-//                }
-//        
-//        
- 
-//        // Used for skipping duplicate messages
-//        this.previousBroadcastData = data;
-//        
+                   
         // Keep track of previous page state for main page 4 and 0 - calculation of RR
         if (page instanceof HRMPage4 || page instanceof HRMPage0)
-            this.previousPage = page;
+            this.previousPage[sensorId] = page;
         
         //console.timeEnd('broadcast');
     };

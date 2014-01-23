@@ -11,14 +11,18 @@ define(function (require, exports, module) {
         else
           this.log = new Logger();
          
-         if (broadcast)
-             this.broadcast = broadcast;
+          if (broadcast) {
+              this.broadcast = broadcast;
+              this.profile = broadcast.profile;
+          }
 
          this.descriptive = {
              coarseVoltage: undefined,        // Bit 0-3
              batteryStatus: undefined, // Bit 4-6
              resoultion: undefined // Bit 7 0 = 16 s, 1 = 2 s
          };
+
+        
 
      }
     

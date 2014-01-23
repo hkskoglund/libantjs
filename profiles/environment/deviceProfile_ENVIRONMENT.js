@@ -66,6 +66,8 @@ define(function (require, exports, module) {
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ARRAY = [
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_DEFAULT, // 4Hz
     DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD_ALTERNATIVE]; // 0.5 Hz low power
+
+    DeviceProfile_ENVIRONMENT.prototype.hasCommonPages = true;
     
 //    DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) {
 //            this.log.log('log', 'DeviceProfile ENVIRONMENT', channelResponse, channelResponse.toString());
