@@ -1,10 +1,9 @@
 ﻿/* global define: true, Windows: true  */
 
-// Require winusb.sys driver - windows 8
+// Requires winusb.sys driver - windows 8
 
 define(function (require, exports, module) {
     "use strict";
-
 
     var USBDevice = require('usb/USBDevice');
 
@@ -24,8 +23,6 @@ define(function (require, exports, module) {
         else if (this.log.logging)
             this.log.log('log', 'Will try to connect to device id ', options.deviceId);
 
-
-
         this.readingPromise = undefined;
         this.writingPromise = undefined;
 
@@ -36,8 +33,6 @@ define(function (require, exports, module) {
         this.ANTdevice = undefined;
 
         this.enumeratedDevice = [];
-
-       
 
     }
 
@@ -62,8 +57,8 @@ define(function (require, exports, module) {
         // We have no previously configured device, is it a known device?
         // Or previously configured device is not found
 
-                var devNum,
-                    knownDevices = this.options.knownDevices;
+        var devNum,
+            knownDevices = this.getDevicesFromManifest();
 
         // Absolute positioning may not be the best, but may work, TO DO MAYBE : regex
         // ID : \\\\?\\USB#VID_0FCF&PID_1008#150#{dee824ef-729b-4a0e-9c14-b7117d33a817}
@@ -74,7 +69,7 @@ define(function (require, exports, module) {
 
         for (devNum = 0; devNum < knownDevices.length; devNum++) {
 
-            if (knownDevices[devNum].vid === vid && knownDevices[devNum].pid === pid)
+            if (knownDevices[devNum].vendorId === vid && knownDevices[devNum].productId === pid)
             {
               
                 // Update current deviceId

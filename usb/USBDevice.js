@@ -73,6 +73,14 @@ USBDevice.prototype.getDeviceWatcher = function () {
     return undefined;
 };
 
+USBDevice.prototype.getDevicesFromManifest = function ()
+{
+    // If no deviceId available, it will try to automatically connect to the first enumerated device that matches a known ANT device
+
+    return [{ name: 'ANT USB-2 Stick', id: undefined, vendorId: 4047, productId: 4104 },
+      { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }];
+}
+
 module.exports = USBDevice;
     
     return module.exports;

@@ -362,7 +362,7 @@ USBChrome.prototype._enumerateDevicesInManifest = function (callback)
                                "productId": currentDevice.productId}, _gotDevices);
     }.bind(this);
     
-      devicesInManifest = this._getUSBDevicesFromManifest();
+      devicesInManifest = this.getDevicesFromManifest();
         
         if (this.log.logging) this.log.log('log','ANT devices declared in manifest',devicesInManifest);
     
@@ -381,7 +381,7 @@ USBChrome.prototype._enumerateDevicesInManifest = function (callback)
     
 };
 
-USBChrome.prototype._getUSBDevicesFromManifest = function () {
+USBChrome.prototype.getDevicesFromManifest = function () {
     var permissions = chrome.runtime.getManifest().permissions;
     for (var permissionNr=0; permissionNr < permissions.length; permissionNr++)
     {
