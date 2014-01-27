@@ -52,6 +52,32 @@ define(function (require, exports, module) {
     //    NOT_FOUND : 3
     //}
 
+    USBWindows.prototype.getDevicesFromManifest = function () {
+
+        // Windows 8 : Section from package.appxmanifest
+
+              //      <Capabilities>
+              //  <m2:DeviceCapability Name="usb">
+              //    <!--ANT USB2 Dynastream-->
+              //    <m2:Device Id="vidpid:0FCF 1008">
+              //      <!--<m2:Function Type="classId:ff * *"/>-->
+              //      <m2:Function Type="name:vendorSpecific" />
+              //    </m2:Device>
+              //    <!--ANT USB-m Dynastream-->
+              //    <m2:Device Id="vidpid:0FCF 1009">
+              //      <!--<m2:Function Type="classId:ff * *"/>-->
+              //      <m2:Function Type="name:vendorSpecific" />
+              //    </m2:Device>
+              //  </m2:DeviceCapability>
+                    //</Capabilities>
+
+        // Did not find possibility for reading capabilities on the Windows.ApplicationModel.Package.current object
+        // But it is possible to parse the generated AppxManifest.xml file
+        // Maybe to do : read capabilities  http://tonychampion.net/blog/index.php/2013/01/examining-the-windows-store-apps-appxmanifest-at-runtime/
+
+        return USBDevice.prototype.getDevicesFromManifest();
+    }
+
     USBWindows.prototype._tryFindANTDeviceFromKnownDevices = function (deviceInformation)
         {
         // We have no previously configured device, is it a known device?

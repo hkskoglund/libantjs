@@ -711,6 +711,8 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
 Host.prototype.init = function (options, initCB) {
 
     this.options = options;
+    this.options.initCB = initCB;
+
     this.usb = options.usb;
 
     // Logging
