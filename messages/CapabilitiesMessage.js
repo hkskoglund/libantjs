@@ -52,7 +52,8 @@ CapabilitiesMessage.prototype.parse = function () {
 
     // Advanced options2 and 3 probably 16-bit
     advancedOptions2 = this.content[4], // this.content[5] === 0
-    
+   
+   // ANT USB 2 does not have advanced options 3, so it will be undefined
     advancedOptions3 = this.content[6]; // this.content[7] === 0
     
     this.standardOptions = {
@@ -85,14 +86,15 @@ CapabilitiesMessage.prototype.parse = function () {
         CAPABILITIES_FS_ANTFS_ENABLED : advancedOptions2 & (1 << 6), // (1 << n) = set bit n high (bit numbered from 0 - n)
     };
 
-    this.advancedOptions3 = {
-        value : "MSB "+advancedOptions3.toString(2) + " " + advancedOptions3,
-        CAPABILITIES_ADVANCED_BURST_ENABLED : advancedOptions3 & 0x01,
-        CAPABILITIES_EVENT_BUFFERING_ENABLED : advancedOptions3 & 0x02,
-        CAPABILITIES_EVENT_FILTERING_ENABLED : advancedOptions3 & (1 << 2),
-        CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED : advancedOptions3 & (1 << 3),
-        CAPABILITIES_SELECTIVE_DATA_ENABLED : advancedOptions3 & (1 << 6)
-    };
+    if (advancedOptions3)
+        this.advancedOptions3 = {
+            value : "MSB "+advancedOptions3.toString(2) + " " + advancedOptions3,
+            CAPABILITIES_ADVANCED_BURST_ENABLED : advancedOptions3 & 0x01,
+            CAPABILITIES_EVENT_BUFFERING_ENABLED : advancedOptions3 & 0x02,
+            CAPABILITIES_EVENT_FILTERING_ENABLED : advancedOptions3 & (1 << 2),
+            CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED : advancedOptions3 & (1 << 3),
+            CAPABILITIES_SELECTIVE_DATA_ENABLED : advancedOptions3 & (1 << 6)
+        };
      
    // this.message = "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
 
@@ -200,16 +202,18 @@ CapabilitiesMessage.prototype.toString = function () {
     if (this.advancedOptions2.CAPABILITIES__FS_ANTFS_ENABLED)
         msg += "ANT-FS ";
 
-    if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
-        msg += "Advanced burst ";
-    if (this.advancedOptions3.CAPABILITIES_EVENT_BUFFERING_ENABLED)
-        msg += "Event buffering ";
-    if (this.advancedOptions3.CAPABILITIES_EVENT_FILTERING_ENABLED)
-        msg += "Event filtering ";
-    if (this.advancedOptions3.CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED)
-        msg += "High duty search ";
-    if (this.advancedOptions3.CAPABILITIES_SELECTIVE_DATA_ENABLED)
-        msg += "Selective data ";
+    if (this.advancedOptions3) {
+        if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
+            msg += "Advanced burst ";
+        if (this.advancedOptions3.CAPABILITIES_EVENT_BUFFERING_ENABLED)
+            msg += "Event buffering ";
+        if (this.advancedOptions3.CAPABILITIES_EVENT_FILTERING_ENABLED)
+            msg += "Event filtering ";
+        if (this.advancedOptions3.CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED)
+            msg += "High duty search ";
+        if (this.advancedOptions3.CAPABILITIES_SELECTIVE_DATA_ENABLED)
+            msg += "Selective data ";
+    }
   
     return msg;
 };
