@@ -14,7 +14,7 @@ define(function (require, exports, module) {
 
         this.timestamp = Date.now();
 
-        this.profile = broadcast.profile;
+        //this.profile = broadcast.profile;
 
         if (broadcast.data)
             this.parse(broadcast);

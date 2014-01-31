@@ -26,7 +26,7 @@ define(function (require, exports, module) {
             value: undefined
         };
 
-        this.profile = broadcast.profile;
+        //this.profile = broadcast.profile;
         
        if (broadcast && broadcast.data)
            this.parse(broadcast);

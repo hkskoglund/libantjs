@@ -9,7 +9,7 @@ define(function (require, exports, module) {
     
        this.type = Page.prototype.TYPE.BACKGROUND;
 
-       this.profile = broadcast.profile;
+       //this.profile = broadcast.profile;
           
        if (broadcast.data)
            this.parse(broadcast,previousPage);

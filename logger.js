@@ -27,7 +27,8 @@ define(function (require, exports, module) {
         //console.time('logger');
 
         var now = new Date(),
-            nowStr = now.getTime();
+            nowStr = now.getTime(),
+            myArguments = [];
         //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
@@ -57,26 +58,22 @@ define(function (require, exports, module) {
             };
 
         if (this.logging && console[type]) {
-            if (arguments.length === 2 && arguments[1] instanceof Error)
-                console[type](nowStr, arguments[1]);
-            else if (arguments.length === 2 && !(arguments[1] instanceof Error)) 
-                    console[type](nowStr, arguments[1]);
-            else
-                if (arguments.length === 3)
-                    console[type](nowStr, arguments[1], arguments[2]);
-                else
-                    if (arguments.length === 4)
-                        console[type](nowStr, arguments[1], formatUint8Array(arguments[2]), arguments[3]);
-                    else
-                        if (arguments.length === 5)
-                            console[type](nowStr, arguments[1], arguments[2], arguments[3], arguments[4]);
-                        else
-                            if (arguments.length === 6)
-                                console[type](nowStr, arguments[1], arguments[2], arguments[3], arguments[4], arguments[5]);
-                            else
-                                console[type](nowStr, arguments);
+           
+                myArguments.push(nowStr);
+
+                for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
+                {
+                    if (arguments[argNr] instanceof Uint8Array)
+                        myArguments.push(formatUint8Array(arguments[argNr]));
+
+                    myArguments.push(arguments[argNr]);
+                }
+
+                console[type].apply(console, myArguments);
+            
+               
         } else if (!console[type])
-            console.warn(nowStr, 'Unknown console source ' + type, arguments);
+            console.warn(nowStr, 'Unknown console function ' + type, arguments);
         //console.timeEnd('logger');
     };
     

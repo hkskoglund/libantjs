@@ -13,7 +13,7 @@ define(function (require, exports, module) {
          
           if (broadcast) {
               this.broadcast = broadcast;
-              this.profile = broadcast.profile;
+             // this.profile = broadcast.profile;
           }
 
          this.descriptive = {

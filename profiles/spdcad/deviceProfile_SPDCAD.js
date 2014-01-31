@@ -82,7 +82,7 @@ define(function (require, exports, module) {
             sensorId = broadcast.channelId.sensorId,
             pageIdentifier = sensorId + '.' + pageNumber;
 
-        broadcast.profile = this;
+       // broadcast.profile = this;
             
         // Don't process broadcast with wrong device type
         if (!this.verifyDeviceType(DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))

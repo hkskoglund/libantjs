@@ -2,6 +2,7 @@
 
 define(function (require, exports, module) {
     'use strict';
+
     var GenericPage = require('profiles/Page');
     
     function Page(configuration,broadcast,previousPage) {
@@ -9,7 +10,7 @@ define(function (require, exports, module) {
         
        this.type = GenericPage.prototype.TYPE.MAIN;
 
-       this.profile = broadcast.profile;
+       //this.profile = broadcast.profile;
           
        if (broadcast.data)
            this.parse(broadcast,previousPage);
@@ -36,6 +37,9 @@ define(function (require, exports, module) {
     
         // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
         this.computedHeartRate = data[7];
+
+        // Old legacy format doesnt have previous heart beat event time
+        this.previousHeartBeatEventTime = undefined;
       
       this.setRRInterval(previousPage);
         
@@ -49,6 +53,8 @@ define(function (require, exports, module) {
         
         var heartBeatCountDiff = this.heartBeatCount - previousPage.heartBeatCount,
             heartBeatEventTimeDiff;
+
+       
     
         if (heartBeatCountDiff < 0)  // Toggle 255 -> 0
             heartBeatCountDiff += 256;
@@ -59,19 +65,19 @@ define(function (require, exports, module) {
             if (heartBeatEventTimeDiff < 0) // Roll over
                 heartBeatEventTimeDiff += 65536;
     
-            if (typeof this.previousHeartBeatEventTime === "undefined")  // Old legacy format doesnt have previous heart beat event time
-                this.previousHeartBeatEventTime = previousPage.heartBeatEventTime;
-    
+            this.previousHeartBeatEventTime = previousPage.heartBeatEventTime;
+          
             this.RRInterval = (heartBeatEventTimeDiff / 1024) * 1000; // ms.
     
         }
     };
     
     Page.prototype.toString = function () {
-        var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
+        var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
+       
         
         if (this.RRInterval)
-                msg += " RR " + this.RRInterval.toFixed(1) + " ms";
+            msg +=  " Tn-1 " + this.previousHeartBeatEventTime + " Tn - Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime)+" RR " + this.RRInterval.toFixed(1) + " ms";
         
         return msg;
     };

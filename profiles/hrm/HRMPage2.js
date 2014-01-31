@@ -8,17 +8,8 @@ define(function (require, exports, module) {
        GenericPage.call(this,configuration);
     
        this.type = Page.prototype.TYPE.BACKGROUND;
-       this.profile = broadcast.profile;
-          
-//        
-//        this.broadcast = undefined;
-//        this.number = undefined;
-//        this.pageToggle = undefined;
-//        this.heartBeatEventTime = undefined;
-//        this.heartBeatCount = undefined;
-//        this.computedHeartRate = undefined;
-//        this.manufacturerID = undefined;
-//        this.serialNumber = undefined;
+
+       //this.profile = broadcast.profile;
         
        if (broadcast.data)
            this.parse(broadcast);

@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         
         this.type = GenericPage.prototype.TYPE.MAIN;
 
-        this.profile = broadcast.profile;
+        //this.profile = broadcast.profile;
         
        if (broadcast && broadcast.data)
            this.parse(broadcast);
