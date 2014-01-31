@@ -3,8 +3,8 @@
 
     var DeviceProfile = require('profiles/deviceProfile'),
         setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
+        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout'),
         SDMPage1 = require('profiles/sdm/SDMPage1'),
         SDMPage2 = require('profiles/sdm/SDMPage2'),
         GenericPage = require('profiles/Page');
@@ -44,7 +44,6 @@
         this.SDMPage1 = new SDMPage1(configuration);
         this.SDMPage2 = new SDMPage2(configuration);
         this.genericPage = new GenericPage(configuration);
-
 
     }
 

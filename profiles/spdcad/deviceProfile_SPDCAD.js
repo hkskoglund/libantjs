@@ -4,8 +4,8 @@ define(function (require, exports, module) {
 
     var DeviceProfile = require('profiles/deviceProfile'),
          setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout'),
+        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout'),
         SPDCADPage0 = require('profiles/spdcad/SPDCADPage0');
 
 

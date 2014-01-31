@@ -12,8 +12,8 @@ define(function (require, exports, module) {
         HRMPage2 = require('profiles/hrm/HRMPage2'),
         HRMPage3 = require('profiles/hrm/HRMPage3'),
         setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighprioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowprioritySearchTimeout');
+        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout');
     
    
     

@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         
         // Extended data if requested by libconfig
         ChannelId = require('messages/channelId'),
-        RSSI = require('messages/rssi'),
+        RSSI = require('messages/RSSI'),
         RXTimestamp = require('messages/RXTimestamp');
 
 function ANTMessage(data) {

@@ -29,7 +29,7 @@ define(function (require, exports, module) {
        
     Logger = require('logger'),
     USBDevice = require('usb/USBDevice'),
-    Channel = require('Channel'),
+    Channel = require('channel'),
     ANTMessage = require('messages/ANTMessage'),
 
     // Control ANT
