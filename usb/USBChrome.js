@@ -182,14 +182,19 @@ define(function (require, exports, module) {
     //    };
     
         var onInterfaceClaimed = function () {
-            
-            if (this.log.logging) this.log.log('log','Interface number '+this.deviceInterface.interfaceNumber+' claimed', 'in',this.inEP, 'out',this.outEP);
-            try {
-               callback();
-            } catch (e)
-                {
-                    console.error(e,e.stack);
+            // Problems with claiming interface in Ubuntu 13.10 - was caused by suunto module which was blacklisted in /etc/modules.d/blacklist.conf
+            // Trying workaround proposed by : https://code.google.com/p/chromium/issues/detail?id=222460
+            if (chrome.runtime.lastError) {
+                if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface', chrome.runtime.lastError);
+                callback(chrome.runtime.lastError);
+            } else {
+                if (this.log.logging) this.log.log('log', 'Interface number ' + this.deviceInterface.interfaceNumber + ' claimed', 'in', this.inEP, 'out', this.outEP);
+                try {
+                    callback();
+                } catch (e) {
+                    console.error(e, e.stack);
                 }
+            }
                 
         }.bind(this);
     

@@ -136,7 +136,29 @@ define(function (require, exports, module) {
        
         return msg;
    };
+
     
+   //Page.prototype.clone = function () {
+   //    var clone = Object.create(null);
+
+   //    clone.broadcast = {
+   //        channelId: {
+   //            sensorId: this.broadcast.channelId.sensorId,
+   //            deviceType: this.broadcast.channelId.deviceType
+   //        }
+   //    };
+
+   //    clone.timestamp = this.timestamp;
+
+   //    clone.number = this.number;
+
+   //    clone.transmissionInfo = this.transmissionInfo;
+
+   //    clone.supportedPages = this.supportedPages;
+
+   //    return clone;
+   //}
+
     module.exports = Page;
     
     return module.exports;

@@ -81,6 +81,27 @@ define(function (require, exports, module) {
         
         return msg;
     };
+
+    //Page.prototype.clone = function ()
+    //{
+    //    var clone = Object.create(null);
+        
+    //    clone.broadcast = {
+    //        channelId: {
+    //            sensorId: this.broadcast.channelId.sensorId,
+    //            deviceType : this.broadcast.channelId.deviceType
+    //        }
+    //    };
+       
+    //    clone.timestamp = this.timestamp;
+
+    //    clone.computedHeartRate = this.computedHeartRate;
+
+    //    clone.RRInterval = this.RRInterval;
+
+    //    return clone;
+
+    //}
     
     module.exports = Page;
         

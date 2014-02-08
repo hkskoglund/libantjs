@@ -44,8 +44,6 @@ define(function (require, exports, module) {
     
         });
 
-        this.delayedPages = {};
-
         this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY); 
 
     }

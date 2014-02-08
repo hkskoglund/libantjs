@@ -16,14 +16,6 @@ define(function (require, exports, module) {
              // this.profile = broadcast.profile;
           }
 
-         this.descriptive = {
-             coarseVoltage: undefined,        // Bit 0-3
-             batteryStatus: undefined, // Bit 4-6
-             resoultion: undefined // Bit 7 0 = 16 s, 1 = 2 s
-         };
-
-        
-
      }
     
     
@@ -119,7 +111,10 @@ define(function (require, exports, module) {
                  
                  // Byte 1-2 -reserved 0xFF
                  
-                 // Byte 7
+                   // Byte 7
+
+                this.descriptive = {}
+                   
                 this.descriptive.coarseVoltage = data[7] & 0x0F;        // Bit 0-3
                 this.descriptive.batteryStatus = (data[7] & 0x70) >> 4;
                 this.descriptive.resoultion = (data[7] & 0x80) >> 7; // Bit 7 0 = 16 s, 1 = 2 s
@@ -234,6 +229,51 @@ define(function (require, exports, module) {
         MAIN : "main",
         BACKGROUND : "background"
     };
+
+    GenericPage.prototype.clone = function ()
+    {
+        var clone = Object.create(null),
+            ownEnumerableProperties = Object.keys(this),
+            property;
+
+        for (var index in ownEnumerableProperties)
+        {
+            property = ownEnumerableProperties[index];
+
+            switch (property)
+            {
+                case 'broadcast': // return the most essential information for the ui
+
+                    clone.broadcast = {
+
+                        channelId: {
+                            sensorId: this.broadcast.channelId.sensorId,
+                            deviceType: this.broadcast.channelId.deviceType
+                        }
+
+                    }
+                    
+
+                    break;
+
+                case 'log': // ignore
+                case 'previousPage' :
+
+                    break;
+
+                default:
+
+                    clone[property] = this[property];
+
+                    break;
+
+            }
+           
+        }
+
+        return clone;
+        
+    }
     
     module.exports = GenericPage;
     

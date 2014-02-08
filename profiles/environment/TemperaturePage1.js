@@ -193,6 +193,33 @@ define(function (require, exports, module) {
        
         return msg;
    };
+
+   //Page.prototype.clone = function ()
+   //{
+   //    var clone = Object.create(null);
+
+   //    clone.broadcast = {
+   //        channelId: {
+   //            sensorId: this.broadcast.channelId.sensorId,
+   //            deviceType: this.broadcast.channelId.deviceType
+   //        }
+   //    };
+
+   //    clone.timestamp = this.timestamp;
+
+   //    clone.number = this.number;
+
+   //    if (this.currentTemp)
+   //    clone.currentTemp = this.currentTemp;
+       
+   //    if (this.hour24Low)
+   //        clone.hour24Low = this.hour24Low;
+
+   //    if (this.hour24High)
+   //        clone.hour24High = this.hour24High;
+
+   //    return clone;
+   //}
     
     module.exports = Page;
     

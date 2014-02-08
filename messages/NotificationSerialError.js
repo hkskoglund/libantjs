@@ -54,7 +54,7 @@ NotificationSerialError.prototype.parse = function () {
     else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE) {
         msg = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.MESSAGE;
         code = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE;
-        faultMessage = serialErrorMessage.slice(1);
+        faultMessage = serialErrorMessage.subarray(1);
     }
 
     this.message = { 'text': msg, 'code': code, 'faultMessage': faultMessage };

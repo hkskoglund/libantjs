@@ -64,7 +64,6 @@ define(function (require, exports, module) {
         // Cadence
         // Spec. section 5.3.1 - Cadence computation, p. 29
 
-        
         // Initialy we have no previous page, so have to check for previous page
         if (this.previousPage) {
 
@@ -94,11 +93,9 @@ define(function (require, exports, module) {
                     this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
                 else 
                     this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
-                
             }
 
-            
-            if (bikeSpeedEventTimeRollover)
+                 if (bikeSpeedEventTimeRollover)
                 bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime);
             else
                 bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime;
@@ -114,8 +111,6 @@ define(function (require, exports, module) {
                     this.unCalibratedSpeed =  1024 * (this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
             }
 
-
-           
         }
 
     };
@@ -125,10 +120,32 @@ define(function (require, exports, module) {
         var calibrationFactor = 2.07;
         var speed = calibrationFactor * this.unCalibratedSpeed;
         var msg = this.type + " P# " + this.number + " cadence (rpm) "+this.cadence+" cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount +
-            'speed (m/s)'+speed+' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount+ ' speed calibration factor (m) '+calibrationFactor;
+            ' speed (m/s) '+speed+' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount+ ' speed based on calibration factor (m) '+calibrationFactor;
 
         return msg;
     };
+
+    //Page.prototype.clone = function ()
+    //{
+    //    var clone = Object.create(null);
+
+    //    clone.broadcast = {
+    //        channelId: {
+    //            sensorId: this.broadcast.channelId.sensorId,
+    //            deviceType: this.broadcast.channelId.deviceType
+    //        }
+    //    };
+
+    //    clone.timestamp = this.timestamp;
+
+    //    if (this.unCalibratedSpeed)
+    //        clone.unCalibratedSpeed = this.unCalibratedSpeed;
+
+    //    if (this.cadence)
+    //        clone.cadence = this.cadence;
+            
+    //   return clone;
+    //}
 
     module.exports = Page;
 

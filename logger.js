@@ -18,6 +18,8 @@ define(function (require, exports, module) {
            this.logging = true;
         else
             this.logging = false;
+
+        this.console = console;
        
     }
     
@@ -57,7 +59,7 @@ define(function (require, exports, module) {
                 return arg;
             };
 
-        if (this.logging && console[type]) {
+        if (this.logging && this.console && this.console[type]) {
            
                 myArguments.push(nowStr);
 
@@ -69,25 +71,33 @@ define(function (require, exports, module) {
                     myArguments.push(arguments[argNr]);
                 }
 
-                console[type].apply(console, myArguments);
+                this.console[type].apply(this.console, myArguments);
             
                
-        } else if (!console[type])
-            console.warn(nowStr, 'Unknown console function ' + type, arguments);
+        } else if (!(this.console && this.console[type]))
+            this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
         //console.timeEnd('logger');
     };
+
+    Logger.prototype.changeConsole = function (newConsole)
+    {
+        if (newConsole) {
+            this.console = newConsole;
+           // this.console.info('Console changed to', newConsole);
+        }
+    }
     
     Logger.prototype.time = function (name)
     {
-        if (this.logging && console.time)
-            console.time(name);
+        if (this.logging && this.console && this.console.time)
+            this.console.time(name);
             
     };
     
     Logger.prototype.timeEnd = function (name)
     {
-        if (this.logging && console.timeEnd)
-                console.timeEnd(name);
+        if (this.logging && this.console && this.console.timeEnd)
+                this.console.timeEnd(name);
     };
 
     module.export = Logger;

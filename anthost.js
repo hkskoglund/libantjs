@@ -105,7 +105,7 @@ function Host() {
      
      var targetMessageId = msg.id,
          resendMessage = false,
-         cb = function (error)
+         cb = function _targetMessage(error)
          {
               delete this.callback[targetMessageId];
               msgCallback(error,msg);
@@ -229,19 +229,19 @@ function Host() {
 //    }
 
 
-     var usbTransferCB = function (error)
+     var usbTransferCB = function _usbTransferCB (error)
                           {
                               
                               //console.timeEnd('sendMessageUSBtransfer');
          if (error) {
-             if (this.log.logging)   this.log.log('error', 'TX failed of ' + message.toString());
+             if (this.log.logging)   this.log.log('error', 'TX failed of ' + message.toString(),error);
          }
                               // A response callback is already registered in _setResponseCallback to be called during RXparse
                              // callback(error);
                               
                           }.bind(this);
                           
-    var transferMessage = function() {
+    var transferMessage = function _transfermessage() {
 
         //this.log.time('sendMessageUSBtransfer');
         if (retryNr === 0 ) {
@@ -320,20 +320,7 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
     channel = channelInfo.channel,
     channelPeriod = channelInfo.channelPeriod,
     open = channelInfo.open;
-   // typeOnPageCB = typeof onPageCB;
-    
-//    // Set onPage callback - for device profile channels that get broadcast in ANT+ pages format
-//    
-//    if (typeOnPageCB === 'function') {
-//        if (typeof channel.setOnPageCB === 'function')
-//            channel.setOnPageCB(onPageCB);
-//        else
-//            this.log.log('warn','Channel has no setOnPageCB function (only for device profile channels)',channel);
-//    } else if (typeOnPageCB !== 'undefined')
-//        this.log.log('error','Specified callback for on page from device profile is not a function',onPageCB);
-//    else if (typeOnPageCB === 'undefined')
-//        this.log.log('warn','No onPageCB specified - its recommended to specify this callback if you want data pages from device profiles');
-    
+   
     var parameters = channel.parameters[configurationName],
         //channelType,
         isMasterChannel,
@@ -780,7 +767,7 @@ Host.prototype.init = function (options, initCB) {
 
         //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
         this.libConfig(libConfig.getFlagsByte(),
-            function (error, channelResponse) {
+            function _libConfig(error, channelResponse) {
                 if (!error) {
                     this.currentLibConfig = libConfig;
                     if (this.log.logging)
@@ -838,11 +825,11 @@ Host.prototype.init = function (options, initCB) {
     var resetCapabilitiesLibConfig = function _resetSystem(callback) {
 
         if (options.reset) {
-            this.resetSystem(function (error, notification) {
+            this.resetSystem(function _resetSystem(error, notification) {
                 if (!error) {
-                    getDeviceInfo(function (error) {
+                    getDeviceInfo(function _getDeviceInfo(error) {
                         if (!error)
-                            doLibConfig(function (error) { callback(error); });
+                            doLibConfig(function _doLibConfig (error) { callback(error); });
                         else
                             callback(error);
                     });
@@ -852,7 +839,7 @@ Host.prototype.init = function (options, initCB) {
             }.bind(this));
         }
         else
-            getDeviceInfo(function (error) { callback(error); });
+            getDeviceInfo(function _getDeviceInfo (error) { callback(error); });
 
     }.bind(this);
 
@@ -1382,10 +1369,9 @@ function verifyRange(capabilities,type, value, low, high) {
     
     switch (type) {
         case 'channel':
-            
             if (typeof capabilities === "undefined")
-        throw new Error("getCabilities should be run to determine max. channels and networks");
-
+                throw new Error("getCabilities should be run to determine max. channels and networks");
+         
             if (capabilities && (value > (capabilities.MAX_CHAN - 1) || value < 0))
                 throw new RangeError('Channel nr ' + value + ' out of bounds');
 
@@ -1394,7 +1380,7 @@ function verifyRange(capabilities,type, value, low, high) {
         case 'network':
             
             if (typeof capabilities === "undefined")
-        throw new Error("getCabilities should be run to determine max. channels and networks");
+                throw new Error("getCabilities should be run to determine max. channels and networks");
             
             if (capabilities && (value > (capabilities.MAX_NET - 1) || value < 0))
                 throw new RangeError('Network nr ' + value + ' out of bounds');
