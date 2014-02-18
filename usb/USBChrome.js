@@ -85,16 +85,20 @@ define(function (require, exports, module) {
     
         var onRX = function _onRX(RXinfo) {
               
-                var data;
+            var data,
+                error;
                 //console.timeEnd('RX');
                 if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
                     transferErrorCount = 0;
                     data = new Uint8Array(RXinfo.data);
-                    if (this.log.logging) this.log.log('log', "Rx", RXinfo, data );
+                    if (this.log && this.log.logging) this.log.log('log', "Rx", RXinfo, data);
+                    if (this.log && this.log.logging && data.length === 0)
+                        this.log.log('warn', 'No data received data length is 0 bytes');
                    try {
                        if (this.log.logging) console.time('RXparse');
                      
-                      rXparser(undefined,data);
+                      // rXparser(undefined, data);
+                       this.emit('usb', data); // Using events allows more listeners of usb data, e.g logging/debugging
                        if (this.log.logging) console.timeEnd('RXparse');
                        
                     } catch (e)
@@ -102,7 +106,8 @@ define(function (require, exports, module) {
                      if (this.log.logging)
                          this.log.log('error','Got onRX error',e,e.stack);
                         else
-                            console.error('Got onRX error',e,e.stack); // Force logging of serious error
+                         console.error('Got onRX error', e, e.stack); // Force logging of serious error
+                     this.emit('error', e);
                     }
                          
                      
@@ -110,7 +115,8 @@ define(function (require, exports, module) {
                 else {
                      transferErrorCount++;
                     if (this.log.logging) this.log.log('error', "Rx failed, resultCode ", RXinfo.resultCode, chrome.runtime.lastError.message);
-                    rXparser(new Error(chrome.runtime.lastError.message));
+                    //rXparser();
+                    this.emit('error',new Error(chrome.runtime.lastError.message));
                 }
          
             // Transfer may be cancelled by e.g releaseInterface -> don't attempt retries
@@ -119,7 +125,12 @@ define(function (require, exports, module) {
                 if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT )
                      retry();
                 else
-                    rXparser(new Error('Too many attempts with error from LIBUSB. Listening on in endpoint stopped.'));
+                    //rXparser(new Error('Too many attempts with error from LIBUSB. Listening on in endpoint stopped.'));
+                {
+                    error = new Error('Too many attempts with error from LIBUSB. Listening on in endpoint stopped.');
+                    if (this.log && this.log.logging) this.log.log('error',error);
+                    this.emit('error',error);
+                }
             }
              
             

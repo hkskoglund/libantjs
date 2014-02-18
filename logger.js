@@ -5,7 +5,7 @@
 
 define(function (require, exports, module) {
 
-    function Logger(log)
+    function Logger(options)
     {
         
         
@@ -14,8 +14,10 @@ define(function (require, exports, module) {
                               { get : function(){ return this._logging; },
                                 set : function(newValue){ this._logging = newValue; } });
         
-        if (log)
-           this.logging = true;
+        if (typeof options === 'object' && options.log) // Handle Logger ({log : true|| false})
+            this.logging = true;
+        else if (typeof options === 'boolean') // Handle Logger(true||false)
+            this.logging = options;
         else
             this.logging = false;
 

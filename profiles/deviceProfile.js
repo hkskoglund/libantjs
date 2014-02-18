@@ -39,7 +39,7 @@ define(function (require, exports, module) {
     DeviceProfile.prototype = Object.create(Channel.prototype);
     DeviceProfile.prototype.constructor = DeviceProfile;
 
-    DeviceProfile.prototype.requestPageUpdate = function (timeout) {
+    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
        
         var aggregatedRR,
             RRInterval,

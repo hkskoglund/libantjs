@@ -92,7 +92,7 @@ function Host() {
     this.resendTimeoutID = {};
     
     // Logging
-    this.log = new Logger(false);
+    this.log = new Logger();
 
     // Declare/reuse broadcast to minimize garbage collection
    // this.broadcast = new BroadcastDataMessage();
@@ -849,13 +849,10 @@ Host.prototype.init = function (options, initCB) {
             initCB(error);
         else {
             // Start listening for data on in endpoint and send it to host parser
-            // Binding parse callback to this/host, otherwise this is undefined when
-            // called from listen in strict mode and this cannot be used in parse
-
-
-            
-            this.usb.listen(this.RXparse.bind(this));
-
+        
+            this.usb.addEventListener('usb', this.RXparse.bind(this));
+            this.usb.listen();
+           
             resetCapabilitiesLibConfig(initCB);
         }
 
@@ -880,7 +877,8 @@ Host.prototype.exit = function (callback) {
 };
 
 
-Host.prototype.RXparse = function (error, data) {
+
+Host.prototype.RXparse = function ( data) {
    
 //    data = new Uint8Array(1);
 //    data[0] = 164;
@@ -893,12 +891,12 @@ Host.prototype.RXparse = function (error, data) {
       nextSYNCIndex;
       
      
-    if (error ) {
-        if (this.log.logging)
-            this.log.log('error', error);
-        //throw new Error(error);
-        return;
-    }
+    //if (error ) {
+    //    if (this.log.logging)
+    //        this.log.log('error', error);
+    //    //throw new Error(error);
+    //    return;
+    //}
     
     //this.log.time('parse');
     

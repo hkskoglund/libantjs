@@ -14,7 +14,7 @@ define(function (require, exports, module) {
 
         this.parameters = {};
         if (configuration)
-         this.log = new Logger(configuration.log);
+         this.log = new Logger(configuration);
         else
           this.log = new Logger();
     }

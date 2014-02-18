@@ -1,9 +1,8 @@
 ﻿/* global define: true, DataView: true */
 
-define(function (require, exports, module) {
+define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
     'use strict';
-    var GenericPage = require('profiles/Page');
-
+   
     function Page(configuration, broadcast, previousPage) {
 
         GenericPage.call(this, configuration);
@@ -32,6 +31,7 @@ define(function (require, exports, module) {
     };
 
     Page.prototype.parse = function (broadcast) {
+
         var data = broadcast.data,
             dataView = new DataView(data.buffer),
             cumulativeCadenceRevolutionCountRollover,
@@ -95,7 +95,7 @@ define(function (require, exports, module) {
                     this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
             }
 
-                 if (bikeSpeedEventTimeRollover)
+            if (bikeSpeedEventTimeRollover)
                 bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime);
             else
                 bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime;
@@ -111,44 +111,52 @@ define(function (require, exports, module) {
                     this.unCalibratedSpeed =  1024 * (this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
             }
 
+            // Filter "spikes" 
+            // This issue has been noticed running the SimulANT+ application Version : AYD 1.5.0.0 
+            // Its only the first few packets that provokes this for unCalibratedSpeed
+
+            if (this.unCalibratedSpeed > 512)
+            {
+                if (this.log && this.log.logging)
+                    this.log.log('warn', 'Very high uncalibrated speed filtered', this);
+                this.unCalibratedSpeed = undefined;
+            }
+
+            if (this.cadence > 512) {
+                if (this.log && this.log.logging)
+                    this.log.log('warn', 'Very high cadence filtered', this);
+                this.cadence = undefined;
+
+            }
+
         }
 
     };
 
    
     Page.prototype.toString = function () {
-        var calibrationFactor = 2.07;
-        var speed = calibrationFactor * this.unCalibratedSpeed;
-        var msg = this.type + " P# " + this.number + " cadence (rpm) "+this.cadence+" cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount +
-            ' speed (m/s) '+speed+' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount+ ' speed based on calibration factor (m) '+calibrationFactor;
+
+        var calibrationFactor = 2.07, // Just used for a speed estimate
+            speed,
+            msg;
+       
+        msg = this.type + " P# " + this.number + " cadence (rpm) ";
+
+        if (this.cadence !== undefined)
+            msg += this.cadence
+
+        msg +=  " cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount;
+
+       if (this.unCalibratedSpeed !== undefined) {
+           speed = calibrationFactor * this.unCalibratedSpeed;
+           msg += ' speed (m/s) ' + speed; 
+       }
+
+       msg += ' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount + ' speed based on calibration factor (m) ' + calibrationFactor;
 
         return msg;
     };
 
-    //Page.prototype.clone = function ()
-    //{
-    //    var clone = Object.create(null);
-
-    //    clone.broadcast = {
-    //        channelId: {
-    //            sensorId: this.broadcast.channelId.sensorId,
-    //            deviceType: this.broadcast.channelId.deviceType
-    //        }
-    //    };
-
-    //    clone.timestamp = this.timestamp;
-
-    //    if (this.unCalibratedSpeed)
-    //        clone.unCalibratedSpeed = this.unCalibratedSpeed;
-
-    //    if (this.cadence)
-    //        clone.cadence = this.cadence;
-            
-    //   return clone;
-    //}
-
-    module.exports = Page;
-
-    return module.exports;
+    return Page;
 
 });

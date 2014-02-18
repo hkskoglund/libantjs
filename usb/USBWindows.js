@@ -2,10 +2,8 @@
 
 // Requires winusb.sys driver - windows 8
 
-define(function (require, exports, module) {
+define(['usb/USBDevice'],function (USBDevice) {
     "use strict";
-
-    var USBDevice = require('usb/USBDevice');
 
     function USBWindows(options) {
 
@@ -375,7 +373,7 @@ define(function (require, exports, module) {
             //this.ANTWatcher.addEventListener("enumerationcompleted", _initCB);
 
             this.ANTWatcher.start();
-           
+
         }
 
     };
@@ -468,7 +466,8 @@ define(function (require, exports, module) {
             if (this.log.logging && console && console.time)
                 console.time('RXparse');
 
-            rxParser(undefined, buf);
+            //rxParser(undefined, buf);
+            this.emit('usb', buf); // Using events allows more listeners of usb data, e.g logging/debugging
 
             if (this.log.logging && console && console.timeEnd)
                 console.timeEnd('RXparse');
@@ -568,6 +567,6 @@ define(function (require, exports, module) {
 
     };
 
-    module.exports = USBWindows;
-    return module.exports;
+    USBWindows;
+    return USBWindows;
 });

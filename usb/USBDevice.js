@@ -1,30 +1,23 @@
-﻿"use strict";
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+﻿
+define(['logger','root/events'],function (Logger,EventEmitter) {
+    'use strict'
 
-define(function (require, exports, module) {
-    
-    var Logger = require('logger');
-
-//var  util = require('util'),
-//    Duplex = require('stream').Duplex;
-
-//var events = require('events');
-  
 // Abstract USB device
 function USBDevice(options) {
-   // events.EventEmitter.call(this);
+   EventEmitter.call(this);
     // Stream inherits from event emitter
 //    Duplex.call(this, options);
 //    this._burstBuffer = new Buffer(0);
     this.options = options;
-    this.log = new Logger(options.log);
+    this.log = new Logger(options);
   
 }
 
-//USBDevice.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : USBDevice,
-//                                                                        enumerable : false,
-//                                                                        writeable : true,
-//                                                                        configurable : true } });
+// Inherit from event emitter
+USBDevice.prototype = Object.create(EventEmitter.prototype, { constructor : { value : USBDevice,
+                                                                        enumerable : false,
+                                                                        writeable : true,
+                                                                        configurable : true } });
 //util.inherits(USBDevice, Duplex);
 //'function (ctor, superCtor) {\n  ctor.super_ = superCtor;\n  ctor.prototype = Object.create(superCtor.prototype, {\n
 //constructor: {\n      value: ctor,\n      enumerable: false,\n      writable: true,\n      configurable: true\n    }\n
@@ -61,11 +54,11 @@ USBDevice.prototype.setDeviceTimeout = function (timeout) {
 };
 
 USBDevice.prototype.listen = function (successCallback) {
-    throw new Error('Func. shoule be overridden in descendant objects');
+    throw new Error('Func. should be overridden in descendant objects');
 };
 
 USBDevice.prototype.transfer = function (chunk, successCallback) {
-    throw new Error('Func. shoule be overridden in descendant objects');
+    throw new Error('Func. should be overridden in descendant objects');
 };
 
 USBDevice.prototype.getDeviceWatcher = function () {
@@ -77,11 +70,13 @@ USBDevice.prototype.getDevicesFromManifest = function ()
 {
     // If no deviceId available, it will try to automatically connect to the first enumerated device that matches a known ANT device
 
-    return [{ name: 'ANT USB-2 Stick', id: undefined, vendorId: 4047, productId: 4104 },
-      { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }];
-}
+    return [
 
-module.exports = USBDevice;
+        { name: 'ANT USB-2 Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1008 },
+
+        { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
+    ];
+}
     
-    return module.exports;
+return USBDevice;
 });
