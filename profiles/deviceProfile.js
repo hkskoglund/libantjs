@@ -8,13 +8,12 @@ define(function (require, exports, module) {
     var Channel = require('channel'),
         GenericPage = require('profiles/Page');
 
-
     function DeviceProfile(configuration) {
         Channel.call(this, configuration);
         //this._configuration = configuration;
 
-        if (configuration.onPage)
-            this.setOnPage(configuration.onPage);
+        //if (configuration.onPage)
+        //    this.setOnPage(configuration.onPage);
 
         this.receivedBroadcastCounter = {};
 
@@ -31,13 +30,15 @@ define(function (require, exports, module) {
 
         this.pageNumberPages = {};
 
-       
-
-
     }
 
     DeviceProfile.prototype = Object.create(Channel.prototype);
     DeviceProfile.prototype.constructor = DeviceProfile;
+
+    DeviceProfile.prototype.stop = function () {
+        if (this.timer.onPage !== undefined)
+            clearInterval(this.timer.onPage);
+    }
 
     DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
        
@@ -108,10 +109,13 @@ define(function (require, exports, module) {
                                 if (latestPage && typeValue === GenericPage.prototype.TYPE.MAIN && this.CHANNEL_ID.DEVICE_TYPE === 120 && (latestPage.RRInterval >= 0)) {
                                   
                                     aggregatedRR = [];
+
                                     for (receivedPageNr = 0; receivedPageNr < len; receivedPageNr++)
                                     {
                                         RRInterval = this.pageNumberPages[sensorId][typeValue][pageNumber][receivedPageNr].RRInterval;
+
                                         if (RRInterval >= 0) {
+
                                             aggregatedRR.push(RRInterval);
                                             //if (this.log && this.log.logging)
                                             //    this.log.log('info', receivedPageNr, RRInterval);
@@ -127,8 +131,9 @@ define(function (require, exports, module) {
                                     latestPage.aggregatedRR = aggregatedRR;
                                 }
                                 
-                                if (latestPage)
-                                    this.onPage(latestPage);
+                                if (latestPage) 
+                                    this.emit('page',latestPage);
+                                  
                             }
 
                             if (currentPages.length > 0)
@@ -142,7 +147,7 @@ define(function (require, exports, module) {
             }.bind(this);
 
         // In case requestPageUpdate is called more than one time
-        if (this.timer.onPage) {
+        if (this.timer.onPage !== undefined) {
             if (this.log && this.log.logging) this.log.log('warn', 'requestPageUpdate should only be called one time');
             clearInterval(this.timer.onPage);
         }
@@ -275,7 +280,7 @@ define(function (require, exports, module) {
     };
 
     DeviceProfile.prototype.channelResponse = function (channelResponse) {
-        if (this.log.logging) this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
+        if (this.log && this.log.logging) this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
     };
 
     // Default behaviour just return JSON of broadcast
@@ -284,24 +289,25 @@ define(function (require, exports, module) {
         return JSON.stringify(broadcast);
     };
 
-    DeviceProfile.prototype.getOnPage = function () {
-        return this._onPage;
-    };
+    //DeviceProfile.prototype.getOnPage = function () {
+    //    return this._onPage;
+    //};
 
-    DeviceProfile.prototype.setOnPage = function (callback) {
-        if (typeof callback === 'function') {
-            this._onPage = callback;
-            if (this.log.logging) this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
-        } else if (this.log.logging)
-            this.log.log('error', 'Callback for on page is not a function', typeof callback, callback);
-    };
+    //DeviceProfile.prototype.setOnPage = function (callback) {
+    //    if (typeof callback === 'function') {
+    //        this._onPage = callback;
+    //        if (this.log && this.log.logging) this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
+    //    } else if (this.log && this.log.logging)
+    //        this.log.log('error', 'Callback for on page is not a function', typeof callback, callback);
+    //};
 
-    DeviceProfile.prototype.onPage = function (page) {
-        if (typeof this._onPage === 'function')
-            this._onPage(page);
-        else if (this.log.logging)
-            this.log.log('warn', 'No on page callback specified for page ', page);
-    };
+    //DeviceProfile.prototype.onPage = function (page) {
+    //    //if (typeof this._onPage === 'function')
+    //    //    this._onPage(page);
+    //    //else if (this.log && this.log.logging)
+    //    //    this.log.log('warn', 'No on page callback specified for page ', page);
+    //    this.emit('page', page);
+    //};
 
    
     DeviceProfile.prototype.toString = function ()

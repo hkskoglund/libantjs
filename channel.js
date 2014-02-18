@@ -1,26 +1,28 @@
 ﻿/* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
 
-  var     Logger = require('logger');
-//var 
-//events = require('events'),
-//   util = require('util');
+define(['logger','events'],function (Logger,EventEmitter) {
 
     function Channel(configuration) {
-        // events.EventEmitter.call(this);
+
+        EventEmitter.call(this);
+
         this.options = configuration;
 
         this.parameters = {};
-        if (configuration)
+       
          this.log = new Logger(configuration);
-        else
-          this.log = new Logger();
+     
     }
     
-    //util.inherits(Channel, events.EventEmitter);
-    
+    // Inherit from event emitter
+    Channel.prototype = Object.create(EventEmitter.prototype);
+    Channel.prototype.constructor = Channel;
+  
+
+   // var d = Object.getOwnPropertyDescriptor(Channel.prototype, "constructor");
+   
+
     Channel.prototype.getConfigurations = function ()
     {
         var conf = [];
@@ -224,7 +226,6 @@ define(function (require, exports, module) {
       
     };
     
-        module.exports = Channel;
-        
-        return module.exports;
+    return Channel;
+      
 });

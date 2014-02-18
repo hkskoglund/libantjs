@@ -14,9 +14,9 @@ define(function (require, exports, module) {
         TempPage1 = require('profiles/environment/TemperaturePage1'),
         GenericPage = require('profiles/Page');
       
-    function DeviceProfile_ENVIRONMENT(configuration) {
+    function DeviceProfile_ENVIRONMENT(configuration,parent) {
       
-        DeviceProfile.call(this, configuration);
+        DeviceProfile.call(this, configuration,parent);
         
         this.addConfiguration("slave", {
             description: "Slave configuration for ANT+ ENVIRONMENT device profile",

@@ -1,5 +1,5 @@
 ﻿
-define(['logger','root/events'],function (Logger,EventEmitter) {
+define(['logger','events'],function (Logger,EventEmitter) {
     'use strict'
 
 // Abstract USB device

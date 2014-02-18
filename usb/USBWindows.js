@@ -459,17 +459,25 @@ define(['usb/USBDevice'],function (USBDevice) {
             }
 
             var iBuffer = this.dataReader.readBuffer(bytesRead);
-            var buf = new Uint8Array(iBuffer);  // Convet from Windows.Storage.Streams.Ibuffer to Uint8Array
-            if (this.log.logging)
+            var buf = new Uint8Array(iBuffer);  // Convert from Windows.Storage.Streams.Ibuffer to Uint8Array
+            if (this.log && this.log.logging)
                 this.log.log('log', "Rx", buf, bytesRead + ' bytes read');
 
-            if (this.log.logging && console && console.time)
+            if (!buf)
+            {
+                if (this.log && this.log.logging)
+                    this.log.log('warn', 'Rx', 'Undefined receive buffer, skipped')
+                return;
+            }
+
+
+            if (this.log && this.log.logging && console && console.time)
                 console.time('RXparse');
 
             //rxParser(undefined, buf);
             this.emit('usb', buf); // Using events allows more listeners of usb data, e.g logging/debugging
 
-            if (this.log.logging && console && console.timeEnd)
+            if (this.log && this.log.logging && console && console.timeEnd)
                 console.timeEnd('RXparse');
 
             retry();
@@ -477,13 +485,13 @@ define(['usb/USBDevice'],function (USBDevice) {
         }.bind(this);
 
         var error = function _error(err) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('error', 'RX', err, err.stack);
             transferErrorCount++;
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                 retry();
             else
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                    
                         this.log.log('error', 'Too many failed attempts to read from device, reading stopped');
 
@@ -503,7 +511,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 //    retry();
                 //else
 
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', 'Failed loadAsync ANT -> HOST', e);
 
             }
@@ -512,7 +520,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         MAX_IN_PACKET_SIZE = this.ANTdevice.defaultInterface.bulkInPipes[0].endpointDescriptor.maxPacketSize || 64;
         REQUESTED_TRANSFER_SIZE = this.options.length.in || MAX_IN_PACKET_SIZE
 
-        if (this.log.logging)
+        if (this.log && this.log.logging)
             this.log.log('log', 'Requested transfer size on in endpoint is ' + REQUESTED_TRANSFER_SIZE + ' bytes');
 
         retry();
@@ -535,7 +543,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 //return;
             }
         } catch (e) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('error', 'Failed writeBytes to dataWriter for ANT USB', e);
             callback(e);
         }

@@ -16,6 +16,7 @@ define(function (require, exports, module) {
         var devNum = '*',
             devType = '*',
             transType = '*';
+            
 
         DeviceProfile.call(this, configuration);
 
@@ -55,15 +56,23 @@ define(function (require, exports, module) {
 
         this.profile = {}; // indexed by device type
 
-        this.addProfile(new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage }));
-        this.addProfile(new SDMProfile({ log: this.log.logging, onPage: configuration.onPage }));
-        this.addProfile(new HRMProfile({ log: this.log.logging, onPage: configuration.onPage }));
-        this.addProfile(new SPDCADProfile({ log: this.log.logging, onPage: configuration.onPage }));
+       
+        
+
+        this.addProfile(new TEMPProfile({ log: this.log.logging },this));
+        this.addProfile(new SDMProfile({ log: this.log.logging}, this));
+        this.addProfile(new HRMProfile({ log: this.log.logging }, this));
+        this.addProfile(new SPDCADProfile({ log: this.log.logging }, this));
 
     }
 
     RxScanMode.prototype = Object.create(DeviceProfile.prototype);
     RxScanMode.constructor = RxScanMode;
+
+    RxScanMode.prototype.onPage = function (page)
+    {
+        this.emit('page',page);
+    }
 
     RxScanMode.prototype.addProfile = function (profile) {
         var deviceType;
@@ -75,6 +84,9 @@ define(function (require, exports, module) {
 
             } else {
                 this.profile[deviceType] = profile;
+                
+                profile.addEventListener('page',this.onPage.bind(this));
+
                 if (this.log.logging)
                     this.log.log('info', 'Added profile for device type '+deviceType+' to RX SCAN mode channel', profile);
             }
@@ -83,6 +95,8 @@ define(function (require, exports, module) {
             this.log.log('error', 'Attempt to add an Undefined or Null profile is not allowed');
     }
 
+    // Scan mode receives all broadcasts on channel 0 
+    // The broadcast is forwared to a particular device profile (for parsing of page) based on the device type in the channel id
     RxScanMode.prototype.broadCast = function (broadcast) {
         var currentProfile;
         if (!broadcast) {
@@ -99,14 +113,13 @@ define(function (require, exports, module) {
 
         currentProfile = this.profile[broadcast.channelId.deviceType];
 
-        if (currentProfile)
+        if (currentProfile) // Forward
             currentProfile.broadCast(broadcast);
         else
             if (this.log.logging)
                 this.log.log('warn', 'No profile registered for device type on RX SCAN channel', broadcast.data, 'from ' + broadcast.channelId.toString());
 
     };
-
 
     module.exports = RxScanMode;
     return module.exports;

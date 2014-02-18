@@ -1282,7 +1282,7 @@ Host.prototype.RXparse = function ( data) {
     {
         //this.log.log('log','Parsing next ANT message, expecting SYNC byte at byteOffset ', nextSYNCIndex,data);
         // console.log(data.slice(nextExpectedSYNCIndex));
-        return this.RXparse(undefined,data.subarray(nextSYNCIndex));
+        return this.RXparse(data.subarray(nextSYNCIndex));
     }
     
 };

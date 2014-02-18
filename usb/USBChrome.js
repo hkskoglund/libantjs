@@ -92,13 +92,16 @@ define(function (require, exports, module) {
                     transferErrorCount = 0;
                     data = new Uint8Array(RXinfo.data);
                     if (this.log && this.log.logging) this.log.log('log', "Rx", RXinfo, data);
-                    if (this.log && this.log.logging && data.length === 0)
+                    if (this.log && this.log.logging && data && data.length === 0)
                         this.log.log('warn', 'No data received data length is 0 bytes');
+                    if (this.log && this.log.logging && !data )
+                        this.log.log('warn', 'Undefined data received',Rxinfo.data);
                    try {
                        if (this.log.logging) console.time('RXparse');
                      
                       // rXparser(undefined, data);
-                       this.emit('usb', data); // Using events allows more listeners of usb data, e.g logging/debugging
+                       if (data)
+                           this.emit('usb', data); // Using events allows more listeners of usb data, e.g logging/debugging
                        if (this.log.logging) console.timeEnd('RXparse');
                        
                     } catch (e)
