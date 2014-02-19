@@ -3,6 +3,7 @@
 
 define(function (require, exports, module) {
     "use strict";
+
 var ANTMessage = require('messages/ANTMessage');
 
 function CapabilitiesMessage(data) {
@@ -46,15 +47,23 @@ CapabilitiesMessage.prototype.parse = function () {
    
     this.MAX_CHAN =  this.content[0];
     this.MAX_NET = this.content[1];
-    var standardOptions = this.content[2],
-      
-    advancedOptions = this.content[3],
 
-    // Advanced options2 and 3 probably 16-bit
-    advancedOptions2 = this.content[4], // this.content[5] === 0
+    var standardOptions = this.content[2],
+
+        advancedOptions = this.content[3],
+
+    // Documentation update http://www.thisisant.com/forum/viewthread/4250/
+
+        advancedOptions2 = this.content[4],
+
+        advancedOptions3 = this.content[6],
+
+        advancedOptions4 = this.content[7];
+    
+    this.maxSensRcoreChannels =  this.content[5];
    
    // ANT USB 2 does not have advanced options 3, so it will be undefined
-    advancedOptions3 = this.content[6]; // this.content[7] === 0
+    advancedOptions3 = this.content[6]; 
     
     this.standardOptions = {
         value: "MSB " + standardOptions.toString(2) + " " + standardOptions,
@@ -76,6 +85,7 @@ CapabilitiesMessage.prototype.parse = function () {
         CAPABILITIES_SEARCH_LIST_ENABLED : advancedOptions & (1 << 7),
     };
 
+    if (advancedOptions2 !== undefined)
     this.advancedOptions2 = {
         value: "MSB " + advancedOptions2.toString(2) + " " + advancedOptions2,
         CAPABILITIES_LED_ENABLED : advancedOptions2 & 0x01,
@@ -86,7 +96,7 @@ CapabilitiesMessage.prototype.parse = function () {
         CAPABILITIES_FS_ANTFS_ENABLED : advancedOptions2 & (1 << 6), // (1 << n) = set bit n high (bit numbered from 0 - n)
     };
 
-    if (advancedOptions3)
+    if (advancedOptions3 !== undefined)
         this.advancedOptions3 = {
             value : "MSB "+advancedOptions3.toString(2) + " " + advancedOptions3,
             CAPABILITIES_ADVANCED_BURST_ENABLED : advancedOptions3 & 0x01,
@@ -96,9 +106,13 @@ CapabilitiesMessage.prototype.parse = function () {
             CAPABILITIES_SELECTIVE_DATA_ENABLED : advancedOptions3 & (1 << 6)
         };
      
-   // this.message = "Max channels: " + this.getNumberOfChannels() + " max networks: " + this.getNumberOfNetworks();
-
-   // return this.message;
+    if (advancedOptions4 !== undefined)
+        this.advancedOptions4 = {
+            value: "MSB " + advancedOptions4.toString(2) + " " + advancedOptions4,
+            CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED: advancedOptions4 & 0x01 // Bit 0
+            // Bit 1-7 reserved
+        }
+   
 };
 
 //CapabilitiesMessage.prototype.showCapabilities = function ()
@@ -161,7 +175,7 @@ CapabilitiesMessage.prototype.parse = function () {
 CapabilitiesMessage.prototype.toString = function () {
     //console.log("capabilities", this);
     // " ID 0x" + this.id.toString(16)
-    var msg = this.name +  " Max channels: " + this.getNumberOfChannels() + " Max networks:" + this.getNumberOfNetworks()+ " ";
+    var msg = this.name + " Max channels: " + this.getNumberOfChannels() + " Max networks:" + this.getNumberOfNetworks()+ ' Max sensRcore channels: ' + this.maxSensRcoreChannels+' ';
 
     if (this.standardOptions.CAPABILITIES_NO_RECEIVE_CHANNELS)
         msg += "No receive channels ";
@@ -189,18 +203,20 @@ CapabilitiesMessage.prototype.toString = function () {
     if (this.advancedOptions.CAPABILITIES_SEARCH_LIST_ENABLED)
         msg += "Search list ";
 
-    if (this.advancedOptions2.CAPABILITIES_LED_ENABLED)
-        msg += "Led ";
-    if (this.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
-        msg += "Extended messages ";
-    if (this.advancedOptions2.CAPABILITIES_SCAN_MODE_ENABLED)
-        msg += "Scan mode ";
-    if (this.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
-        msg += "Proximity search ";
-    if (this.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
-        msg += "Extended assign ";
-    if (this.advancedOptions2.CAPABILITIES__FS_ANTFS_ENABLED)
-        msg += "ANT-FS ";
+    if (this.advancedOptions2) {
+        if (this.advancedOptions2.CAPABILITIES_LED_ENABLED)
+            msg += "Led ";
+        if (this.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
+            msg += "Extended messages ";
+        if (this.advancedOptions2.CAPABILITIES_SCAN_MODE_ENABLED)
+            msg += "Scan mode ";
+        if (this.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
+            msg += "Proximity search ";
+        if (this.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
+            msg += "Extended assign ";
+        if (this.advancedOptions2.CAPABILITIES__FS_ANTFS_ENABLED)
+            msg += "ANT-FS ";
+    }
 
     if (this.advancedOptions3) {
         if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
@@ -213,6 +229,11 @@ CapabilitiesMessage.prototype.toString = function () {
             msg += "High duty search ";
         if (this.advancedOptions3.CAPABILITIES_SELECTIVE_DATA_ENABLED)
             msg += "Selective data ";
+    }
+
+    if (this.advancedOptions4) {
+        if (this.advancedOptions4.CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED)
+            msg += " RF Active notification";
     }
   
     return msg;
