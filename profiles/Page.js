@@ -2,110 +2,109 @@
 
 define(function (require, exports, module) {
     'use strict';
-    
-    var  Logger = require('logger');
-      
-     function GenericPage(configuration,broadcast) {
-        
-          this.log = new Logger(configuration);
-         
-          if (broadcast) {
-              this.broadcast = broadcast;
-             // this.profile = broadcast.profile;
-          }
 
-     }
-    
+    var Logger = require('logger');
+
+    function GenericPage(configuration, broadcast) {
+
+        this.log = new Logger(configuration);
+
+        if (broadcast) {
+            this.broadcast = broadcast;
+            // this.profile = broadcast.profile;
+        }
+
+    }
+
     GenericPage.prototype.COMMON = {
-        PAGE80 : 0x50,
-        PAGE81 : 0x51,
-        PAGE82 : 0x52 }; // Battery status
-    
+        PAGE80: 0x50,
+        PAGE81: 0x51,
+        PAGE82: 0x52
+    }; // Battery status
+
     GenericPage.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
 
-     // Parsing of common pages
-     GenericPage.prototype.parse = function (broadcast)
-     {
-        
+    // Parsing of common pages
+    GenericPage.prototype.parse = function (broadcast) {
 
-          var  data;
-         
-         if (!broadcast) {
-             this.log.log('error','Undefined broadcast received');
-             return;
-         } else
 
-             this.broadcast = broadcast;
-         
-         data = broadcast.data;
-         
-         
-         if (!data)
-         {
-             this.log.log('error','Received undefined data in broadcast');
-             return;
-         }
-         
-         var dataView = new DataView(data.buffer);
-         
-         // Byte 0 
-         this.number = data[0];
-         
-          // Byte 1 - reserved
+        var data;
+
+        if (!broadcast) {
+            this.log.log('error', 'Undefined broadcast received');
+            return;
+        } else
+
+            this.broadcast = broadcast;
+
+        data = broadcast.data;
+
+
+        if (!data) {
+            this.log.log('error', 'Received undefined data in broadcast');
+            return;
+        }
+
+        var dataView = new DataView(data.buffer);
+
+        // Byte 0 
+
+        this.number = data[0];
+
+        // Byte 1 - reserved
         // 0xFF
-        
+
         // Byte 2 - reserved
         // 0xFF
-         
-         switch (this.number)
-         {
-            
-             case GenericPage.prototype.COMMON.PAGE80: // 80 Common data page - Manufactorer's identification
-                
-                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
-                 
-                  // Byte 0
+
+        switch (this.number) {
+
+            case GenericPage.prototype.COMMON.PAGE80: // 80 Common data page - Manufactorer's identification
+
+                this.type = GenericPage.prototype.TYPE.BACKGROUND;
+
+                // Byte 0
                 this.number = data[0];
-                
+
                 // Byte 3  - HW revision - set by manufaturer
                 this.HWRevision = data[3];
-                
-                // Byte 4 LSB - 5 MSB - little endian
-                this.manufacturerID = dataView.getUint16(data.byteOffset+4,true);
-                
-                // Byte 6 LSB - 7 MSB - little endian
-                this.modelNumber = dataView.getUint16(data.byteOffset+6,true);
-      
-                                          
-                 break;
-                 
-             case GenericPage.prototype.COMMON.PAGE81: // 81 Common data page - Product information 
-                               
-                 this.type = GenericPage.prototype.TYPE.BACKGROUND;
-                 
-                // Byte 3 Software revision - set by manufacturer
-                 this.SWRevision = data[3];
-                
-                // Byte 4 LSB - 7 MSB Serial Number - little endian
-                 this.serialNumber = dataView.getUint32(data.byteOffset+4,true);
-                                      
-                 break;
-             
-               case GenericPage.prototype.COMMON.PAGE82: // 82 Common data page - Battery Status
-                
-                this.type = GenericPage.prototype.TYPE.BACKGROUND;
-                 
-                 // Byte 1-2 -reserved 0xFF
-                 
-                   // Byte 7
 
-                this.descriptive = {}
-                   
-                this.descriptive.coarseVoltage = data[7] & 0x0F;        // Bit 0-3
-                this.descriptive.batteryStatus = (data[7] & 0x70) >> 4;
-                this.descriptive.resoultion = (data[7] & 0x80) >> 7; // Bit 7 0 = 16 s, 1 = 2 s
-           
-               
+                // Byte 4 LSB - 5 MSB - little endian
+                this.manufacturerID = dataView.getUint16(data.byteOffset + 4, true);
+
+                // Byte 6 LSB - 7 MSB - little endian
+                this.modelNumber = dataView.getUint16(data.byteOffset + 6, true);
+
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE81: // 81 Common data page - Product information 
+
+                this.type = GenericPage.prototype.TYPE.BACKGROUND;
+
+                // Byte 3 Software revision - set by manufacturer
+                this.SWRevision = data[3];
+
+                // Byte 4 LSB - 7 MSB Serial Number - little endian
+                this.serialNumber = dataView.getUint32(data.byteOffset + 4, true);
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE82: // 82 Common data page - Battery Status
+
+                this.type = GenericPage.prototype.TYPE.BACKGROUND;
+
+                // Byte 1-2 -reserved 0xFF
+
+                // Byte 7
+
+                this.descriptive = {
+                    coarseVoltage: data[7] & 0x0F,
+                    batteryStatus: (data[7] & 0x70) >> 4,
+                    resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
+                }
+
+
                 switch (this.descriptive.batteryStatus) {
                     case 0x00: this.batteryStatusString = "Reserved"; break;
                     case 0x01: this.batteryStatusString = "New"; break;
@@ -121,113 +120,110 @@ define(function (require, exports, module) {
                 var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;
 
                 // Byte 3-5
-                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+ 3,true) & 0x00FFFFFF) * unit_multiplier; // 24 - bit only
+
+                this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset + 3, true) & 0x00FFFFFF) * unit_multiplier; // 24 - bit only
                 this.cumulativeOperatingTimeString = this.toStringCumulativeOperatingTime(this.cumulativeOperatingTime);
-                
+
                 this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
 
+                // Byte 6
 
-                 // Byte 6
                 this.fractionalBatteryVoltage = data[6] / 256; // Volt
                 if (this.descriptive.coarseVoltage === 0x0F)
                     this.batteryVoltage = "Invalid";
                 else
                     this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
- 
-                break;   
-                 
-            default :
-                                          
+
+                break;
+
+            default:
+
                 this.log.log('error', 'Unable to parse page number ', this.number + ' 0x' + this.number.toString(16), data);
                 return -1;
-                                          
-                 //break;
-                 
-         }
-       
-     };
 
-     GenericPage.prototype.toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
-         if (cumulativeOperatingTime < 3600)
-             return cumulativeOperatingTime.toFixed(1) + 's ';
-         else
-             return (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
+                //break;
 
-     }
-
-     GenericPage.prototype._batteryVoltageToString = function (voltage) {
-         if (typeof voltage === "number")
-             return voltage.toFixed(1);
-         else
-             return "" + voltage;
-     };
-    
-    
-    GenericPage.prototype.toString = function ()
-    {
-        var msg;
-        
-        switch (this.number) {
-            
-            case GenericPage.prototype.COMMON.PAGE80 :
-                    
-                      msg = this.type + " P# " + this.number +" Manufacturer " + this.manufacturerID + " HW revision "+this.HWRevision+ " Model nr. "+this.modelNumber;
-       
-                    break;
-                    
-            case GenericPage.prototype.COMMON.PAGE81 : 
-                    
-                    msg = this.type + " P# " + this.number + " SW revision " + this.SWRevision;
-       
-                  if (this.serialNumber === GenericPage.prototype.NO_SERIAL_NUMBER)
-                          msg += " No serial number";
-                   else
-                       msg += " Serial number " + this.serialNumber;
-                    
-                    break;
-                
-            case GenericPage.prototype.COMMON.PAGE82:
-             
-
-                msg = this.type + " P# " + this.number+" Cumulative operating time ";
-                
-                msg += this.cumulativeOperatingTimeString+' Battery reset ca. '+this.lastBatteryReset;
-                
-                if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
-                  msg += " Battery (V) " + this._batteryVoltageToString(this.batteryVoltage);
-                
-                msg += " Battery status " + this.batteryStatusString;
-                
-                break;
-                
-                    
-            default :
-                    this.log.log('error','Unable to construct string for page number',this.number);
-                
-                    break;
         }
-                    
-        return msg;
-                    
-    };
-    
-    GenericPage.prototype.TYPE = {
-        MAIN : "main",
-        BACKGROUND : "background"
+
     };
 
-    GenericPage.prototype.clone = function ()
-    {
+    GenericPage.prototype.toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
+        if (cumulativeOperatingTime < 3600)
+            return cumulativeOperatingTime.toFixed(1) + 's ';
+        else
+            return (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
+
+    }
+
+    GenericPage.prototype._batteryVoltageToString = function (voltage) {
+        if (typeof voltage === "number")
+            return voltage.toFixed(1);
+        else
+            return "" + voltage;
+    };
+
+
+    GenericPage.prototype.toString = function () {
+        var msg;
+
+        switch (this.number) {
+
+            case GenericPage.prototype.COMMON.PAGE80:
+
+                msg = this.type + " P# " + this.number + " Manufacturer " + this.manufacturerID + " HW revision " + this.HWRevision + " Model nr. " + this.modelNumber;
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE81:
+
+                msg = this.type + " P# " + this.number + " SW revision " + this.SWRevision;
+
+                if (this.serialNumber === GenericPage.prototype.NO_SERIAL_NUMBER)
+                    msg += " No serial number";
+                else
+                    msg += " Serial number " + this.serialNumber;
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE82:
+
+
+                msg = this.type + " P# " + this.number + " Cumulative operating time ";
+
+                msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
+
+                if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
+                    msg += " Battery (V) " + this._batteryVoltageToString(this.batteryVoltage);
+
+                msg += " Battery status " + this.batteryStatusString;
+
+                break;
+
+
+            default:
+                this.log.log('error', 'Unable to construct string for page number', this.number);
+
+                break;
+        }
+
+        return msg;
+
+    };
+
+    GenericPage.prototype.TYPE = {
+        MAIN: "main",
+        BACKGROUND: "background"
+    };
+
+    GenericPage.prototype.clone = function () {
         var clone = Object.create(null),
             ownEnumerableProperties = Object.keys(this),
             property;
 
-        for (var index in ownEnumerableProperties)
-        {
+        for (var index in ownEnumerableProperties) {
             property = ownEnumerableProperties[index];
 
-            switch (property)
-            {
+            switch (property) {
                 case 'broadcast': // return the most essential information for the ui
 
                     clone.broadcast = {
@@ -238,12 +234,12 @@ define(function (require, exports, module) {
                         }
 
                     }
-                    
+
 
                     break;
 
                 case 'log': // ignore
-                case 'previousPage' :
+                case 'previousPage':
 
                     break;
 
@@ -254,14 +250,14 @@ define(function (require, exports, module) {
                     break;
 
             }
-           
+
         }
 
         return clone;
-        
+
     }
-    
+
     module.exports = GenericPage;
-    
+
     return module.exports;
 });
