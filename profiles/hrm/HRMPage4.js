@@ -4,7 +4,7 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,broadcast,previousPage) {
+    function HRMPage4(configuration,broadcast,previousPage) {
        GenericPage.call(this,configuration);
         
         this.type = GenericPage.prototype.TYPE.MAIN;
@@ -15,10 +15,10 @@ define(function (require, exports, module) {
            this.parse(broadcast,previousPage);
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    HRMPage4.prototype = Object.create(GenericPage.prototype); 
+    HRMPage4.prototype.constructor = HRMPage4; 
     
-    Page.prototype.parse = function (broadcast,previousPage)
+    HRMPage4.prototype.parse = function (broadcast,previousPage)
     {
           var  data = broadcast.data, dataView = new DataView(data.buffer);
         
@@ -44,7 +44,7 @@ define(function (require, exports, module) {
     };
     
     // Set RR interval based on previous heart event time and heart beat count
-    Page.prototype.setRRInterval = function (previousPage) {
+    HRMPage4.prototype.setRRInterval = function (previousPage) {
 
        
         // Skip, if previous page not available
@@ -69,7 +69,7 @@ define(function (require, exports, module) {
         }
     };
     
-    Page.prototype.toString = function () {
+    HRMPage4.prototype.toString = function () {
         var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
         
         if (this.RRInterval)
@@ -78,7 +78,7 @@ define(function (require, exports, module) {
         return msg;
     };
     
-    module.exports = Page;
+    module.exports = HRMPage4;
         
     return module.exports;
     

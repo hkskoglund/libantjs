@@ -7,7 +7,7 @@ define(function (require, exports, module) {
     
     // Data page 1 - Temperature
     
-    function Page(configuration,broadcast)
+    function TemperaturePage1(configuration,broadcast)
     {
         GenericPage.call(this,configuration,broadcast);
         
@@ -19,11 +19,11 @@ define(function (require, exports, module) {
            this.parse(broadcast);
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    TemperaturePage1.prototype = Object.create(GenericPage.prototype); 
+    TemperaturePage1.prototype.constructor = TemperaturePage1; 
     
      // Byte layout
-    Page.prototype.BYTE_OFFSET = {
+    TemperaturePage1.prototype.BYTE_OFFSET = {
         PAGE_NUMBER : 0,
         // Reserved
         EVENT_COUNT : 2,
@@ -36,7 +36,7 @@ define(function (require, exports, module) {
     };
     
     // Bit field layout
-    Page.prototype.BIT_FIELD = {
+    TemperaturePage1.prototype.BIT_FIELD = {
         
         HOUR24_LOW_MSN : { START_BIT : 4, LENGTH : 4 },
         SIGN_HOUR24_LOW_MSN : { START_BIT : 3, LENGTH : 1},
@@ -50,7 +50,7 @@ define(function (require, exports, module) {
     
     // Bit mask to pinpoint BIT_FIELD
     
-    Page.prototype.BIT_MASK = {
+    TemperaturePage1.prototype.BIT_MASK = {
         
         HOUR24_LOW_MSN : parseInt("11110000",2),
         HOUR24_HIGH_LSN : parseInt("00001111",2),
@@ -70,13 +70,13 @@ define(function (require, exports, module) {
     };
           
    
-    Page.prototype.UNIT = {
+    TemperaturePage1.prototype.UNIT = {
         HOUR24_LOW : 0.1,
         HOUR24_HIGH : 0.1,
         CURRENT_TEMP : 0.01
     };
         
-    Page.prototype.parse = function (broadcast)
+    TemperaturePage1.prototype.parse = function (broadcast)
     {
         var data = broadcast.data;
             //dataView = new DataView(data.buffer);
@@ -85,18 +85,18 @@ define(function (require, exports, module) {
 
         // Byte 0 - page number
         
-        this.number = data[Page.prototype.BYTE_OFFSET.PAGE_NUMBER];
+        this.number = data[TemperaturePage1.prototype.BYTE_OFFSET.PAGE_NUMBER];
 
         // Byte 1 - Reserved
         // 0xFF
         
         // Byte 2 - Event count - increments with each measurement
         
-        this.eventCount = data[Page.prototype.BYTE_OFFSET.EVENT_COUNT];
+        this.eventCount = data[TemperaturePage1.prototype.BYTE_OFFSET.EVENT_COUNT];
         
         // Byte 3 - 24 hour low LSB
         
-        var hour24LowLSB = data[Page.prototype.BYTE_OFFSET.HOUR24_LOW_LSB];
+        var hour24LowLSB = data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_LOW_LSB];
         
         //
         // Byte 4 - 24 hour low MSN (4:7) and 24 hour high LSN (0:3)
@@ -105,12 +105,12 @@ define(function (require, exports, module) {
         // Signed Integer 1.5 byte
         // Sbbb bbbbbbbb
        // console.log("MSB",Number(data[4]).toString(2),"LSB",Number(data[3]).toString(2),data);
-        var hour24LowMSN = (data[Page.prototype.BYTE_OFFSET.HOUR24_LOW_MSN] & Page.prototype.BIT_MASK.HOUR24_LOW_MSN) >> Page.prototype.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
+        var hour24LowMSN = (data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_LOW_MSN] & TemperaturePage1.prototype.BIT_MASK.HOUR24_LOW_MSN) >> TemperaturePage1.prototype.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
         // Byte 4 & Sbbb 0000 >> 4
         
-       var signHour24LowMSN = (hour24LowMSN >> Page.prototype.BIT_FIELD.SIGN_HOUR24_LOW_MSN.START_BIT)  === 1 ? -1 : 1;
+       var signHour24LowMSN = (hour24LowMSN >> TemperaturePage1.prototype.BIT_FIELD.SIGN_HOUR24_LOW_MSN.START_BIT)  === 1 ? -1 : 1;
         
-        var valueHour24LowMSN = hour24LowMSN & Page.prototype.BIT_MASK.VALUE_HOUR24_LOW_MSN;
+        var valueHour24LowMSN = hour24LowMSN & TemperaturePage1.prototype.BIT_MASK.VALUE_HOUR24_LOW_MSN;
         // bbb
         
         // Javascript : bitwise operators working on 32-bit 2's complement bigendian 
@@ -124,24 +124,24 @@ define(function (require, exports, module) {
         if (valueHour24Low !== 0x800) // -0 
         {
              if (signHour24LowMSN === -1)
-                    valueHour24Low = (~valueHour24Low) & Page.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH; // Mask 11-bit magnitude of signed int for 1's complement form of negative integer
-            this.hour24Low = valueHour24Low * signHour24LowMSN * Page.prototype.UNIT.HOUR24_LOW;
+                    valueHour24Low = (~valueHour24Low) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH; // Mask 11-bit magnitude of signed int for 1's complement form of negative integer
+            this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.prototype.UNIT.HOUR24_LOW;
         }
         else
             this.hour24Low = undefined;
         
-        var hour24HighLSN = (data[Page.prototype.BYTE_OFFSET.HOUR24_HIGH_LSN] & Page.prototype.BIT_MASK.HOUR24_HIGH_LSN);
+        var hour24HighLSN = (data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_HIGH_LSN] & TemperaturePage1.prototype.BIT_MASK.HOUR24_HIGH_LSN);
         // Byte 4 & 0000 1111
         
         //
         // Byte 5 - 24 hour high MSB
         //
         
-        var hour24HighMSB = data[Page.prototype.BYTE_OFFSET.HOUR24_HIGH_MSB];
+        var hour24HighMSB = data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_HIGH_MSB];
         
-        var signHour24HighMSB = ((hour24HighMSB & Page.prototype.BIT_MASK.SIGN_HOUR24_HIGH_MSB) >> Page.prototype.BIT_FIELD.SIGN_HOUR24_HIGH_MSB.START_BIT)  === 1 ?  -1 : 1;
+        var signHour24HighMSB = ((hour24HighMSB & TemperaturePage1.prototype.BIT_MASK.SIGN_HOUR24_HIGH_MSB) >> TemperaturePage1.prototype.BIT_FIELD.SIGN_HOUR24_HIGH_MSB.START_BIT)  === 1 ?  -1 : 1;
         
-        var value24HighMSB = hour24HighMSB & Page.prototype.BIT_MASK.VALUE_HOUR24_HIGH_MSB;
+        var value24HighMSB = hour24HighMSB & TemperaturePage1.prototype.BIT_MASK.VALUE_HOUR24_HIGH_MSB;
         // Byte 5 & 0b01111111
         
         var value24High = (value24HighMSB << 4) | hour24HighLSN;
@@ -149,9 +149,9 @@ define(function (require, exports, module) {
     
         if (value24High !== 0x800) {
              if (signHour24HighMSB === -1) 
-              value24High = (~value24High) & Page.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+              value24High = (~value24High) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
             
-            this.hour24High = value24High * signHour24HighMSB * Page.prototype.UNIT.HOUR24_HIGH;
+            this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.prototype.UNIT.HOUR24_HIGH;
         }
         else
             this.hour24High = undefined;
@@ -159,16 +159,16 @@ define(function (require, exports, module) {
         // Byte 6 -7
         //
         
-        var currentTempLSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB];
+        var currentTempLSB = data[TemperaturePage1.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB];
         
         //
         // Byte 7
         //
-        var currentTempMSB = data[Page.prototype.BYTE_OFFSET.CURRENT_TEMP_MSB];
+        var currentTempMSB = data[TemperaturePage1.prototype.BYTE_OFFSET.CURRENT_TEMP_MSB];
         
-        var signCurrentTempMSB = ((currentTempMSB & Page.prototype.BIT_MASK.SIGN_CURRENT_TEMP) >> Page.prototype.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT)  === 1 ?  -1 : 1;
+        var signCurrentTempMSB = ((currentTempMSB & TemperaturePage1.prototype.BIT_MASK.SIGN_CURRENT_TEMP) >> TemperaturePage1.prototype.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT)  === 1 ?  -1 : 1;
         
-        var valueCurrentTempMSB = currentTempMSB & Page.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
+        var valueCurrentTempMSB = currentTempMSB & TemperaturePage1.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
        
         var valueCurrentTemp = (valueCurrentTempMSB << 8) | currentTempLSB;
     
@@ -177,16 +177,16 @@ define(function (require, exports, module) {
         {
     
              if (signCurrentTempMSB == -1)
-                valueCurrentTemp = (~valueCurrentTemp) & Page.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;  
+                valueCurrentTemp = (~valueCurrentTemp) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;  
         
-           this.currentTemp = valueCurrentTemp * signCurrentTempMSB * Page.prototype.UNIT.CURRENT_TEMP;
+           this.currentTemp = valueCurrentTemp * signCurrentTempMSB * TemperaturePage1.prototype.UNIT.CURRENT_TEMP;
         }
     
         else
             this.currentTemp = undefined;
     };
    
-   Page.prototype.toString = function ()
+   TemperaturePage1.prototype.toString = function ()
    {
         var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " Low (24H) " + this.hour24Low.toFixed(1)+ "°C High (24H) "+
             this.hour24High.toFixed(1)+ "°C Current Temp "+this.currentTemp.toFixed(2)+ "°C";
@@ -194,34 +194,9 @@ define(function (require, exports, module) {
         return msg;
    };
 
-   //Page.prototype.clone = function ()
-   //{
-   //    var clone = Object.create(null);
-
-   //    clone.broadcast = {
-   //        channelId: {
-   //            sensorId: this.broadcast.channelId.sensorId,
-   //            deviceType: this.broadcast.channelId.deviceType
-   //        }
-   //    };
-
-   //    clone.timestamp = this.timestamp;
-
-   //    clone.number = this.number;
-
-   //    if (this.currentTemp)
-   //    clone.currentTemp = this.currentTemp;
-       
-   //    if (this.hour24Low)
-   //        clone.hour24Low = this.hour24Low;
-
-   //    if (this.hour24High)
-   //        clone.hour24High = this.hour24High;
-
-   //    return clone;
-   //}
+  
     
-    module.exports = Page;
+    module.exports = TemperaturePage1;
     
     return module.exports;
     

@@ -6,10 +6,8 @@ define(function (require, exports, module) {
     var  Logger = require('logger');
       
      function GenericPage(configuration,broadcast) {
-          if (configuration)
-         this.log = new Logger(configuration);
-        else
-          this.log = new Logger();
+        
+          this.log = new Logger(configuration);
          
           if (broadcast) {
               this.broadcast = broadcast;
@@ -18,25 +16,13 @@ define(function (require, exports, module) {
 
      }
     
-    
-    
     GenericPage.prototype.COMMON = {
         PAGE80 : 0x50,
         PAGE81 : 0x51,
         PAGE82 : 0x52 }; // Battery status
     
     GenericPage.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
-    
-//    GenericPage.prototype.COMMON_PAGES = [0x50,0x51];
-//    
-//     GenericPage.prototype.isCommon = function (number)
-//     {
-//         if (GenericPage.prototype.COMMON_PAGES.indexOf(number) !== -1)
-//             return true;
-//         else
-//             return false;
-//     };
-    
+
      // Parsing of common pages
      GenericPage.prototype.parse = function (broadcast)
      {

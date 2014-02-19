@@ -3,7 +3,7 @@
 define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
     'use strict';
    
-    function Page(configuration, broadcast, previousPage) {
+    function SPDCADPage0(configuration, broadcast, previousPage) {
 
         GenericPage.call(this, configuration);
 
@@ -19,18 +19,18 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
             this.parse(broadcast);
     }
 
-    Page.prototype = Object.create(GenericPage.prototype);
-    Page.prototype.constructor = Page;
+    SPDCADPage0.prototype = Object.create(GenericPage.prototype);
+    SPDCADPage0.prototype.constructor = SPDCADPage0;
 
     // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
-    Page.prototype.BYTE = {
+    SPDCADPage0.prototype.BYTE = {
         BIKE_CADENCE_EVENT_TIME: 0,
         CUMULATIVE_CADENCE_REVOLUTION_COUNT: 2,
         BIKE_SPEED_EVENT_TIME: 4,
         CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
     };
 
-    Page.prototype.parse = function (broadcast) {
+    SPDCADPage0.prototype.parse = function (broadcast) {
 
         var data = broadcast.data,
             dataView = new DataView(data.buffer),
@@ -47,19 +47,19 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
 
         // Byte 0-1 - Bike Cadence Event Time LSB MSB - last valid bike cadence event - unit: 1/1024s - rollover : 64 s
 
-        this.bikeCadenceEventTime = dataView.getUint16(data.byteOffset + Page.prototype.BYTE.BIKE_CADENCE_EVENT_TIME, true);
+        this.bikeCadenceEventTime = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.BIKE_CADENCE_EVENT_TIME, true);
 
         // Byte 2-3 - Cumulative Cadence Revolution Cound LSB MSB - total number of pedal revolutions - rollover : 65536
 
-        this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + Page.prototype.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
+        this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
         
         // Byte 4-5 - Bike speed event time LSB MSB - time of last valid bike speed event - unit : 1/1024 s, 64 s
 
-        this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + Page.prototype.BYTE.BIKE_SPEED_EVENT_TIME, true);
+        this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.BIKE_SPEED_EVENT_TIME, true);
 
         // Byte 6-7 - Cumulative Speed Revolution LSB MSB - total number of wheel revolutions - rollover : 65536
 
-        this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + Page.prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
+        this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
 
         // Cadence
         // Spec. section 5.3.1 - Cadence computation, p. 29
@@ -134,7 +134,7 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
     };
 
    
-    Page.prototype.toString = function () {
+    SPDCADPage0.prototype.toString = function () {
 
         var calibrationFactor = 2.07, // Just used for a speed estimate
             speed,
@@ -157,6 +157,6 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         return msg;
     };
 
-    return Page;
+    return SPDCADPage0;
 
 });

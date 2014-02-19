@@ -5,7 +5,7 @@ define(function (require, exports, module) {
 
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,broadcast,previousPage) {
+    function HRMPage0(configuration,broadcast,previousPage) {
        GenericPage.call(this,configuration);
         
        this.type = GenericPage.prototype.TYPE.MAIN;
@@ -16,10 +16,10 @@ define(function (require, exports, module) {
            this.parse(broadcast,previousPage);
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    HRMPage0.prototype = Object.create(GenericPage.prototype); 
+    HRMPage0.prototype.constructor = HRMPage0; 
     
-    Page.prototype.parse = function (broadcast,previousPage)
+    HRMPage0.prototype.parse = function (broadcast,previousPage)
     {
         var  data = broadcast.data, dataView = new DataView(data.buffer);
         
@@ -46,7 +46,7 @@ define(function (require, exports, module) {
     };
     
     // Set RR interval based on previous heart event time and heart beat count
-    Page.prototype.setRRInterval = function (previousPage) {
+    HRMPage0.prototype.setRRInterval = function (previousPage) {
         // Skip, if previous page not available
         if (!previousPage)
             return;
@@ -72,7 +72,7 @@ define(function (require, exports, module) {
         }
     };
     
-    Page.prototype.toString = function () {
+    HRMPage0.prototype.toString = function () {
         var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
        
         
@@ -82,28 +82,9 @@ define(function (require, exports, module) {
         return msg;
     };
 
-    //Page.prototype.clone = function ()
-    //{
-    //    var clone = Object.create(null);
-        
-    //    clone.broadcast = {
-    //        channelId: {
-    //            sensorId: this.broadcast.channelId.sensorId,
-    //            deviceType : this.broadcast.channelId.deviceType
-    //        }
-    //    };
-       
-    //    clone.timestamp = this.timestamp;
-
-    //    clone.computedHeartRate = this.computedHeartRate;
-
-    //    clone.RRInterval = this.RRInterval;
-
-    //    return clone;
-
-    //}
+   
     
-    module.exports = Page;
+    module.exports = HRMPage0;
         
     return module.exports;
     

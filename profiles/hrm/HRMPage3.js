@@ -4,10 +4,10 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,broadcast) {
+    function HRMPage3(configuration,broadcast) {
        GenericPage.call(this,configuration);
     
-       this.type = Page.prototype.TYPE.BACKGROUND;
+       this.type = HRMPage3.prototype.TYPE.BACKGROUND;
 
        //this.profile = broadcast.profile;
           
@@ -15,10 +15,10 @@ define(function (require, exports, module) {
            this.parse(broadcast);
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    HRMPage3.prototype = Object.create(GenericPage.prototype); 
+    HRMPage3.prototype.constructor = HRMPage3; 
     
-    Page.prototype.parse = function (broadcast)
+    HRMPage3.prototype.parse = function (broadcast)
     {
           var  data = broadcast.data, dataView = new DataView(data.buffer);
         
@@ -43,13 +43,13 @@ define(function (require, exports, module) {
 
     };
     
-    Page.prototype.toString = function () {
+    HRMPage3.prototype.toString = function () {
        var msg = this.type + " P# " + this.number +" HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
         
         return msg;
     };
     
-    module.exports = Page;
+    module.exports = HRMPage3;
         
     return module.exports;
     

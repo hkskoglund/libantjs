@@ -6,7 +6,7 @@ define(function (require, exports, module) {
     var GenericPage = require('profiles/Page');
 
     
-    function Page(configuration, broadcast) {
+    function SDMPage2(configuration, broadcast) {
 
         GenericPage.call(this, configuration, broadcast);
 
@@ -26,11 +26,11 @@ define(function (require, exports, module) {
         };
     }
 
-    Page.prototype = Object.create(GenericPage.prototype);
-    Page.prototype.constructor = Page;
+    SDMPage2.prototype = Object.create(GenericPage.prototype);
+    SDMPage2.prototype.constructor = SDMPage2;
 
     // Bit field layout
-    Page.prototype.BIT_FIELD = {
+    SDMPage2.prototype.BIT_FIELD = {
 
         SDMLocation: { START_BIT: 6, LENGTH: 2 },
         BatteryStatus: { START_BIT: 4, LENGTH: 2 },
@@ -44,7 +44,7 @@ define(function (require, exports, module) {
 
     // Bit mask to pinpoint BIT_FIELD
 
-    Page.prototype.BIT_MASK = {
+    SDMPage2.prototype.BIT_MASK = {
 
         SDMLocation: parseInt("11000000",2),
         BatteryStatus: parseInt("00110000",2),
@@ -57,7 +57,7 @@ define(function (require, exports, module) {
     };
 
     // Byte layout
-    Page.prototype.BYTE = {
+    SDMPage2.prototype.BYTE = {
         PAGE_NUMBER: 0,
         RESERVED_1 : 1,
         RESERVED_2 : 2,
@@ -70,13 +70,13 @@ define(function (require, exports, module) {
        
     }
 
-    Page.prototype.UNIT = {
+    SDMPage2.prototype.UNIT = {
         CADENCE_FRACTIONAL: 1/16, // strides pr minute
         SPEED_FRACTIONAL : 1/256 // m/s
     }
 
 
-    Page.prototype.parse = function (broadcast) {
+    SDMPage2.prototype.parse = function (broadcast) {
        
         var data = broadcast.data;
         // dataView = new DataView(data.buffer);
@@ -85,7 +85,7 @@ define(function (require, exports, module) {
 
         // Byte 0 - data page number
 
-        this.number = data[Page.prototype.BYTE.PAGE_NUMBER];
+        this.number = data[SDMPage2.prototype.BYTE.PAGE_NUMBER];
 
         // Byte 1 - reserved 0 x FF
 
@@ -93,26 +93,26 @@ define(function (require, exports, module) {
 
         // Byte 3 - cadence - integer
 
-        this.cadenceInteger = data[Page.prototype.BYTE.CADENCE_INTEGER];
+        this.cadenceInteger = data[SDMPage2.prototype.BYTE.CADENCE_INTEGER];
         
         // Byte 4 - cadence fractional upper nibble
-        this.cadenceFractional = ((data[Page.prototype.BYTE.CADENCE_FRACTIONAL] & Page.prototype.BIT_MASK.UPPER_NIBBLE) >> Page.prototype.BIT_FIELD.CadenceFractional.START_BIT) * (Page.prototype.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
+        this.cadenceFractional = ((data[SDMPage2.prototype.BYTE.CADENCE_FRACTIONAL] & SDMPage2.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage2.prototype.BIT_FIELD.CadenceFractional.START_BIT) * (SDMPage2.prototype.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
         this.cadence = this.cadenceInteger + this.cadenceFractional;
 
-        this.speedInteger = data[Page.prototype.BYTE.SPEED_INTEGER] & Page.prototype.BIT_MASK.LOWER_NIBBLE // lower 4 bit
+        this.speedInteger = data[SDMPage2.prototype.BYTE.SPEED_INTEGER] & SDMPage2.prototype.BIT_MASK.LOWER_NIBBLE // lower 4 bit
 
         // Byte 5 - fractional instantenous speed
-        this.speedFractional = data[Page.prototype.BYTE.SPEED_FRACTIONAL] * Page.prototype.UNIT.SPEED_FRACTIONAL;
+        this.speedFractional = data[SDMPage2.prototype.BYTE.SPEED_FRACTIONAL] * SDMPage2.prototype.UNIT.SPEED_FRACTIONAL;
         this.speed = this.speedInteger + this.speedFractional;
 
         // Byte 6 - reserved 0xFF
 
         // Byte 7 - status - SDM status flags
 
-        this.status.SDMLocation = (data[Page.prototype.BYTE.STATUS] & Page.prototype.BIT_MASK.SDMLocation) >> Page.prototype.BIT_FIELD.SDMLocation.START_BIT;
-        this.status.BatteryStatus = (data[Page.prototype.BYTE.STATUS] & Page.prototype.BIT_MASK.BatteryStatus) >> Page.prototype.BIT_FIELD.BatteryStatus.START_BIT;
-         this.status.SDMHealth = (data[Page.prototype.BYTE.STATUS] & Page.prototype.BIT_MASK.SDMHealth) >> Page.prototype.BIT_FIELD.SDMHealth.START_BIT;
-         this.status.UseState = (data[Page.prototype.BYTE.STATUS] & Page.prototype.BIT_MASK.UseState);
+        this.status.SDMLocation = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.SDMLocation) >> SDMPage2.prototype.BIT_FIELD.SDMLocation.START_BIT;
+        this.status.BatteryStatus = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.BatteryStatus) >> SDMPage2.prototype.BIT_FIELD.BatteryStatus.START_BIT;
+         this.status.SDMHealth = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.SDMHealth) >> SDMPage2.prototype.BIT_FIELD.SDMHealth.START_BIT;
+         this.status.UseState = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.UseState);
        
 
         switch (this.status.SDMLocation) {
@@ -150,7 +150,7 @@ define(function (require, exports, module) {
 
     };
 
-    Page.prototype.toString = function () {
+    SDMPage2.prototype.toString = function () {
        
         var msg = this.type + " P# " + this.number + " ",
             UNUSED = 0x00;
@@ -171,7 +171,7 @@ define(function (require, exports, module) {
         return msg;
     };
 
-    module.exports = Page;
+    module.exports = SDMPage2;
 
     return module.exports;
 

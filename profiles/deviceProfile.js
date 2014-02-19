@@ -10,11 +10,7 @@ define(function (require, exports, module) {
 
     function DeviceProfile(configuration) {
         Channel.call(this, configuration);
-        //this._configuration = configuration;
-
-        //if (configuration.onPage)
-        //    this.setOnPage(configuration.onPage);
-
+     
         this.receivedBroadcastCounter = {};
 
         this.previousPageBroadcast = {}; // Just declare property
@@ -91,7 +87,7 @@ define(function (require, exports, module) {
                               
                             }
 
-                            // Traverse pages number, and call callback (e.g handler in UI) with the latest page
+                            // Traverse pages number, and emit 'page' event (e.g handler in UI) with the latest page
 
                             for (var pageNumber in this.pageNumberPages[sensorId][typeValue]) {
                                 

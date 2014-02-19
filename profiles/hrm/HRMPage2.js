@@ -4,10 +4,10 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,broadcast) {
+    function HRMPage2(configuration,broadcast) {
        GenericPage.call(this,configuration);
     
-       this.type = Page.prototype.TYPE.BACKGROUND;
+       this.type = HRMPage2.prototype.TYPE.BACKGROUND;
 
        //this.profile = broadcast.profile;
         
@@ -16,10 +16,10 @@ define(function (require, exports, module) {
         
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    HRMPage2.prototype = Object.create(GenericPage.prototype); 
+    HRMPage2.prototype.constructor = HRMPage2; 
     
-    Page.prototype.parse = function (broadcast)
+    HRMPage2.prototype.parse = function (broadcast)
     {
         var channelId = broadcast.channelId;
         
@@ -52,13 +52,13 @@ define(function (require, exports, module) {
       
     };
     
-    Page.prototype.toString = function () {
+    HRMPage2.prototype.toString = function () {
         var  msg = this.type + " P# " + this.number +" Manufacturer " + this.manufacturerID + " serial num. : " + this.serialNumber;
         
         return msg;
     };
     
-    module.exports = Page;
+    module.exports = HRMPage2;
         
     return module.exports;
     

@@ -4,10 +4,10 @@ define(function (require, exports, module) {
     'use strict';
     var GenericPage = require('profiles/Page');
     
-    function Page(configuration,broadcast,previousPage) {
+    function HRMPage1(configuration,broadcast,previousPage) {
        GenericPage.call(this,configuration);
     
-       this.type = Page.prototype.TYPE.BACKGROUND;
+       this.type = HRMPage1.prototype.TYPE.BACKGROUND;
 
        //this.profile = broadcast.profile;
           
@@ -15,10 +15,10 @@ define(function (require, exports, module) {
            this.parse(broadcast,previousPage);
     }
     
-    Page.prototype = Object.create(GenericPage.prototype); 
-    Page.prototype.constructor = Page; 
+    HRMPage1.prototype = Object.create(GenericPage.prototype); 
+    HRMPage1.prototype.constructor = HRMPage1; 
     
-    Page.prototype.parse = function (broadcast)
+    HRMPage1.prototype.parse = function (broadcast)
     {
         var data = broadcast.data,
             dataView = new DataView(data.buffer);
@@ -52,13 +52,13 @@ define(function (require, exports, module) {
     };
     
     // Override default .toString on Object.prototype
-    Page.prototype.toString = function () {
+    HRMPage1.prototype.toString = function () {
           var msg = this.type + " P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;
         
         return msg;
     };
     
-    module.exports = Page;
+    module.exports = HRMPage1;
         
     return module.exports;
     

@@ -5,7 +5,7 @@ define(function (require, exports, module) {
 
     var GenericPage = require('profiles/Page');
 
-    function Page(configuration, broadcast) {
+    function SDMPage1(configuration, broadcast) {
 
 
         GenericPage.call(this, configuration, broadcast);
@@ -19,11 +19,11 @@ define(function (require, exports, module) {
             this.parse(broadcast);
     }
 
-    Page.prototype = Object.create(GenericPage.prototype);
-    Page.prototype.constructor = Page;
+    SDMPage1.prototype = Object.create(GenericPage.prototype);
+    SDMPage1.prototype.constructor = SDMPage1;
 
     // Bit field layout
-    Page.prototype.BIT_FIELD = {
+    SDMPage1.prototype.BIT_FIELD = {
 
         DISTANCE_FRACTIONAL : { START_BIT : 4, LENGTH : 4}
         
@@ -32,7 +32,7 @@ define(function (require, exports, module) {
 
     // Bit mask to pinpoint BIT_FIELD
 
-    Page.prototype.BIT_MASK = {
+    SDMPage1.prototype.BIT_MASK = {
 
         UPPER_NIBBLE: 0xF0,
         LOWER_NIBLE : 0X0F
@@ -40,7 +40,7 @@ define(function (require, exports, module) {
     };
 
     // Byte layout
-    Page.prototype.BYTE = {
+    SDMPage1.prototype.BYTE = {
         PAGE_NUMBER: 0,
         TIME_FRACTIONAL: 1,
         TIME_INTEGER: 2,
@@ -52,7 +52,7 @@ define(function (require, exports, module) {
         UPDATE_LATENCY: 7
     };
 
-    Page.prototype.UNIT = {
+    SDMPage1.prototype.UNIT = {
         TIME_FRACTIONAL: 1 / 200, //s
         DISTANCE_FRACTIONAL : 1/16, // m
         SPEED_FRACTIONAL: 1 / 256, // m/s
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
     }
      
 
-    Page.prototype.parse = function (broadcast) {
+    SDMPage1.prototype.parse = function (broadcast) {
         var data = broadcast.data;
         //  dataView = new DataView(data.buffer);
 
@@ -69,43 +69,43 @@ define(function (require, exports, module) {
       
         // Byte 0 - page number
 
-        this.number = data[Page.prototype.BYTE.PAGE_NUMBER];
+        this.number = data[SDMPage1.prototype.BYTE.PAGE_NUMBER];
 
         // Byte 1 - time fractional
 
-        this.timeFractional = data[Page.prototype.BYTE.TIME_FRACTIONAL] * Page.prototype.UNIT.TIME_FRACTIONAL; // s
+        this.timeFractional = data[SDMPage1.prototype.BYTE.TIME_FRACTIONAL] * SDMPage1.prototype.UNIT.TIME_FRACTIONAL; // s
 
         // Byte 2 - time integer
 
-        this.timeInteger = data[Page.prototype.BYTE.TIME_INTEGER];
+        this.timeInteger = data[SDMPage1.prototype.BYTE.TIME_INTEGER];
         
         this.time = this.timeInteger + this.timeFractional;
 
         // Byte 3 - distance integer
-        this.distanceInteger = data[Page.prototype.BYTE.DISTANCE_INTEGER]; // m
+        this.distanceInteger = data[SDMPage1.prototype.BYTE.DISTANCE_INTEGER]; // m
 
         // Byte 4 - distance fractional upper 4 bit, speed integer lower 4 bit
 
-        this.distanceFractional = ((data[Page.prototype.BYTE.DISTANCE_FRACTIONAL] & Page.prototype.BIT_MASK.UPPER_NIBBLE) >> Page.prototype.BIT_FIELD.DISTANCE_FRACTIONAL.START_BIT) * Page.prototype.UNIT.DISTANCE_FRACTIONAL; // Upper 4 bit
+        this.distanceFractional = ((data[SDMPage1.prototype.BYTE.DISTANCE_FRACTIONAL] & SDMPage1.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage1.prototype.BIT_FIELD.DISTANCE_FRACTIONAL.START_BIT) * SDMPage1.prototype.UNIT.DISTANCE_FRACTIONAL; // Upper 4 bit
         this.distance = this.distanceInteger + this.distanceFractional;
 
-        this.speedInteger = data[Page.prototype.BYTE.SPEED_INTEGER] & Page.prototype.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
+        this.speedInteger = data[SDMPage1.prototype.BYTE.SPEED_INTEGER] & SDMPage1.prototype.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
 
         // Byte 5 - speed fractional
 
-        this.speedFractional = data[Page.prototype.BYTE.SPEED_FRACTIONAL] * Page.prototype.UNIT.SPEED_FRACTIONAL;   // m/s
+        this.speedFractional = data[SDMPage1.prototype.BYTE.SPEED_FRACTIONAL] * SDMPage1.prototype.UNIT.SPEED_FRACTIONAL;   // m/s
         this.speed = this.speedInteger + this.speedFractional;
 
         // Byte 6 - stride count
-        this.strideCount = data[Page.prototype.BYTE.STRIDE_COUNT];
+        this.strideCount = data[SDMPage1.prototype.BYTE.STRIDE_COUNT];
 
         // Byte 7 - update latency
-        this.updateLatency = data[Page.prototype.BYTE.UPDATE_LATENCY] * Page.prototype.UNIT.UPDATE_LATENCY; // s
+        this.updateLatency = data[SDMPage1.prototype.BYTE.UPDATE_LATENCY] * SDMPage1.prototype.UNIT.UPDATE_LATENCY; // s
 
 
     };
 
-    Page.prototype.toString = function () {
+    SDMPage1.prototype.toString = function () {
        
 
         var msg = this.type + " P# " + this.number+' ',
@@ -168,7 +168,7 @@ define(function (require, exports, module) {
         return msg;
     };
 
-    module.exports = Page;
+    module.exports = SDMPage1;
 
     return module.exports;
 
