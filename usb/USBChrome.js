@@ -199,6 +199,9 @@ define(['usb/USBDevice'],function (USBDevice) {
             this._tryClaimInterface(this.connectionHandleIndex++);
         } else {
             if (this.log && this.log.logging) this.log.log('log', 'Interface number ' + this.deviceInterface.interfaceNumber + ' claimed', 'in', this.inEndpoint, 'out', this.outEndpoint);
+
+            this.closeDevices(this.connectionHandles, this.connectionHandle);
+            
             try {
                 this.initCallback();
             } catch (e) {
@@ -234,6 +237,39 @@ define(['usb/USBDevice'],function (USBDevice) {
         }
     }
 
+    // Find devices will find and open a device, only one device will be claimed, all the rest should be closed
+    USBChrome.prototype.closeDevices = function (connectionHandles, exceptHandle, callback) {
+        var index = 0,
+            len = connectionHandles.length,
+
+         closeNextOrCallback = function ()
+        {
+            if (index < len-1) {
+                index++;
+                close();
+            } else if (typeof callback === 'function')
+                callback();
+        },
+
+        close = function () {
+            if (connectionHandles[index] !== exceptHandle) {
+                if (this.log && this.log.logging) this.log.log('log', 'Closing device', connectionHandles[index]);
+
+                chrome.usb.closeDevice(connectionHandles[index], function _onClosedDevice() {
+                    if (this.log && this.log.logging) this.log.log('log', 'Closed device');
+                    closeNextOrCallback();
+
+                }.bind(this))
+            } else {
+                if (this.log && this.log.logging) this.log.log('log', 'Skipped closing of ', exceptHandle);
+                closeNextOrCallback();
+            }
+
+        }.bind(this);
+
+        close();
+    }
+
 
     USBChrome.prototype._tryClaimInterface = function (index)
     {
@@ -241,13 +277,34 @@ define(['usb/USBDevice'],function (USBDevice) {
         this.connectionHandleIndex = index;
        this.connectionHandle = this.connectionHandles[index];
 
-        if (this.connectionHandle) {
+       if (this.connectionHandle) {
 
-            chrome.usb.listInterfaces(this.connectionHandle, this._onInterfacesFound.bind(this));
-        } else
-            this._tryFindManifestDevice(++this.findDeviceIndex); // Try next device
+           chrome.usb.listInterfaces(this.connectionHandle, this._onInterfacesFound.bind(this));
+       } else {
+           this.closeDevices(this.connectionHandles, undefined, function () {
+               this._tryFindManifestDevice(++this.findDeviceIndex); // Try next device
+           }.bind(this));
+       }
     }
 
+    USBChrome.prototype._cloneConnectionHandle = function (connectionHandle)
+    {
+      
+        return {
+            handle: connectionHandle.handle.valueOf()+1,
+            vendorId: connectionHandle.vendorId,
+            productId: connectionHandle.productId
+        };
+    }
+
+   
+    USBChrome.prototype.clone = function ()
+    {
+        return {
+            connectionHandle: this.connectionHandle,
+            deviceInterface: this.deviceInterface
+        };
+    }
    
     USBChrome.prototype._onDevicesFound = function (connectionHandles)
     {
@@ -259,12 +316,31 @@ define(['usb/USBDevice'],function (USBDevice) {
         //    chosenDevice = this.options.device;
 
 
-        if (this.log.logging && connectionHandles) this.log.log('log', "USB devices found", connectionHandles);
-        if (this.log.logging && !connectionHandles) this.log.log('error', 'No USB devices found satisfying findDevice criteria');
-
         this.connectionHandles = connectionHandles;
-       
-        this._tryClaimInterface(0); // Start with the first handle
+
+        if (connectionHandles && connectionHandles.length) {
+            if (this.log && this.log.logging)
+                this.log.log('log', "ANT devices found", connectionHandles);
+
+            // TEST multiple devices with same vendorId and productId
+
+            //var testClone1, testClone2;
+
+            //testClone1 = this._cloneConnectionHandle(this.connectionHandles[0]);
+            //testClone2 = this._cloneConnectionHandle(testClone1);
+            //this.connectionHandles.push(testClone1, testClone2);
+
+            this._tryClaimInterface(0); // Start with the first handle
+        }
+
+        if (!connectionHandles || connectionHandles.length === 0) {
+            this.log.log('error', 'No ANT devices found satisfying findDevice criteria');
+            this._tryFindManifestDevice(++this.findDeviceIndex);
+        }
+
+        
+
+        
 
     }
 
@@ -273,7 +349,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         var error,
             maxlen = this.enumeratedManifestDevices.length;
 
-        if (!this.enumeratedManifestDevices)
+        if (!this.devicesInManifest)
         {
             error = new Error('Cannot find/open devices without knowledge about devices in manifest')
             if (this.log && this.log.logging) this.log.log('error', error);
@@ -281,25 +357,25 @@ define(['usb/USBDevice'],function (USBDevice) {
             return;
         }
 
-        if (index >= this.enumeratedManifestDevices.length)
+        if (index >= this.devicesInManifest.length)
         {
             error = new RangeError('Failed to claim an interface of an ANT device ');
             this.initCallback(error);
             return;
         }   
         
-        if (this.enumeratedManifestDevices[index]) {
+        if (this.devicesInManifest[index]) {
 
-            this.findDevice = this.enumeratedManifestDevices[index];
+            this.findDevice = this.devicesInManifest[index];
 
-            this.findDeviceIndex = index; // Index within enumeratedManifestDevices array
+            this.findDeviceIndex = index; 
 
             //if (this.options.deviceWatcher && this.options.deviceWatcher.onEnumerationCompleted && typeof this.options.deviceWatcher.onEnumerationCompleted === 'function')
             //    this.options.deviceWatcher.onEnumerationCompleted(); // TO DO : emit "enumerationcomplete"....
 
             if (this.log && this.log.logging) this.log.log('log', 'Trying to find and open ANT device ', this.findDevice);
 
-            chrome.usb.findDevices({ "vendorId": this.findDevice.device.vendorId, "productId": this.findDevice.device.productId }, this._onDevicesFound.bind(this));
+            chrome.usb.findDevices({ "vendorId": this.findDevice.vendorId, "productId": this.findDevice.productId }, this._onDevicesFound.bind(this));
         } else
         {
             error = new Error('Undefined enumerated device in manifest at index ' + index);
@@ -369,7 +445,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     USBChrome.prototype._enumerateDevicesInManifest = function (callback) {
         var devNoManifest = 0,
             lenDevInManifest,
-            devicesInManifest,
+            //devicesInManifest,
             manifestDevice,
             
              _gotDevices = function (devices) {
@@ -419,19 +495,19 @@ define(['usb/USBDevice'],function (USBDevice) {
 
          getDevices = function () {
 
-             currentDevice = devicesInManifest[devNoManifest];
+             currentDevice = this.devicesInManifest[devNoManifest];
 
-             if (this.log && this.log.logging) this.log.log('log', 'Get devices for  ', currentDevice);
+             if (this.log && this.log.logging) this.log.log('log', 'Get devices for', currentDevice);
 
              chrome.usb.getDevices({ vendorId : currentDevice.vendorId, productId : currentDevice.productId }, _gotDevices);
 
          }.bind(this);
 
-        devicesInManifest = this.getDevicesFromManifest();
+        this.devicesInManifest = this.getDevicesFromManifest();
 
-        if (this.log && this.log.logging) this.log.log('log', 'ANT devices declared in manifest', devicesInManifest);
+        if (this.log && this.log.logging) this.log.log('log', 'ANT devices declared in manifest', this.devicesInManifest);
 
-        lenDevInManifest = devicesInManifest.length;
+        lenDevInManifest = this.devicesInManifest.length;
 
         this.enumeratedManifestDevices = [];
 
