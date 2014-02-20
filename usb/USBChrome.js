@@ -196,7 +196,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         // Trying workaround proposed by : https://code.google.com/p/chromium/issues/detail?id=222460
         if (chrome.runtime.lastError) {
             if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto', chrome.runtime.lastError);
-            this.initCallback(chrome.runtime.lastError);
+            this._tryClaimInterface(this.connectionHandleIndex++);
         } else {
             if (this.log && this.log.logging) this.log.log('log', 'Interface number ' + this.deviceInterface.interfaceNumber + ' claimed', 'in', this.inEndpoint, 'out', this.outEndpoint);
             try {
@@ -209,6 +209,9 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     USBChrome.prototype._onInterfacesFound = function (interfaces)
     {
+        
+        // TEST interfaces = undefined; // Force fail
+
         if (interfaces && interfaces.length > 0) {
             if (this.log && this.log.logging) this.log.log('log', "Interfaces", interfaces);
             this.deviceInterface = interfaces[0];
@@ -220,56 +223,87 @@ define(['usb/USBDevice'],function (USBDevice) {
 
                 chrome.usb.claimInterface(this.connectionHandle, this.deviceInterface.interfaceNumber, this._onInterfaceClaimed.bind(this));
 
-            } else
-                if (this.log && this.log.logging) this.log.log('error', 'Failed to get in/out endpoint on interface');
+            } else {
+                if (this.log && this.log.logging) this.log.log('error', 'Failed to get in/out endpoint on interface 0');
+                this._tryClaimInterface(++this.connectionHandleIndex);
+            }
         }
-        else
-            this.initCallback(new Error("Did not find interface of device"));
+        else {
+            if (this.log && this.log.logging) this.log.log('error', 'Failed to find interfaces');
+            this._tryClaimInterface(++this.connectionHandleIndex);
+        }
     }
 
-    USBChrome.prototype._onDevicesFound = function (devices)
+
+    USBChrome.prototype._tryClaimInterface = function (index)
     {
-        var chosenDevice = 0;
-        if (this.options && typeof this.options.device === 'undefined') {
-            if (this.log && this.log.logging) this.log.log('warn', 'No number for device specified, will choose the first (device 0)');
-        }
-        else
-            chosenDevice = this.options.device;
 
+        this.connectionHandleIndex = index;
+       this.connectionHandle = this.connectionHandles[index];
 
-        if (this.log.logging && devices) this.log.log('log', "USB devices found", devices);
-        if (this.log.logging && !devices) this.log.log('error', 'No USB devices found satisfying open criteria');
+        if (this.connectionHandle) {
 
-        //var devices = devices;
-        if (devices) {
-            if (devices.length > 0) {
-
-                this.connectionHandle = devices[chosenDevice];
-                if (this.log && this.log.logging) this.log.log('log', "Device(s) found: " + devices.length, ' choosing device ' + chosenDevice, 'Connectionhandle', this.connectionHandle);
-                // chrome.usb.listInterfaces(ConnectionHandle handle, function callback)
-                chrome.usb.listInterfaces(this.connectionHandle, this._onInterfacesFound.bind(this));
-            } else
-                this.initCallback(new Error("No USB devices was found"));
+            chrome.usb.listInterfaces(this.connectionHandle, this._onInterfacesFound.bind(this));
         } else
-            this.initCallback(new Error("Maybe permissions for accessing the device is not fullfilled"));
+            this._tryFindManifestDevice(++this.findDeviceIndex); // Try next device
+    }
+
+   
+    USBChrome.prototype._onDevicesFound = function (connectionHandles)
+    {
+       
+        //if (this.options && typeof this.options.device === 'undefined') {
+        //    if (this.log && this.log.logging) this.log.log('warn', 'No number for device specified, will choose the first (device 0)');
+        //}
+        //else
+        //    chosenDevice = this.options.device;
+
+
+        if (this.log.logging && connectionHandles) this.log.log('log', "USB devices found", connectionHandles);
+        if (this.log.logging && !connectionHandles) this.log.log('error', 'No USB devices found satisfying findDevice criteria');
+
+        this.connectionHandles = connectionHandles;
+       
+        this._tryClaimInterface(0); // Start with the first handle
 
     }
 
     USBChrome.prototype._tryFindManifestDevice = function (index)
     {
-        var defaultDevice;
+        var error,
+            maxlen = this.enumeratedManifestDevices.length;
 
-        if (this.enumeratedManifestDevices && this.enumeratedManifestDevices[index]) {
+        if (!this.enumeratedManifestDevices)
+        {
+            error = new Error('Cannot find/open devices without knowledge about devices in manifest')
+            if (this.log && this.log.logging) this.log.log('error', error);
+            this.initCallback(error);
+            return;
+        }
 
-            defaultDevice = this.enumeratedManifestDevices[index];
-            this.defaultDevice = index; // Index within enumeratedManifestDevices array
+        if (index >= this.enumeratedManifestDevices.length)
+        {
+            error = new RangeError('Failed to claim an interface of an ANT device ');
+            this.initCallback(error);
+            return;
+        }   
+        
+        if (this.enumeratedManifestDevices[index]) {
+
+            this.findDevice = this.enumeratedManifestDevices[index];
+
+            this.findDeviceIndex = index; // Index within enumeratedManifestDevices array
 
             //if (this.options.deviceWatcher && this.options.deviceWatcher.onEnumerationCompleted && typeof this.options.deviceWatcher.onEnumerationCompleted === 'function')
             //    this.options.deviceWatcher.onEnumerationCompleted(); // TO DO : emit "enumerationcomplete"....
 
-            if (this.log && this.log.logging) this.log.log('log', 'Trying to open ANT device ', defaultDevice);
+            if (this.log && this.log.logging) this.log.log('log', 'Trying to find and open ANT device ', this.findDevice);
 
-            chrome.usb.findDevices({ "vendorId": defaultDevice.device.vendorId, "productId": defaultDevice.device.productId }, this._onDevicesFound.bind(this));
+            chrome.usb.findDevices({ "vendorId": this.findDevice.device.vendorId, "productId": this.findDevice.device.productId }, this._onDevicesFound.bind(this));
+        } else
+        {
+            error = new Error('Undefined enumerated device in manifest at index ' + index);
+            this.initCallback(error);
         }
     }
 
@@ -341,9 +375,9 @@ define(['usb/USBDevice'],function (USBDevice) {
              _gotDevices = function (devices) {
                  var devNr;
 
-                 if (this.log && this.log.logging) this.log.log('log', 'Found devices for ' + currentDevice.name, devices);
+                 if (this.log && this.log.logging) this.log.log('log', 'List of devices for ' + currentDevice.name, devices);
 
-                 // Add to manifest device collection
+                 // Create a linear list of devices
 
                  for (devNr = 0; devNr < devices.length; devNr++) {
                      //// Add name and id  to default data structure by USB chrome
@@ -353,8 +387,8 @@ define(['usb/USBDevice'],function (USBDevice) {
                     
                      manifestDevice = {
                          'name': currentDevice.name,
-                         'deviceNr': devNr,
-                         'id': 'device' + devices[devNr].device + '#vid' + devices[devNr].vendorId + '#pid' + devices[devNr].productId + '#devNr' + devNr,
+                         
+                         'id': 'device' + devices[devNr].device + '#vendorId' + devices[devNr].vendorId + '#productId' + devices[devNr].productId,
                          'device': devices[devNr]   // Default chrome data structure 0: Object {
                          //  device: 5
                          // productId: 4104
@@ -364,7 +398,6 @@ define(['usb/USBDevice'],function (USBDevice) {
                      this.enumeratedManifestDevices.push(manifestDevice);
                  }
 
-
                  devNoManifest++;
 
                  if (devNoManifest < lenDevInManifest) {
@@ -372,6 +405,8 @@ define(['usb/USBDevice'],function (USBDevice) {
                      getDevices(); // Find more devices for given vendor id, product id
                  }
                  else {
+                    
+
                      if (this.log && this.log.logging) this.log.log('info', 'Devices that satisfy manifest permissions', this.enumeratedManifestDevices);
                     
                      if (typeof callback === 'function')
@@ -386,7 +421,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
              currentDevice = devicesInManifest[devNoManifest];
 
-             if (this.log && this.log.logging) this.log.log('log', 'Get devices for  ', currentDevice, devNoManifest, lenDevInManifest);
+             if (this.log && this.log.logging) this.log.log('log', 'Get devices for  ', currentDevice);
 
              chrome.usb.getDevices({ vendorId : currentDevice.vendorId, productId : currentDevice.productId }, _gotDevices);
 
@@ -406,11 +441,14 @@ define(['usb/USBDevice'],function (USBDevice) {
             // if (this.log && this.log.logging) this.log.log('error','No ANT devices configured in manifest, cannot enumerate devices');
 
             if (typeof this.initCallback === 'function')
-                this.initCallback(new Error('No ANT devices configured in manifest, cannot enumerate devices'));
+                this.initCallback(new Error('No ANT devices configured in manifest, cannot enumerate devices without guidance from vendor id and product id'));
         }
 
     };
 
+    /*
+    Gets the devices declared in the manifest file manifest.json
+    */
     USBChrome.prototype.getDevicesFromManifest = function () {
         var permissions = chrome.runtime.getManifest().permissions;
         for (var permissionNr = 0; permissionNr < permissions.length; permissionNr++) {
