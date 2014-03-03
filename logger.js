@@ -63,8 +63,8 @@ define(function (require, exports, module) {
 
         if (this.logging && this.console && this.console[type]) {
            
-                myArguments.push(nowStr);
-
+            myArguments.push(nowStr);
+            
                 for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
                 {
                     if (arguments[argNr] instanceof Uint8Array)

@@ -850,7 +850,7 @@ Host.prototype.init = function (options, initCB) {
         else {
             // Start listening for data on in endpoint and send it to host parser
         
-            this.usb.addEventListener('usb', this.RXparse.bind(this));
+            this.usb.addEventListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
             this.usb.listen();
            
             resetCapabilitiesLibConfig(initCB);

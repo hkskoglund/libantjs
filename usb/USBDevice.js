@@ -14,18 +14,15 @@ function USBDevice(options) {
 }
 
 // Inherit from event emitter
-USBDevice.prototype = Object.create(EventEmitter.prototype, { constructor : { value : USBDevice,
-                                                                        enumerable : false,
-                                                                        writeable : true,
-                                                                        configurable : true } });
-//util.inherits(USBDevice, Duplex);
-//'function (ctor, superCtor) {\n  ctor.super_ = superCtor;\n  ctor.prototype = Object.create(superCtor.prototype, {\n
-//constructor: {\n      value: ctor,\n      enumerable: false,\n      writable: true,\n      configurable: true\n    }\n
-//});\n}'
+USBDevice.prototype = Object.create(EventEmitter.prototype);
+USBDevice.prototype.constructor = USBDevice;
+
 
 // for event emitter
 USBDevice.prototype.EVENT = {
 
+    DATA: 'data',
+    ENUMERATION_COMPLETE : 'enumeration_complete',
     LOG: 'log',
     ERROR: 'error',
     CLOSED : 'closed'

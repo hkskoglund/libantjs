@@ -9,17 +9,15 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         USBDevice.call(this, options);
 
-        // this.chosenDevice = options.device || 0;
+        if (options) {
+            if (this.log && this.log.logging) this.log.log('log', 'USB options', options);
 
-
-        if (options && this.log.logging)
-            this.log.log('log', 'USB options', options);
-
-      
-        if (!options.deviceId && this.log.logging)
-            this.log.log('warn', 'No default device id specified');
-        else if (this.log.logging)
-            this.log.log('log', 'Will try to connect to device id ', options.deviceId);
+            if (!options.deviceId) {
+                if (this.log && this.log.logging) this.log.log('warn', 'No default device id specified');
+            } else {
+                if (this.log && this.log.logging) this.log.log('log', 'Will try to connect to device id ', options.deviceId);
+            }
+        }
 
         this.readingPromise = undefined;
         this.writingPromise = undefined;
@@ -34,21 +32,8 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     }
 
-    USBWindows.prototype = Object.create(USBDevice.prototype, {
-        constructor: {
-            value: USBWindows,
-            enumerable: false,
-            writeable: true,
-            configurable: true
-        }
-    });
-
-    // State
-    //USBWindows.prototype.STATE = {
-    //    PENDING: 1,
-    //    FOUND: 2,
-    //    NOT_FOUND : 3
-    //}
+    USBWindows.prototype = Object.create(USBDevice.prototype)
+    USBWindows.prototype.constructor = USBWindows;
 
     USBWindows.prototype.getDevicesFromManifest = function () {
 
@@ -89,7 +74,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         var vid = parseInt(deviceInformation.id.substr(12,4),16)
         var pid = parseInt(deviceInformation.id.substr(21,4),16);
 
-        this.state = "searching_for_device_among_known_devices";
+        
 
         for (devNum = 0; devNum < knownDevices.length; devNum++) {
 
@@ -99,7 +84,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 // Update current deviceId
                 this.options.deviceId = deviceInformation.id;
                         
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('log', 'Found ' + knownDevices[devNum].name + ' with vid ' + vid + ' pid ' + pid + ' among known devices, trying to use this device by convention without involving user');
                 Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
 
@@ -114,19 +99,19 @@ define(['usb/USBDevice'],function (USBDevice) {
     };
 
     USBWindows.prototype._notFoundANTDevice =   function (err) {
-        this.state = 'failed_to_find_usbdevice';
+      
         var msg = 'Failed to find USB device from id ' + this.deviceId + ' ' + err.toString();
-        if (this.log.logging)
+        if (this.log && this.log.logging)
             this.log.log('error', msg);
         this._initCallback(new Error(msg)); // Using continuation callback-style ala Node
 
     };
 
     USBWindows.prototype._foundANTDevice =  function (usbDevice) {
-        if (this.log.logging)
+        if (this.log && this.log.logging)
             this.log.log('log', 'Found ANT USB device', usbDevice);
 
-        this.state = 'found_usbdevice';
+       
 
         var deviceInfoid = this.options.deviceId;
 
@@ -134,28 +119,30 @@ define(['usb/USBDevice'],function (USBDevice) {
         var deviceAccessStatus = Windows.Devices.Enumeration.DeviceAccessInformation.createFromId(deviceInfoid).currentStatus;
 
         switch (deviceAccessStatus) {
+
             case Windows.Devices.Enumeration.DeviceAccessStatus.deniedByUser:
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', "USB Device-Access: Access to the device was blocked by the user : " + deviceInfoid);
 
                 break;
+
             case Windows.Devices.Enumeration.DeviceAccessStatus.deniedBySystem:
                 // This status is most likely caused by app permissions (did not declare the device in the app's package.appxmanifest)
                 // This status does not cover the case where the device is already opened by another app.
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', "USB Device-Access: Access to the device was blocked by the system : " + deviceInfoid);
 
                 break;
 
             case Windows.Devices.Enumeration.DeviceAccessStatus.allowed:
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('info', 'USB Device-Access: Access to device allowed by user');
                 break;
 
             case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
             default:
                 // Most likely the device is opened by another app, but cannot be sure
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', "USB Device-Access: Unknown error, possibly opened by another app : " + deviceInfoid);
 
                 break;
@@ -230,7 +217,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         var _onAdded = function (deviceInformation) {
 
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', deviceInformation.name + ' added (id: ' + deviceInformation.id + ')');
 
             this.enumeratedDevice.push(deviceInformation);
@@ -242,7 +229,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
 
         var _onRemoved = function (deviceInformation) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', 'USB device removed (id: ' + deviceInformation.id + ')');
 
             // Remove device and free resources
@@ -261,7 +248,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         }.bind(this);
 
         var _onUpdated = function (deviceInformation) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', deviceInformation.name + ' updated (id: ' + deviceInformation.id + ')');
 
             var updatedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
@@ -275,7 +262,9 @@ define(['usb/USBDevice'],function (USBDevice) {
         var _onEnumerationComplete = function (event) {
             var deviceInformation;
 
-            if (this.log.logging)
+            this.emit(USBDevice.prototype.EVENT.ENUMERATIONCOMPLETE,this.enumeratedDevice);
+
+            if (this.log && this.log.logging)
                 this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
 
             // If no default device Id, or no ANT device found, then pick the first enumerated device by default
@@ -288,13 +277,11 @@ define(['usb/USBDevice'],function (USBDevice) {
 
             else if (this.options.deviceId ) {
 
-                this.state = "added_getting_usbdevice";
-                
                 for (var devNum = 0; devNum < this.enumeratedDevice.length; devNum++) {
                     deviceInformation = this.enumeratedDevice[devNum];
                     if (this.options.deviceId === deviceInformation.id) {
 
-                        if (this.log.logging)
+                        if (this.log && this.log.logging)
                             this.log.log('log', 'Match on ' + deviceInformation.name + ' ' + deviceInformation.properties['System.Devices.DeviceInstanceId'])
 
                         // Device was added, get handle for bulk in/out
@@ -314,7 +301,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         var _onStopped = function (event) {
             this.enumeratedDevice = [];
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', 'Stopped ANT USB device watching');
         }.bind(this);
 
@@ -380,7 +367,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     USBWindows.prototype.releaseDevice = function () {
         // Stop any I/O that may currently by active on the device
-        if (this.log.logging)
+        if (this.log && this.log.logging)
             this.log.log('log', 'Canceling reading on ANT in endpoint');
 
         if (this.readingPromise) {
@@ -389,7 +376,7 @@ define(['usb/USBDevice'],function (USBDevice) {
            
         }
 
-        if (this.log.logging)
+        if (this.log && this.log.logging)
             this.log.log('log', 'Canceling writing to ANT out endpoint');
         if (this.writingPromise) {
             this.writingPromise.cancel();
@@ -413,7 +400,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
 
         if (this.ANTdevice) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', 'Closing ANT device');
             this.ANTdevice.close();
             this.ANTdevice = undefined; // Found no method to determine state (closed)
@@ -475,7 +462,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 console.time('RXparse');
 
             //rxParser(undefined, buf);
-            this.emit('usb', buf); // Using events allows more listeners of usb data, e.g logging/debugging
+            this.emit(USBDevice.prototype.EVENT.DATA, buf); // Using events allows adding more listeners of usb data, e.g logging/debugging
 
             if (this.log && this.log.logging && console && console.timeEnd)
                 console.timeEnd('RXparse');
@@ -485,15 +472,24 @@ define(['usb/USBDevice'],function (USBDevice) {
         }.bind(this);
 
         var error = function _error(err) {
+            var newError;
+
+            this.emit(USBDevice.prototype.EVENT.ERROR, err);
+
             if (this.log && this.log.logging)
                 this.log.log('error', 'RX', err, err.stack);
+
             transferErrorCount++;
+
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                 retry();
             else
+                newError = new Error('Too many failed attempts to read from device, reading stopped')
                 if (this.log && this.log.logging)
                    
-                        this.log.log('error', 'Too many failed attempts to read from device, reading stopped');
+                    this.log.log('error', newError);
+
+                this.emit(USBDevice.prototype.EVENT.ERROR, newError);
 
         }.bind(this);
 
@@ -549,13 +545,13 @@ define(['usb/USBDevice'],function (USBDevice) {
         }
 
         var success = function _success(bytesWritten) {
-            if (this.log.logging)
+            if (this.log && this.log.logging)
                 this.log.log('log', 'Tx', chunk, bytesWritten + ' bytes written');
             callback();
         }.bind(this),
 
             error = function _error(err) {
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', 'Tx', err);
                 callback(err);
             }.bind(this);
@@ -566,7 +562,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 if (this.ANTdevice)
                    this.writingPromise = this.dataWriter.storeAsync().then(success, error);
             } catch (e) {
-                if (this.log.logging)
+                if (this.log && this.log.logging)
                     this.log.log('error', 'Failed storeAsync HOST -> ANT', e);
             }
         }.bind(this);

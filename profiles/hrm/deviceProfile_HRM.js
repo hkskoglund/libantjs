@@ -61,10 +61,6 @@ define(function (require, exports, module) {
         // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
         //this.hrmPage4 = new HRMPage4({log : true});
         
-        
-        
-        
-        this.previousBroadcastData = undefined;
 
         this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY);
 
@@ -156,7 +152,7 @@ define(function (require, exports, module) {
                 break;
             
             default : 
-                this.log.log('warn','Not able to parse page number',pageNumber);
+                this.log.log('warn','Unable to parse page number',pageNumber);
                 break;
         }
         
@@ -164,16 +160,15 @@ define(function (require, exports, module) {
             if (page) {
                this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
             
-               // page.timestamp = this.lastHREventTime;
-                this.addPage(page);
+                // page.timestamp = this.lastHREventTime;
+
+               this.addPage(page);
+
+                // Keep track of previous page state for main page 4 and 0 for calculation of RR
+               if (page instanceof HRMPage4 || page instanceof HRMPage0)
+                   this.previousPage[sensorId] = page;
             }
             
-        
-                   
-        // Keep track of previous page state for main page 4 and 0 - calculation of RR
-        if (page instanceof HRMPage4 || page instanceof HRMPage0)
-            this.previousPage[sensorId] = page;
-        
         //console.timeEnd('broadcast');
     };
     

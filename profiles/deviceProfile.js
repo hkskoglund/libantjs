@@ -34,6 +34,8 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.stop = function () {
         if (this.timer.onPage !== undefined)
             clearInterval(this.timer.onPage);
+        
+        this.removeAllEventListeners('page');
     }
 
     DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
@@ -68,7 +70,6 @@ define(function (require, exports, module) {
 
                             // Organize pages by page number (by default available on sensors conforming to ANT+ message format)
                             
-
                             currentPages = this.pages[sensorId][typeValue];
 
                             for (len = currentPages.length, receivedPageNr = 0; receivedPageNr < len ; receivedPageNr++) {
@@ -80,8 +81,6 @@ define(function (require, exports, module) {
                                     receivedPagesByPageNr = [];
                                     this.pageNumberPages[sensorId][typeValue][dataPageNumber] = receivedPagesByPageNr;
                                 }
-
-                               
 
                                 receivedPagesByPageNr.push(currentPages[receivedPageNr]);
                               
@@ -137,7 +136,6 @@ define(function (require, exports, module) {
 
                         }
 
-                      
                     }
                 }
             }.bind(this);
@@ -260,15 +258,18 @@ define(function (require, exports, module) {
 
         if (this.receivedBroadcastCounter[sensorId])
             this.receivedBroadcastCounter[sensorId]++;
-        else
+        else {
+            
             this.receivedBroadcastCounter[sensorId] = 1;
+        }
+            
     }
 
     DeviceProfile.prototype.verifyDeviceType = function (deviceType, broadcast) {
         var isEqualDeviceType = broadcast.channelId.deviceType === deviceType;
 
         if (!isEqualDeviceType) {
-            if (this.log.logging) this.log.log('error', "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
+            if (this.log && this.log.logging) this.log.log('error', "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
         }
 
         return isEqualDeviceType;
@@ -276,7 +277,8 @@ define(function (require, exports, module) {
     };
 
     DeviceProfile.prototype.channelResponse = function (channelResponse) {
-        if (this.log && this.log.logging) this.log.log('log', 'DeviceProfile', this, channelResponse, channelResponse.toString());
+        // Issue IE11 - this passed as argument to log is undefined (most likely due to strict mode)
+        if (this.log && this.log.logging) this.log.log('log', 'Channel response - DeviceProfile -', this, channelResponse, channelResponse.toString());
     };
 
     // Default behaviour just return JSON of broadcast
@@ -284,26 +286,6 @@ define(function (require, exports, module) {
         // MAYBE return undefined;
         return JSON.stringify(broadcast);
     };
-
-    //DeviceProfile.prototype.getOnPage = function () {
-    //    return this._onPage;
-    //};
-
-    //DeviceProfile.prototype.setOnPage = function (callback) {
-    //    if (typeof callback === 'function') {
-    //        this._onPage = callback;
-    //        if (this.log && this.log.logging) this.log.log('log', 'Setting ', this, 'on page for ANT+ callback');
-    //    } else if (this.log && this.log.logging)
-    //        this.log.log('error', 'Callback for on page is not a function', typeof callback, callback);
-    //};
-
-    //DeviceProfile.prototype.onPage = function (page) {
-    //    //if (typeof this._onPage === 'function')
-    //    //    this._onPage(page);
-    //    //else if (this.log && this.log.logging)
-    //    //    this.log.log('warn', 'No on page callback specified for page ', page);
-    //    this.emit('page', page);
-    //};
 
    
     DeviceProfile.prototype.toString = function ()

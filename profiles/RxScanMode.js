@@ -3,7 +3,6 @@
 define(function (require, exports, module) {
     'use strict';
 
-    //
     var DeviceProfile = require('profiles/deviceProfile'),
         setting = require('settings'),
         TEMPProfile = require('profiles/environment/deviceProfile_ENVIRONMENT'),
@@ -44,30 +43,28 @@ define(function (require, exports, module) {
             RxScanMode: true
         });
 
-        // Temperature profile reused all temperature sensors
-
-        //this.temperatureProfile = new TEMPProfile({ log: this.log.logging, onPage: configuration.onPage });
-
-        //this.SDMProfile = new SDMProfile({ log: this.log.logging, onPage: configuration.onPage });
-
-        //this.HRMProfile = new HRMProfile({ log: this.log.logging, onPage: configuration.onPage });
-
-        //this.SPDCADProfile = new SPDCADProfile({ log: this.log.logging, onPage: configuration.onPage });
-
         this.profile = {}; // indexed by device type
 
-       
-        
-
-        this.addProfile(new TEMPProfile({ log: this.log.logging },this));
-        this.addProfile(new SDMProfile({ log: this.log.logging}, this));
-        this.addProfile(new HRMProfile({ log: this.log.logging }, this));
-        this.addProfile(new SPDCADProfile({ log: this.log.logging }, this));
+        this.addProfile(new TEMPProfile({ log: this.log.logging }));
+        this.addProfile(new SDMProfile({ log: this.log.logging}));
+        this.addProfile(new HRMProfile({ log: this.log.logging }));
+        this.addProfile(new SPDCADProfile({ log: this.log.logging }));
 
     }
 
     RxScanMode.prototype = Object.create(DeviceProfile.prototype);
     RxScanMode.constructor = RxScanMode;
+
+    // Override default stop of device profile
+    RxScanMode.prototype.stop = function ()
+    {
+        this.removeAllEventListeners('page'); // In case someone is listening on our page event
+
+        for (var devType in this.profile)
+        {
+            this.profile[devType].stop();
+        }
+    }
 
     RxScanMode.prototype.onPage = function (page)
     {
@@ -85,7 +82,7 @@ define(function (require, exports, module) {
             } else {
                 this.profile[deviceType] = profile;
                 
-                profile.addEventListener('page',this.onPage.bind(this));
+                profile.addEventListener('page',this.onPage.bind(this)); // Forward
 
                 if (this.log.logging)
                     this.log.log('info', 'Added profile for device type '+deviceType+' to RX SCAN mode channel', profile);
