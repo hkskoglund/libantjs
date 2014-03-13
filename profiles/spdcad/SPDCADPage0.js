@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
     'use strict';
@@ -17,6 +17,8 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
 
         if (broadcast.data)
             this.parse(broadcast);
+
+
     }
 
     SPDCADPage0.prototype = Object.create(GenericPage.prototype);
@@ -30,6 +32,7 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
     };
 
+    
     SPDCADPage0.prototype.parse = function (broadcast) {
 
         var data = broadcast.data,
@@ -39,7 +42,8 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
             bikeCadenceEventTimeRollover,
             bikeSpeedEventTimeRollover,
             bikeSpeedEventTimeDifference,
-            bikeCadenceEventTimeDifference;
+            bikeCadenceEventTimeDifference,
+            diffCumulativeSpeedRevolutionCountCount;
 
         this.broadcast = broadcast;
 
@@ -65,7 +69,9 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         // Spec. section 5.3.1 - Cadence computation, p. 29
 
         // Initialy we have no previous page, so have to check for previous page
-        if (this.previousPage) {
+        if (!this.previousPage)
+          return;
+        
 
             // Don't attempt to calculate cadence and speed if time between pages is greater than rollover time
             if (this.timestamp - this.previousPage.timestamp >= 64000) {
@@ -105,10 +111,15 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
             // Higher-lever code, e.g viewmodel should take this into account
 
             if (bikeSpeedEventTimeDifference) {
-                if (cumulativeSpeedRevolutionCountRollover)
-                    this.unCalibratedSpeed =  1024 * (0xFFFF - this.cumulativeSpeedRevolutionCount + this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
-                else
-                    this.unCalibratedSpeed =  1024 * (this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
+                if (cumulativeSpeedRevolutionCountRollover) {
+                    this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount
+                    this.unCalibratedSpeed = 1024 * (0xFFFF - this.relativeCumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
+                }
+                else {
+                    this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount;
+                    this.unCalibratedSpeed = 1024 * this.relativeCumulativeSpeedRevolutionCount / bikeSpeedEventTimeDifference;
+
+                }
             }
 
             // Filter "spikes" 
@@ -129,7 +140,7 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
 
             }
 
-        }
+       
 
     };
 
@@ -145,14 +156,14 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         if (this.cadence !== undefined)
             msg += this.cadence
 
-        msg +=  " cadence event time " + this.bikeCadenceEventTime + ' rev. # ' + this.cumulativeCadenceRevolutionCount;
+        msg +=  " cadence event time " + this.bikeCadenceEventTime + ' cadence rev. # ' + this.cumulativeCadenceRevolutionCount;
 
        if (this.unCalibratedSpeed !== undefined) {
            speed = calibrationFactor * this.unCalibratedSpeed;
            msg += ' speed (m/s) ' + speed; 
        }
 
-       msg += ' speed event time ' + this.bikeSpeedEventTime + ' rev. # ' + this.cumulativeSpeedRevolutionCount + ' speed based on calibration factor (m) ' + calibrationFactor;
+       msg += ' speed event time ' + this.bikeSpeedEventTime + ' speed/wheel rev. # ' + this.cumulativeSpeedRevolutionCount + ' wheel size (m) ' + calibrationFactor;
 
         return msg;
     };
