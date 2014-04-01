@@ -95,7 +95,8 @@ define(function (require, exports, module) {
     // Scan mode receives all broadcasts on channel 0 
     // The broadcast is forwared to a particular device profile (for parsing of page) based on the device type in the channel id
     RxScanMode.prototype.broadCast = function (broadcast) {
-        var currentProfile;
+        var currentProfile,
+            deviceType;
         if (!broadcast) {
             this.log.log('error', 'Undefined broadcast received');
             return;
@@ -108,13 +109,14 @@ define(function (require, exports, module) {
 
         // this.log.log('log',broadcast.channelId.toString(), broadcast.channelId);
 
-        currentProfile = this.profile[broadcast.channelId.deviceType];
+        deviceType = broadcast.channelId.deviceType
+        currentProfile = this.profile[deviceType];
 
         if (currentProfile) // Forward
             currentProfile.broadCast(broadcast);
         else
             if (this.log.logging)
-                this.log.log('warn', 'No profile registered for device type on RX SCAN channel', broadcast.data, 'from ' + broadcast.channelId.toString());
+                this.log.log('warn', 'No profile registered for device type',deviceType,' on RX SCAN channel', broadcast.data, 'from ' + broadcast.channelId.toString());
 
     };
 

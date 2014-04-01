@@ -1,4 +1,4 @@
-﻿/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
 //var requirejs = require('requirejs');
 //
@@ -20,7 +20,9 @@
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+
 'use strict';
+
    var
     
     // Data
@@ -77,7 +79,12 @@ define(function (require, exports, module) {
     ChannelId = require('messages/channelId');
  
 // Host for USB ANT communication
-function Host() {
+function Host(options) {
+
+    if (!options)
+      options = {};
+
+    this.name = "ANTHOST";
     
     this._channel = {}; 
    
@@ -92,7 +99,10 @@ function Host() {
     this.resendTimeoutID = {};
     
     // Logging
-    this.log = new Logger();
+    if (options)
+        options.source = this.name;
+
+    this.log = new Logger(options);
 
     // Declare/reuse broadcast to minimize garbage collection
    // this.broadcast = new BroadcastDataMessage();
@@ -309,7 +319,6 @@ Host.prototype.EVENT = {
     PAGE : 'page' // Page from ANT+ sensor / device profile
 
 };
-
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
@@ -706,7 +715,7 @@ Host.prototype.init = function (options, initCB) {
     this.log.logging = options.log;
     
     if (this.log.logging)
-        this.log.log('log', "Host options", options);
+        this.log.log('log', options);
     //console.trace();
     // options : {
     //   vid : 4047,
@@ -861,11 +870,8 @@ Host.prototype.init = function (options, initCB) {
     
     if (typeof options.maxTransferRetries === 'undefined')
         this.options.maxTransferRetries = 5;
-    
-    
-   
-    this.usb.init(usbInitCB);
 
+    this.usb.init(usbInitCB);
 
 };
 
@@ -1093,8 +1099,8 @@ Host.prototype.RXparse = function ( data) {
 //            broadcast.RSSI.thresholdConfigurationValue = -128; // off 
 //             broadcast.RSSI.thresholdConfigurationValue = 3; 
 //            
-            if (this.log.logging)
-                this.log.log('log', broadcast.toString());
+           /* if (this.log.logging)
+                this.log.log('log', broadcast.toString());*/
 //
 //            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
 //            // The number of function calls can be limited if filtering is done here....

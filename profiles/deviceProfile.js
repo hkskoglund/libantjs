@@ -1,14 +1,11 @@
-﻿/* global define: true */
+﻿/* global define: true, clearInterval: true, setInterval: true, setTimeout: true */
 
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+define(['channel','profiles/Page'],function (Channel, GenericPage) {
 
-define(function (require, exports, module) {
-    "use strict";
-
-    var Channel = require('channel'),
-        GenericPage = require('profiles/Page');
+    'use strict';
 
     function DeviceProfile(configuration) {
+
         Channel.call(this, configuration);
      
         this.receivedBroadcastCounter = {};
@@ -16,11 +13,11 @@ define(function (require, exports, module) {
         this.previousPageBroadcast = {}; // Just declare property
 
         // Storage for parsed received main and background pages for each sensorId
-        this.pages = {}
+        this.pages = {};
 
         // Timers
 
-        this.timer = {}
+        this.timer = {};
 
         // Reference to pages by page number index
 
@@ -36,10 +33,10 @@ define(function (require, exports, module) {
             clearInterval(this.timer.onPage);
         
         this.removeAllEventListeners('page');
-    }
+    };
 
-    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
-       
+    DeviceProfile.prototype.getLatestPage = function ()
+    {
         var aggregatedRR,
             RRInterval,
             receivedPageNr,
@@ -49,10 +46,10 @@ define(function (require, exports, module) {
             receivedPagesByPageNr,
             latestPage,
             typeValue,
-            LIMIT = 2, // Filter out possible "noise" from sensors that come and go quickly
-            handler =  function () {
-               
-                for (var sensorId in this.pages)
+            sensorId,
+            LIMIT = 2; // Filter out possible "noise" from sensors that come and go quickly
+
+                for (sensorId in this.pages)
                 {
 
                     if (this.receivedBroadcastCounter[sensorId] >= LIMIT) {
@@ -138,7 +135,10 @@ define(function (require, exports, module) {
 
                     }
                 }
-            }.bind(this);
+    };
+
+    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
+
 
         // In case requestPageUpdate is called more than one time
         if (this.timer.onPage !== undefined) {
@@ -146,19 +146,18 @@ define(function (require, exports, module) {
             clearInterval(this.timer.onPage);
         }
 
-        this.timer.onPage = setInterval(handler,timeout);
+        this.timer.onPage = setInterval(this.getLatestPage.bind(this),timeout);
          
         if (this.log && this.log.logging) this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
 
-        setTimeout(handler,1000); // Run fast update first time
+        setTimeout(this.getLatestPage.bind(this),1000); // Run fast update first time
 
-    }
+    };
 
     DeviceProfile.prototype.addPage = function (page) {
         var sensorId = page.broadcast.channelId.sensorId;
 
         page.timestamp = Date.now();
-       
 
         if (this.pages[sensorId])
             this.pages[sensorId][page.type].push(page);
@@ -168,7 +167,7 @@ define(function (require, exports, module) {
                 this.pages[sensorId][GenericPage.prototype.TYPE[type]] = [];
 
         }
-    }
+    };
 
     // FILTER - Skip duplicate messages from same master 
     DeviceProfile.prototype.isDuplicateMessage = function (broadcast) {
@@ -227,7 +226,6 @@ define(function (require, exports, module) {
         if (this.previousPageBroadcast[pageIdentifier])
             previousBroadcastData = this.previousPageBroadcast[pageIdentifier].data;
 
-
         if (previousBroadcastData && isEqual(previousBroadcastData, data)) {
 
             this.previousPageBroadcast[pageIdentifier].duplicate++;
@@ -239,7 +237,7 @@ define(function (require, exports, module) {
                 this.previousPageBroadcast[pageIdentifier].data = data;
                 if (this.previousPageBroadcast[pageIdentifier].duplicate) {
                    // if (this.log.logging) this.log.log('info', 'Received ' + this.previousPageBroadcast[pageIdentifier].duplicate + ' duplicate page broadcast from ' + pageIdentifier);
-                    this.previousPageBroadcast[pageIdentifier].duplicate = 0
+                    this.previousPageBroadcast[pageIdentifier].duplicate = 0;
                 }
             } else {
                 this.previousPageBroadcast[pageIdentifier] = {
@@ -249,7 +247,6 @@ define(function (require, exports, module) {
             }
 
         }
-
 
         return this.previousPageBroadcast[pageIdentifier].duplicate > 0;
     };
@@ -263,7 +260,7 @@ define(function (require, exports, module) {
             this.receivedBroadcastCounter[sensorId] = 1;
         }
             
-    }
+    };
 
     DeviceProfile.prototype.verifyDeviceType = function (deviceType, broadcast) {
         var isEqualDeviceType = broadcast.channelId.deviceType === deviceType;
@@ -287,16 +284,13 @@ define(function (require, exports, module) {
         return JSON.stringify(broadcast);
     };
 
-   
     DeviceProfile.prototype.toString = function ()
     {
         if (this.CHANNEL_ID && (this.CHANNEL_ID.DEVICE_TYPE !== undefined || this.CHANNEL_ID.DEVICE_TYPE !== null))
             return " Device Type " + this.CHANNEL_ID.DEVICE_TYPE;
        
-    }
+    };
 
-    module.exports = DeviceProfile;
+   return DeviceProfile;
 
-    return module.exports;
 });
-

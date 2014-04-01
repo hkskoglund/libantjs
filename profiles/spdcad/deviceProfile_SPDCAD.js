@@ -1,13 +1,8 @@
-﻿
-define(function (require, exports, module) {
+/* globals define: true, require: true */
+
+define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/spdcad/SPDCADPage0'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,SPDCADPage0) {
+
     'use strict';
-
-    var DeviceProfile = require('profiles/deviceProfile'),
-         setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout'),
-        SPDCADPage0 = require('profiles/spdcad/SPDCADPage0');
-
 
     function DeviceProfile_SPDCAD(configuration) {
 
@@ -65,8 +60,7 @@ define(function (require, exports, module) {
         DEFAULT: 8086, // Ca. 4 messages pr. sec.
         ALTERNATIVE_1: 16172, // 2 msg/sec
         ALTERNATIVE_2: 32344 // 1 msg/sec
-    }
-
+    };
 
     DeviceProfile_SPDCAD.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
 
@@ -111,6 +105,5 @@ define(function (require, exports, module) {
 
     };
 
-    module.exports = DeviceProfile_SPDCAD;
-    return module.exports;
+    return DeviceProfile_SPDCAD;
 });

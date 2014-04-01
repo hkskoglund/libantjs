@@ -1,4 +1,4 @@
-﻿/* global define: true, console: true, Uint8Array: true */
+/* global define: true, console: true, Uint8Array: true */
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -22,6 +22,8 @@ define(function (require, exports, module) {
             this.logging = false;
 
         this.console = console;
+
+        this.options = options;
        
     }
     
@@ -30,9 +32,12 @@ define(function (require, exports, module) {
     {
         //console.time('logger');
 
+       // return null; // Disable
+
         var now = new Date(),
             nowStr = now.getTime(),
-            myArguments = [];
+            myArguments = [],
+            header;
         //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
@@ -63,7 +68,14 @@ define(function (require, exports, module) {
 
         if (this.logging && this.console && this.console[type]) {
            
-            myArguments.push(nowStr);
+            // Headers
+            header = nowStr;
+            if (this.options && this.options.source)
+                header += ' '+this.options.source+':';
+
+            myArguments.push(header);
+
+            // Arguments
             
                 for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
                 {

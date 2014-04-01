@@ -7,6 +7,8 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     function USBWindows(options) {
 
+        this.name = "USBWindows";
+
         USBDevice.call(this, options);
 
         if (options) {

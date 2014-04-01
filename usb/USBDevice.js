@@ -9,6 +9,9 @@ function USBDevice(options) {
 //    Duplex.call(this, options);
 //    this._burstBuffer = new Buffer(0);
     this.options = options;
+    if (options)
+        options.source = this.name;
+
     this.log = new Logger(options);
   
 }

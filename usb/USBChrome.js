@@ -5,6 +5,8 @@ define(['usb/USBDevice'],function (USBDevice) {
    
     function USBChrome(options) {
 
+         this.name = "USBChrome";
+
         USBDevice.call(this, options);
 
         if (options && this.log && this.log.logging)
@@ -108,12 +110,13 @@ define(['usb/USBDevice'],function (USBDevice) {
                 if (this.log && this.log.logging && !data)
                     this.log.log('warn', 'Undefined data received', Rxinfo.data);
                 try {
-                    if (this.log && this.log.logging) console.time('RXparse');
+
+                    //if (this.log && this.log.logging) console.time('RXparse');
 
                     
                     if (data)
                         this.emit(USBDevice.prototype.EVENT.DATA, data); // Using events allows more listeners of usb data, e.g logging/debugging
-                    if (this.log && this.log.logging) console.timeEnd('RXparse');
+                    //if (this.log && this.log.logging) console.timeEnd('RXparse');
 
                 } catch (e) {
                     if (this.log && this.log.logging)
@@ -196,7 +199,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         // Problems with claiming interface in Ubuntu 13.10 - was caused by suunto module which can be blacklisted to avoid problems in /etc/modules.d/blacklist.conf
         // Trying workaround proposed by : https://code.google.com/p/chromium/issues/detail?id=222460
         if (chrome.runtime.lastError) {
-            if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto', chrome.runtime.lastError);
+            if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto', chrome.runtime.lastError, 'connection handle',this.connectionHandle);
          
             this._tryClaimInterface(++this.connectionHandleIndex);
         } else {
