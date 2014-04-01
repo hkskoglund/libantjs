@@ -37,7 +37,8 @@ define(function (require, exports, module) {
         var now = new Date(),
             nowStr = now.getTime(),
             myArguments = [],
-            header;
+            header,
+            logSource;
         //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
@@ -70,8 +71,15 @@ define(function (require, exports, module) {
            
             // Headers
             header = nowStr;
-            if (this.options && this.options.source)
-                header += ' '+this.options.source+':';
+            if (this.options && this.options.logSource)
+            {
+                if (typeof this.options.logSource === 'string')
+                  logSource = this.options.logSource;
+                else if (typeof this.options.logSource === 'function')
+                      logSource = this.options.logSource.name;
+
+                header += ' '+logSource+':';
+            }
 
             myArguments.push(header);
 
@@ -99,7 +107,7 @@ define(function (require, exports, module) {
             this.console = newConsole;
            // this.console.info('Console changed to', newConsole);
         }
-    }
+    };
     
     Logger.prototype.time = function (name)
     {

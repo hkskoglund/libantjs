@@ -1,6 +1,8 @@
-﻿
+/* global define: true */
+
 define(['logger','events'],function (Logger,EventEmitter) {
-    'use strict'
+
+    'use strict';
 
 // Abstract USB device
 function USBDevice(options) {
@@ -10,7 +12,7 @@ function USBDevice(options) {
 //    this._burstBuffer = new Buffer(0);
     this.options = options;
     if (options)
-        options.source = this.name;
+        options.logSource = this.name;
 
     this.log = new Logger(options);
   
@@ -76,7 +78,7 @@ USBDevice.prototype.getDevicesFromManifest = function ()
 
         { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
     ];
-}
+};
     
 return USBDevice;
 });

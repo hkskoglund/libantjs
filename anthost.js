@@ -100,7 +100,7 @@ function Host(options) {
     
     // Logging
     if (options)
-        options.source = this.name;
+        options.logSource = this.name;
 
     this.log = new Logger(options);
 
