@@ -1,4 +1,4 @@
-﻿/* global define: true, Windows: true  */
+/* global define: true, Windows: true, Uint8Array : true  */
 
 // Requires winusb.sys driver - windows 8
 
@@ -6,8 +6,6 @@ define(['usb/USBDevice'],function (USBDevice) {
     "use strict";
 
     function USBWindows(options) {
-
-        this.name = "USBWindows";
 
         USBDevice.call(this, options);
 
@@ -34,7 +32,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     }
 
-    USBWindows.prototype = Object.create(USBDevice.prototype)
+    USBWindows.prototype = Object.create(USBDevice.prototype);
     USBWindows.prototype.constructor = USBWindows;
 
     USBWindows.prototype.getDevicesFromManifest = function () {
@@ -61,7 +59,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         // Maybe to do : read capabilities  http://tonychampion.net/blog/index.php/2013/01/examining-the-windows-store-apps-appxmanifest-at-runtime/
 
         return USBDevice.prototype.getDevicesFromManifest();
-    }
+    };
 
     USBWindows.prototype._tryFindANTDeviceFromKnownDevices = function (deviceInformation)
         {
@@ -73,7 +71,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         // Absolute positioning may not be the best, but may work, TO DO MAYBE : regex
         // ID : \\\\?\\USB#VID_0FCF&PID_1008#150#{dee824ef-729b-4a0e-9c14-b7117d33a817}
-        var vid = parseInt(deviceInformation.id.substr(12,4),16)
+        var vid = parseInt(deviceInformation.id.substr(12,4),16);
         var pid = parseInt(deviceInformation.id.substr(21,4),16);
 
         
@@ -141,7 +139,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                     this.log.log('info', 'USB Device-Access: Access to device allowed by user');
                 break;
 
-            case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
+            //case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
             default:
                 // Most likely the device is opened by another app, but cannot be sure
                 if (this.log && this.log.logging)
@@ -195,7 +193,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         return -1;
 
-    }
+    };
   
     USBWindows.prototype._initializeDeviceWatcher = function () {
         // returns an AQS - Advanced Query String for finding the device
@@ -284,7 +282,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                     if (this.options.deviceId === deviceInformation.id) {
 
                         if (this.log && this.log.logging)
-                            this.log.log('log', 'Match on ' + deviceInformation.name + ' ' + deviceInformation.properties['System.Devices.DeviceInstanceId'])
+                            this.log.log('log', 'Match on ' + deviceInformation.name + ' ' + deviceInformation.properties['System.Devices.DeviceInstanceId']);
 
                         // Device was added, get handle for bulk in/out
                         Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
@@ -341,7 +339,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     // For access to ANT device watcher, maybe for attaching UI-eventlisteners
     USBWindows.prototype.getDeviceWatcher = function () {
         return this.ANTWatcher;
-    }
+    };
 
 
 
@@ -407,7 +405,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             this.ANTdevice.close();
             this.ANTdevice = undefined; // Found no method to determine state (closed)
         }
-    }
+    };
 
     USBWindows.prototype.exit = function () {
 
@@ -455,7 +453,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             if (!buf)
             {
                 if (this.log && this.log.logging)
-                    this.log.log('warn', 'Rx', 'Undefined receive buffer, skipped')
+                    this.log.log('warn', 'Rx', 'Undefined receive buffer, skipped');
                 return;
             }
 
@@ -486,7 +484,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                 retry();
             else
-                newError = new Error('Too many failed attempts to read from device, reading stopped')
+                newError = new Error('Too many failed attempts to read from device, reading stopped');
                 if (this.log && this.log.logging)
                    
                     this.log.log('error', newError);
@@ -516,7 +514,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         }.bind(this);
         
         MAX_IN_PACKET_SIZE = this.ANTdevice.defaultInterface.bulkInPipes[0].endpointDescriptor.maxPacketSize || 64;
-        REQUESTED_TRANSFER_SIZE = this.options.length.in || MAX_IN_PACKET_SIZE
+        REQUESTED_TRANSFER_SIZE = this.options.length.in || MAX_IN_PACKET_SIZE;
 
         if (this.log && this.log.logging)
             this.log.log('log', 'Requested transfer size on in endpoint is ' + REQUESTED_TRANSFER_SIZE + ' bytes');
@@ -536,7 +534,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                 this.dataWriter.writeBytes(chunk);
             else
             {
-                callback(new Error('No data writer available, cannot transfer USB data '))
+                callback(new Error('No data writer available, cannot transfer USB data '));
                 //this.log.log('error', 'Tx - No data writer available');
                 //return;
             }
@@ -573,6 +571,5 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     };
 
-    USBWindows;
     return USBWindows;
 });

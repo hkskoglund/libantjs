@@ -1,11 +1,10 @@
-﻿/* global define: true, chrome: true, Uint8Array: true,  */
+/* global define: true, chrome: true, Uint8Array: true,  */
 
 define(['usb/USBDevice'],function (USBDevice) {
-    "use strict";
+
+    'use strict';
    
     function USBChrome(options) {
-
-         this.name = "USBChrome";
 
         USBDevice.call(this, options);
 
@@ -19,7 +18,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     USBChrome.prototype = Object.create(USBDevice.prototype, {
         constructor: {
             value: USBChrome,
-            enumerable: false,
+            //enumerable: false, -> default false
             writeable: true,
             configurable: true
         }
@@ -108,7 +107,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                     this.log.log('warn', 'No data received data length is 0 bytes');
 
                 if (this.log && this.log.logging && !data)
-                    this.log.log('warn', 'Undefined data received', Rxinfo.data);
+                    this.log.log('warn', 'Undefined data received', RXinfo.data);
                 try {
 
                     //if (this.log && this.log.logging) console.time('RXparse');

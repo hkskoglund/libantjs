@@ -75,8 +75,8 @@ define(function (require, exports, module) {
             {
                 if (typeof this.options.logSource === 'string')
                   logSource = this.options.logSource;
-                else if (typeof this.options.logSource === 'function')
-                      logSource = this.options.logSource.name;
+                else if (typeof this.options.logSource === 'object')
+                      logSource = this.options.logSource.constructor.name;
 
                 header += ' '+logSource+':';
             }
