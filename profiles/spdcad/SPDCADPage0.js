@@ -18,7 +18,6 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         if (broadcast.data)
             this.parse(broadcast);
 
-
     }
 
     SPDCADPage0.prototype = Object.create(GenericPage.prototype);
@@ -80,8 +79,11 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
             }
 
             cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < this.previousPage.cumulativeCadenceRevolutionCount);
+
             cumulativeSpeedRevolutionCountRollover = (this.cumulativeSpeedRevolutionCount < this.previousPage.cumulativeSpeedRevolutionCount);
+
             bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < this.previousPage.bikeCadenceEventTime);
+
             bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < this.previousPage.bikeSpeedEventTime);
 
 
@@ -107,12 +109,13 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
                 bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime;
 
             // SPEED
-            // The speed equation does not multiply with the wheel circumphence calibration factor (in meters)
+
+            // The speed equation does not multiply with the wheel circumfence calibration factor (in meters)
             // Higher-lever code, e.g viewmodel should take this into account
 
             if (bikeSpeedEventTimeDifference) {
                 if (cumulativeSpeedRevolutionCountRollover) {
-                    this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount
+                    this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount;
                     this.unCalibratedSpeed = 1024 * (0xFFFF - this.relativeCumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
                 }
                 else {
@@ -140,8 +143,6 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
 
             }
 
-       
-
     };
 
    
@@ -154,16 +155,17 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         msg = this.type + " P# " + this.number + " cadence (rpm) ";
 
         if (this.cadence !== undefined)
-            msg += this.cadence
+            msg += this.cadence;
 
-        msg +=  " cadence event time " + this.bikeCadenceEventTime + ' cadence rev. # ' + this.cumulativeCadenceRevolutionCount;
+        msg +=  " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;
 
        if (this.unCalibratedSpeed !== undefined) {
            speed = calibrationFactor * this.unCalibratedSpeed;
            msg += ' speed (m/s) ' + speed; 
        }
 
-       msg += ' speed event time ' + this.bikeSpeedEventTime + ' speed/wheel rev. # ' + this.cumulativeSpeedRevolutionCount + ' wheel size (m) ' + calibrationFactor;
+       msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +  ' default wheel size (m) ' + calibrationFactor;
+
 
         return msg;
     };

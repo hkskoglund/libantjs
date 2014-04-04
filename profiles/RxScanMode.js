@@ -1,6 +1,7 @@
-﻿/* global define: true */
+/* global define: true */
 
 define(function (require, exports, module) {
+
     'use strict';
 
     var DeviceProfile = require('profiles/deviceProfile'),
@@ -12,6 +13,7 @@ define(function (require, exports, module) {
 
 
     function RxScanMode(configuration) {
+
         var devNum = '*',
             devType = '*',
             transType = '*';

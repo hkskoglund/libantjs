@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(function (require, exports, module) {
     'use strict';
@@ -102,7 +102,7 @@ define(function (require, exports, module) {
                     coarseVoltage: data[7] & 0x0F,
                     batteryStatus: (data[7] & 0x70) >> 4,
                     resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
-                }
+                };
 
 
                 switch (this.descriptive.batteryStatus) {
@@ -153,7 +153,7 @@ define(function (require, exports, module) {
         else
             return (this.cumulativeOperatingTime / 3600).toFixed(1) + ' h';
 
-    }
+    };
 
     GenericPage.prototype._batteryVoltageToString = function (voltage) {
         if (typeof voltage === "number")
@@ -228,12 +228,9 @@ define(function (require, exports, module) {
 
                     clone.broadcast = {
 
-                        channelId: {
-                            sensorId: this.broadcast.channelId.sensorId,
-                            deviceType: this.broadcast.channelId.deviceType
-                        }
+                        channelId: this.broadcast.channelId
 
-                    }
+                    };
 
 
                     break;
@@ -255,7 +252,7 @@ define(function (require, exports, module) {
 
         return clone;
 
-    }
+    };
 
     module.exports = GenericPage;
 
