@@ -15,6 +15,11 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
 
     }
 
+    GenericPage.prototype.BIT_MASK = {
+        PAGE_NUMBER : parseInt("01111111",2), // 7 lsb of byte 0 ANT+ format
+        PAGE_TOGGLE : parseInt("10000000",2) // msb of byte 0 ANT+ format
+    };
+
     GenericPage.prototype.COMMON = {
         PAGE80: 0x50,
         PAGE81: 0x51,

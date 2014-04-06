@@ -1,6 +1,6 @@
 /* globals define: true, require: true */
 
-define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/spdcad/SPDCADPage0'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,SPDCADPage0) {
+define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,SPDCADPage0,GenericPage) {
 
     'use strict';
 
@@ -69,9 +69,7 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
         var page,
             // Spec p. 34  "The combined bike speed and cadence data format was one of the first defined ANT+ message format and 
             // does not conform to the standard ANT+ message definition"
-            pageNumber = 0, // No page number in message format
-            sensorId = broadcast.channelId.sensorId,
-            pageIdentifier = sensorId + '.' + pageNumber;
+         sensorId = broadcast.channelId.sensorId;
 
        // broadcast.profile = this;
             
@@ -90,11 +88,9 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
         }
 
         page = new SPDCADPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
-       
-        page.parse(broadcast);
         
 
-        if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
+       if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
 
         this.addPage(page);  
 

@@ -27,7 +27,7 @@ define(function (require, exports, module) {
         
         this.number = data[0] & 0x7F;
         
-        this.pageToggle = (data[0] & 0x80) >> 7;
+        this.changeToggle = (data[0] & 0x80) >> 7;
         
         // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
         this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);

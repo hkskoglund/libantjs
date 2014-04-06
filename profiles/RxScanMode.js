@@ -1,8 +1,9 @@
 /* global define: true */
 
 define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
-        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD'],
-        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile) {
+        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD',
+       'profiles/bike_spd/deviceProfile_BikeSpd'],
+        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile) {
 
     'use strict';
 
@@ -44,6 +45,7 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
         this.addProfile(new SDMProfile({ log: this.log.logging}));
         this.addProfile(new HRMProfile({ log: this.log.logging }));
         this.addProfile(new SPDCADProfile({ log: this.log.logging }));
+        this.addProfile(new BikeSpdProfile({ log: this.log.logging }));
 
     }
 

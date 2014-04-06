@@ -7,7 +7,7 @@ define(['logger','events'],function (Logger,EventEmitter) {
     // Abstract USB device
     function USBDevice(options) {
 
-       EventEmitter.call(this);
+       EventEmitter.call(this,options);
         // Stream inherits from event emitter
     //    Duplex.call(this, options);
     //    this._burstBuffer = new Buffer(0);

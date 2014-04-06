@@ -26,7 +26,7 @@ define(function (require, exports, module) {
         
         this.number = data[0] & 0x7F;
         
-        this.pageToggle = (data[0] & 0x80) >> 7;
+        this.changeToggle = (data[0] & 0x80) >> 7;
         
         // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
         this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);
@@ -70,7 +70,7 @@ define(function (require, exports, module) {
     };
     
     HRMPage4.prototype.toString = function () {
-        var msg = this.type + " P# " + this.number + " T " + this.pageToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
+        var msg = this.type + " P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T-Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
         
         if (this.RRInterval)
                 msg += " RR " + this.RRInterval.toFixed(1) + " ms";

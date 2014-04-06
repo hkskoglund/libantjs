@@ -1,4 +1,4 @@
-﻿/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
+/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -11,6 +11,7 @@ define(function (require, exports, module) {
         HRMPage1 = require('profiles/hrm/HRMPage1'),
         HRMPage2 = require('profiles/hrm/HRMPage2'),
         HRMPage3 = require('profiles/hrm/HRMPage3'),
+        GenericPage = require('profiles/Page'),
         setting = require('settings'),
         HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
         LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout');
@@ -91,7 +92,7 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.CHANNEL_ID = {
         DEVICE_TYPE: 0x78,
         TRANSMISSION_TYPE : 0x01
-    }
+    };
     
 
     // HRM sends out pages in page 4 * 64, background page 1 (for 1 second), page 4 *64, background page 2 (1 s.), page 4*64, background page 3 (1 s),....
@@ -99,10 +100,7 @@ define(function (require, exports, module) {
     // normal behaviour of a broadcast master -> just repeat last broadcast if no new data available, then go to sleep if no HR data received in {timeout} millisec.
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
     
-    DeviceProfile_HRM.prototype.BIT_MASK = {
-        PAGE_TOGGLE : parseInt("01111111",2)
-    };
-    
+
     DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
     
     
@@ -114,7 +112,7 @@ define(function (require, exports, module) {
 //        data = broadcast.data,
 //            dataView = new DataView(broadcast.data.buffer),
             page, 
-            pageNumber = broadcast.data[0] & DeviceProfile_HRM.prototype.BIT_MASK.PAGE_TOGGLE,
+            pageNumber = broadcast.data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE,
              sensorId = broadcast.channelId.sensorId;
         
        // var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
