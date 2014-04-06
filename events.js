@@ -1,9 +1,14 @@
-﻿// Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
+/* global define: true */
+
+// Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
 
 define(function _requireDefineEventEmitter() {
+
     'use strict';
 
-    function EventEmitter() {
+    function EventEmitter(configuration) {
+
+
 
         this._events = {};
     }
@@ -82,7 +87,7 @@ define(function _requireDefineEventEmitter() {
 
         if (typeof listener !== 'function')
             throw new TypeError('The provided listener is not a function');
-    };
+    }
 
     return EventEmitter;
 }

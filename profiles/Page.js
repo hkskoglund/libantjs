@@ -1,9 +1,8 @@
 /* global define: true, DataView: true */
 
-define(function (require, exports, module) {
-    'use strict';
+define(['logger'],function _requireDefineGenericPage(Logger) {
 
-    var Logger = require('logger');
+    'use strict';
 
     function GenericPage(configuration, broadcast) {
 
@@ -27,7 +26,6 @@ define(function (require, exports, module) {
     // Parsing of common pages
     GenericPage.prototype.parse = function (broadcast) {
 
-
         var data;
 
         if (!broadcast) {
@@ -38,7 +36,6 @@ define(function (require, exports, module) {
             this.broadcast = broadcast;
 
         data = broadcast.data;
-
 
         if (!data) {
             this.log.log('error', 'Received undefined data in broadcast');
@@ -148,6 +145,7 @@ define(function (require, exports, module) {
     };
 
     GenericPage.prototype.toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
+
         if (cumulativeOperatingTime < 3600)
             return cumulativeOperatingTime.toFixed(1) + 's ';
         else
@@ -156,6 +154,7 @@ define(function (require, exports, module) {
     };
 
     GenericPage.prototype._batteryVoltageToString = function (voltage) {
+
         if (typeof voltage === "number")
             return voltage.toFixed(1);
         else
@@ -254,7 +253,6 @@ define(function (require, exports, module) {
 
     };
 
-    module.exports = GenericPage;
+    return GenericPage;
 
-    return module.exports;
 });

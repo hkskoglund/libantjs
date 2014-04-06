@@ -1,23 +1,16 @@
 /* global define: true */
 
-define(function (require, exports, module) {
+define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
+        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD'],
+        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile) {
 
     'use strict';
-
-    var DeviceProfile = require('profiles/deviceProfile'),
-        setting = require('settings'),
-        TEMPProfile = require('profiles/environment/deviceProfile_ENVIRONMENT'),
-        HRMProfile = require('profiles/hrm/deviceProfile_HRM'),
-        SDMProfile = require('profiles/sdm/deviceProfile_SDM'),
-        SPDCADProfile = require('profiles/spdcad/deviceProfile_SPDCAD');
-
 
     function RxScanMode(configuration) {
 
         var devNum = '*',
             devType = '*',
             transType = '*';
-            
 
         DeviceProfile.call(this, configuration);
 
@@ -55,7 +48,7 @@ define(function (require, exports, module) {
     }
 
     RxScanMode.prototype = Object.create(DeviceProfile.prototype);
-    RxScanMode.constructor = RxScanMode;
+    RxScanMode.prototype.constructor = RxScanMode;
 
     // Override default stop of device profile
     RxScanMode.prototype.stop = function ()
@@ -66,12 +59,12 @@ define(function (require, exports, module) {
         {
             this.profile[devType].stop();
         }
-    }
+    };
 
     RxScanMode.prototype.onPage = function (page)
     {
         this.emit('page',page);
-    }
+    };
 
     RxScanMode.prototype.addProfile = function (profile) {
         var deviceType;
@@ -92,7 +85,7 @@ define(function (require, exports, module) {
         }
         else if (this.log.logging)
             this.log.log('error', 'Attempt to add an Undefined or Null profile is not allowed');
-    }
+    };
 
     // Scan mode receives all broadcasts on channel 0 
     // The broadcast is forwared to a particular device profile (for parsing of page) based on the device type in the channel id
@@ -111,7 +104,7 @@ define(function (require, exports, module) {
 
         // this.log.log('log',broadcast.channelId.toString(), broadcast.channelId);
 
-        deviceType = broadcast.channelId.deviceType
+        deviceType = broadcast.channelId.deviceType;
         currentProfile = this.profile[deviceType];
 
         if (currentProfile) // Forward
@@ -122,6 +115,6 @@ define(function (require, exports, module) {
 
     };
 
-    module.exports = RxScanMode;
-    return module.exports;
+    return RxScanMode;
+
 });

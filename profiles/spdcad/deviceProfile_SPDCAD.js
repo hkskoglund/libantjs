@@ -41,11 +41,8 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
         this.requestPageUpdate(DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY);
     }
 
-    //Inherit
-    // Need a new inherited object prototype, otherwise changes to the inherited prototype will propagate along the prototype chain to the parent prototype
-    // So DeviceProfile_SPDCAD.prototype = DeviceProfile.prototype is not the right way to do proper inheritance
     DeviceProfile_SPDCAD.prototype = Object.create(DeviceProfile.prototype);
-    DeviceProfile_SPDCAD.constructor = DeviceProfile_SPDCAD;
+    DeviceProfile_SPDCAD.prototype.constructor = DeviceProfile_SPDCAD;
 
     DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
 

@@ -1,27 +1,26 @@
 ﻿/* global define: true */
 
-
 define(['logger','events'],function (Logger,EventEmitter) {
 
     function Channel(configuration) {
 
-        EventEmitter.call(this);
+        EventEmitter.call(this,configuration);
 
         this.options = configuration;
 
+        if (!configuration)
+            configuration = {};
+
+        configuration.logSource = this;
+
+        this.log = new Logger(configuration);
+
         this.parameters = {};
-       
-         this.log = new Logger(configuration);
-     
+
     }
-    
-    // Inherit from event emitter
+
     Channel.prototype = Object.create(EventEmitter.prototype);
     Channel.prototype.constructor = Channel;
-  
-
-   // var d = Object.getOwnPropertyDescriptor(Channel.prototype, "constructor");
-   
 
     Channel.prototype.getConfigurations = function ()
     {
