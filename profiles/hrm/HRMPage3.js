@@ -1,13 +1,14 @@
 ﻿/* global define: true, DataView: true */
 
-define(function (require, exports, module) {
+define(['profiles/hrm/HRMPage'],function (HRMPage) {
+
     'use strict';
-    var GenericPage = require('profiles/Page');
     
     function HRMPage3(configuration,broadcast) {
-       GenericPage.call(this,configuration);
+
+       HRMPage.call(this,configuration);
     
-       this.type = HRMPage3.prototype.TYPE.BACKGROUND;
+       this.type = this.TYPE.BACKGROUND;
 
        //this.profile = broadcast.profile;
           
@@ -15,7 +16,7 @@ define(function (require, exports, module) {
            this.parse(broadcast);
     }
     
-    HRMPage3.prototype = Object.create(GenericPage.prototype); 
+    HRMPage3.prototype = Object.create(HRMPage.prototype);
     HRMPage3.prototype.constructor = HRMPage3; 
     
     HRMPage3.prototype.parse = function (broadcast)
@@ -24,22 +25,10 @@ define(function (require, exports, module) {
         
         this.broadcast = broadcast;
         
-        this.number = data[0] & 0x7F;
+        this.readCommonBytes(data,dataView);
         
-        this.changeToggle = (data[0] & 0x80) >> 7;
-        
-        // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
-        this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);
-    
-        // Counter for each heart beat event, rollover 255 counts
-        this.heartBeatCount = data[6];
-    
-        // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
-        this.computedHeartRate = data[7];
-      
-        this.hardwareVersion = data[1];
-        this.softwareVersion = data[2];
-        this.modelNumber = data[3];
+        this.readProductId(data);
+
 
     };
     
@@ -49,8 +38,7 @@ define(function (require, exports, module) {
         return msg;
     };
     
-    module.exports = HRMPage3;
-        
-    return module.exports;
+    return HRMPage3;
+
     
 });

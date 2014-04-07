@@ -28,6 +28,46 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
 
     GenericPage.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
 
+    // Background Page 1
+    GenericPage.prototype.readCumulativeOperatingTime = function (data,dataView)
+    {
+        // Cumulative operating time :
+        // Byte 1 = bit 0-7, Byte 2 = bit 8-15, Byte 3 = bit 16 - 23 (little endian)
+
+        this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+1,true) & 0x00FFFFFF) * 2; // Seconds since reset/battery replacement
+
+          // Must look up to generic page through prototype chain (only 1 level should not affect performance considerably)
+        this.cumulativeOperatingTimeString = this.toStringCumulativeOperatingTime(this.cumulativeOperatingTime);
+
+        this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
+    };
+
+    // Background page 2
+    GenericPage.prototype.readManufacturerId = function (data,dataView,broadcast)
+    {
+        var channelId = broadcast.channelId;
+
+         this.manufacturerID = data[1];
+
+        this.serialNumber16MSB = dataView.getUint16(data.byteOffset+2,true); // Upper 16-bits of a 32 bit serial number
+
+        // Set the lower 2-bytes of serial number, if available in channel Id.
+        if (typeof channelId !== "undefined" && typeof channelId.deviceNumber !== "undefined")
+            this.serialNumber = (this.serialNumber16MSB << 16) | channelId.deviceNumber;
+        else
+            this.serialNumber = this.serialNumber16MSB;
+
+
+    };
+
+    // Background page 3
+    GenericPage.prototype.readProductId = function (data)
+    {
+        this.hardwareVersion = data[1];
+        this.softwareVersion = data[2];
+        this.modelNumber = data[3];
+    };
+
     // Parsing of common pages
     GenericPage.prototype.parse = function (broadcast) {
 

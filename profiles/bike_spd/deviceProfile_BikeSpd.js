@@ -1,6 +1,6 @@
 /* globals define: true, require: true */
 
-define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,BikeSpdPage0,GenericPage) {
+define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/bike_spd/bikeSpdPage0','profiles/bike_spd/bikeSpdPage1','profiles/bike_spd/bikeSpdPage2','profiles/bike_spd/bikeSpdPage3','profiles/Page'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,BikeSpdPage0,BikeSpdPage1,BikeSpdPage2,BikeSpdPage3,GenericPage) {
 
     'use strict';
 
@@ -55,8 +55,8 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
     DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD = {
         DEFAULT: 8118, // 4.06Hz
-        //ALTERNATIVE_1: 16172,
-     //   ALTERNATIVE_2: 32344
+        ALTERNATIVE_1: 16236, // 2.02 Hz
+        ALTERNATIVE_2: 32472 // 1.01Hz
     };
 
     DeviceProfile_BikeSpd.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
@@ -67,8 +67,9 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
     DeviceProfile_BikeSpd.prototype.broadCast = function (broadcast) {
 
         var page,
-            pageNumber = data[0] && GenericPage.prototype.BIT_MASK.PAGE_NUMBER,
             data = broadcast.data,
+            pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER,
+
             sensorId = broadcast.channelId.sensorId;
 
        // broadcast.profile = this;
@@ -88,16 +89,41 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
         switch (pageNumber)
         {
+            // MAIN
+
                 case 0 :
 
                       page = new BikeSpdPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
 
                       break;
 
+            // BACKGROUND
+
+                // Cumulative operating time
+                case 1:
+
+                      page = new BikeSpdPage1({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
+                      break;
+
+                 // Manufacturer Id
+                 case 2:
+
+                      page = new BikeSpdPage2({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
+                      break;
+
+                 // Product Id
+                 case 3:
+
+                      page = new BikeSpdPage3({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
+                      break;
+
+
                 default :
 
                     if (this.log && this.log.logging)
-                       this.log.log('warn','Cannot handle page '+this.number+'for device profile',this);
+                       this.log.log('warn','Cannot handle page '+this.number+' for device profile',this);
+
+                    break;
 
         }
 

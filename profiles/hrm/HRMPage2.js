@@ -1,13 +1,14 @@
 ﻿/* global define: true, DataView: true */
 
-define(function (require, exports, module) {
+define(['profiles/hrm/HRMPage'],function (HRMPage) {
+
     'use strict';
-    var GenericPage = require('profiles/Page');
     
     function HRMPage2(configuration,broadcast) {
-       GenericPage.call(this,configuration);
+
+       HRMPage.call(this,configuration);
     
-       this.type = HRMPage2.prototype.TYPE.BACKGROUND;
+       this.type = this.TYPE.BACKGROUND;
 
        //this.profile = broadcast.profile;
         
@@ -16,40 +17,20 @@ define(function (require, exports, module) {
         
     }
     
-    HRMPage2.prototype = Object.create(GenericPage.prototype); 
+    HRMPage2.prototype = Object.create(HRMPage.prototype);
     HRMPage2.prototype.constructor = HRMPage2; 
     
     HRMPage2.prototype.parse = function (broadcast)
     {
-        var channelId = broadcast.channelId;
         
           var  data = broadcast.data, dataView = new DataView(data.buffer);
         
         this.broadcast = broadcast;
         
-        this.number = data[0] & 0x7F;
+        this.readCommonBytes(data,dataView);
         
-        this.changeToggle = (data[0] & 0x80) >> 7;
-        
-        // Time of the last valid heart beat event 1 /1024 s, rollover 64 second
-        this.heartBeatEventTime = dataView.getUint16(data.byteOffset+4,true);
-    
-        // Counter for each heart beat event, rollover 255 counts
-        this.heartBeatCount = data[6];
-    
-        // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
-        this.computedHeartRate = data[7];
-        
-        this.manufacturerID = data[1];
-        this.serialNumber = dataView.getUint16(data.byteOffset+2,true); // Upper 16-bits of a 32 bit serial number
-    
-        // Set the lower 2-bytes of serial number, if available in channel Id.
-        if (typeof channelId !== "undefined" && typeof channelId.deviceNumber !== "undefined") {
-            this.serialNumber = (this.serialNumber << 16) | channelId.deviceNumber;
-            
-        }
-    
-      
+        this.readManufacturerId(data,dataView,broadcast);
+
     };
     
     HRMPage2.prototype.toString = function () {
@@ -58,8 +39,6 @@ define(function (require, exports, module) {
         return msg;
     };
     
-    module.exports = HRMPage2;
-        
-    return module.exports;
-    
+    return HRMPage2;
+
 });

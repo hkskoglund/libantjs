@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-define(['profiles/Page'], function _requireDefineBikeSpdPage0(GenericPage) {
+define(['profiles/bike_spd/bikeSpdPage'], function _requireDefineBikeSpdPage0(BikeSpdPage) {
 
     'use strict';
 
     function BikeSpdPage0(configuration, broadcast, previousPage) {
 
-        GenericPage.call(this, configuration);
+        BikeSpdPage.call(this, configuration);
 
-        this.type = GenericPage.prototype.TYPE.MAIN;
+        this.type = this.TYPE.MAIN;
 
         this.previousPage = previousPage;
 
@@ -21,15 +21,8 @@ define(['profiles/Page'], function _requireDefineBikeSpdPage0(GenericPage) {
 
     }
 
-    BikeSpdPage0.prototype = Object.create(GenericPage.prototype);
+    BikeSpdPage0.prototype = Object.create(BikeSpdPage.prototype);
     BikeSpdPage0.prototype.constructor = BikeSpdPage0;
-
-    // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
-    BikeSpdPage0.prototype.BYTE = {
-
-        BIKE_SPEED_EVENT_TIME: 4,
-        CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
-    };
 
     BikeSpdPage0.prototype.parse = function (broadcast) {
 
@@ -41,19 +34,9 @@ define(['profiles/Page'], function _requireDefineBikeSpdPage0(GenericPage) {
 
         this.broadcast = broadcast;
 
-        this.changeToggle = (data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE) >> 7;
-
-        this.number = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER;
-
         // Byte 1-3 RESERVED 0xFF
 
-        // Byte 4-5 - Bike speed event time LSB MSB - time of last valid bike speed event - unit : 1/1024 s, 64 s
-
-        this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + BikeSpdPage0.prototype.BYTE.BIKE_SPEED_EVENT_TIME, true);
-
-        // Byte 6-7 - Cumulative Speed Revolution LSB MSB - total number of wheel revolutions - rollover : 65536
-
-        this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + BikeSpdPage0.prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
+        this.readCommonBytes(data,dataView);
 
         // Initialy we have no previous page, so have to check for previous page
         if (!this.previousPage)
