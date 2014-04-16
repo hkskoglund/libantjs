@@ -1,6 +1,6 @@
 /* globals define: true, require: true */
 
-define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/bike_spd/bikeSpdPage0','profiles/bike_spd/bikeSpdPage1','profiles/bike_spd/bikeSpdPage2','profiles/bike_spd/bikeSpdPage3','profiles/Page'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,BikeSpdPage0,BikeSpdPage1,BikeSpdPage2,BikeSpdPage3,GenericPage) {
+define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/cumulativeOperatingTime','profiles/manufacturerId','profiles/productId','profiles/Page'],function (DeviceProfile, BikePage0, CumulativeOperatingTime,ManufacturerId, ProductId,GenericPage) {
 
     'use strict';
 
@@ -8,35 +8,7 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
         DeviceProfile.call(this, configuration);
 
-        this.addConfiguration("slave", {
-            description: "Slave configuration for ANT+ SPDCAD device profile",
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_BikeSpd.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
-
-            channelPeriod: DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD.DEFAULT
-
-        });
-
-        this.addConfiguration("master", {
-            description: "Master configuration for ANT+ SDM device profile",
-            networkKey: setting.networkKey["ANT+"],
-
-            channelType: "master",
-            channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_BikeSpd.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: DeviceProfile_BikeSpd.prototype.CHANNEL_ID.TRANSMISSION_TYPE },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-
-            channelPeriod: DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD.DEFAULT
-
-        });
-
-        // Used for calculation of cadence and speed
-        // Using an object literal allows for tracking multiple sensors by indexing with sensorId (based on channelId)
-        this.previousPage = {};
+        this.initMasterSlaveConfiguration();
 
         this.requestPageUpdate(DeviceProfile_BikeSpd.prototype.DEFAULT_PAGE_UPDATE_DELAY);
     }
@@ -55,86 +27,50 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
     DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD = {
         DEFAULT: 8118, // 4.06Hz
-        ALTERNATIVE_1: 16236, // 2.02 Hz
-        ALTERNATIVE_2: 32472 // 1.01Hz
     };
 
     DeviceProfile_BikeSpd.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
 
-    // BikeSpd one of the old device profiles without common pages conforming to the latest/"general" ANT+ message format
-    DeviceProfile_BikeSpd.prototype.hasCommonPages = false;
+    DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
 
-    DeviceProfile_BikeSpd.prototype.broadCast = function (broadcast) {
+    DeviceProfile_BikeSpd.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts
 
-        var page,
+    DeviceProfile_BikeSpd.prototype.getPageNumber = function (broadcast)
+    {
+     var deviceType = broadcast.channelId.deviceType,
             data = broadcast.data,
-            pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER,
+            pageNumber;
 
-            sensorId = broadcast.channelId.sensorId;
+         // Byte 0 - Page number
 
-       // broadcast.profile = this;
+       if (this.isPageToggle(broadcast))
 
-        // Don't process broadcast with wrong device type
-        if (!this.verifyDeviceType(DeviceProfile_BikeSpd.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))
-            return;
+        pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
 
-        this.countBroadcast(sensorId);
+       else
 
-        // Don't process duplicate broadcast
-        if (this.isDuplicateMessage(broadcast)) {
+         pageNumber = 0;  // Legacy
 
-            return;
+        return pageNumber;
+    };
 
-        }
+    // Deserialize to page objects based on page number
+    DeviceProfile_BikeSpd.prototype.getPage = function (broadcast)
+    {
+        var pageNumber = this.getPageNumber(broadcast),
+            page;
 
-        switch (pageNumber)
+        if (pageNumber === 0) // MAIN
+                page = new BikePage0({ logger: this.log}, broadcast,this,pageNumber);
+        else // BACKGROUND 1-3
         {
-            // MAIN
-
-                case 0 :
-
-                      page = new BikeSpdPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
-
-                      break;
-
-            // BACKGROUND
-
-                // Cumulative operating time
-                case 1:
-
-                      page = new BikeSpdPage1({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
-                      break;
-
-                 // Manufacturer Id
-                 case 2:
-
-                      page = new BikeSpdPage2({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
-                      break;
-
-                 // Product Id
-                 case 3:
-
-                      page = new BikeSpdPage3({log : this.log.logging }, broadcast,this.previousPage[sensorId]);
-                      break;
-
-
-                default :
-
-                    if (this.log && this.log.logging)
-                       this.log.log('warn','Cannot handle page '+this.number+' for device profile',this);
-
-                    break;
-
+            page = this.getCommonPage(broadcast,pageNumber);
+            this.mixin(Object.getPrototypeOf(page),BikePage0.prototype);
+            page.readCommonBytes(broadcast);
+            page.update(broadcast);
         }
 
-       if (page) {
-
-           if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
-
-            this.addPage(page);
-
-            this.previousPage[sensorId] = page;
-       }
+        return page;
 
     };
 

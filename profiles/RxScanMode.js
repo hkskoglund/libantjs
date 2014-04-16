@@ -44,7 +44,7 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
         this.addProfile(new TEMPProfile({ log: this.log.logging }));
         this.addProfile(new SDMProfile({ log: this.log.logging}));
         this.addProfile(new HRMProfile({ log: this.log.logging }));
-        this.addProfile(new SPDCADProfile({ log: this.log.logging }));
+       this.addProfile(new SPDCADProfile({ log: this.log.logging }));
         this.addProfile(new BikeSpdProfile({ log: this.log.logging }));
 
     }
@@ -68,7 +68,7 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
         this.emit('page',page);
     };
 
-    RxScanMode.prototype.addProfile = function (profile) {
+    RxScanMode.prototype.addProfile = function (profile,additionalDevicesTypes) {
         var deviceType;
         if (profile) {
             deviceType = profile.CHANNEL_ID.DEVICE_TYPE;

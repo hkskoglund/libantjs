@@ -1,27 +1,18 @@
 /* global define: true, DataView: true */
 
-define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
+define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDCADSharedPage) {
 
     'use strict';
    
-    function SPDCADPage0(configuration, broadcast, previousPage) {
+    function SPDCADPage0(configuration, broadcast,profile,pageNumber) {
 
-        GenericPage.call(this, configuration);
+        SPDCADSharedPage.call(this, configuration, broadcast,profile,pageNumber,64000);
 
-        this.type = GenericPage.prototype.TYPE.MAIN;
-
-        this.previousPage = previousPage;
-
-        this.timestamp = Date.now();
-
-        //this.profile = broadcast.profile;
-
-        if (broadcast.data)
-            this.parse(broadcast);
+        this.type = this.TYPE.MAIN;
 
     }
 
-    SPDCADPage0.prototype = Object.create(GenericPage.prototype);
+    SPDCADPage0.prototype = Object.create(SPDCADSharedPage.prototype);
     SPDCADPage0.prototype.constructor = SPDCADPage0;
 
     // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
@@ -32,66 +23,47 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
         CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
     };
 
-    SPDCADPage0.prototype.parse = function (broadcast) {
+    SPDCADPage0.prototype.readCommonBytes = function ()
+    {
+        this.readCadence();
+        this.readSpeed();
+    };
 
-        var data = broadcast.data,
-            dataView = new DataView(data.buffer),
+    SPDCADPage0.prototype.update = function () {
+
+        var broadcast = this.broadcast,
+            data = broadcast.data,
+            dataView = this.dataView,
+            sensorId = this.broadcast.channelId.sensorId,
             cumulativeCadenceRevolutionCountRollover,
             cumulativeSpeedRevolutionCountRollover,
             bikeCadenceEventTimeRollover,
             bikeSpeedEventTimeRollover,
             bikeSpeedEventTimeDifference,
             bikeCadenceEventTimeDifference,
-            diffCumulativeSpeedRevolutionCountCount;
+            diffCumulativeSpeedRevolutionCountCount,
+            previousPage;
 
-        this.broadcast = broadcast;
-
-        // NB No page number available in data message
-
-        this.number = 0;
-
-        // Byte 0-1 - Bike Cadence Event Time LSB MSB - last valid bike cadence event - unit: 1/1024s - rollover : 64 s
-
-        this.bikeCadenceEventTime = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.BIKE_CADENCE_EVENT_TIME, true);
-
-        // Byte 2-3 - Cumulative Cadence Revolution Count LSB MSB - total number of pedal revolutions - rollover : 65536
-
-        this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
-        
-        // Byte 4-5 - Bike speed event time LSB MSB - time of last valid bike speed event - unit : 1/1024 s, 64 s
-
-        this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.BIKE_SPEED_EVENT_TIME, true);
-
-        // Byte 6-7 - Cumulative Speed Revolution LSB MSB - total number of wheel revolutions - rollover : 65536
-
-        this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + SPDCADPage0.prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
+           this.calcSpeed();
+            //this.calcCadence(broadcast,prevPage);
 
         // Cadence
         // Spec. section 5.3.1 - Cadence computation, p. 29
+/*
 
-        // Initialy we have no previous page, so have to check for previous page
-        if (!this.previousPage)
-          return;
-        
-        // Don't attempt to calculate cadence and speed if time between pages is greater than rollover time
-        if (this.timestamp - this.previousPage.timestamp >= 64000) {
-            if (this.log.logging) this.log.log('warn', 'Time between pages from is over rollover threshold, skipped cadence and speed calculation', this.page, this.previousPage);
-            return;
-        }
+        cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < previousPage.cumulativeCadenceRevolutionCount);
 
-        cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < this.previousPage.cumulativeCadenceRevolutionCount);
+        cumulativeSpeedRevolutionCountRollover = (this.cumulativeSpeedRevolutionCount < previousPage.cumulativeSpeedRevolutionCount);
 
-        cumulativeSpeedRevolutionCountRollover = (this.cumulativeSpeedRevolutionCount < this.previousPage.cumulativeSpeedRevolutionCount);
+        bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
 
-        bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < this.previousPage.bikeCadenceEventTime);
-
-        bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < this.previousPage.bikeSpeedEventTime);
+        bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < previousPage.bikeSpeedEventTime);
 
 
         if (bikeCadenceEventTimeRollover)
-            bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime);
+            bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
         else
-            bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime;
+            bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
 
         // RPM - rounds pr minute
 
@@ -99,50 +71,24 @@ define(['profiles/Page'], function _requireDefineSPDCADPage0(GenericPage) {
 
         if (bikeCadenceEventTimeDifference) {
             if (cumulativeCadenceRevolutionCountRollover)
-                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
             else
-                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
         }
 
         if (bikeSpeedEventTimeRollover)
-            bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime);
+            bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
         else
-            bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - this.previousPage.bikeSpeedEventTime;
+            bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime;
 
-        // SPEED
 
-        // The speed equation does not multiply with the wheel circumfence calibration factor (in meters)
-        // Higher-lever code, e.g viewmodel should take this into account
-
-        if (bikeSpeedEventTimeDifference) {
-            if (cumulativeSpeedRevolutionCountRollover) {
-                this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount;
-                this.unCalibratedSpeed = 1024 * (0xFFFF - this.relativeCumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
-            }
-            else {
-                this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - this.previousPage.cumulativeSpeedRevolutionCount;
-                this.unCalibratedSpeed = 1024 * this.relativeCumulativeSpeedRevolutionCount / bikeSpeedEventTimeDifference;
-
-            }
-        }
-
-        // Filter "spikes"
-        // This issue has been noticed running the SimulANT+ application Version : AYD 1.5.0.0
-        // Its only the first few packets that provokes this for unCalibratedSpeed
-
-        if (this.unCalibratedSpeed > 512)
-        {
-            if (this.log && this.log.logging)
-                this.log.log('warn', 'Very high uncalibrated speed filtered', this);
-            this.unCalibratedSpeed = undefined;
-        }
 
         if (this.cadence > 512) {
             if (this.log && this.log.logging)
                 this.log.log('warn', 'Very high cadence filtered', this);
             this.cadence = undefined;
 
-        }
+        } */
 
     };
 

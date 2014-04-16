@@ -1,11 +1,11 @@
-﻿/* global define: true, DataView: true, Uint8Array: true */
+/* global define: true, DataView: true, Uint8Array: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+
     "use strict";
     // Function names based on Dynastram Android SDK v 4.00 documentation
-    
-    
+
     function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
        
         // Allow for new ChannelId(), when parsing broadcast data
@@ -40,11 +40,11 @@ define(function (require, exports, module) {
     ChannelId.prototype.getUniqueId = function (networkNr,channelNr)
     {
         var pageScheme = 'ant';
-        
-        //if (this.usesANTPLUSGlobalDataPages())
-        //    pageScheme += 'plus';
-        
-          return pageScheme+':'+networkNr+'.'+channelNr+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;   
+
+          pageScheme = pageScheme+':'+networkNr+'.'+channelNr+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;
+
+           return pageScheme;
+
     };
     
     ChannelId.prototype.getDeviceNumber = function () {
@@ -81,12 +81,12 @@ define(function (require, exports, module) {
         
         this._check20BitDeviceNumber();
 
+        this.globalPages = this.hasGlobalPages();
+
        // this.sensorId = this.getUniqueId();
     
     };
-    
-   
-    
+
     ChannelId.prototype.BITMASK = {
         DEVICE_TYPE : {
             PAIR : parseInt("10000000", 2)
@@ -129,7 +129,7 @@ define(function (require, exports, module) {
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
     };
     
-    ChannelId.prototype.usesANTPLUSGlobalDataPages = function () {
+    ChannelId.prototype.hasGlobalPages = function () {
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
     };
     
@@ -148,9 +148,9 @@ define(function (require, exports, module) {
             }
         
             // Bit 2
-            if (this.usesANTPLUSGlobalDataPages()) {
+            if (this.hasGlobalPages()) {
                // case 0: msg += " | ANT+ Global data pages not used"; break;
-                 msg += " | ANT+ Global data pages"; 
+                 msg += " | Global pages";
                // default: msg += " | ?"; break;
             }
         
@@ -165,5 +165,6 @@ define(function (require, exports, module) {
     };
     
     module.exports = ChannelId;
-        return module.exports;
+
+    return module.exports;
 });

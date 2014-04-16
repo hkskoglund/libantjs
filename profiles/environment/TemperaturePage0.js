@@ -1,35 +1,19 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
-define(function (require, exports, module) {
-    'use strict';
+define(['profiles/Page'],function (GenericPage) {
     
-    var GenericPage = require('profiles/Page');
+    'use strict';
     
     // Data page 0 - General Information
     // "Provides general information about the device's capabilities", spec. p. 15
     
-    function TemperaturePage0(configuration,broadcast)
+    function TemperaturePage0(configuration,broadcast,profile,pageNumber)
     {
           
-                
-        GenericPage.call(this,configuration,broadcast);
+        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
         
         this.type = GenericPage.prototype.TYPE.MAIN;
 
-        this.transmissionInfo = {
-            localTime : undefined,
-            UTCTime: undefined,
-            defaultTransmissionRate: undefined
-        };
-
-        this.supportedPages = {
-            value: undefined
-        };
-
-        //this.profile = broadcast.profile;
-        
-       if (broadcast && broadcast.data)
-           this.parse(broadcast);
     }
     
     TemperaturePage0.prototype = Object.create(GenericPage.prototype); 
@@ -91,26 +75,20 @@ define(function (require, exports, module) {
         }
     };
         
-   
-    TemperaturePage0.prototype.parse = function (broadcast)
+    TemperaturePage0.prototype.readCommonBytes = function (broadcast)
     {
-          var  data = broadcast.data, dataView = new DataView(data.buffer);
-          var supportedPages;
-
-          this.broadcast = broadcast;
-        
-        // Byte 0 - page number
-        
-        this.number = data[TemperaturePage0.prototype.BYTE.PAGE_NUMBER];
-
-        // Byte 1 - Reserved
-        // 0xFF
-        
-        // Byte 2 - Reserved
-        // 0xFF
+          var  data = broadcast.data,
+               dataView = new DataView(data.buffer),
+               supportedPages;
         
         // Byte 3 - Transmission info
         
+         this.transmissionInfo = {
+            localTime : undefined,
+            UTCTime: undefined,
+            defaultTransmissionRate: undefined
+        };
+
         this.transmissionInfo.localTime = (data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.LOCAL_TIME) >> TemperaturePage0.prototype.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
         this.transmissionInfo.UTCTime = (data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.UTC_TIME) >> TemperaturePage0.prototype.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
         this.transmissionInfo.defaultTransmissionRate = data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.DEFAULT_TRANSMISSION_RATE;
@@ -118,6 +96,10 @@ define(function (require, exports, module) {
         
         // Byte 4 - 7  - Supported pages
         
+          this.supportedPages = {
+            value: undefined
+        };
+
         supportedPages = dataView.getUint32(data.byteOffset+TemperaturePage0.prototype.BYTE.SUPPORTED_PAGES,true);
         this.supportedPages.value = supportedPages;
      
@@ -137,12 +119,6 @@ define(function (require, exports, module) {
         return msg;
    };
 
-  
-
-    module.exports = TemperaturePage0;
-    
-    return module.exports;
-    
-    
+    return TemperaturePage0;
     
 });

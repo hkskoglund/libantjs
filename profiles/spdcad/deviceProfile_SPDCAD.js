@@ -1,6 +1,6 @@
 /* globals define: true, require: true */
 
-define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfile, setting, LowPrioritySearchTimeout, HighPrioritySearchTimeout,SPDCADPage0,GenericPage) {
+define(['profiles/deviceProfile','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfile, SPDCADPage0,GenericPage) {
 
     'use strict';
 
@@ -8,35 +8,7 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
         DeviceProfile.call(this, configuration);
 
-        this.addConfiguration("slave", {
-            description: "Slave configuration for ANT+ SPDCAD device profile",
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
-
-            channelPeriod: DeviceProfile_SPDCAD.prototype.CHANNEL_PERIOD.DEFAULT
-
-        });
-
-        this.addConfiguration("master", {
-            description: "Master configuration for ANT+ SDM device profile",
-            networkKey: setting.networkKey["ANT+"],
-
-            channelType: "master",
-            channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: DeviceProfile_SPDCAD.prototype.CHANNEL_ID.TRANSMISSION_TYPE },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-
-            channelPeriod: DeviceProfile_SPDCAD.prototype.CHANNEL_PERIOD.DEFAULT
-
-        });
-
-        // Used for calculation of cadence and speed
-        // Using an object literal allows for tracking multiple sensors by indexing with sensorId (based on channelId)
-        this.previousPage = {};
+        this.initMasterSlaveConfiguration();
 
         this.requestPageUpdate(DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY);
     }
@@ -61,42 +33,40 @@ define(['profiles/deviceProfile','settings','messages/HighPrioritySearchTimeout'
 
     DeviceProfile_SPDCAD.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
 
-    // SPDCAD one of the old device profiles without common pages conforming to the ANT+ message format
-    DeviceProfile_SPDCAD.prototype.hasCommonPages = false;
 
-    DeviceProfile_SPDCAD.prototype.broadCast = function (broadcast) {
+    DeviceProfile_SPDCAD.prototype.getPageNumber = function (broadcast)
+    {
 
-        var page,
-            // Spec p. 34  "The combined bike speed and cadence data format was one of the first defined ANT+ message format and 
-            // does not conform to the standard ANT+ message definition"
-         sensorId = broadcast.channelId.sensorId;
+        return 0; // SPDCAD has only page 0
+    };
 
-       // broadcast.profile = this;
-            
-        // Don't process broadcast with wrong device type
-        if (!this.verifyDeviceType(DeviceProfile_SPDCAD.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))
-            return;
+    DeviceProfile_SPDCAD.prototype.getPage = function (broadcast) {
 
-        this.countBroadcast(sensorId);
+         var pageNumber = this.getPageNumber(broadcast),
+            page;
 
-        // Don't process duplicate broadcast
-        if (this.isDuplicateMessage(broadcast)) {
+        switch (pageNumber)
+        {
+                case 0:
+
+                    page = new SPDCADPage0({ logger: this.log }, broadcast,this,pageNumber);
+
+                    break;
 
 
-            return;
+                default:
+
+                   if (this.log && this.log.logging)
+                    this.log.log('error','Cannot handle page number '+pageNumber+' of broadcast',broadcast);
+
+                   break;
 
         }
 
-        page = new SPDCADPage0({ log: this.log.logging }, broadcast, this.previousPage[sensorId]);
-        
-
-       if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
-
-        this.addPage(page);  
-
-        this.previousPage[sensorId] = page;
+        return page;
 
     };
 
     return DeviceProfile_SPDCAD;
+
 });

@@ -18,6 +18,8 @@ define(function (require, exports, module) {
 
 function ANTMessage(data) {
     
+    this.timestamp = Date.now();
+
     // Extended data - channelID, RX timestamp and RSSI
     
 //    this.channelId = new ChannelId();

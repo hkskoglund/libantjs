@@ -1,32 +1,223 @@
-﻿/* global define: true, clearInterval: true, setInterval: true, setTimeout: true */
+/* global define: true, clearInterval: true, setInterval: true, setTimeout: true,  */
 
-define(['channel','profiles/Page'],function (Channel, GenericPage) {
+define(['channel','profiles/Page','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','settings',
+        'profiles/receivedPages',
+        'profiles/manufacturerId','profiles/productId','profiles/cumulativeOperatingTime',
+        'profiles/manufacturerId0x50','profiles/productId0x51','profiles/cumulativeOperatingTime0x52'],function (Channel, GenericPage,HighPrioritySearchTimeout,LowPrioritySearchTimeout,setting,ReceivedPages,
+ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x51,CumulativeOperatingTime0x52) {
 
     'use strict';
 
     function DeviceProfile(configuration) {
 
         Channel.call(this, configuration);
-     
-        this.receivedBroadcastCounter = {};
 
-        this.previousPageBroadcast = {}; // Just declare property
+        // Unfiltered broadcasts
+        this.broadcast = {};
 
-        // Storage for parsed received main and background pages for each sensorId
-        this.pages = {};
+        // Hashed broadcasts - for detecting similar broadcasts/used for filtering
+        this.hashBroadcast = {};
+
+        // Filtered broadcasts -  Storage for parsed received main and background pages for each sensorId
+        this.page = {};
 
         // Timers
 
         this.timer = {};
 
-        // Reference to pages by page number index
-
-        this.pageNumberPages = {};
+        if (this.PAGE_TOGGLE_CAPABLE)
+             this.pageToggle = {}; // For determining if 7 msb is toggeled of byte 0 in payload
+        else if (this.log && this.log.logging)
+            this.log.log('info','Device is not capable of page toggeling');
 
     }
 
     DeviceProfile.prototype = Object.create(Channel.prototype);
     DeviceProfile.prototype.constructor = DeviceProfile;
+
+    DeviceProfile.prototype.PAGE_TOGGLE_STATE = {
+        INIT : 'init',
+        TOGGELING : 'toggeling',
+        NOT_TOGGELING : 'not toggeling',
+
+    };
+
+    DeviceProfile.prototype.MAX_UNFILTERED_BROADCAST = 10000;
+
+    // Is called by a particular device profile after reading pageNumber
+    DeviceProfile.prototype.getCommonPage = function (broadcast,pageNumber)
+    {
+       var hasGlobalPages = broadcast.channelId.hasGlobalPages();
+
+        if (!hasGlobalPages)
+            return undefined;
+
+       var   page;
+
+        switch (pageNumber) {
+
+              case 1:
+
+                page = new CumulativeOperatingTime({ logger: this.log }, broadcast,this,pageNumber);
+
+                break;
+
+            case 2:
+
+                page = new ManufacturerId({ logger: this.log }, broadcast,this,pageNumber);
+
+                break;
+
+
+            case 3:
+
+                page = new ProductId({ logger: this.log }, broadcast,this,pageNumber);
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE0x50:
+
+                page = new ManufacturerId0x50({ log: this.log.logging }, broadcast,this,pageNumber);
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE0x51:
+
+                page = new ProductId0x51({ log: this.log.logging }, broadcast,this,pageNumber);
+
+                break;
+
+            case GenericPage.prototype.COMMON.PAGE0x52:
+
+                page = new CumulativeOperatingTime0x52({ log: this.log.logging }, broadcast,this,pageNumber);
+
+                break;
+
+            default:
+
+                this.log.log('error', 'Unable to create page object for common page number ', pageNumber + ' 0x' + pageNumber.toString(16),broadcast);
+
+                break;
+
+        }
+
+        return page;
+
+    };
+
+    DeviceProfile.prototype.getPageNumber = function (broadcast)
+    {
+       throw new Error('Should be overridden in descendants');
+    };
+
+    DeviceProfile.prototype.filterAndCountBroadcast = function (broadcast)
+    {
+        var sensorId = broadcast.channelId.sensorId,
+            data = broadcast.data,
+            FILTER = true,
+            pageToggleBit;
+
+        // Don't process broadcast with wrong device type
+
+        if (!this.verifyDeviceType(this.CHANNEL_ID.DEVICE_TYPE, broadcast))
+            return FILTER;
+
+        if (!this.broadcast[sensorId])
+            this.broadcast[sensorId] = {
+                broadcast : [],
+                count : 0
+            };
+
+        // Limit memory footprint
+        if (this.broadcast[sensorId].length > this.MAX_UNFILTERED_BROADCAST)
+        {
+           this.broadcast[sensorId].broadcast  = [];  // GC old broadcasts
+        }
+
+        this.broadcast[sensorId].broadcast.push(broadcast);
+        this.broadcast[sensorId].count += 1;
+
+        if (this.PAGE_TOGGLE_CAPABLE) {
+            // Determine page toggle bit - legacy transmitters (bike/hrm) has fixed bit in this position (7 msb byte 0) and only page "0"/undefined
+
+            pageToggleBit = (data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE) === GenericPage.prototype.BIT_MASK.PAGE_TOGGLE ? true : false;
+
+            // Init page toggle on the first broadcast
+
+            if (this.pageToggle[sensorId] === undefined) {
+
+                this.pageToggle[sensorId] = {
+                    toggle : pageToggleBit,
+                    state : this.PAGE_TOGGLE_STATE.INIT
+                };
+
+                return FILTER;
+            }
+
+            // Determine if page toggle bit have changed from the initialized state
+
+            if (this.pageToggle[sensorId].state === this.PAGE_TOGGLE_STATE.INIT && pageToggleBit !== this.pageToggle[sensorId].toggle)
+            {
+                if (this.log && this.log.logging)
+                    this.log.log('info',sensorId,'This device uses paging, cycling between main and background pages with page numbers');
+
+                this.pageToggle[sensorId].state = this.PAGE_TOGGLE_STATE.TOGGELING;
+            }
+
+            // Filter until a page toggeling master is found or not. A well behaved master should toggle page bit after four messages (about each seconds)
+
+            if ((this.pageToggle[sensorId].state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcast[sensorId].count < 5)
+              return FILTER;
+
+            // If we're still in init state after 5 messages, it can be assumed that we have to deal with a non toggeling/legacy master
+
+            if (this.pageToggle[sensorId].state === this.PAGE_TOGGLE_STATE.INIT)
+            {
+                this.pageToggle[sensorId].state = this.PAGE_TOGGLE_STATE.NOT_TOGGELING;
+
+                if (this.log && this.log.logging)
+                    this.log.log('info',sensorId,'No page toggeling is observed, maybe its a legacy device');
+
+            }
+        }
+
+      if (this.filterDuplicateBroadcast(broadcast))
+        return FILTER;
+     else
+        return !FILTER;
+
+    };
+
+    DeviceProfile.prototype.initMasterSlaveConfiguration = function ()
+    {
+
+        this.addConfiguration("slave", {
+            description: "Slave configuration for ANT+ "+this.constructor.name,
+            networkKey: setting.networkKey["ANT+"],
+            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+            channelType: "slave",
+            channelId: { deviceNumber: '*', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
+            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
+            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
+            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
+
+            channelPeriod: this.CHANNEL_PERIOD.DEFAULT
+
+        });
+
+        this.addConfiguration("master", {
+            description: "Master configuration for ANT+ "+this.constructor.name,
+            networkKey: setting.networkKey["ANT+"],
+
+            channelType: "master",
+            channelId: { deviceNumber: 'serial number', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: this.CHANNEL_ID.TRANSMISSION_TYPE },
+            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
+
+            channelPeriod: this.CHANNEL_PERIOD.DEFAULT
+
+        });
+
+    };
 
     DeviceProfile.prototype.stop = function () {
         if (this.timer.onPage !== undefined)
@@ -37,55 +228,37 @@ define(['channel','profiles/Page'],function (Channel, GenericPage) {
 
     DeviceProfile.prototype.getLatestPage = function ()
     {
+
+       // return; // DEBUG memory
+
         var aggregatedRR,
             RRInterval,
             receivedPageNr,
             dataPageNumber,
             len,
             currentPages,
-            receivedPagesByPageNr,
+            pageByPageNr,
             latestPage,
             typeValue,
             sensorId,
+            previousPage,
             LIMIT = 2; // Filter out possible "noise" from sensors that come and go quickly
 
-                for (sensorId in this.pages)
+        // Keep in mind that a device profile manages pages from multiple sensors of the same type, indexed by sensorId
+
+          for (sensorId in this.page)
                 {
 
-                    if (this.receivedBroadcastCounter[sensorId] >= LIMIT) {
-                        
-                        // Initialize for new sensor id
-                       
-                        if (!this.pageNumberPages[sensorId])
-                            this.pageNumberPages[sensorId] = {};
+                    if (this.broadcast[sensorId].count < LIMIT)
+                        continue;
 
-                        for (var type in GenericPage.prototype.TYPE) {
+                    for (var type in GenericPage.prototype.TYPE) {
 
                             typeValue = GenericPage.prototype.TYPE[type]; // "main" or "background"
 
-                            this.pageNumberPages[sensorId][typeValue] = {};
-
-                            // Organize pages by page number (by default available on sensors conforming to ANT+ message format)
-                            
-                            currentPages = this.pages[sensorId][typeValue];
-
-                            for (len = currentPages.length, receivedPageNr = 0; receivedPageNr < len ; receivedPageNr++) {
-
-                                dataPageNumber = currentPages[receivedPageNr].number; // If .number is not available will index by "undefined"
-                                receivedPagesByPageNr = this.pageNumberPages[sensorId][typeValue][dataPageNumber];
-
-                                if (!receivedPagesByPageNr) {
-                                    receivedPagesByPageNr = [];
-                                    this.pageNumberPages[sensorId][typeValue][dataPageNumber] = receivedPagesByPageNr;
-                                }
-
-                                receivedPagesByPageNr.push(currentPages[receivedPageNr]);
-                              
-                            }
-
                             // Traverse pages number, and emit 'page' event (e.g handler in UI) with the latest page
 
-                            for (var pageNumber in this.pageNumberPages[sensorId][typeValue]) {
+                            for (var pageNumber in this.page[sensorId][typeValue]) {
                                 
                                 if (pageNumber === undefined || pageNumber === null)
                                 {
@@ -93,10 +266,10 @@ define(['channel','profiles/Page'],function (Channel, GenericPage) {
                                         this.log.log('warn', 'Undefined or null page number for sensor id ' + sensorId + ' page type ' + typeValue);
                                 }
 
-                                len = this.pageNumberPages[sensorId][typeValue][pageNumber].length;
-                                latestPage = this.pageNumberPages[sensorId][typeValue][pageNumber][len-1];
+                                latestPage = this.page[sensorId][typeValue][pageNumber].pop();
 
-                                // Aggregate RR interval data
+
+                               /* // Aggregate RR interval data
 
                                 if (latestPage && typeValue === GenericPage.prototype.TYPE.MAIN && this.CHANNEL_ID.DEVICE_TYPE === 120 && (latestPage.RRInterval >= 0)) {
                                   
@@ -121,21 +294,21 @@ define(['channel','profiles/Page'],function (Channel, GenericPage) {
                                     }
                                        
                                     latestPage.aggregatedRR = aggregatedRR;
-                                }
+                                }*/
                                 
                                 if (latestPage) 
                                     this.emit('page',latestPage);
+
                                   
                             }
 
-                            if (currentPages.length > 0)
-                                this.pages[sensorId][typeValue] = []; // Now pages are candidates for garbage removal
-
-                        }
-
                     }
-                }
-    };
+
+            }
+
+      //  this.page = {}; // Forget all, let GC do its job
+
+ };
 
     DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
 
@@ -154,112 +327,179 @@ define(['channel','profiles/Page'],function (Channel, GenericPage) {
 
     };
 
-    DeviceProfile.prototype.addPage = function (page) {
-        var sensorId = page.broadcast.channelId.sensorId;
+    DeviceProfile.prototype.getPreviousPageValidateRolloverTime = function(broadcast,rollOverThreshold)
+    {
 
-        page.timestamp = Date.now();
+       var previousPage =  this.getPreviousPage(broadcast);
 
-        if (this.pages[sensorId])
-            this.pages[sensorId][page.type].push(page);
-        else {
-            this.pages[sensorId] = {};
-            for (var type in GenericPage.prototype.TYPE)
-                this.pages[sensorId][GenericPage.prototype.TYPE[type]] = [];
+        // Initialy we have no previous page to base our calculations, so have to check for previous page
 
+        if (!previousPage)
+          return;
+
+        // Don't attempt to calculate cadence and speed if time between pages is greater than rollover time
+
+        if (rollOverThreshold && (this.timestamp - previousPage.timestamp >= rollOverThreshold)) {
+            if (this.log.logging) this.log.log('warn', 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, this.previousPage);
+            return;
         }
+
+        return previousPage;
     };
 
-    // FILTER - Skip duplicate messages from same master 
-    DeviceProfile.prototype.isDuplicateMessage = function (broadcast) {
+    DeviceProfile.prototype.getPreviousPage = function (broadcast)
+    {
+        var sensorId = broadcast.channelId.sensorId;
 
-        var data = broadcast.data,
+        if (this.page && this.page[sensorId] && this.page[sensorId].all)
+           return this.page[sensorId].all[this.page[sensorId].all.length-1];
+        else
+            return undefined;
+    };
 
-            isHRM = broadcast.channelId.deviceType === 120 ? true : false,
+    // Deserialization of broadcast (8-byte packet) into a page object
+    DeviceProfile.prototype.getPage = function (broadcast)
+    {
+        throw new Error('getPage should be overridden in descendants');
+    };
 
-           pageIdentifier = broadcast.channelId.sensorId + '.',
+    DeviceProfile.prototype.broadCast = function (broadcast)
+    {
+        if (this.filterAndCountBroadcast(broadcast))
+           return;
 
-           previousBroadcastData,
+        var page = this.getPage(broadcast);
 
-            // Compare buffers byte by byte
-            isEqual = function (buf1, buf2) {
-                // Could have used bitmask from outer function via closure mechanism, but chose to pass is as a argument (could be moved without requiring context)
+        this.addPage(page);
 
-                var byteNr,
-                    applyBitmask;
+    };
 
+    // Mixin for mix in of methods from main pages into background pages
+    DeviceProfile.prototype.mixin = function(target,source)
+    {
+        for (var property in source)
 
-                if (!isHRM)
-                    applyBitmask = 0xFF;
+               if (target[property] === undefined && typeof source[property] === 'function' && property !== 'constructor') // Don't allow override
+                  target[property] = source[property];
                 else
-                    applyBitmask = 0x7F;
+                  {
+                      if (this.log && this.log.logging)
+                         this.log.log('warn','Property '+property+' already defined on target','source',source);
+                  }
+    };
 
-                if (buf1.length !== buf2.length)
-                    return false;
+    DeviceProfile.prototype.addPage = function (page) {
 
-                for (byteNr = 0; byteNr < buf1.length; byteNr++) {
+        var sensorId,
+            pageNumber,
+            previousPage,
+            len;
 
-                    if (byteNr === 0 && ((buf1[byteNr] & applyBitmask) !== (buf2[byteNr] & applyBitmask)))
+        if (!page) {
+         if (this.log && this.log.logging)
+            this.log.log('error', 'Attempt to add undefined or null page, skipping');
+            return;
+        }
 
-                        return false;
-                    else if (byteNr > 0 && buf1[byteNr] !== buf2[byteNr])
-                        return false;
-                }
+         sensorId = page.broadcast.channelId.sensorId;
+         pageNumber = page.number;
 
-                // console.log("Buffer",buf1,buf2,equal);
+        if (!this.page[sensorId])
+        {
 
-                return true;
+            // constructor.name  - property has writable:false property, so its not possible to create an oject {},
+            // and then set a new name other than the default 'Object'
 
+            this.page[sensorId] = new ReceivedPages();
+
+        }
+
+         if (!this.page[sensorId][page.type][pageNumber]) {
+             this.page[sensorId][page.type][pageNumber] = [];
+
+         }
+
+          this.page[sensorId][page.type][pageNumber].push(page);
+
+          this.page[sensorId].all.push(page);
+
+    };
+
+    DeviceProfile.prototype.isPageToggle = function (broadcast)
+    {
+        var sensorId = broadcast.channelId.sensorId;
+
+        if (this.PAGE_TOGGLE_CAPABLE)
+             return  this.pageToggle[sensorId].state === this.PAGE_TOGGLE_STATE.TOGGELING;
+        else
+            return false;
+    };
+
+    DeviceProfile.prototype.getPreviousBroadcastData = function (broadcast)
+    {
+        var sensorId =  broadcast.channelId.sensorId,
+        len;
+
+        len = this.broadcast[sensorId].length;
+
+       broadcast = this.broadcast[sensorId][len-2];
+        if (broadcast)
+            return broadcast.data;
+    };
+
+    DeviceProfile.prototype.getHashCode = function (broadcast)
+    {
+        var byteNr,
+            data = broadcast.data,
+            hashCode = '',
+            currentByte,
+            isPageToggle = this.isPageToggle(broadcast);
+
+        for (byteNr=0; byteNr < data.length; byteNr++)
+        {
+
+            // Strip off page toggle bit if neccessary
+            if (byteNr === 0 && isPageToggle)
+                currentByte = data[byteNr] & 0x7F;
+            else
+               currentByte = data[byteNr];
+
+            // Zero padding
+            if (currentByte < 0xF)
+                hashCode += '0';
+
+            hashCode += Number(currentByte).toString(16);
+        }
+
+        return 'hash'+hashCode;
+    };
+
+    // FILTER - Skip duplicate messages from same master
+    DeviceProfile.prototype.filterDuplicateBroadcast = function (broadcast) {
+
+        var hashCode = this.getHashCode(broadcast), // hash+8 hex code of broadcast payload
+            sensorId = broadcast.channelId.sensorId;
+
+        if (!this.hashBroadcast[sensorId])
+            this.hashBroadcast[sensorId] = {
+              created : Date.now(),
+              hash : [] // Ordered by time -> allows shifting out old hashCodes
+                // An ordinary hashtable lookup using a object { hahscode : true } doesnt reflect time
             };
 
-        // console.log("Page identifier",pageIdentifier);
+         // We have a previous broadcast with the same hashcode -> filter
 
-        // HRM has page toggle bit
-        if (isHRM) {
+        if (this.hashBroadcast[sensorId].hash.indexOf(hashCode) !== -1)
+            return true;
 
-            pageIdentifier += (data[0] & 0x7F); // Stip off msb bit 
+        this.hashBroadcast[sensorId].hash.push(hashCode);
 
-        }
-        else
-            pageIdentifier += data[0];
+        // 8 should allow for 2 seconds lookback at 4Hz (1 sec. with background and 1 sec main)
+        if (this.hashBroadcast[sensorId].hash.length > 8)
+            this.hashBroadcast[sensorId].hash.shift();
 
+        return false;
 
-        if (this.previousPageBroadcast[pageIdentifier])
-            previousBroadcastData = this.previousPageBroadcast[pageIdentifier].data;
-
-        if (previousBroadcastData && isEqual(previousBroadcastData, data)) {
-
-            this.previousPageBroadcast[pageIdentifier].duplicate++;
-
-
-        } else {
-
-            if (previousBroadcastData) {
-                this.previousPageBroadcast[pageIdentifier].data = data;
-                if (this.previousPageBroadcast[pageIdentifier].duplicate) {
-                   // if (this.log.logging) this.log.log('info', 'Received ' + this.previousPageBroadcast[pageIdentifier].duplicate + ' duplicate page broadcast from ' + pageIdentifier);
-                    this.previousPageBroadcast[pageIdentifier].duplicate = 0;
-                }
-            } else {
-                this.previousPageBroadcast[pageIdentifier] = {
-                    data: data,
-                    duplicate: 0
-                };
-            }
-
-        }
-
-        return this.previousPageBroadcast[pageIdentifier].duplicate > 0;
-    };
-
-    DeviceProfile.prototype.countBroadcast = function (sensorId) {
-
-        if (this.receivedBroadcastCounter[sensorId])
-            this.receivedBroadcastCounter[sensorId]++;
-        else {
-            
-            this.receivedBroadcastCounter[sensorId] = 1;
-        }
-            
     };
 
     DeviceProfile.prototype.verifyDeviceType = function (deviceType, broadcast) {
@@ -276,12 +516,6 @@ define(['channel','profiles/Page'],function (Channel, GenericPage) {
     DeviceProfile.prototype.channelResponse = function (channelResponse) {
         // Issue IE11 - this passed as argument to log is undefined (most likely due to strict mode)
         if (this.log && this.log.logging) this.log.log('log', 'Channel response - DeviceProfile -', this, channelResponse, channelResponse.toString());
-    };
-
-    // Default behaviour just return JSON of broadcast
-    DeviceProfile.prototype.broadCast = function (broadcast) {
-        // MAYBE return undefined;
-        return JSON.stringify(broadcast);
     };
 
     DeviceProfile.prototype.toString = function ()

@@ -198,7 +198,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         // Problems with claiming interface in Ubuntu 13.10 - was caused by suunto module which can be blacklisted to avoid problems in /etc/modules.d/blacklist.conf
         // Trying workaround proposed by : https://code.google.com/p/chromium/issues/detail?id=222460
         if (chrome.runtime.lastError) {
-            if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto', chrome.runtime.lastError, 'connection handle',this.connectionHandle);
+            if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto/usb-serial-simple', chrome.runtime.lastError, 'connection handle',this.connectionHandle);
          
             this._tryClaimInterface(++this.connectionHandleIndex);
         } else {
@@ -373,7 +373,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             //if (this.options.deviceWatcher && this.options.deviceWatcher.onEnumerationCompleted && typeof this.options.deviceWatcher.onEnumerationCompleted === 'function')
             //    this.options.deviceWatcher.onEnumerationCompleted(); // TO DO : emit "enumerationcomplete"....
 
-            if (this.log && this.log.logging) this.log.log('log', 'Trying to find and open ANT device ', this.findDevice);
+            if (this.log && this.log.logging) this.log.log('log', 'Trying to find and open ANT device '+this.findDevice.name, this.findDevice);
 
             chrome.usb.findDevices({ "vendorId": this.findDevice.vendorId, "productId": this.findDevice.productId }, this._onDevicesFound.bind(this));
         } else

@@ -1,72 +1,27 @@
 /* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
-'use strict'; 
+define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage) {
+    
+  'use strict';
 
-    var DeviceProfile = require('profiles/deviceProfile'),
-       // Page = require('profiles/HRMPage'),
-        HRMPage4 = require('profiles/hrm/HRMPage4'),
-        HRMPage0 = require('profiles/hrm/HRMPage0'), // Old legacy format
-        HRMPage1 = require('profiles/hrm/HRMPage1'),
-        HRMPage2 = require('profiles/hrm/HRMPage2'),
-        HRMPage3 = require('profiles/hrm/HRMPage3'),
-        GenericPage = require('profiles/Page'),
-        setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout');
-    
-   
-    
     function DeviceProfile_HRM(configuration) {
-        //console.log("HRM configuration", configuration);
+        
         DeviceProfile.call(this, configuration);
         
-        this.addConfiguration("slave", {
-            description: "Slave configuration for ANT+ HRM device profile",
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX), // 60 seconds
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED), // 25 seconds n*2.5 s
-          
-            channelPeriod: DeviceProfile_HRM.prototype.CHANNEL_PERIOD_ARRAY
-           
-        });
-        
-       
-        this.addConfiguration("master", {
-             description: "Master configuration for ANT+ HRM device profile",
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "master",
-            channelId: { deviceNumber: 'serial number', deviceType: DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: DeviceProfile_HRM.prototype.CHANNEL_ID.TRANSMISSION_TYPE }, // Independent channel
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            
-            channelPeriod: DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT
-         
-    
-        });
+        this.initMasterSlaveConfiguration();
   
         // "Objects are always considered having different class if they don't have exactly the same set of properties in the same order."
         // http://codereview.stackexchange.com/questions/28344/should-i-put-default-values-of-attributes-on-the-prototype-to-save-space/28360#28360
         // "fields that are added to an object outside constructor or object literal, will not be stored directly on the object but in an array external to the object."
         // http://stackoverflow.com/questions/17925726/clearing-up-the-hidden-classes-concept-of-v8
         // http://thibaultlaurens.github.io/javascript/2013/04/29/how-the-v8-engine-works/
-        
 
-        
         // Purpose : More performance - does not need to generate a new HRM page Object for each broadcast
         // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
         //this.hrmPage4 = new HRMPage4({log : true});
-        
 
         this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY);
 
-        this.previousPage = {};
-        
     }
     
     DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
@@ -75,18 +30,13 @@ define(function (require, exports, module) {
     DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
     
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute
-    DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT = 8070;
-    DeviceProfile_HRM.prototype.CHANNEL_PERIOD_ARRAY = [
-        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT, 
-        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT*2,
-        DeviceProfile_HRM.prototype.CHANNEL_PERIOD_DEFAULT*4
-    ];
-    
-    //DeviceProfile_HRM.prototype.STATE = {
-    //    HR_EVENT: true,
-    //    NO_HR_EVENT: false,// Sets computed heart rate to invalid = 0x00, after a timeout of 5 seconds
+    DeviceProfile_HRM.prototype.CHANNEL_PERIOD = {
+        DEFAULT : 8070,
+        ALTERNATIVE_1 : 8070*2,
+        ALTERNATIVE_2 : 8070*4
+    };
 
-    //};
+
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
     DeviceProfile_HRM.prototype.CHANNEL_ID = {
@@ -99,78 +49,54 @@ define(function (require, exports, module) {
     // When no HR data is sent from HR sensor, only background pages are sent each channel period; b1*64,b2*64,b3*64,b1*64,..... in accordance with the
     // normal behaviour of a broadcast master -> just repeat last broadcast if no new data available, then go to sleep if no HR data received in {timeout} millisec.
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
-    
 
     DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
     
+    DeviceProfile_HRM.prototype.PAGE_TOGGLE = true;
     
-    
-    DeviceProfile_HRM.prototype.broadCast = function (broadcast) {
-        //console.timeEnd('usbtoprofile'); // Typical 1 ms - max. 3 ms, min 0 ms. 
-        //console.time('broadcast'); // Min. 1 ms - max 7 ms // Much, much faster than the channel period
-        var 
-//        data = broadcast.data,
-//            dataView = new DataView(broadcast.data.buffer),
-            page, 
-            pageNumber = broadcast.data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE,
+    DeviceProfile_HRM.prototype.getPage = function (broadcast)
+    {
+         var data = broadcast.data,
+             page,
+             pageNumber = broadcast.data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER,
              sensorId = broadcast.channelId.sensorId;
         
-       // var TIMEOUT_CLEAR_COMPUTED_HEARTRATE = 5000,
-            
-        this.verifyDeviceType(DeviceProfile_HRM.prototype.CHANNEL_ID.DEVICE_TYPE,broadcast);
-        
-        this.countBroadcast(sensorId);
-       
-        if (this.isDuplicateMessage(broadcast))
-            return;
-    
-        switch (pageNumber) {
+          switch (pageNumber) {
              
             // MAIN
+
             case 4 : 
-                 page = new HRMPage4({log: this.log.logging},broadcast,this.previousPage[sensorId]);
-                
-                break;
-                
-            case 0 : // OLD
-                page = new HRMPage0({log: this.log.logging},broadcast,this.previousPage[sensorId]);
+
+                 page = new HRMPage4({logger: this.log},broadcast);
+
                  break;
                 
+            case 0 : // OLD legacy
+                
+                  page = new HRMPage0({logger: this.log},broadcast);
+                
+                  break;
+
             // BACKGROUND
-            case 3 : 
-                page = new HRMPage3({log: this.log.logging},broadcast);
-                break;
-                
-            case 2 : 
-                page = new HRMPage2({log: this.log.logging},broadcast);
-                break;
-                
-            case 1 : 
-                page = new HRMPage1({log: this.log.logging},broadcast);
-                break;
             
-            default : 
-                this.log.log('warn','Unable to parse page number',pageNumber);
-                break;
-        }
+            default:
+
+                 if (pageNumber >= 1 && pageNumber <= 3)
+                     page= this.getBackgroundPage(pageNumber,broadcast);
+                 else
+                 {
+                      this.log.log('warn','Unable to parse page number',pageNumber);
+                 }
+
+                 break;
+
+          }
+
         
-       
-            if (page) {
-               this.log.log('log', 'B# '+this.receivedBroadcastCounter[sensorId],page,page.toString());
-            
-                // page.timestamp = this.lastHREventTime;
+        return page;
 
-               this.addPage(page);
-
-                // Keep track of previous page state for main page 4 and 0 for calculation of RR
-               if (page instanceof HRMPage4 || page instanceof HRMPage0)
-                   this.previousPage[sensorId] = page;
-            }
-            
-        //console.timeEnd('broadcast');
     };
-    
-    module.exports = DeviceProfile_HRM;
-        
-    return module.exports;
+
+    return DeviceProfile_HRM;
+
 });
