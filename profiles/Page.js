@@ -35,7 +35,7 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
           }
 
 
-        this.previousPage = this.profile.getPreviousPageValidateRolloverTime(broadcast,this.profile.ROLLOVER_THRESHOLD);
+        this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
         // Background pages does not have these functions
 

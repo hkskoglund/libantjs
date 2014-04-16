@@ -47,4 +47,3 @@ define(['profiles/Page'], function (GenericPage) {
     return ManufacturerId;
 
 });
-

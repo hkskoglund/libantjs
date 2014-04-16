@@ -33,7 +33,7 @@ define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/cumulat
 
     DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
 
-    DeviceProfile_BikeSpd.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts
+    DeviceProfile_BikeSpd.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
 
     DeviceProfile_BikeSpd.prototype.getPageNumber = function (broadcast)
     {
@@ -75,4 +75,5 @@ define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/cumulat
     };
 
     return DeviceProfile_BikeSpd;
+
 });

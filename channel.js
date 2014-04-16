@@ -1,4 +1,4 @@
-﻿/* global define: true */
+/* global define: true */
 
 define(['logger','events'],function (Logger,EventEmitter) {
 
@@ -13,7 +13,7 @@ define(['logger','events'],function (Logger,EventEmitter) {
 
         configuration.logSource = this;
 
-        this.log = new Logger(configuration);
+        this.log = configuration.logger || new Logger(configuration);
 
         this.parameters = {};
 
