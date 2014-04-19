@@ -69,7 +69,7 @@ define(['profiles/deviceProfile','profiles/environment/TemperaturePage0','profil
 
         if (!page)
         {
-            page = this.getCommonPage(broadcast,pageNumber);
+            page = this.getBackgroundPage(broadcast,pageNumber);
         }
 
         return page;

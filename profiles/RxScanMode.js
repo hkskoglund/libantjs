@@ -2,8 +2,8 @@
 
 define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
         'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD',
-       'profiles/bike_spd/deviceProfile_BikeSpd'],
-        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile) {
+       'profiles/bike_spd/deviceProfile_BikeSpd','profiles/bike_cad/deviceProfile_BikeCad'],
+        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile, BikeCadProfile) {
 
     'use strict';
 
@@ -114,12 +114,19 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
                         currentProfile = new BikeSpdProfile({ logger: this.log});
                         break;
 
+
+                   case BikeCadProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
+
+                        currentProfile = new BikeCadProfile({ logger: this.log});
+                        break;
+
+
                    case TEMPProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
 
                         currentProfile = new TEMPProfile({ logger: this.log});
                         break;
 
-                   case HRMProfile.prototyep.CHANNEL_ID.DEVICE_TYPE :
+                   case HRMProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
 
                         currentProfile = new HRMProfile({ logger: this.log});
                         break;

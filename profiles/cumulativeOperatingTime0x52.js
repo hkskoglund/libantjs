@@ -6,11 +6,10 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
 
     function CumulativeOperatingTime(configuration,broadcast,profile,pageNumber)
     {
+
        CumultiveOperatingTimeShared.call(this,configuration,broadcast,profile,pageNumber);
 
-        this.type = this.TYPE.BACKGROUND;
-
-        this.read(broadcast);
+       this.read(broadcast);
 
     }
 
@@ -70,7 +69,7 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
     };
 
     CumulativeOperatingTime.prototype.toString = function () {
-       var  msg = this.type + " P# " + this.number + " Cumulative operating time ";
+       var  msg = "P# " + this.number + " Cumulative operating time ";
 
         msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
 

@@ -1,22 +1,21 @@
 /* globals define: true, require: true */
 
-define(['profiles/deviceProfile','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfile, SPDCADPage0,GenericPage) {
+define(['profiles/spdcad/deviceProfile_BikeShared','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfileBikeShared, SPDCADPage0) {
 
     'use strict';
 
     function DeviceProfile_SPDCAD(configuration) {
 
-        DeviceProfile.call(this, configuration);
+        DeviceProfileBikeShared.call(this, configuration);
 
         this.initMasterSlaveConfiguration();
 
         this.requestPageUpdate(DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY);
     }
 
-    DeviceProfile_SPDCAD.prototype = Object.create(DeviceProfile.prototype);
+    DeviceProfile_SPDCAD.prototype = Object.create(DeviceProfileBikeShared.prototype);
     DeviceProfile_SPDCAD.prototype.constructor = DeviceProfile_SPDCAD;
 
-    DeviceProfile_SPDCAD.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
 
     DeviceProfile_SPDCAD.prototype.NAME = 'SPDCAD';
 
@@ -27,40 +26,35 @@ define(['profiles/deviceProfile','profiles/spdcad/SPDCADPage0','profiles/Page'],
 
     DeviceProfile_SPDCAD.prototype.CHANNEL_PERIOD = {
         DEFAULT: 8086, // Ca. 4 messages pr. sec.
-        ALTERNATIVE_1: 16172, // 2 msg/sec
-        ALTERNATIVE_2: 32344 // 1 msg/sec
+
     };
 
-    DeviceProfile_SPDCAD.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
-
-
-    DeviceProfile_SPDCAD.prototype.getPageNumber = function (broadcast)
+    DeviceProfile_SPDCAD.prototype.getPage = function (broadcast)
     {
 
-        return 0; // SPDCAD has only page 0
-    };
-
-    DeviceProfile_SPDCAD.prototype.getPage = function (broadcast) {
-
-         var pageNumber = this.getPageNumber(broadcast),
+        var pageNumber = this.getPageNumber(broadcast),
             page;
 
-        switch (pageNumber)
+        if (pageNumber === 0) // MAIN
         {
-                case 0:
 
-                    page = new SPDCADPage0({ logger: this.log }, broadcast,this,pageNumber);
+            page = new SPDCADPage0({ logger: this.log}, broadcast,this,pageNumber);
 
-                    break;
+        } else
+        {
+             page = this.getBackgroundPage(broadcast,pageNumber);
 
+            if (page) {
+                SPDCADPage0.prototype.readCadence.call(page,SPDCADPage0.prototype);
+                SPDCADPage0.prototype.calcCadence.call(page,SPDCADPage0.prototype);
+                SPDCADPage0.prototype.readSpeed.call(page,SPDCADPage0.prototype);
+                SPDCADPage0.prototype.calcSpeed.call(page,SPDCADPage0.prototype);
 
-                default:
-
-                   if (this.log && this.log.logging)
-                    this.log.log('error','Cannot handle page number '+pageNumber+' of broadcast',broadcast);
-
-                   break;
-
+            } else
+              {
+                  if (this.log && this.log.logging)
+                    this.log.log('error','Failed to get background page for page number '+pageNumber,this);
+              }
         }
 
         return page;

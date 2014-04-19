@@ -8,7 +8,6 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDC
 
         SPDCADSharedPage.call(this, configuration, broadcast,profile,pageNumber,64000);
 
-        this.type = this.TYPE.MAIN;
 
     }
 
@@ -31,64 +30,8 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDC
 
     SPDCADPage0.prototype.update = function () {
 
-        var broadcast = this.broadcast,
-            data = broadcast.data,
-            dataView = this.dataView,
-            sensorId = this.broadcast.channelId.sensorId,
-            cumulativeCadenceRevolutionCountRollover,
-            cumulativeSpeedRevolutionCountRollover,
-            bikeCadenceEventTimeRollover,
-            bikeSpeedEventTimeRollover,
-            bikeSpeedEventTimeDifference,
-            bikeCadenceEventTimeDifference,
-            diffCumulativeSpeedRevolutionCountCount,
-            previousPage;
-
-           this.calcSpeed();
-            //this.calcCadence(broadcast,prevPage);
-
-        // Cadence
-        // Spec. section 5.3.1 - Cadence computation, p. 29
-/*
-
-        cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < previousPage.cumulativeCadenceRevolutionCount);
-
-        cumulativeSpeedRevolutionCountRollover = (this.cumulativeSpeedRevolutionCount < previousPage.cumulativeSpeedRevolutionCount);
-
-        bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
-
-        bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < previousPage.bikeSpeedEventTime);
-
-
-        if (bikeCadenceEventTimeRollover)
-            bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
-        else
-            bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
-
-        // RPM - rounds pr minute
-
-        // CADENCE
-
-        if (bikeCadenceEventTimeDifference) {
-            if (cumulativeCadenceRevolutionCountRollover)
-                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
-            else
-                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
-        }
-
-        if (bikeSpeedEventTimeRollover)
-            bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
-        else
-            bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime;
-
-
-
-        if (this.cadence > 512) {
-            if (this.log && this.log.logging)
-                this.log.log('warn', 'Very high cadence filtered', this);
-            this.cadence = undefined;
-
-        } */
+       this.calcSpeed();
+       this.calcCadence();
 
     };
 
@@ -98,7 +41,7 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDC
             speed,
             msg;
        
-        msg = this.type + " P# " + this.number + " cadence (rpm) ";
+        msg = "P# " + this.number + " cadence (rpm) ";
 
         if (this.cadence !== undefined)
             msg += this.cadence;

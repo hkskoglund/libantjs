@@ -15,7 +15,7 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
 
         this.broadcast = broadcast;
 
-        this.dataView = new DataView(broadcast.data.buffer); // Allows sharing of dataView across functions, otherwise a new dataView must be created for each function that needs it
+       // this.dataView = new DataView(broadcast.data.buffer); // Allows sharing of dataView across functions, otherwise a new dataView must be created for each function that needs it
 
         this.timestamp = broadcast.timestamp;
         if (this.timestamp === undefined)
@@ -52,17 +52,15 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
         PAGE_TOGGLE : parseInt("10000000",2) // msb of byte 0 ANT+ format
     };
 
-    GenericPage.prototype.COMMON = {
-        PAGE0x50 : 0x50,
-        PAGE0x51 : 0x51,
-        PAGE0x52 : 0x52
-    };
+
 
     // ANT+ has to kind of page types main or background (slow update interval)
     GenericPage.prototype.TYPE = {
-        MAIN: "main",
-        BACKGROUND: "background"
+        main: "main",
+        background: "background"
     };
+
+    GenericPage.prototype.COMMON = {};
 
     // Used for filtering message properties when using window.postMessage (some properties gives DOMException - cannot clone)
     GenericPage.prototype.clone = function () {

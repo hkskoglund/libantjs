@@ -1,17 +1,16 @@
 /* global define: true, DataView: true */
 
-define(['profiles/Page'], function (GenericPage) {
+define(['profiles/backgroundPage'], function (BackgroundPage) {
 
     'use strict';
 
     function CumulativeOperatingTime(configuration,broadcast,profile,pageNumber)
     {
-        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
+        BackgroundPage.call(this,configuration,broadcast,profile,pageNumber);
     }
 
-    CumulativeOperatingTime.prototype = Object.create(GenericPage.prototype);
+    CumulativeOperatingTime.prototype = Object.create(BackgroundPage.prototype);
     CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
-
 
     CumulativeOperatingTime.prototype.readCumulativeOperatingTime = function (broadcast,offset,unit_multiplier)
         {

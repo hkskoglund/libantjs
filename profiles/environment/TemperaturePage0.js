@@ -1,6 +1,6 @@
 /* global define: true, DataView: true */
 
-define(['profiles/Page'],function (GenericPage) {
+define(['profiles/mainPage'],function (MainPage) {
     
     'use strict';
     
@@ -10,13 +10,11 @@ define(['profiles/Page'],function (GenericPage) {
     function TemperaturePage0(configuration,broadcast,profile,pageNumber)
     {
           
-        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
-        
-        this.type = GenericPage.prototype.TYPE.MAIN;
+        MainPage.call(this,configuration,broadcast,profile,pageNumber);
 
     }
     
-    TemperaturePage0.prototype = Object.create(GenericPage.prototype); 
+    TemperaturePage0.prototype = Object.create(MainPage.prototype);
     TemperaturePage0.prototype.constructor = TemperaturePage0; 
     
     // Bit field layout
@@ -111,7 +109,7 @@ define(['profiles/Page'],function (GenericPage) {
     
    TemperaturePage0.prototype.toString = function ()
    {
-        var msg = this.type + " P# " + this.number + " Local time "+TemperaturePage0.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
+        var msg = "P# " + this.number + " Local time "+TemperaturePage0.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
             " UTC time "+TemperaturePage0.prototype.TRANSMISSION_INFO.UTC_TIME[this.transmissionInfo.UTCTime]+
             " Tch "+TemperaturePage0.prototype.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate]+
             " Pages 0b"+this.supportedPages.value.toString(2);

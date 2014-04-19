@@ -8,6 +8,7 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCAD
 
         SPDCADSharedPage.call(this,configuration, broadcast, profile,pageNumber);
 
+
     }
 
     BikePage0.prototype = Object.create(SPDCADSharedPage.prototype);
@@ -16,34 +17,33 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCAD
      // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
     BikePage0.prototype.BYTE = {
 
-        BIKE_SPEED_EVENT_TIME: 4,
-        CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
+        BIKE_CADENCE_EVENT_TIME: 4,
+        CUMULATIVE_CADENCE_REVOLUTION_COUNT: 6
     };
 
     BikePage0.prototype.readCommonBytes = function ()
     {
-         this.readSpeed();
+         this.readCadence();
     };
 
     BikePage0.prototype.update = function ()
     {
-          this.calcSpeed();
+          this.calcCadence();
     };
 
     BikePage0.prototype.toString = function () {
 
-        var calibrationFactor = 2.07, // Just used for a speed estimate
+       var calibrationFactor = 2.07, // Just used for a speed estimate
             speed,
             msg;
 
-        msg = "P# " + this.number;
+        msg = "P# " + this.number + " cadence (rpm) ";
 
-       if (this.unCalibratedSpeed !== undefined) {
-           speed = calibrationFactor * this.unCalibratedSpeed;
-           msg += ' speed (m/s) ' + speed;
-       }
+        if (this.cadence !== undefined)
+            msg += this.cadence;
 
-       msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +  ' default wheel size (m) ' + calibrationFactor;
+        msg +=  " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;
+
 
         return msg;
     };

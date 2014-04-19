@@ -1,20 +1,18 @@
 /* global define: true, DataView: true */
 
-define(['profiles/Page'], function (GenericPage) {
+define(['profiles/backgroundPage'], function (BackgroundPage) {
 
     'use strict';
 
     function ProductId(configuration,broadcast,profile,pageNumber)
     {
-        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
-
-        this.type = this.TYPE.BACKGROUND;
+        BackgroundPage.call(this,configuration,broadcast,profile,pageNumber);
 
         this.read(broadcast);
 
     }
 
-    ProductId.prototype = Object.create(GenericPage.prototype);
+    ProductId.prototype = Object.create(BackgroundPage.prototype);
     ProductId.prototype.constructor = ProductId;
 
     ProductId.prototype.read = function (broadcast)
@@ -35,7 +33,7 @@ define(['profiles/Page'], function (GenericPage) {
 
 
     ProductId.prototype.toString = function () {
-       var msg = this.type + " P# " + this.number + " SW revision " + this.SWRevision;
+       var msg = "P# " + this.number + " SW revision " + this.SWRevision;
 
         if (this.serialNumber === ProductId.prototype.NO_SERIAL_NUMBER)
             msg += " No serial number";

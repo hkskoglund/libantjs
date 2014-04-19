@@ -1,20 +1,18 @@
 /* global define: true */
 
-define(['profiles/Page'], function (GenericPage) {
+define(['profiles/backgroundPage'], function (BackgroundPage) {
 
     'use strict';
 
     function ProductId(configuration,broadcast,profile,pageNumber)
     {
-        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
-
-        this.type = this.TYPE.BACKGROUND;
+        BackgroundPage.call(this,configuration,broadcast,profile,pageNumber);
 
         this.read(broadcast);
 
     }
 
-    ProductId.prototype = Object.create(GenericPage.prototype);
+    ProductId.prototype = Object.create(BackgroundPage.prototype);
     ProductId.prototype.constructor = ProductId;
 
     // Background Page 3
@@ -28,7 +26,7 @@ define(['profiles/Page'], function (GenericPage) {
     };
 
     ProductId.prototype.toString = function () {
-        var msg = this.type + " P# " + this.number +" HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
+        var msg =  " P# " + this.number +" HW ver. " + this.hardwareVersion + " SW ver. " + this.softwareVersion + " Model " + this.modelNumber;
 
         return msg;
     };

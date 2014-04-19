@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(function (require, exports, module) {
     'use strict';
@@ -10,7 +10,6 @@ define(function (require, exports, module) {
 
         GenericPage.call(this, configuration, broadcast);
 
-        this.type = GenericPage.prototype.TYPE.MAIN;
 
         if (broadcast)
             this.profile = broadcast.profile;
@@ -58,8 +57,7 @@ define(function (require, exports, module) {
         SPEED_FRACTIONAL: 1 / 256, // m/s
         UPDATE_LATENCY: 1 / 32 //s
    
-    }
-     
+    };
 
     SDMPage1.prototype.parse = function (broadcast) {
         var data = broadcast.data;
@@ -108,7 +106,7 @@ define(function (require, exports, module) {
     SDMPage1.prototype.toString = function () {
        
 
-        var msg = this.type + " P# " + this.number+' ',
+        var msg = "P# " + this.number+' ',
             UNUSED = 0x00;
 
         //var convertToMinPrKM = function (speed) {

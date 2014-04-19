@@ -1,6 +1,6 @@
 /* global define: true */
 
-define(['profiles/Page'],function (GenericPage) {
+define(['profiles/mainPage'],function (MainPage) {
     
     'use strict';
     
@@ -8,13 +8,11 @@ define(['profiles/Page'],function (GenericPage) {
     
     function TemperaturePage1(configuration,broadcast,profile,pageNumber)
     {
-        GenericPage.call(this,configuration,broadcast,profile,pageNumber);
-        
-        this.type = GenericPage.prototype.TYPE.MAIN;
+        MainPage.call(this,configuration,broadcast,profile,pageNumber);
 
     }
     
-    TemperaturePage1.prototype = Object.create(GenericPage.prototype); 
+    TemperaturePage1.prototype = Object.create(MainPage.prototype);
     TemperaturePage1.prototype.constructor = TemperaturePage1; 
     
      // Byte layout
@@ -69,14 +67,6 @@ define(['profiles/Page'],function (GenericPage) {
         CURRENT_TEMP : 0.01
     };
 
-    TemperaturePage1.prototype.isEqual = function (page)
-    {
-        var condition1 = page instanceof TemperaturePage1,
-            condition2 = page.eventCount === this.eventCount;
-
-        return condition1 && condition2;
-    };
-        
     TemperaturePage1.prototype.readCommonBytes = function (broadcast)
     {
         var data = broadcast.data;
@@ -177,7 +167,7 @@ define(['profiles/Page'],function (GenericPage) {
    
    TemperaturePage1.prototype.toString = function ()
    {
-        var msg = this.type + " P# " + this.number + " Event count " + this.eventCount+ " Low (24H) " + this.hour24Low.toFixed(1)+ "°C High (24H) "+
+        var msg = "P# " + this.number + " Event count " + this.eventCount+ " Low (24H) " + this.hour24Low.toFixed(1)+ "°C High (24H) "+
             this.hour24High.toFixed(1)+ "°C Current Temp "+this.currentTemp.toFixed(2)+ "°C";
        
         return msg;

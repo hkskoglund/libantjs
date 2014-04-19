@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(function (require, exports, module) {
     'use strict';
@@ -10,9 +10,7 @@ define(function (require, exports, module) {
 
         GenericPage.call(this, configuration, broadcast);
 
-        this.type = GenericPage.prototype.TYPE.MAIN;
-
-        if (broadcast)
+  if (broadcast)
             this.profile = broadcast.profile;
 
         if (broadcast && broadcast.data)
@@ -68,12 +66,12 @@ define(function (require, exports, module) {
         RESERVED_6: 6,
         STATUS : 7
        
-    }
+    };
 
     SDMPage2.prototype.UNIT = {
         CADENCE_FRACTIONAL: 1/16, // strides pr minute
         SPEED_FRACTIONAL : 1/256 // m/s
-    }
+    };
 
 
     SDMPage2.prototype.parse = function (broadcast) {
@@ -99,7 +97,7 @@ define(function (require, exports, module) {
         this.cadenceFractional = ((data[SDMPage2.prototype.BYTE.CADENCE_FRACTIONAL] & SDMPage2.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage2.prototype.BIT_FIELD.CadenceFractional.START_BIT) * (SDMPage2.prototype.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
         this.cadence = this.cadenceInteger + this.cadenceFractional;
 
-        this.speedInteger = data[SDMPage2.prototype.BYTE.SPEED_INTEGER] & SDMPage2.prototype.BIT_MASK.LOWER_NIBBLE // lower 4 bit
+        this.speedInteger = data[SDMPage2.prototype.BYTE.SPEED_INTEGER] & SDMPage2.prototype.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
 
         // Byte 5 - fractional instantenous speed
         this.speedFractional = data[SDMPage2.prototype.BYTE.SPEED_FRACTIONAL] * SDMPage2.prototype.UNIT.SPEED_FRACTIONAL;
@@ -152,7 +150,7 @@ define(function (require, exports, module) {
 
     SDMPage2.prototype.toString = function () {
        
-        var msg = this.type + " P# " + this.number + " ",
+        var msg = "P# " + this.number + " ",
             UNUSED = 0x00;
 
         if (this.cadence !== UNUSED)

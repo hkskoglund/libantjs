@@ -8,8 +8,6 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumulativeOperating
     {
         CumulativeOperatingTimeShared.call(this,configuration,broadcast,profile,pageNumber);
 
-        this.type = this.TYPE.BACKGROUND;
-
         this.readCumulativeOperatingTime(broadcast,1);
 
     }
@@ -19,13 +17,12 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumulativeOperating
 
 
     CumulativeOperatingTime.prototype.toString = function () {
-          var msg = this.type + " P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;
+
+          var msg = "P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;
 
         return msg;
     };
 
-
     return CumulativeOperatingTime;
 
 });
-

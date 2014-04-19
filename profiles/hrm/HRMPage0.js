@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/hrm/HRMPage'],function (HRMPage) {
 
@@ -7,8 +7,6 @@ define(['profiles/hrm/HRMPage'],function (HRMPage) {
     function HRMPage0(configuration,broadcast,previousPage) {
         
        HRMPage.call(this,configuration);
-
-       this.type = this.TYPE.MAIN;
 
        //this.profile = broadcast.profile;
           
@@ -62,7 +60,7 @@ define(['profiles/hrm/HRMPage'],function (HRMPage) {
     };
     
     HRMPage0.prototype.toString = function () {
-        var msg = this.type + " P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
+        var msg = "P# " + this.number + " T " + this.changeToggle + " HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime;
        
         
         if (this.RRInterval)

@@ -39,6 +39,7 @@ define(function (require, exports, module) {
             myArguments = [],
             header,
             logSource;
+         //   errStack = (new Error()).stack;
         //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
@@ -93,6 +94,8 @@ define(function (require, exports, module) {
                     myArguments.push(arguments[argNr]);
                 }
 
+               // myArguments.push(errStack);
+
                 this.console[type].apply(this.console, myArguments);
             
                
@@ -127,4 +130,3 @@ define(function (require, exports, module) {
     return module.export;
     
 });
-
