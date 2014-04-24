@@ -1,6 +1,6 @@
 /* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
 
-define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage) {
+define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page','profiles/hrm/HRMPage'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage,HRMPage) {
     
   'use strict';
 
@@ -20,7 +20,9 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
         // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
         //this.hrmPage4 = new HRMPage4({log : true});
 
-        this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY);
+        this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY, this.processAggregatedRR);
+
+        this.aggregatedRR = [];
 
     }
     
@@ -32,10 +34,8 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute
     DeviceProfile_HRM.prototype.CHANNEL_PERIOD = {
         DEFAULT : 8070,
-        ALTERNATIVE_1 : 8070*2,
-        ALTERNATIVE_2 : 8070*4
-    };
 
+    };
 
     DeviceProfile_HRM.prototype.NAME = 'HRM';
     
@@ -43,7 +43,6 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
         DEVICE_TYPE: 0x78,
         TRANSMISSION_TYPE : 0x01
     };
-    
 
     // HRM sends out pages in page 4 * 64, background page 1 (for 1 second), page 4 *64, background page 2 (1 s.), page 4*64, background page 3 (1 s),....
     // When no HR data is sent from HR sensor, only background pages are sent each channel period; b1*64,b2*64,b3*64,b1*64,..... in accordance with the
@@ -52,28 +51,39 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
 
     DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
     
-    DeviceProfile_HRM.prototype.PAGE_TOGGLE = true;
+    DeviceProfile_HRM.prototype.PAGE_TOGGLE_CAPABLE = true;
+
+    // Attach RR interval data to the latestPage
+    DeviceProfile_HRM.prototype.processAggregatedRR = function(latestPage)
+    {
+      if (this.aggregatedRR && this.aggregatedRR.length)
+      {
+        latestPage.aggregatedRR = this.aggregatedRR;
+        this.aggregatedRR = [];
+      }
+    };
+
     
     DeviceProfile_HRM.prototype.getPage = function (broadcast)
     {
-         var data = broadcast.data,
-             page,
-             pageNumber = broadcast.data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER,
-             sensorId = broadcast.channelId.sensorId;
-        
+         var page,
+             pageNumber = this.getPageNumber(broadcast);
+
           switch (pageNumber) {
              
             // MAIN
 
             case 4 : 
 
-                 page = new HRMPage4({logger: this.log},broadcast);
+                 page = new HRMPage4({ logger: this.log}, broadcast,this,pageNumber);
 
                  break;
+
+            // Legacy
+
+            case 0 :
                 
-            case 0 : // OLD legacy
-                
-                  page = new HRMPage0({logger: this.log},broadcast);
+                  page = new HRMPage0({ logger: this.log}, broadcast,this,pageNumber);
                 
                   break;
 
@@ -81,19 +91,47 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
             
             default:
 
-                 if (pageNumber >= 1 && pageNumber <= 3)
-                     page= this.getBackgroundPage(pageNumber,broadcast);
-                 else
-                 {
-                      this.log.log('warn','Unable to parse page number',pageNumber);
-                 }
+                     page= this.getBackgroundPage(broadcast,pageNumber);
+
+                     if (page)
+                     {
+                       HRMPage.prototype.readHR.call(page);
+                       HRMPage.prototype.calcRRInterval.call(page);
+                     }
 
                  break;
 
           }
 
-        
         return page;
+
+    };
+
+    DeviceProfile_HRM.prototype.getPageNumber = function (broadcast)
+    {
+     var deviceType = broadcast.channelId.deviceType,
+            data = broadcast.data,
+            pageNumber;
+
+         // Byte 0 - Page number
+
+       if (this.isPageToggle(broadcast))
+
+        pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
+
+       else
+
+         pageNumber = 0;  // Legacy
+
+        return pageNumber;
+    };
+
+    DeviceProfile_HRM.prototype.addPage = function (page) {
+
+      DeviceProfile.prototype.addPage.call(this,page);
+
+      if (page.RRInterval)
+        this.aggregatedRR.push(page.RRInterval);
 
     };
 

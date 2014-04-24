@@ -100,14 +100,17 @@ define(['profiles/mainPage'],function (MainPage) {
         //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
         
         // Negative numbers are inverted (1's complement)
+        // 0.1 = 0x01 0x0
+        // Inverted 0.1 = 0xFE 0xF
+        // -0.1 ANT+ Sensor Simulator v1.9 0xFF 0xF ("highest negative number")
             
         var valueHour24Low = (valueHour24LowMSN << 8) | hour24LowLSB;
        
         
-        if (valueHour24Low !== 0x800) // -0 
+        if (valueHour24Low !== 0x800) // -0 INVALID
         {
              if (signHour24LowMSN === -1)
-                    valueHour24Low = (~valueHour24Low) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH; // Mask 11-bit magnitude of signed int for 1's complement form of negative integer
+                    valueHour24Low = (-valueHour24Low) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH; // Mask 11-bit magnitude of signed int for 1's complement form of negative integer
             this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.prototype.UNIT.HOUR24_LOW;
         }
         else
@@ -131,7 +134,7 @@ define(['profiles/mainPage'],function (MainPage) {
 
         if (value24High !== 0x800) {
              if (signHour24HighMSB === -1) 
-              value24High = (~value24High) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+              value24High = (-value24High) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
             
             this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.prototype.UNIT.HOUR24_HIGH;
         }

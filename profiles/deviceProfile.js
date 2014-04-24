@@ -1,9 +1,9 @@
 /* global define: true, clearInterval: true, setInterval: true, setTimeout: true,  */
 
 define(['channel','profiles/Page','profiles/mainPage','profiles/backgroundPage','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','settings',
-        'profiles/receivedPages',
+
         'profiles/manufacturerId','profiles/productId','profiles/cumulativeOperatingTime',
-        'profiles/manufacturerId0x50','profiles/productId0x51','profiles/cumulativeOperatingTime0x52'],function (Channel, GenericPage,MainPage,BackgroundPage,HighPrioritySearchTimeout,LowPrioritySearchTimeout,setting,ReceivedPages,
+        'profiles/manufacturerId0x50','profiles/productId0x51','profiles/cumulativeOperatingTime0x52'],function (Channel, GenericPage,MainPage,BackgroundPage,HighPrioritySearchTimeout,LowPrioritySearchTimeout,setting,
 ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x51,CumulativeOperatingTime0x52) {
 
     'use strict';
@@ -17,11 +17,15 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
         this.broadcastCount = 0;
 
-        // Hashed broadcasts - for detecting similar broadcasts/used for filtering
+        // Hashed broadcasts - for detecting and filtering similar broadcasts/used
         this.hashBroadcast = [];
 
-        // Filtered broadcasts -  Storage for parsed received main and background pages for each sensorId
-        this.page =  new ReceivedPages();
+        // Latest page by pageNumber
+        this.page =  {
+           // pageNumber : ...
+        };
+
+       this.receivedPage = [];
 
         // Timers
 
@@ -33,7 +37,6 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
              }; // For determining if 7 msb is toggeled of byte 0 in payload
         else if (this.log && this.log.logging)
             this.log.log('info','Device is not capable of page toggeling',this);
-
 
         this.sensorId = undefined;
 
@@ -52,64 +55,71 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     DeviceProfile.prototype.MAX_UNFILTERED_BROADCAST_BUFFER = 240; // 4 msg/sec * 60 sec = 240 broadcast/min
 
-    DeviceProfile.prototype.MAX_PAGE_BUFFER = 64;
+    DeviceProfile.prototype.MIN_BROADCAST_THRESHOLD = 2; // Minimum number of broadcast before accepted
+
+    DeviceProfile.prototype.MAX_PAGE_THRESHOLD = 60;
 
     // Is called by a particular device profile after reading pageNumber
     DeviceProfile.prototype.getBackgroundPage = function (broadcast,pageNumber)
     {
 
-       var hasGlobalPages = broadcast.channelId.hasGlobalPages();
+       var hasGlobalPages = broadcast.channelId.hasGlobalPages(), // Bit 2 of transmission type high, e.g environment profile
+           page;
 
         if (!hasGlobalPages)
-            return undefined;
+        {
 
-       var   page;
+            switch (pageNumber) {
 
-        switch (pageNumber) {
+                case 1:
 
-              case 1:
+                    page = new CumulativeOperatingTime({ logger: this.log }, broadcast,this,pageNumber);
 
-                page = new CumulativeOperatingTime({ logger: this.log }, broadcast,this,pageNumber);
+                    break;
 
-                break;
+                case 2:
 
-            case 2:
+                    page = new ManufacturerId({ logger: this.log }, broadcast,this,pageNumber);
 
-                page = new ManufacturerId({ logger: this.log }, broadcast,this,pageNumber);
-
-                break;
+                    break;
 
 
-            case 3:
+                case 3:
 
-                page = new ProductId({ logger: this.log }, broadcast,this,pageNumber);
+                    page = new ProductId({ logger: this.log }, broadcast,this,pageNumber);
 
-                break;
+                    break;
+            }
+        }
 
-            case BackgroundPage.prototype.COMMON.PAGE0x50:
+        else
+        {
+             switch (pageNumber)
+             {
+                case BackgroundPage.prototype.COMMON.PAGE0x50:
 
-                page = new ManufacturerId0x50({ log: this.log.logging }, broadcast,this,pageNumber);
+                    page = new ManufacturerId0x50({ log: this.log.logging }, broadcast,this,pageNumber);
 
-                break;
+                    break;
 
-            case BackgroundPage.prototype.COMMON.PAGE0x51:
+                case BackgroundPage.prototype.COMMON.PAGE0x51:
 
-                page = new ProductId0x51({ log: this.log.logging }, broadcast,this,pageNumber);
+                    page = new ProductId0x51({ log: this.log.logging }, broadcast,this,pageNumber);
 
-                break;
+                    break;
 
-            case BackgroundPage.prototype.COMMON.PAGE0x52:
+                case BackgroundPage.prototype.COMMON.PAGE0x52:
 
-                page = new CumulativeOperatingTime0x52({ log: this.log.logging }, broadcast,this,pageNumber);
+                    page = new CumulativeOperatingTime0x52({ log: this.log.logging }, broadcast,this,pageNumber);
 
-                break;
+                    break;
 
-            default:
+            }
+        }
 
-                this.log.log('error', 'Unable to create page object for common page number ', pageNumber + ' 0x' + pageNumber.toString(16),broadcast);
-
-                break;
-
+        if (!page)
+        {
+            this.log.log('error', 'Unable to create background page object for page number ', pageNumber + ' 0x' + pageNumber.toString(16),broadcast,'global page',hasGlobalPages);
         }
 
         return page;
@@ -123,7 +133,6 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     };
 
-
     DeviceProfile.prototype.filterAndCountBroadcast = function (broadcast)
     {
 
@@ -131,8 +140,7 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
             data = broadcast.data,
             FILTER = true,
             pageToggleBit,
-            MIN_BROADCAST_LIMIT = 2,
-            MAX_PAGE_TOGGLE_BROADCAST_LIMIT = MIN_BROADCAST_LIMIT+5;
+            MAX_PAGE_TOGGLE_BROADCAST_LIMIT = this.MIN_BROADCAST_THRESHOLD+5;
 
         // Don't process broadcast with wrong device type
 
@@ -146,15 +154,18 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
            this.broadcast.shift();
         }
 
-        this.broadcast.push(broadcast);
         this.broadcastCount += 1;
+        broadcast.count = this.broadcastCount;
+
+        this.broadcast.push(broadcast);
+
 
         // Filter out possible "noise" from sensors that come and go quickly
 
-        if (this.broadcastCount < MIN_BROADCAST_LIMIT)
+        if (this.broadcastCount < this.MIN_BROADCAST_THRESHOLD)
            return FILTER;
 
-        // Determine page toggle state (tricky format leads to tricky code...)
+        // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
 
         if (this.PAGE_TOGGLE_CAPABLE) {
 
@@ -247,89 +258,51 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
     };
 
     // This function is called by setInterval, e.g each second to get the latest pages of main/background
-    DeviceProfile.prototype.getLatestPage = function ()
+    DeviceProfile.prototype.getLatestPage = function (processCB)
     {
 
-       // return; // DEBUG memory
+    var latestPage,
+        pageNumber;
 
-        var aggregatedRR,
-            RRInterval,
-            receivedPageNr,
+       for (pageNumber in this.page) {
 
-            len,
-            currentPages,
+            if (pageNumber === undefined || pageNumber === null)
+            {
+                if (this.log && this.log.logging)
+                    this.log.log('warn', 'Undefined or null page number for sensor id ' + this.sensorId);
+            }
 
-            latestPage;
+            latestPage = this.page[pageNumber];
 
+            if (latestPage)
+            {
+                if (typeof processCB === 'function') // In case of HRM RR -> aggregated RR attached
+                  processCB.call(this,latestPage);
 
-            for (var type in GenericPage.prototype.TYPE) {
+                this.emit('page',latestPage);
 
-                    // Traverse pages number, and emit 'page' event (e.g handler in UI) with the lacurrentByte page
-
-                    for (var pageNumber in this.page[type]) {
-
-                        if (pageNumber === undefined || pageNumber === null)
-                        {
-                            if (this.log && this.log.logging)
-                                this.log.log('warn', 'Undefined or null page number for sensor id ' + this.sensorId + ' page type ' + type);
-                        }
-
-                        latestPage = this.page[type][pageNumber].pop();
-
-
-                       /* // Aggregate RR interval data
-
-                        if (latestPage && typeValue === GenericPage.prototype.TYPE.main && this.CHANNEL_ID.DEVICE_TYPE === 120 && (latestPage.RRInterval >= 0)) {
-
-                            aggregatedRR = [];
-
-                            for (receivedPageNr = 0; receivedPageNr < len; receivedPageNr++)
-                            {
-                                RRInterval = this.pageNumberPages[sensorId][typeValue][pageNumber][receivedPageNr].RRInterval;
-
-                                if (RRInterval >= 0) {
-
-                                    aggregatedRR.push(RRInterval);
-                                    //if (this.log && this.log.logging)
-                                    //    this.log.log('info', receivedPageNr, RRInterval);
-                                }
-                                //else
-                                //{
-                                //    if (this.log && this.log.logging)
-                                //        this.log.log('error', 'Was expecting an RR interval on page', this.pageNumberPages[sensorId][typeValue][pageNumber][receivedPageNr])
-                                //}
-
-                            }
-
-                            latestPage.aggregatedRR = aggregatedRR;
-                        }*/
-
-                        if (latestPage)
-                            this.emit('page',latestPage);
-
-
-                    }
-
-                    this.page[type][pageNumber] = []; // GC previous pages
+                this.page[pageNumber] = null;
 
             }
 
+        }
 
  };
 
-    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout) {
+    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout,processHook) {
 
         // In case requestPageUpdate is called more than one time
+
         if (this.timer.onPage !== undefined) {
             if (this.log && this.log.logging) this.log.log('warn', 'requestPageUpdate should only be called one time');
             clearInterval(this.timer.onPage);
         }
 
-        this.timer.onPage = setInterval(this.getLatestPage.bind(this),timeout);
+        this.timer.onPage = setInterval(this.getLatestPage.bind(this,processHook),timeout);
          
         if (this.log && this.log.logging) this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
 
-        setTimeout(this.getLatestPage.bind(this),1000); // Run fast update first time
+        setTimeout(this.getLatestPage.bind(this,processHook),1000); // Run fast update first time
 
     };
 
@@ -347,7 +320,7 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         // Don't attempt to calculate cadence and speed if time between pages is greater than rollover time
 
         if (rollOverThreshold && (this.timestamp - previousPage.timestamp >= rollOverThreshold)) {
-            if (this.log.logging) this.log.log('warn', 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, this.previousPage);
+            if (this.log.logging) this.log.log('warn', 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, previousPage);
             return;
         }
 
@@ -356,11 +329,8 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     DeviceProfile.prototype.getPreviousPage = function ()
     {
+         return this.receivedPage[this.receivedPage.length-1];
 
-        if (this.page && this.page.all)
-           return this.page.all[this.page.all.length-1];
-        else
-            return undefined;
     };
 
     // Deserialization of broadcast (8-byte packet) into a page object
@@ -373,7 +343,9 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
     DeviceProfile.prototype.broadCast = function (broadcast)
     {
 
-        // Init sensor id first timer
+        var page;
+
+        // Init sensor id first time a broadcast is received
 
         if (!this.sensorId)
           this.sensorId = broadcast.channelId.sensorId;
@@ -388,27 +360,14 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
            return;
         }
 
-        // Store pages for later transfer to UI
-
-        var page = this.getPage(broadcast);
+        page = this.getPage(broadcast);
 
         this.addPage(page);
 
     };
 
-    DeviceProfile.prototype.shiftArray = function (arr,maxLimit)
-    {
-       if (arr.length > maxLimit)
-        arr.shift();
-    };
-
-    // Keeps track of received pages
+    // Keeps track of received pages that are passed through filtering
     DeviceProfile.prototype.addPage = function (page) {
-
-        var pageNumber,
-            previousPage,
-            len,
-            type;
 
         if (!page) {
          if (this.log && this.log.logging)
@@ -416,31 +375,9 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
             return;
         }
 
-        pageNumber = page.number;
+       this.page[page.number] = page;
 
-        if (page instanceof BackgroundPage)
-          type = 'background';
-        else if (page instanceof MainPage)
-          type = 'main';
-
-         if (!this.page[type][pageNumber]) {
-             this.page[type][pageNumber] = [];
-
-         }
-
-        this.page[type][pageNumber].push(page);
-        this.page.all.push(page);
-
-          // Limit memory footprint of page
-
-        this.shiftArray(this.page.all,this.MAX_PAGE_BUFFER);
-
-        // main and background pages will be recreated/GC'ed when getLatestPage are invoked
-        // in the case that getLatestPage isnt called, limit the size of the arrays
-
-        for (type in GenericPage.prototype.TYPE)
-            for (pageNumber in this.page[type])
-               this.shiftArray(this.page[type][pageNumber],this.MAX_PAGE_BUFFER);
+       this.receivedPage.push(page);
 
     };
 
@@ -452,7 +389,6 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         else
             return false;
     };
-
 
     DeviceProfile.prototype.getHashCode = function (broadcast)
     {

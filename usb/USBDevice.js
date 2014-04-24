@@ -73,7 +73,7 @@ define(['logger','events'],function (Logger,EventEmitter) {
 
         return [
 
-            { name: 'ANT USB-2 Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1008 },
+           // { name: 'ANT USB-2 Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1008 },
 
             { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
         ];

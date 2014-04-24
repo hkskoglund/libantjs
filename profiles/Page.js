@@ -8,16 +8,13 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
 
         this.log = configuration.logger || new Logger(configuration);
 
-        this.profile = profile; // For e.g previous page information
-
         if (!broadcast || !broadcast.data)
            return;
 
         this.broadcast = broadcast;
 
-       // this.dataView = new DataView(broadcast.data.buffer); // Allows sharing of dataView across functions, otherwise a new dataView must be created for each function that needs it
-
         this.timestamp = broadcast.timestamp;
+
         if (this.timestamp === undefined)
           {
               this.timestamp = Date.now();
@@ -26,6 +23,7 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
           }
 
         this.number = pageNumber; // page number already read by device profile
+
         if (this.number === undefined)
         {
              if (this.log && this.log.logging)
@@ -34,8 +32,9 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
             return;
           }
 
+        this.profile = profile; // For e.g previous page
 
-        this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
+       // this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
         // Background pages does not have these functions
 
@@ -52,18 +51,11 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
         PAGE_TOGGLE : parseInt("10000000",2) // msb of byte 0 ANT+ format
     };
 
-
-
-    // ANT+ has to kind of page types main or background (slow update interval)
-    GenericPage.prototype.TYPE = {
-        main: "main",
-        background: "background"
-    };
-
     GenericPage.prototype.COMMON = {};
 
     // Used for filtering message properties when using window.postMessage (some properties gives DOMException - cannot clone)
     GenericPage.prototype.clone = function () {
+
         var clone = Object.create(null), // Pure object
             ownEnumerableProperties = Object.keys(this),
             property;
@@ -87,7 +79,6 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
                 case 'log': // ignore
                 case 'previousPage':
                 case 'profile':
-                case 'dataView':
 
                     break;
 

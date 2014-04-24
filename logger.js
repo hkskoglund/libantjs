@@ -32,7 +32,7 @@ define(function (require, exports, module) {
     {
         //console.time('logger');
 
-       // return null; // Disable
+        //return null; // Disable
 
         var now = new Date(),
             nowStr = now.getTime(),
@@ -49,7 +49,7 @@ define(function (require, exports, module) {
                 var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
                 for (i = 0; i < arg.length; i++) {
                     if (i < MAX_BYTES_TO_FORMAT) {
-                        if (arg[i] < 10)
+                        if (arg[i] <= 0x0F)
                             prefix = '0';
                         else prefix = '';
                         msg += prefix+arg[i].toString(16) + ' ';

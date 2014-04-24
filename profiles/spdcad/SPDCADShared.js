@@ -52,7 +52,7 @@ define(['profiles/mainPage'], function (MainPage) {
     SPDCADSharedPage.prototype.calcSpeed = function ()
     {
 
-        var previousPage = this.previousPage;
+        var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
         if (!previousPage) // Cannot calculate if no previous page is available
             return;
@@ -106,7 +106,7 @@ define(['profiles/mainPage'], function (MainPage) {
     SPDCADSharedPage.prototype.calcCadence = function ()
     {
 
-        var previousPage = this.previousPage;
+        var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
         if (!previousPage) // Cannot calculate if no previous page is available
             return;
@@ -120,22 +120,22 @@ define(['profiles/mainPage'], function (MainPage) {
             bikeCadenceEventTimeRollover,
             bikeCadenceEventTimeDifference;
 
-        cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < this.previousPage.cumulativeCadenceRevolutionCount);
+        cumulativeCadenceRevolutionCountRollover = (this.cumulativeCadenceRevolutionCount < previousPage.cumulativeCadenceRevolutionCount);
 
-        bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < this.previousPage.bikeCadenceEventTime);
+        bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
 
         if (bikeCadenceEventTimeRollover)
-            bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime);
+            bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
         else
-            bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - this.previousPage.bikeCadenceEventTime;
+            bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
 
         // CADENCE - RPM
 
         if (bikeCadenceEventTimeDifference) {
             if (cumulativeCadenceRevolutionCountRollover)
-                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
             else
-                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - this.previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+                this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
         }
 
         // Filter "spikes"
