@@ -57,8 +57,6 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     DeviceProfile.prototype.MIN_BROADCAST_THRESHOLD = 2; // Minimum number of broadcast before accepted
 
-    DeviceProfile.prototype.MAX_PAGE_THRESHOLD = 60;
-
     // Is called by a particular device profile after reading pageNumber
     DeviceProfile.prototype.getBackgroundPage = function (broadcast,pageNumber)
     {
@@ -376,6 +374,12 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         }
 
        this.page[page.number] = page;
+
+        // Limit memory
+        if (this.receivedPage && this.receivedPage.length >= this.MAX_UNFILTERED_BROADCAST_BUFFER)
+        {
+            this.receivedPage.shift();
+        }
 
        this.receivedPage.push(page);
 
