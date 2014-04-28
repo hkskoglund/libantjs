@@ -32,9 +32,12 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         this.timer = {};
 
         if (this.PAGE_TOGGLE_CAPABLE)
+        // For determining if 7 msb is toggeled of byte 0 in payload
              this.pageToggle = {
-                 toggle : undefined
-             }; // For determining if 7 msb is toggeled of byte 0 in payload
+                 toggle : undefined,
+                 state : this.PAGE_TOGGLE_STATE.PREINIT,
+                 broadcast : {}
+             };
         else if (this.log && this.log.logging)
             this.log.log('info','Device is not capable of page toggeling',this);
 
@@ -47,6 +50,7 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     DeviceProfile.prototype.PAGE_TOGGLE_STATE = {
 
+        PREINIT : 'preinit', // Before any page toggeling is observed
         INIT : 'init',
         TOGGELING : 'toggeling',
         NOT_TOGGELING : 'not toggeling',
@@ -131,14 +135,76 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
     };
 
+    // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
+    DeviceProfile.prototype.pageToggleFilter = function (broadcast)
+    {
+        var pageToggleBit,
+            data = broadcast.data,
+            sensorId = this.sensorId,
+            FILTER = true,
+            MAX_PAGE_TOGGLE_BROADCAST_LIMIT = this.MIN_BROADCAST_THRESHOLD+5,
+            transitionMsg;
+
+        // Determine page toggle bit - legacy transmitters (bike/hrm) has fixed bit in this position (7 msb byte 0) and only page "0"/undefined
+
+            pageToggleBit = (data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE) === GenericPage.prototype.BIT_MASK.PAGE_TOGGLE ? true : false;
+
+            // Init page toggle on the first broadcast
+
+            if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.PREINIT) {
+
+                this.pageToggle.toggle = pageToggleBit;
+                this.pageToggle.state = this.PAGE_TOGGLE_STATE.INIT;
+                this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
+
+                return FILTER;
+            }
+
+            // Determine if page toggle bit have changed from the initialized state
+
+            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && (pageToggleBit !== this.pageToggle.toggle))
+            {
+
+                switch (pageToggleBit)
+                {
+                    case true : transitionMsg = 'OFF -> ON';
+                                break;
+                    case false: transitionMsg = 'ON -> OFF';
+                                break;
+                }
+
+                this.pageToggle.toggle = pageToggleBit;
+
+                this.pageToggle.state = this.PAGE_TOGGLE_STATE.TOGGELING;
+                 this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
+
+                if (this.log && this.log.logging)
+                     this.log.log('info',sensorId,'Page toggeling '+transitionMsg+' at B# '+this.broadcastCount,this.pageToggle.broadcast[this.pageToggle.state].data,'init B# '+this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count,this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+
+            }
+
+            // Filter until a page toggeling master is found or not. A well behaved master should toggle page bit after four messages (about each seconds)
+
+            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT)
+              return FILTER;
+
+            // If we're still in init state after 5 messages, it can be assumed that we have to deal with a non toggeling/legacy master
+
+            if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT)
+            {
+                this.pageToggle.state = this.PAGE_TOGGLE_STATE.NOT_TOGGELING;
+                  this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
+
+                if (this.log && this.log.logging)
+                    this.log.log('info',sensorId,'No page toggeling after B# '+this.broadcastCount,this.pageToggle.broadcast[this.pageToggle.state].data,'Its a legacy device using page 0 format','init B# '+this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count,this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+
+            }
+    }
+
     DeviceProfile.prototype.filterAndCountBroadcast = function (broadcast)
     {
 
-        var sensorId = this.sensorId,
-            data = broadcast.data,
-            FILTER = true,
-            pageToggleBit,
-            MAX_PAGE_TOGGLE_BROADCAST_LIMIT = this.MIN_BROADCAST_THRESHOLD+5;
+        var FILTER = true;
 
         // Don't process broadcast with wrong device type
 
@@ -157,61 +223,24 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
 
         this.broadcast.push(broadcast);
 
-
-        // Filter out possible "noise" from sensors that come and go quickly
+        // 1. Filter out possible "noise" from sensors that come and go quickly
 
         if (this.broadcastCount < this.MIN_BROADCAST_THRESHOLD)
            return FILTER;
 
-        // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
+        // 2. Filter until page toggle state is determined for masters that a capable of it
 
-        if (this.PAGE_TOGGLE_CAPABLE) {
+        if (this.PAGE_TOGGLE_CAPABLE && this.pageToggleFilter(broadcast)) {
+           return FILTER;
 
-            // Determine page toggle bit - legacy transmitters (bike/hrm) has fixed bit in this position (7 msb byte 0) and only page "0"/undefined
-
-            pageToggleBit = (data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE) === GenericPage.prototype.BIT_MASK.PAGE_TOGGLE ? true : false;
-
-            // Init page toggle on the first broadcast
-
-            if (this.pageToggle.toggle === undefined) {
-
-                this.pageToggle.toggle = pageToggleBit;
-                this.pageToggle.state = this.PAGE_TOGGLE_STATE.INIT;
-
-                return FILTER;
-            }
-
-            // Determine if page toggle bit have changed from the initialized state
-
-            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && (pageToggleBit !== this.pageToggle.toggle))
-            {
-                if (this.log && this.log.logging)
-                    this.log.log('info',sensorId,'This device uses paging, cycling between main and background pages with page numbers');
-
-                this.pageToggle.state = this.PAGE_TOGGLE_STATE.TOGGELING;
-            }
-
-            // Filter until a page toggeling master is found or not. A well behaved master should toggle page bit after four messages (about each seconds)
-
-            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT)
-              return FILTER;
-
-            // If we're still in init state after 5 messages, it can be assumed that we have to deal with a non toggeling/legacy master
-
-            if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT)
-            {
-                this.pageToggle.state = this.PAGE_TOGGLE_STATE.NOT_TOGGELING;
-
-                if (this.log && this.log.logging)
-                    this.log.log('info',sensorId,'No page toggeling is observed after '+this.broadcastCount+' broadcasts, maybe its a legacy device');
-
-            }
         }
 
-      if (this.filterDuplicateBroadcast(broadcast))
-        return FILTER;
-     else
-        return !FILTER;
+        // 3. Filter duplicates
+
+        if (this.filterDuplicateBroadcast(broadcast))
+           return FILTER;
+         else
+           return !FILTER;
 
     };
 
