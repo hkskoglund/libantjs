@@ -15,7 +15,6 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumulativeOperating
     CumulativeOperatingTime.prototype = Object.create(CumulativeOperatingTimeShared.prototype);
     CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
 
-
     CumulativeOperatingTime.prototype.toString = function () {
 
           var msg = "P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;

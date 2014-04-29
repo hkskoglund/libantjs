@@ -31,7 +31,9 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
         // Set the lower 2-bytes of serial number, if available in channel Id.
 
         if (typeof channelId !== "undefined" && typeof channelId.deviceNumber !== "undefined")
-            this.serialNumber = (this.serialNumber16MSB << 16) | channelId.deviceNumber;
+            //this.serialNumber = (this.serialNumber16MSB << 16) | channelId.deviceNumber; Javascript limit: 32-bit bigendian signed on bitwise operators
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
+            this.serialNumber = this.serialNumber16MSB * 0x10000 + channelId.deviceNumber;
         else
             this.serialNumber = this.serialNumber16MSB;
 
@@ -42,7 +44,6 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
 
      return msg;
     };
-
 
     return ManufacturerId;
 

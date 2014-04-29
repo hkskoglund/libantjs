@@ -16,33 +16,21 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
     CumulativeOperatingTime.prototype = Object.create(CumultiveOperatingTimeShared.prototype);
     CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
 
+
     // Background Page 1
     CumulativeOperatingTime.prototype.read = function (broadcast)
     {
         var data = broadcast.data;
 
-        // Byte 1-2 -reserved 0xFF
+        // Byte 1-2 - reserved 0xFF
 
         // Byte 7
 
         this.descriptive = {
             coarseVoltage: data[7] & 0x0F,
-            batteryStatus: (data[7] & 0x70) >> 4,
+            batteryStatus: new BatteryStatus(data),
             resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
         };
-
-
-        switch (this.descriptive.batteryStatus) {
-            case 0x00: this.batteryStatusString = "Reserved"; break;
-            case 0x01: this.batteryStatusString = "New"; break;
-            case 0x02: this.batteryStatusString = "Good"; break;
-            case 0x03: this.batteryStatusString = "OK"; break;
-            case 0x04: this.batteryStatusString = "Low"; break;
-            case 0x05: this.batteryStatusString = "Critical"; break;
-            case 0x06: this.batteryStatusString = "Reserved"; break;
-            case 0x07: this.batteryStatusString = "Invalid"; break;
-            default: this.batteryStatusString = "? - " + this.descriptive.batteryStatus;
-        }
 
         var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;
 
@@ -53,19 +41,9 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
         // Byte 6
 
         this.fractionalBatteryVoltage = data[6] / 256; // Volt
-        if (this.descriptive.coarseVoltage === 0x0F)
-            this.batteryVoltage = "Invalid";
-        else
+        if (this.descriptive.coarseVoltage !== 0x0F)
             this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
 
-    };
-
-    CumulativeOperatingTime.prototype._batteryVoltageToString = function (voltage) {
-
-        if (typeof voltage === "number")
-            return voltage.toFixed(1);
-        else
-            return "" + voltage;
     };
 
     CumulativeOperatingTime.prototype.toString = function () {
@@ -74,11 +52,35 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
         msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
 
         if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
-            msg += " Battery (V) " + this._batteryVoltageToString(this.batteryVoltage);
+            msg += " Battery (V) " + this.batteryVoltage.toFixed(1);
 
-        msg += " Battery status " + this.batteryStatusString;
+        msg += " Battery status " + this.batteryStatus.toString();
 
         return msg;
+    };
+
+    function BatteryStatus (dataByte)
+    {
+        this.batteryStatus = (dataByte & 0x70) >> 4;
+    }
+
+    BatteryStatus.prototype.toString = function ()
+    {
+        var batteryStatusString;
+
+        switch (this.batteryStatus) {
+            case 0x00: batteryStatusString = "Reserved"; break;
+            case 0x01: batteryStatusString = "New"; break;
+            case 0x02: batteryStatusString = "Good"; break;
+            case 0x03: batteryStatusString = "OK"; break;
+            case 0x04: batteryStatusString = "Low"; break;
+            case 0x05: batteryStatusString = "Critical"; break;
+            case 0x06: batteryStatusString = "Reserved"; break;
+            case 0x07: batteryStatusString = "Invalid"; break;
+            default:   batteryStatusString = "? - " + this.batteryStatus;
+        }
+
+        return batteryStatusString;
     };
 
     return CumulativeOperatingTime;
