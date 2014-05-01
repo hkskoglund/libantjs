@@ -15,8 +15,11 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
     CumulativeOperatingTime.prototype.readCumulativeOperatingTime = function (broadcast,offset,unit_multiplier)
         {
             var data = broadcast.data,
-                dataView = new DataView(data.buffer),
-                multiplier = unit_multiplier|| 2; // Default 2
+               // dataView = new DataView(data.buffer),
+                multiplier = unit_multiplier|| 2,// Default 2
+                byte1,
+                byte2,
+                byte3;
 
           var toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
 
@@ -29,7 +32,11 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
             // Cumulative operating time :
             // Byte 1 = bit 0-7, Byte 2 = bit 8-15, Byte 3 = bit 16 - 23 (little endian)
 
-            this.cumulativeOperatingTime = (dataView.getUint32(data.byteOffset+offset,true) & 0x00FFFFFF) * multiplier; // Seconds since reset/battery replacement
+            byte1 = data[offset];
+            byte2 = data[offset+1];
+            byte3 = data[offset+2];
+
+            this.cumulativeOperatingTime = ((byte3 << 16) | (byte2 << 8) | byte1) * multiplier; // Seconds since reset/battery replacement
 
         this.cumulativeOperatingTimeString = toStringCumulativeOperatingTime(this.cumulativeOperatingTime);
 

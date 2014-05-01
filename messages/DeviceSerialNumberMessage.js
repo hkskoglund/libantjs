@@ -28,9 +28,10 @@ define(function (require, exports, module) {
     
     DeviceSerialNumberMessage.prototype.parse = function () {
         // SN 4 bytes Little Endian
+        var dw = new DataView(this.content.buffer);
         
-        this.serialNumber = (new DataView(this.content.buffer)).getUint32(0,true);
-        this.serialNumberAsChannelId = this.serialNumber & 0xFFFF; // Lower 2-bytes
+        this.serialNumber = dw.getUint32(0,true);
+        this.serialNumberAsChannelId = dw.getUint16(0,true); // Lower 2-bytes
     };
     
     DeviceSerialNumberMessage.prototype.toString = function () {
