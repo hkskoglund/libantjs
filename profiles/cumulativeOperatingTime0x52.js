@@ -54,7 +54,7 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
         if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
             msg += " Battery (V) " + this.batteryVoltage.toFixed(1);
 
-        msg += " Battery status " + this.batteryStatus.toString();
+        msg += " Battery status " + this.descriptive.batteryStatus.toString();
 
         return msg;
     };
