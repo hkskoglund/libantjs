@@ -1,4 +1,4 @@
-/* globals define: true, require: true */
+﻿/* globals define: true, require: true */
 
 define(['profiles/spdcad/deviceProfile_BikeShared','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfileBikeShared, SPDCADPage0) {
 

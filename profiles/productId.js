@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 define(['profiles/backgroundPage'], function (BackgroundPage) {
 

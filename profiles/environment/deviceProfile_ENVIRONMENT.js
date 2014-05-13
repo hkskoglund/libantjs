@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 define(['profiles/deviceProfile','profiles/environment/TemperaturePage0','profiles/environment/TemperaturePage1','profiles/Page'],function (DeviceProfile,TempPage0,TempPage1, GenericPage) {
 

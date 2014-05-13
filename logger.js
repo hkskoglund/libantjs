@@ -1,4 +1,4 @@
-/* global define: true, console: true, Uint8Array: true */
+﻿/* global define: true, console: true, Uint8Array: true */
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
     Logger.prototype.log = function (type)
     {
 
-        return null; // Disable
+       // return null; // Disable
 
         var now = new Date(),
             nowStr = now.getTime(),

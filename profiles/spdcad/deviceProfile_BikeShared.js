@@ -1,4 +1,4 @@
-/* globals define: true, require: true */
+﻿/* globals define: true, require: true */
 
 define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_cad/bikePage0','profiles/spdcad/SPDCADPage0','profiles/cumulativeOperatingTime','profiles/manufacturerId','profiles/productId','profiles/Page'],function (DeviceProfile, BikeSpdPage0, BikeCadPage0, SPDCADPage0, CumulativeOperatingTime,ManufacturerId, ProductId,GenericPage) {
 

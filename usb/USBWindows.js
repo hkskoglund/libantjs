@@ -1,4 +1,4 @@
-/* global define: true, Windows: true, Uint8Array : true  */
+﻿/* global define: true, Windows: true, Uint8Array : true  */
 
 // Requires winusb.sys driver - windows 8
 

@@ -1,4 +1,4 @@
-/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
+﻿/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
 
 define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page','profiles/hrm/HRMPage'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage,HRMPage) {
     

@@ -1,4 +1,4 @@
-/* global define: true, clearInterval: true, setInterval: true, setTimeout: true,  */
+﻿/* global define: true, clearInterval: true, setInterval: true, setTimeout: true,  */
 
 define(['channel','profiles/Page','profiles/mainPage','profiles/backgroundPage','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','settings',
 

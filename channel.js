@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 define(['logger','events'],function (Logger,EventEmitter) {
 

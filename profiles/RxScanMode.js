@@ -1,4 +1,4 @@
-/* global define: true */
+﻿/* global define: true */
 
 define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
         'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD',
