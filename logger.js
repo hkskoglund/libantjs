@@ -31,7 +31,7 @@ define(function (require, exports, module) {
     Logger.prototype.log = function (type)
     {
 
-       // return null; // Disable
+        return null; // Disable
 
         var now = new Date(),
             nowStr = now.getTime(),

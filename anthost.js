@@ -1,5 +1,6 @@
 ﻿/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
+
 //var requirejs = require('requirejs');
 //
 //requirejs.config({
@@ -707,7 +708,10 @@ ANTHost.prototype.init = function (options, initCB) {
     this.options = options;
     this.options.initCB = initCB;
 
+    // In case of reinitialization, i.e from life cycle suspend to resume
+   
     this.usb = options.usb;
+
 
     // Logging
     this.log.logging = options.log;
@@ -857,6 +861,7 @@ ANTHost.prototype.init = function (options, initCB) {
         else {
             // Start listening for data on in endpoint and send it to host parser
         
+            this.usb.removeAllEventListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
             this.usb.addEventListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
             this.usb.listen();
            
