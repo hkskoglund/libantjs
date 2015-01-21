@@ -1,6 +1,6 @@
-﻿/* global define: true */
+/* global define: true */
 
-define(['profiles/spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCADSharedPage) {
+define(['profiles/bike_spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCADSharedPage) {
 
     'use strict';
 
@@ -33,14 +33,13 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCAD
 
     BikePage0.prototype.toString = function () {
 
-       var calibrationFactor = 2.07, // Just used for a speed estimate
-            speed,
-            msg;
+       var  msg;
 
         msg = "P# " + this.number + " cadence (rpm) ";
 
-        if (this.cadence !== undefined)
+        if (this.cadence !== undefined) {
             msg += this.cadence;
+        }
 
         msg +=  " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;
 

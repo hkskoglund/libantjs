@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/backgroundPage'], function (BackgroundPage) {
 

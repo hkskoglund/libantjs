@@ -1,6 +1,6 @@
-﻿/* globals define: true, require: true */
+/* globals define: true */
 
-define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_cad/bikePage0','profiles/spdcad/SPDCADPage0','profiles/cumulativeOperatingTime','profiles/manufacturerId','profiles/productId','profiles/Page'],function (DeviceProfile, BikeSpdPage0, BikeCadPage0, SPDCADPage0, CumulativeOperatingTime,ManufacturerId, ProductId,GenericPage) {
+define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_cad/bikePage0','profiles/bike_spdcad/SPDCADPage0','profiles/cumulativeOperatingTime','profiles/manufacturerId','profiles/productId','profiles/Page'],function (DeviceProfile, BikeSpdPage0, BikeCadPage0, SPDCADPage0, CumulativeOperatingTime,ManufacturerId, ProductId,GenericPage) {
 
     'use strict';
 
@@ -24,19 +24,19 @@ define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_ca
 
     DeviceProfile_BikeShared.prototype.getPageNumber = function (broadcast)
     {
-     var deviceType = broadcast.channelId.deviceType,
-            data = broadcast.data,
+     var   data = broadcast.data,
             pageNumber;
 
          // Byte 0 - Page number
 
-       if (this.isPageToggle(broadcast))
+       if (this.isPageToggle(broadcast)) {
 
         pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
-
-       else
+       }
+       else {
 
          pageNumber = 0;  // Legacy
+       }
 
         return pageNumber;
     };

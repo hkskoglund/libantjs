@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 var DeviceProfile = require('./deviceProfile.js');
 var DeviceProfile_HRM = require('./deviceProfile_HRM.js');

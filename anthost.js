@@ -1,4 +1,4 @@
-﻿/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
 
 //var requirejs = require('requirejs');

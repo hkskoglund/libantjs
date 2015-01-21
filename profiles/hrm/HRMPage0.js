@@ -1,4 +1,4 @@
-﻿/* global define: true */
+/* global define: true */
 
 define(['profiles/hrm/HRMPage'],function (HRMPage) {
 

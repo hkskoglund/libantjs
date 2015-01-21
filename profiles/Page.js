@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['logger'],function _requireDefineGenericPage(Logger) {
 

@@ -1,7 +1,7 @@
-﻿/* global define: true */
+/* global define: true */
 
 define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
-        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/spdcad/deviceProfile_SPDCAD',
+        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/bike_spdcad/deviceProfile_SPDCAD',
        'profiles/bike_spd/deviceProfile_BikeSpd','profiles/bike_cad/deviceProfile_BikeCad'],
         function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile, BikeCadProfile) {
 
@@ -64,16 +64,15 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
     RxScanMode.prototype.addProfile = function (profile,broadcast) {
 
-        var deviceType,
-            sensorId = broadcast.channelId.sensorId;
+        var sensorId = broadcast.channelId.sensorId;
 
         this.profile[sensorId] = profile;
 
         profile.addEventListener('page',this.onPage.bind(this)); // Forward
 
-        if (this.log.logging)
+        if (this.log.logging) {
             this.log.log('info', 'Added profile for sensorId '+sensorId+' to RX SCAN mode channel', profile);
-
+        }
     };
 
     // Scan mode receives all broadcasts on channel 0 
@@ -94,8 +93,9 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
        currentProfile = this.profile[broadcast.channelId.sensorId];
 
-        if (currentProfile) // Forward
+        if (currentProfile) {// Forward
             currentProfile.broadCast(broadcast);
+        }
         else {
 
             // Creating a new profile for each new sensor simplifies the code
@@ -133,9 +133,9 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
                    default:
 
-                        if (this.log && this.log.logging)
+                        if (this.log && this.log.logging) {
                           this.log.log('warn','No profile support for device type '+broadcast.channelId.deviceType);
-
+                        }
                         break;
 
             }

@@ -1,4 +1,4 @@
-﻿/* global define: true */
+/* global define: true */
 
 // Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
 

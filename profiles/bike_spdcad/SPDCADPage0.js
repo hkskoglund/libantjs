@@ -1,9 +1,9 @@
-﻿/* global define: true, DataView: true */
+/* global define: true */
 
-define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDCADSharedPage) {
+define(['profiles/bike_spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDCADSharedPage) {
 
     'use strict';
-   
+
     function SPDCADPage0(configuration, broadcast,profile,pageNumber) {
 
         SPDCADSharedPage.call(this, configuration, broadcast,profile,pageNumber,64000);
@@ -40,17 +40,18 @@ define(['profiles/spdcad/SPDCADShared'], function _requireDefineSPDCADPage0(SPDC
         var calibrationFactor = 2.07, // Just used for a speed estimate
             speed,
             msg;
-       
+
         msg = "P# " + this.number + " cadence (rpm) ";
 
-        if (this.cadence !== undefined)
+        if (this.cadence !== undefined) {
             msg += this.cadence;
+        }
 
         msg +=  " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;
 
        if (this.unCalibratedSpeed !== undefined) {
            speed = calibrationFactor * this.unCalibratedSpeed;
-           msg += ' speed (m/s) ' + speed; 
+           msg += ' speed (m/s) ' + speed;
        }
 
        msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +  ' default wheel size (m) ' + calibrationFactor;

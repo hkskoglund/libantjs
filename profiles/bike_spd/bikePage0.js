@@ -1,6 +1,6 @@
-﻿/* global define: true */
+/* global define: true */
 
-define(['profiles/spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCADSharedPage) {
+define(['profiles/bike_spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCADSharedPage) {
 
     'use strict';
 

@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/mainPage'], function (MainPage) {
 
@@ -54,14 +54,11 @@ define(['profiles/mainPage'], function (MainPage) {
 
         var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
-        if (!previousPage) // Cannot calculate if no previous page is available
+        if (!previousPage) { // Cannot calculate if no previous page is available
             return;
+        }
 
-      var broadcast = this.broadcast,
-         data = broadcast.data,
-        dataView = new DataView(this.broadcast.data.buffer),
-
-        cumulativeSpeedRevolutionCountRollover,
+      var  cumulativeSpeedRevolutionCountRollover,
         bikeSpeedEventTimeRollover,
         bikeSpeedEventTimeDifference;
 
@@ -69,11 +66,11 @@ define(['profiles/mainPage'], function (MainPage) {
 
  bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < previousPage.bikeSpeedEventTime);
 
-        if (bikeSpeedEventTimeRollover)
+        if (bikeSpeedEventTimeRollover) {
             bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
-        else
+        } else {
             bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime;
-
+        }
         // SPEED
 
         // The speed equation does not multiply with the wheel circumfence calibration factor (in meters)
@@ -97,8 +94,9 @@ define(['profiles/mainPage'], function (MainPage) {
 
         if (this.unCalibratedSpeed > 512)
         {
-            if (this.log && this.log.logging)
+            if (this.log && this.log.logging) {
                 this.log.log('warn', 'Very high uncalibrated speed filtered', this);
+            }
             this.unCalibratedSpeed = undefined;
         }
     };
@@ -108,15 +106,12 @@ define(['profiles/mainPage'], function (MainPage) {
 
         var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
-        if (!previousPage) // Cannot calculate if no previous page is available
+        if (!previousPage) { // Cannot calculate if no previous page is available
             return;
+        }
 
 
-        var broadcast = this.broadcast,
-            data = broadcast.data,
-            dataView = new DataView(data.buffer),
-
-            cumulativeCadenceRevolutionCountRollover,
+        var cumulativeCadenceRevolutionCountRollover,
             bikeCadenceEventTimeRollover,
             bikeCadenceEventTimeDifference;
 
@@ -124,18 +119,19 @@ define(['profiles/mainPage'], function (MainPage) {
 
         bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
 
-        if (bikeCadenceEventTimeRollover)
+        if (bikeCadenceEventTimeRollover) {
             bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
-        else
+        } else {
             bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
-
+        }
         // CADENCE - RPM
 
         if (bikeCadenceEventTimeDifference) {
-            if (cumulativeCadenceRevolutionCountRollover)
+            if (cumulativeCadenceRevolutionCountRollover) {
                 this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
-            else
+            } else {
                 this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+            }
         }
 
         // Filter "spikes"
@@ -143,8 +139,9 @@ define(['profiles/mainPage'], function (MainPage) {
         // Its only the first few packets that provokes this for unCalibratedSpeed
 
         if (this.cadence > 512) {
-            if (this.log && this.log.logging)
+            if (this.log && this.log.logging) {
                 this.log.log('warn', 'Very high cadence filtered', this);
+            }
             this.cadence = undefined;
 
         }

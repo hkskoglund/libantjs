@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/mainPage'], function _requireDefineHRMPage(MainPage) {
 
@@ -38,26 +38,29 @@ define(['profiles/mainPage'], function _requireDefineHRMPage(MainPage) {
             heartBeatEventTimeDelta,
             previousHeartBeatEventTime;
 
-         if (!previousPage)
+         if (!previousPage) {
           return;
+         }
 
             heartBeatCountDelta = this.heartBeatCount - previousPage.heartBeatCount;
 
-        if (heartBeatCountDelta < 0)  // Toggle 255 -> 0 should give 1 beat difference
+        if (heartBeatCountDelta < 0) {  // Toggle 255 -> 0 should give 1 beat difference
             heartBeatCountDelta += 256;
+        }
 
          // Only calculate RR for one beat difference
         if (heartBeatCountDelta === 1) {
 
-            if (!this.previousHeartBeatEventTime) // Page 0 doesnt have previousHeartBeatEventTime
+            if (!this.previousHeartBeatEventTime) {// Page 0 doesnt have previousHeartBeatEventTime
               previousHeartBeatEventTime = previousPage.heartBeatEventTime;
-            else
+            } else {
               previousHeartBeatEventTime = this.previousHeartBeatEventTime;
-
+            }
             heartBeatEventTimeDelta = this.heartBeatEventTime - previousHeartBeatEventTime;
 
-            if (heartBeatEventTimeDelta < 0) // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
+            if (heartBeatEventTimeDelta < 0) { // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
                 heartBeatEventTimeDelta += 65536;
+            }
 
             this.RRInterval = (heartBeatEventTimeDelta / 1024) * 1000; // ms.
 
@@ -73,9 +76,9 @@ define(['profiles/mainPage'], function _requireDefineHRMPage(MainPage) {
 
         var msg =  "HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T - Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
 
-        if (this.RRInterval)
+        if (this.RRInterval) {
                 msg += " RR " + this.RRInterval.toFixed(1) + " ms";
-
+        }
         return msg;
     };
 

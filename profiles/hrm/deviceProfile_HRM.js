@@ -1,4 +1,4 @@
-﻿/* global define: true, setTimeout: true, clearTimeout: true, Uint8Array: true, DataView: true */
+/* global define: true */
 
 define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page','profiles/hrm/HRMPage'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage,HRMPage) {
     
@@ -109,19 +109,20 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
 
     DeviceProfile_HRM.prototype.getPageNumber = function (broadcast)
     {
-     var deviceType = broadcast.channelId.deviceType,
+     var
             data = broadcast.data,
             pageNumber;
 
          // Byte 0 - Page number
 
-       if (this.isPageToggle(broadcast))
+       if (this.isPageToggle(broadcast)) {
 
         pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
 
-       else
+       } else {
 
          pageNumber = 0;  // Legacy
+       }
 
         return pageNumber;
     };
@@ -130,9 +131,9 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
 
       DeviceProfile.prototype.addPage.call(this,page);
 
-      if (page.RRInterval)
+      if (page.RRInterval) {
         this.aggregatedRR.push(page.RRInterval);
-
+      }
     };
 
     return DeviceProfile_HRM;

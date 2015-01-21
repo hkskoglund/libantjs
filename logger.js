@@ -1,4 +1,4 @@
-﻿/* global define: true, console: true, Uint8Array: true */
+/* global define: true, console: true, Uint8Array: true */
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
@@ -7,13 +7,13 @@ define(function (require, exports, module) {
 
     function Logger(options)
     {
-        
-        
+
+
          // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
         Object.defineProperty(this, "logging",
                               { get : function(){ return this._logging; },
                                 set : function(newValue){ this._logging = newValue; } });
-        
+
         if (typeof options === 'object' && options.log) // Handle Logger ({log : true|| false})
             this.logging = true;
         else if (typeof options === 'boolean') // Handle Logger(true||false)
@@ -24,14 +24,14 @@ define(function (require, exports, module) {
         this.console = console;
 
         this.options = options;
-       
+
     }
-    
-        
+
+
     Logger.prototype.log = function (type)
     {
 
-        return null; // Disable
+        //return null; // Disable
 
         var now = new Date(),
             nowStr = now.getTime(),
@@ -68,7 +68,7 @@ define(function (require, exports, module) {
             };
 
         if (this.logging && this.console && this.console[type]) {
-           
+
             // Headers
             header = nowStr;
             if (this.options && this.options.logSource)
@@ -84,7 +84,7 @@ define(function (require, exports, module) {
             myArguments.push(header);
 
             // Arguments
-            
+
                 for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
                 {
                     if (arguments[argNr] instanceof Uint8Array)
@@ -96,8 +96,8 @@ define(function (require, exports, module) {
                // myArguments.push(errStack);
 
                 this.console[type].apply(this.console, myArguments);
-            
-               
+
+
         } else if (!(this.console && this.console[type]))
             this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
         //console.timeEnd('logger');
@@ -110,14 +110,14 @@ define(function (require, exports, module) {
            // this.console.info('Console changed to', newConsole);
         }
     };
-    
+
     Logger.prototype.time = function (name)
     {
         if (this.logging && this.console && this.console.time)
             this.console.time(name);
-            
+
     };
-    
+
     Logger.prototype.timeEnd = function (name)
     {
         if (this.logging && this.console && this.console.timeEnd)
@@ -125,7 +125,7 @@ define(function (require, exports, module) {
     };
 
     module.export = Logger;
-    
+
     return module.export;
-    
+
 });

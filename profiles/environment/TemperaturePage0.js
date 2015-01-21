@@ -1,4 +1,4 @@
-﻿/* global define: true, DataView: true */
+/* global define: true, DataView: true */
 
 define(['profiles/mainPage'],function (MainPage) {
     
@@ -101,9 +101,11 @@ define(['profiles/mainPage'],function (MainPage) {
         supportedPages = dataView.getUint32(data.byteOffset+TemperaturePage0.prototype.BYTE.SUPPORTED_PAGES,true);
         this.supportedPages.value = supportedPages;
      
-        for (var bitNr = 0; bitNr < 32; bitNr++)
-            if (supportedPages & (1 << bitNr))
+        for (var bitNr = 0; bitNr < 32; bitNr++) {
+            if (supportedPages & (1 << bitNr)) {
                 this.supportedPages['page' + bitNr] = true;
+            }
+        }
       
     };
     

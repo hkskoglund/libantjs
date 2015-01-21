@@ -1,4 +1,4 @@
-﻿/* global define: true */
+/* global define: true */
 
 define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingTimeShared) {
 
@@ -41,9 +41,9 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
         // Byte 6
 
         this.fractionalBatteryVoltage = data[6] / 256; // Volt
-        if (this.descriptive.coarseVoltage !== 0x0F)
+        if (this.descriptive.coarseVoltage !== 0x0F) {
             this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
-
+        }
     };
 
     CumulativeOperatingTime.prototype.toString = function () {
@@ -51,8 +51,9 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
 
         msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
 
-        if (this.descriptive.coarseVoltage !== 0x0F) // Filter invalid voltage
+        if (this.descriptive.coarseVoltage !== 0x0F) { // Filter invalid voltage
             msg += " Battery (V) " + this.batteryVoltage.toFixed(1);
+        }
 
         msg += " Battery status " + this.descriptive.batteryStatus.toString();
 

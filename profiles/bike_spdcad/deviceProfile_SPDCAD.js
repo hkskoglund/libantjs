@@ -1,6 +1,6 @@
-﻿/* globals define: true, require: true */
+/* globals define: true */
 
-define(['profiles/spdcad/deviceProfile_BikeShared','profiles/spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfileBikeShared, SPDCADPage0) {
+define(['profiles/bike_spdcad/deviceProfile_BikeShared','profiles/bike_spdcad/SPDCADPage0','profiles/Page'],function (DeviceProfileBikeShared, SPDCADPage0) {
 
     'use strict';
 
@@ -52,8 +52,9 @@ define(['profiles/spdcad/deviceProfile_BikeShared','profiles/spdcad/SPDCADPage0'
 
             } else
               {
-                  if (this.log && this.log.logging)
+                  if (this.log && this.log.logging) {
                     this.log.log('error','Failed to get background page for page number '+pageNumber,this);
+                  }
               }
         }
 
