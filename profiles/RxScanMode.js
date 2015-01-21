@@ -2,10 +2,19 @@
 
 define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
         'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/bike_spdcad/deviceProfile_SPDCAD',
-       'profiles/bike_spd/deviceProfile_BikeSpd','profiles/bike_cad/deviceProfile_BikeCad'],
-        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile, BikeCadProfile) {
+       'profiles/bike_spd/deviceProfile_BikeSpd','profiles/bike_cad/deviceProfile_BikeCad','profiles/bike_power/deviceProfile_BikePower'],
+        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile, BikeCadProfile, BikePowerProfile) {
 
     'use strict';
+
+    // Just in case errors with loading
+
+    for (var moduleNr=0;moduleNr<arguments.length;moduleNr++)
+    {
+        if (arguments[moduleNr] === undefined) {
+            console.error('RXScanMode: Undefined module at argument nr',moduleNr);
+        }
+    }
 
     function RxScanMode(configuration) {
 
@@ -130,6 +139,12 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
                         currentProfile = new HRMProfile({ logger: this.log});
                         break;
+
+                  case BikePowerProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
+
+                        currentProfile = new BikePowerProfile({ logger : this.log });
+
+                       break;
 
                    default:
 
