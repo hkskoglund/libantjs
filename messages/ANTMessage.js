@@ -1,4 +1,4 @@
-﻿/* global define: true, ArrayBuffer: true, Uint8Array: true */
+/* global define: true, ArrayBuffer: true, Uint8Array: true */
 
 
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }

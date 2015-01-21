@@ -82,8 +82,9 @@ define(function (require, exports, module) {
 // Host for USB ANT communication
 function ANTHost(options) {
 
-    if (!options)
+    if (!options) {
       options = {};
+    }
     
     this._channel = {}; 
    
@@ -98,8 +99,9 @@ function ANTHost(options) {
     this.resendTimeoutID = {};
     
     // Logging
-    if (options)
+    if (options) {
         options.logSource = this;
+    }
 
     this.log = new Logger(options);
 

@@ -1,4 +1,4 @@
-﻿/* global define: true, Uint8Array: true */
+/* global define: true, Uint8Array: true */
 
 define(function (require, exports, module) {
     'use strict';
