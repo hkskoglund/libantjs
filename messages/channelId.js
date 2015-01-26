@@ -1,4 +1,4 @@
-/* global define: true, DataView: true, Uint8Array: true */
+/* global define: true, DataView: true */
 //if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
@@ -9,15 +9,18 @@ define(function (require, exports, module) {
     function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
        
         // Allow for new ChannelId(), when parsing broadcast data
-        if (arguments.length === 0)
+        if (arguments.length === 0) {
             return;
+        }
         
         this.deviceNumber = deviceNumber;
         this.deviceType = deviceType;
         this.transmissionType = transmissionType;
     
         if (pair) // Set bit 7 high if pairing is wanted
+        {
             this.deviceType = this.deviceType | ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR;
+        }
     
         this.pair = (this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR > 0) ? true : false;
     
@@ -81,7 +84,7 @@ define(function (require, exports, module) {
         
         this._check20BitDeviceNumber();
 
-        this.globalPages = this.hasGlobalPages();
+        this.globalDataPagesNonANTPlusManaged = this.hasGlobalDataPages();
 
        // this.sensorId = this.getUniqueId();
     
@@ -129,7 +132,12 @@ define(function (require, exports, module) {
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
     };
     
-    ChannelId.prototype.hasGlobalPages = function () {
+
+        // ANT Message Protocol and Usage, Rev. 5.1, p. 18
+        // "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"
+        // Optional bit for non-ANT+ managed networks: table 5-2
+
+    ChannelId.prototype.hasGlobalDataPages = function () {
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
     };
     
@@ -148,14 +156,15 @@ define(function (require, exports, module) {
             }
         
             // Bit 2
-            if (this.hasGlobalPages()) {
+            if (this.hasGlobalDataPages()) {
                // case 0: msg += " | ANT+ Global data pages not used"; break;
-                 msg += " | Global pages";
+                 msg += " | Global datapages";
                // default: msg += " | ?"; break;
             }
         
-            if (this.has20BitDeviceNumber())
+            if (this.has20BitDeviceNumber()) {
                 msg += " | 20-bit D# = 0x"+this.deviceNumber20BIT.toString(16);
+            }
         
             return msg;
              

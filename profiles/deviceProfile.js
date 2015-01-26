@@ -66,13 +66,9 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
     DeviceProfile.prototype.getBackgroundPage = function (broadcast,pageNumber)
     {
 
-       var hasGlobalPages = broadcast.channelId.hasGlobalPages(), // Bit 2 of transmission type high, e.g environment profile
-           page;
+       var  page;
 
-        if (!hasGlobalPages)
-        {
-
-            switch (pageNumber) {
+        switch (pageNumber) {
 
                 case 1:
 
@@ -92,13 +88,7 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
                     page = new ProductId({ logger: this.log }, broadcast,this,pageNumber);
 
                     break;
-            }
-        }
 
-        else
-        {
-             switch (pageNumber)
-             {
                 case BackgroundPage.prototype.COMMON.PAGE0x50:
 
                     page = new ManufacturerId0x50({ log: this.log.logging }, broadcast,this,pageNumber);
@@ -118,23 +108,25 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
                     break;
 
             }
-        }
+
 
         if (!page)
         {
-            this.log.log('error', 'Unable to create background page object for page number ', pageNumber + ' 0x' + pageNumber.toString(16),broadcast,'global page',hasGlobalPages);
+            this.log.log('error', 'Unable to create background page object for page number ', pageNumber + ' 0x' + pageNumber.toString(16),broadcast);
         }
 
         return page;
 
     };
 
+    /* jshint ignore: start */
     DeviceProfile.prototype.getPageNumber = function (broadcast)
     {
 
        throw new Error('Should be overridden in descendants');
 
     };
+    /* jshint ignore: end */
 
     // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
     DeviceProfile.prototype.pageToggleFilter = function (broadcast)
@@ -372,10 +364,12 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
     };
 
     // Deserialization of broadcast (8-byte packet) into a page object
+    /* jshint ignore: start */
     DeviceProfile.prototype.getPage = function (broadcast)
     {
         throw new Error('getPage should be overridden in descendants');
     };
+    /* jshint ignore: end */
 
     // Filter and deserialize into page object
     DeviceProfile.prototype.broadCast = function (broadcast)
@@ -397,6 +391,22 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
               this.log.log('info','Filtering B#',this.broadcastCount,broadcast.channelId.sensorId,broadcast.data);
            }
            return;
+        }
+
+        // Verify that latest pages are emitted
+        if (this.timer.onPage === undefined)
+        {
+            if (this.log && this.log.logging)
+            {
+                this.log.log('error','No onPage callback available to send latest main/background pages');
+                if (this.DEFAULT_PAGE_UPDATE_DELAY)
+                {
+                    this.log.log('info','Found DEFAULT_PAGE_UPDATE_DELAY = '+this.DEFAULT_PAGE_UPDATE_DELAY+', requesting page update');
+                    this.requestPageUpdate(this.DEFAULT_PAGE_UPDATE_DELAY);
+                } else {
+                   this.log.log('info','No DEFAULT_PAGE_UPDATE_DELAY, cannot emit latest page');
+                }
+            }
         }
 
         page = this.getPage(broadcast);

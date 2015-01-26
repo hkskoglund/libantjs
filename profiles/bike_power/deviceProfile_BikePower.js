@@ -1,6 +1,6 @@
 /* global define: true */
 
-define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10'],function (DeviceProfile,PowerOnlyMainPage0x10) {
+define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','profiles/backgroundPage'],function (DeviceProfile,PowerOnlyMainPage0x10, BackgroundPage) {
 
  'use strict';
 
@@ -9,6 +9,8 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10'],fu
         DeviceProfile.call(this, configuration);
 
         this.initMasterSlaveConfiguration();
+
+       this.requestPageUpdate(this.DEFAULT_PAGE_UPDATE_DELAY);
     }
 
     DeviceProfile_BikePower.prototype = Object.create(DeviceProfile.prototype);
@@ -26,15 +28,12 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10'],fu
 
     DeviceProfile_BikePower.prototype.CHANNEL_ID = {
         DEVICE_TYPE: 0x0B,
-       // TRANSMISSION_TYPE : 0x01
+        TRANSMISSION_TYPE : 0x05
     };
-
-    DeviceProfile_BikePower.prototype.PAGE_TOGGLE_CAPABLE = false;
 
     DeviceProfile_BikePower.prototype.getPageNumber = function (broadcast)
     {
-     var
-            data = broadcast.data,
+     var    data = broadcast.data,
             pageNumber;
 
         pageNumber = data[0];
@@ -57,17 +56,27 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10'],fu
 
                   break;
 
-            // BACKGROUND
+            // BACKGROUND pages
 
-            default:
+            case BackgroundPage.prototype.COMMON.PAGE0x50 :
+            case BackgroundPage.prototype.COMMON.PAGE0x51 :
+            case BackgroundPage.prototype.COMMON.PAGE0x52 :
 
-                     page= this.getBackgroundPage(broadcast,pageNumber);
+                   page= this.getBackgroundPage(broadcast,pageNumber);
 
                      if (page)
                      {
                        //HRMPage.prototype.readHR.call(page);
                        //HRMPage.prototype.calcRRInterval.call(page);
                      }
+
+                  break;
+
+            default:
+
+                  if (this.log && this.log.logging) {
+                     this.log.log('error','DeviceProfile_BikePower unable to handle page number',pageNumber);
+                  }
 
                  break;
 
