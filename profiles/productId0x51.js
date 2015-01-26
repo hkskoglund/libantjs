@@ -63,7 +63,7 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
             }
         }
 
-        return SWrev.toFixed(4);
+        return SWrev.toString();
     };
 
     ProductId.prototype.toString = function () {
