@@ -338,7 +338,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         }
 
         if (!connectionHandles || connectionHandles.length === 0) {
-            this.log.log('error', 'No ANT devices found satisfying findDevice criteria');
+            this.log.log('warn', 'No ANT devices found satisfying findDevice criteria',this.findDevice);
             this._tryFindManifestDevice(++this.findDeviceIndex);
         }
 

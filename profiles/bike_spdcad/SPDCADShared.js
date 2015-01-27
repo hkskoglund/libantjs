@@ -86,6 +86,9 @@ define(['profiles/mainPage'], function (MainPage) {
                 this.unCalibratedSpeed = 1024 * this.relativeCumulativeSpeedRevolutionCount / bikeSpeedEventTimeDifference;
 
             }
+        } else
+        {
+            this.unCalibratedSpeed = 0;
         }
 
         // Filter "spikes"
