@@ -21,7 +21,8 @@ define(['profiles/mainPage'], function _requireDefinePowerOnlyMainpage0x10(MainP
      PowerOnlyMainPage0x10.prototype.readPower = function ()
     {
          var data = this.broadcast.data,
-             dataView = new DataView(data.buffer);
+             dataView = new DataView(data.buffer),
+             previousPage = this.profile.getPreviousPage();
 
          this.updateEventCount = data[1];
 
@@ -37,9 +38,22 @@ define(['profiles/mainPage'], function _requireDefinePowerOnlyMainpage0x10(MainP
          // 0-254 rpm, 255=invalid
          this.instantaneousCadence = data[3];
 
+         // Used for bad RF conditions with loss of packets
          this.accumulatedPower = dataView.getUint16(data.byteOffset+4,true);
 
          this.instantaneousPower = dataView.getUint16(data.byteOffset+6,true);
+
+         // TEST
+        /* if (previousPage !== undefined)
+         {
+            this.updateEventCount = previousPage.updateEventCount;
+         }*/
+
+         // .profile is set in generic Page.js
+         if (previousPage !== undefined && this.updateEventCount === previousPage.updateEventCount)
+         {
+             this.pageNotUpdated = true;
+         }
 
     };
 

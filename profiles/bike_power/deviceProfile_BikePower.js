@@ -1,6 +1,6 @@
 /* global define: true */
 
-define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','profiles/backgroundPage'],function (DeviceProfile,PowerOnlyMainPage0x10, BackgroundPage) {
+define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','profiles/backgroundPage','profiles/bike_power/calibrationMain'],function (DeviceProfile,PowerOnlyMainPage0x10, BackgroundPage, CalibrationMainPage) {
 
  'use strict';
 
@@ -42,6 +42,7 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','pr
 
     };
 
+    // Parse received page
     DeviceProfile_BikePower.prototype.getPage = function (broadcast)
     {
          var page,
@@ -49,6 +50,12 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','pr
 
           switch (pageNumber) {
 
+
+             case 0x01 :
+
+                  page = new CalibrationMainPage({ logger: this.log}, broadcast,this,pageNumber);
+
+                  break;
 
             case 0x10 :
 
@@ -58,8 +65,11 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','pr
 
             // BACKGROUND pages
 
+            // required
             case BackgroundPage.prototype.COMMON.PAGE0x50 :
             case BackgroundPage.prototype.COMMON.PAGE0x51 :
+
+            // optional
             case BackgroundPage.prototype.COMMON.PAGE0x52 :
 
                    page= this.getBackgroundPage(broadcast,pageNumber);
@@ -75,7 +85,7 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','pr
             default:
 
                   if (this.log && this.log.logging) {
-                     this.log.log('error','DeviceProfile_BikePower unable to handle page number',pageNumber);
+                     this.log.log('error','Unable to handle page number',pageNumber,pageNumber.toString(16),broadcast,this);
                   }
 
                  break;
