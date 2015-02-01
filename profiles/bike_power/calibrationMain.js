@@ -77,27 +77,13 @@ define(['profiles/mainPage'], function _requireDefineCalibrationMain(MainPage) {
 
                      this.autoZeroStatus = data[2];
 
-                     /*// Rollover 255
-                     this.pedalPower = data[2];
-
-                     if (this.pedalPower !== this.PEDAL_POWER_NOT_USED)
-                     {
-                         this.rightPedalPowerContribution = (data[2] & this.BIT_MASK.PEDAL_DIFFERENTIATION) >> 7;
-                         this.pedalPowerPercent = data[2] & this.BIT_MASK.PEDAL_POWER_PERCENT;
-                     }
-
-                     // 0-254 rpm, 255=invalid
-                     this.instantaneousCadence = data[3];
-
-                     this.accumulatedPower = dataView.getUint16(data.byteOffset+4,true); */
-
                      // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView/getInt16
 
                      // Spec. p 45 ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1
 
                      // This value is passed back from the sensor to the display to provide an indication to the user about the quality of the calibration
                      // It is intended to indicate the result of the calibration to the user. If the calibration data value is significantly different from the number the user is accustomed to seeing, it may indicate to the user that calibration should be performed again or that the power sensor requires service
-                     this.calibrationData = dataView.getint16(data.byteOffset+6,true);
+                     this.calibrationData = dataView.getInt16(data.byteOffset+6,true);
 
                  break;
          }
@@ -111,7 +97,7 @@ define(['profiles/mainPage'], function _requireDefineCalibrationMain(MainPage) {
 
     CalibrationMain.prototype.toString = function ()
     {
-        return 'Calibration ID '+this.ID[this.calibrationID]+' '+this.AUTO_ZERO[this.autoZeroStatus]+' calibration data '+this.calibrationData;
+        return 'Calibration ID: '+this.ID[this.calibrationID]+' (0x'+this.calibrationID.toString(16)+'), '+this.AUTO_ZERO[this.autoZeroStatus]+' (0x'+this.autoZeroStatus.toString(16)+'), Calibration data '+this.calibrationData+' (0x'+this.calibrationData.toString(16)+')';
     };
 
     return CalibrationMain;
