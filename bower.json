@@ -1,6 +1,6 @@
 {
   "name": "libant",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "homepage": "https://github.com/hkskoglund/libant",
   "authors": [
     "Henning Knut Skoglund <hkskoglund@gmail.com>"
@@ -9,7 +9,7 @@
   "main": "./anthost.js",
   "keywords": [
     "ANT",
-    "ANT+"
+    "ANT+",
     "wireless",
     "USB",
     "library"
