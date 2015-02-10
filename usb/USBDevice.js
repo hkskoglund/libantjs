@@ -41,6 +41,12 @@ define(function (require, exports, module) {
 
     USBDevice.prototype.ANT_DEVICE_TIMEOUT = 12; // 11.11 ms to transfer 64 bytes (max. endpoint size) at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms
 
+    USBDevice.prototype.getKnownANTDevices = function ()
+    {
+      return [ { "vendorId" : 4047, "productId" : 4104, "name" : "ANT USB2 Stick" },
+               { "vendorId" : 4047, "productId" : 4105, "name" : "ANT USB-m Stick" } ];
+    };
+
     USBDevice.prototype.setBurstMode = function (value) {
         this.burstMode = value;
     };
@@ -86,6 +92,6 @@ define(function (require, exports, module) {
 
     module.exports = USBDevice;
         return module.exports;
-  
+
 
 });
