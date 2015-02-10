@@ -1,13 +1,14 @@
 /* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 function NotificationSerialError(data) {
     ANTMessage.call(this, data);
-    
+
    // console.log("Notification", data);
     this.parse();
 

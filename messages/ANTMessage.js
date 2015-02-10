@@ -1,40 +1,40 @@
 /* global define: true, ArrayBuffer: true, Uint8Array: true */
 
 
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
 /* Standard message :
        SYNC MSGLENGTH MSGID CHANNELNUMBER CONTENT (8 bytes) CRC
 */
-    
-    var LibConfig = require('messages/libConfig'),
-        
+
+    var LibConfig = require('./libConfig'),
+
         // Extended data if requested by libconfig
-        ChannelId = require('messages/channelId'),
-        RSSI = require('messages/RSSI'),
-        RXTimestamp = require('messages/RXTimestamp');
+        ChannelId = require('./channelId'),
+        RSSI = require('./RSSI'),
+        RXTimestamp = require('./RXTimestamp');
 
 function ANTMessage(data) {
-    
+
     this.timestamp = Date.now();
 
     // Extended data - channelID, RX timestamp and RSSI
-    
+
 //    this.channelId = new ChannelId();
        this.channelId = undefined;
 //    this.RXTimestamp = new RXTimestamp();
        this.RXTimestamp = undefined;
-    
+
     this.RSSI = undefined;
-   
+
    // this.timestamp = Date.now();
    // this.SYNC = ANTMessage.prototype.SYNC;
-    
-    if (data) 
+
+    if (data)
         this.mainParse(data);
-    
+
 }
 
 ANTMessage.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
@@ -113,11 +113,11 @@ ANTMessage.prototype.mainParse = function (data)
 ANTMessage.prototype.isSYNCOK = function () {
     return (this.SYNC === ANTMessage.prototype.SYNC);
 };
-    
+
 ANTMessage.prototype.TYPE = {
     REQUEST : "request",
     RESPONSE : "response" };
-    
+
 ANTMessage.prototype.getType = function ()
 {
     return this.type;
@@ -136,7 +136,7 @@ ANTMessage.prototype.toString = function () {
         " SYNC 0x" + this.SYNC.toString(16) + " = "+this.SYNC +
         " length 0x" + this.length.toString(16) + " = "+this.length+
         " id 0x" + this.id.toString(16) + " = "+this.id+
-        " content " + this.content + 
+        " content " + this.content +
         " CRC 0x" + this.CRC.toString(16)+" = "+this.CRC +
         " type "+ this.getType();
 };
@@ -149,7 +149,7 @@ ANTMessage.prototype.setContent = function (content) {
     this.content = content;
 };
 /*
-This function create a raw message 
+This function create a raw message
  Message format
  SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
 
@@ -166,11 +166,11 @@ ANTMessage.prototype.getRawMessage = function () {
      content_len,
 //     byteNr,
         standardMessage = new Uint8Array(13);
-    
-    
+
+
   //  console.log("args", arguments);
 
-    // TEST 3 - provoke "ANT Message too large" 
+    // TEST 3 - provoke "ANT Message too large"
     //content = new Buffer(200);
     content = this.content;
     //console.log("typeof content",typeof this.content);
@@ -180,7 +180,7 @@ ANTMessage.prototype.getRawMessage = function () {
        // this.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Content length is 0");
         content_len = 0;
     }
-    
+
     if (typeof content_len === "undefined")
         console.log("ANTMessage: content length is undefined, check .byteLength property");
 
@@ -193,23 +193,23 @@ ANTMessage.prototype.getRawMessage = function () {
     // Header
     // SYNC = 0; // -> Provoke Serial Error Message, error 0 - SYNC incorrect, should be 0xA4
 
-    
+
     // TEST 1 error number 0 serial error - not SYNC
     //headerBuffer.writeUInt8(1, 0);
 
 //    headerBuffer.writeUInt8(ANTMessage.prototype.SYNC, 0);
 //    headerBuffer.writeUInt8(content_len, 1);
 //    headerBuffer.writeUInt8(this.id, 2);
-    
+
     standardMessage[0] = ANTMessage.prototype.SYNC;
     standardMessage[1] = content_len;
     standardMessage[2] = this.id;
-    
+
     var contentArr = new Uint8Array(this.content);
     //console.log("Setting content of message to ",contentArr, this.content);
     standardMessage.set(contentArr,3);
-    
-    
+
+
 
     //// Content
     //for (var byteNr = 0; byteNr < content_len; byteNr++)
@@ -252,17 +252,17 @@ ANTMessage.prototype.getRawMessage = function () {
 //        this.buffer = Buffer.concat([this.buffer, trailingZeroBuffer]);
 //    }
 
-    
+
     //this.SYNC = ANTMessage.prototype.SYNC;
     this.length = content_len;
-//    
+//
 //    console.trace();
 //    console.log("Standard msg",standardMessage);
     this.buffer = standardMessage.buffer; // Arraybuffer
     this.standardMessage = standardMessage;
-    
+
     return this.standardMessage;
-    
+
 };
 
 // Create a buffer with zeros
@@ -271,9 +271,9 @@ ANTMessage.prototype.getRawMessage = function () {
 //        var buf = new Buffer(size), i, len = buf.length;
 //        for (i = 0; i < size; i++)
 //            buf[i] = 0x00;
-//    
+//
 //        return buf;
-//    
+//
 //}
 
 //ANTMessage.prototype.getBuffer = function () {
@@ -329,15 +329,15 @@ ANTMessage.prototype.MESSAGE = {
         0xc5: "Sleep message",
         sleep_message: { id: 0xc5, friendly: "Sleep message" },
 
-    // Notification messages 
+    // Notification messages
         0x6F: "Notification: Start up",
         NOTIFICATION_STARTUP: 0x6F,
 
         0xAE: "Notification: Serial error",
         NOTIFICATION_SERIAL_ERROR: 0xAE,
 
-    // Requested messages with REQUEST 0x4D 
-    
+    // Requested messages with REQUEST 0x4D
+
         0x3E : "ANT Version",
         ANT_VERSION:  0x3E,
 
@@ -354,7 +354,7 @@ ANTMessage.prototype.MESSAGE = {
 
         0x40: "Channel response/RF event",
         CHANNEL_RESPONSE:  0x40,
-    
+
         0x52: "Channel Status",
         CHANNEL_STATUS: 0x52,
 
@@ -363,7 +363,7 @@ ANTMessage.prototype.MESSAGE = {
 
         0x41: "UnAssign Channel",
         UNASSIGN_CHANNEL: 0x41,
-   
+
         0x42 : "Assign Channel",
         ASSIGN_CHANNEL: 0x42,
 

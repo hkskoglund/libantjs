@@ -2,7 +2,9 @@
 
 // Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
 
-define(function _requireDefineEventEmitter() {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineEventEmitter(require,exports,module) {
 
     'use strict';
 
@@ -89,6 +91,9 @@ define(function _requireDefineEventEmitter() {
             throw new TypeError('The provided listener is not a function');
     }
 
-    return EventEmitter;
+    module.export = EventEmitter;
+
+    return module.export;
+
 }
 );

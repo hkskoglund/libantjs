@@ -1,10 +1,11 @@
 /* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
 
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 function CapabilitiesMessage(data) {
 
@@ -18,7 +19,7 @@ function CapabilitiesMessage(data) {
     this.id = ANTMessage.prototype.MESSAGE.CAPABILITIES;
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
     this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
-    
+
     if (data)
         this.parse();
 
@@ -44,7 +45,7 @@ CapabilitiesMessage.prototype.getNumberOfNetworks = function ()
 
 // ANT Message Protocol and Usage. rev 5.0b - page 115
 CapabilitiesMessage.prototype.parse = function () {
-   
+
     this.MAX_CHAN =  this.content[0];
     this.MAX_NET = this.content[1];
 
@@ -59,12 +60,12 @@ CapabilitiesMessage.prototype.parse = function () {
         advancedOptions3 = this.content[6],
 
         advancedOptions4 = this.content[7];
-    
+
     this.maxSensRcoreChannels =  this.content[5];
-   
+
    // ANT USB 2 does not have advanced options 3, so it will be undefined
-    advancedOptions3 = this.content[6]; 
-    
+    advancedOptions3 = this.content[6];
+
     this.standardOptions = {
         value: "MSB " + standardOptions.toString(2) + " " + standardOptions,
         CAPABILITIES_NO_RECEIVE_CHANNELS : standardOptions & 0x01,
@@ -105,14 +106,14 @@ CapabilitiesMessage.prototype.parse = function () {
             CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED : advancedOptions3 & (1 << 3),
             CAPABILITIES_SELECTIVE_DATA_ENABLED : advancedOptions3 & (1 << 6)
         };
-     
+
     if (advancedOptions4 !== undefined)
         this.advancedOptions4 = {
             value: "MSB " + advancedOptions4.toString(2) + " " + advancedOptions4,
             CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED: advancedOptions4 & 0x01 // Bit 0
             // Bit 1-7 reserved
         }
-   
+
 };
 
 //CapabilitiesMessage.prototype.showCapabilities = function ()
@@ -235,7 +236,7 @@ CapabilitiesMessage.prototype.toString = function () {
         if (this.advancedOptions4.CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED)
             msg += " RF Active notification";
     }
-  
+
     return msg;
 };
 

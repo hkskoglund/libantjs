@@ -1,9 +1,10 @@
 /* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 function ChannelResponseMessage(data) {
 
@@ -12,10 +13,10 @@ function ChannelResponseMessage(data) {
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE;
     this.name = "Channel Response/RF event";
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
-    
+
     if (data)
       this.parse();
-    
+
 
     //console.log("ChannelResponseMessage", this);
 
@@ -31,7 +32,7 @@ ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES = {
     0x00:  "RESPONSE_NO_ERROR",
 
     EVENT_RX_SEARCH_TIMEOUT: 0x01,
-    0x01: "EVENT_RX_SEARCH_TIMEOUT", //  "The search is terminated, and the channel has been automatically closed." 
+    0x01: "EVENT_RX_SEARCH_TIMEOUT", //  "The search is terminated, and the channel has been automatically closed."
 
     EVENT_RX_FAIL: 0x02,
     0x02:  "EVENT_RX_FAIL" ,
@@ -175,7 +176,7 @@ ChannelResponseMessage.prototype.parse = function (data) {
         msg = "RESPONSE C# " + this.channel + " to ID# 0x" + this.initiatingId.toString(16) + " " + ANTMessage.prototype.MESSAGE[this.initiatingId] + " " + this.responseEvent;
 
     this.message = msg;
-    
+
 };
 
 ChannelResponseMessage.prototype.toString = function () {

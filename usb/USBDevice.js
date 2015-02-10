@@ -1,8 +1,13 @@
 /* global define: true */
 
-define(['logger','events'],function (Logger,EventEmitter) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-    'use strict';
+
+define(function (require, exports, module) {
+  'use strict';
+
+    var Logger = require('../logger'),
+        EventEmitter = require('../events');
 
     // Abstract USB device
     function USBDevice(options) {
@@ -79,6 +84,8 @@ define(['logger','events'],function (Logger,EventEmitter) {
         ];
     };
 
-    return USBDevice;
+    module.exports = USBDevice;
+        return module.exports;
+  
 
 });

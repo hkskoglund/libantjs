@@ -1,6 +1,6 @@
 /* global define: true */
 
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     'use strict';
@@ -11,7 +11,7 @@ function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp) {
     this.enableChannelId = (enableChannelId > 0);
     this.enableRSSI = (enableRSSI > 0);
     this.enableRXTimestamp = (enableRXTimestamp > 0);
-    
+
     this._updateFlags = function () {
     if (this.enableChannelId)
         this.flagsByte = LibConfig.prototype.Flag.CHANNEL_ID_ENABLED;
@@ -28,7 +28,7 @@ function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp) {
 
 
 LibConfig.prototype.setFlagsByte = function (value) {
-    
+
     this.flagsByte = value;
 
     if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED)
@@ -81,7 +81,7 @@ LibConfig.prototype.Flag = {
 };
 
 LibConfig.prototype.toString = function () {
-    
+
     var msg = "Library configured for extended messaging (LIBCONFIG) :";
 
     if (this.enableChannelId)

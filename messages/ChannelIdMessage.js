@@ -1,11 +1,12 @@
 /* global define: true, DataView: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('messages/ANTMessage'),
+var ANTMessage = require('./ANTMessage'),
     //Channel = require('../../channel.js');
-    ChannelId = require('messages/channelId');
+    ChannelId = require('./channelId');
 
 function ChannelIdMessage() {
 

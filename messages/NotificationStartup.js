@@ -1,9 +1,10 @@
 /* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
 function NotificationStartup(data) {
@@ -11,14 +12,14 @@ function NotificationStartup(data) {
     if (typeof data !== "undefined") {
         ANTMessage.call(this, data);
         this.parse();
-    } else 
+    } else
         ANTMessage.call(this);
 
     this.name = "Notification: Startup";
     this.id = ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP;
-   
+
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
-    
+
     this.requestId = ANTMessage.prototype.MESSAGE.RESET_SYSTEM;
 
    // console.log("Created NotificationStartup", this);

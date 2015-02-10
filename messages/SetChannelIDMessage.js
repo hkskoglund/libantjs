@@ -1,9 +1,10 @@
 /* global define: true, DataView: true, ArrayBuffer: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 
 function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
@@ -38,7 +39,7 @@ SetChannelIDMessage.prototype = Object.create(ANTMessage.prototype);
 
 SetChannelIDMessage.prototype.constructor = SetChannelIDMessage;
 
-SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7 
+SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
 
 SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
 

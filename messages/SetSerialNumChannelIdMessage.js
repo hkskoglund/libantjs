@@ -1,9 +1,9 @@
 /* global define: true, Uint8Array: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 
 function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
@@ -34,7 +34,7 @@ SetSerialNumChannelIdMessage.prototype = Object.create(ANTMessage.prototype);
 
 SetSerialNumChannelIdMessage.prototype.constructor = SetSerialNumChannelIdMessage;
 
-SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7 
+SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
 
 SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
 
@@ -43,6 +43,6 @@ SetSerialNumChannelIdMessage.prototype.toString = function () {
 };
 
 module.exports = SetSerialNumChannelIdMessage;
-    
+
     return module.exports;
 });

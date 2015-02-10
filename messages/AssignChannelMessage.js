@@ -1,18 +1,18 @@
 /* global define: true, Uint8Array */
 
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('messages/ANTMessage'),
-    Channel = require('channel');
+var ANTMessage = require('./ANTMessage'),
+    Channel = require('../channel');
 
 
 function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment) {
     //console.log("Assign channel msg args", arguments);
 
     var msgBuffer;
-    
+
     if (extendedAssignment)
         msgBuffer = new Uint8Array([channel,channelType,networkNumber,extendedAssignment]);
     else

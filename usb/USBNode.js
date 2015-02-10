@@ -1,9 +1,10 @@
-"use strict";
+
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    
+  "use strict";
+
 var USBDevice = require('./USBDevice.js'),
     usb = require('usb'),
     ANT = require('libant'),
@@ -30,7 +31,7 @@ USBNode.prototype = Object.create(USBDevice.prototype, { constructor : { value :
 //'function (ctor, superCtor) {\n  ctor.super_ = superCtor;\n  ctor.prototype = Object.create(superCtor.prototype, {\n
 //constructor: {\n      value: ctor,\n      enumerable: false,\n      writable: true,\n      configurable: true\n    }\n
 //});\n}'
-  
+
 //    USBNode.prototype._read = function (size) {
 //        //console.log(Date.now(),"USBNode._read", arguments);
 //};
@@ -44,7 +45,7 @@ USBNode.prototype = Object.create(USBDevice.prototype, { constructor : { value :
 //    //console.trace();
 //    // Loopback test : this._stream.push(new Buffer([1, 2, 3, 4]));
 //    // node.js - wants to minimize internal buffer on streams (lower RAM usage)
-//    // but now I want to maximize the amount of bytes written to the ANT chip  
+//    // but now I want to maximize the amount of bytes written to the ANT chip
 //    // to saturate receive buffers in ANT CHIP for bursts, so it seems like I have to have a separate buffer here
 //    if (this.burstMode && burstLen < endpointPacketSize) { // Available space in buffer
 //
@@ -63,7 +64,7 @@ USBNode.prototype = Object.create(USBDevice.prototype, { constructor : { value :
 //        }
 //        else
 //            this.transfer(payload, nextCB);
-//       
+//
 //
 //    //nextCB();
 //    };
@@ -113,7 +114,7 @@ USBNode.prototype.init = function (idVendor, idProduct, host, nextCB) {
         antInterface,
         err;
     //console.log("INIT args", arguments);
-   
+
      usb.setDebugLevel(3);
     if (typeof idVendor === "undefined")
         throw new Error("Vendor id not specified");
@@ -133,12 +134,12 @@ USBNode.prototype.init = function (idVendor, idProduct, host, nextCB) {
         err = new Error("Could not find USB ANT device vendor id:" + this.idVendor + " product id.:" + this.idProduct);
         this.emit(USBDevice.prototype.EVENT.ERROR, err);
         nextCB(err);
-        //throw err; 
+        //throw err;
         return;
         //errorCallback();
     }
 
-   
+
     // http://www.usbmadesimple.co.uk/ums_4.htm
     // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
@@ -244,7 +245,7 @@ USBNode.prototype.init = function (idVendor, idProduct, host, nextCB) {
                                     getDescriptorString.bind(this)(this.device.deviceDescriptor.iSerialNumber, function (error, serialNumber) {
                                         if (!error)
                                             vSerialNumber = serialNumber.toString("utf16le",2,8)+' '+serialNumber.toString("utf16le",34,42); // Many nulls in string (this way of decoding is not generic)
-                                       
+
                                         this.emit(USBDevice.prototype.EVENT.LOG, vManufaturer + " " + vProduct+" "+vSerialNumber);
 
                                         callback();
@@ -254,14 +255,14 @@ USBNode.prototype.init = function (idVendor, idProduct, host, nextCB) {
                     }.bind(this));
         }
 
-    
+
 };
 
 
 
 USBNode.prototype.exit = function (nextCB) {
    // console.trace();
-   
+
     if (typeof this.device === "undefined") {
         nextCB(new Error("No USB device"));
         return;
@@ -286,11 +287,11 @@ USBNode.prototype.exit = function (nextCB) {
                     nextCB();
             }
         }.bind(this));
-    };
+    }
 
     if (this.inTransfer) {
         //console.log("Canceling transfer on in endpoint");
-        this.inTransfer.cancel(); 
+        this.inTransfer.cancel();
     }
 
     if (this.outTransfer) {
@@ -329,7 +330,7 @@ function drainLIBUSB(nextCB) {
             if (data.length > 0)
                 totalBytesDrained += data.length;
 
-           // if (drainAttempt < MaxDrainAttemps) 
+           // if (drainAttempt < MaxDrainAttemps)
 
             if (!error)
                 setImmediate(retry.bind(this)); // Should be the highest priority
@@ -337,19 +338,19 @@ function drainLIBUSB(nextCB) {
                 //console.log("DRAINING FINISHED", totalBytesDrained, error);
                 nextCB(error, totalBytesDrained);
             }
-            
+
         }.bind(this));
     }
 
     retry.bind(this)();
 
-};
+}
 
 
 // "There is no flow control for data transmitted from ANT to host, therefore the Host controller must be able to receive data at any time" p. 8 of
 // Interfacing with ANT general purpose chipsets and modules rev 2.1 -> setup a read that never times out on in endpoint
 USBNode.prototype.listen = function (nextCB) {
-   
+
     var INFINITY = 0,
         LISTEN_TIMEOUT = 30000;
     //console.log("USB LISTEN");
@@ -369,11 +370,11 @@ USBNode.prototype.listen = function (nextCB) {
 
         //try {
             this.setDeviceTimeout(INFINITY);
-         
+
             //console.time('RXtime');
             this.inTransfer = this.inEP.transfer(this.getINEndpointPacketSize(), function (error, data) {
                 //console.timeEnd('RXtime')
-                 
+
                 //console.log("IN USB error,data", error, data);
                 if (!error) {
 
@@ -391,13 +392,13 @@ USBNode.prototype.listen = function (nextCB) {
                     //    //console.trace();
                     //    setImmediate(retry.bind(this));
                 } else {
-                   
+
                     nextCB(error);
                 }
-                
+
             }.bind(this));
         //} catch (error) {
-        //    //if (error.errno === -1) // LIBUSB_ERROR_IO 
+        //    //if (error.errno === -1) // LIBUSB_ERROR_IO
         //    //    {
         //    this.emit(USBDevice.prototype.EVENT.LOG, 'USB: I/O error - Attempt to read from USB ANT generated an serious input error');
         //    this.emit(USBDevice.prototype.EVENT.ERROR, error);
@@ -408,7 +409,7 @@ USBNode.prototype.listen = function (nextCB) {
     retry.bind(this)();
 
     nextCB();
-}
+};
 
 USBNode.prototype.transfer = function (chunk, nextCB)
 {
@@ -439,7 +440,7 @@ USBNode.prototype.transfer = function (chunk, nextCB)
                 //    error.errno = usb.LIBUSB_TRANSFER_ERROR;
 
                 if (error) { // LIBUSB errors
-               
+
                     this.emit(USBDevice.prototype.EVENT.ERROR, error);
 
                     if (error.errno !== usb.LIBUSB_TRANSFER_CANCELLED) {
@@ -449,7 +450,7 @@ USBNode.prototype.transfer = function (chunk, nextCB)
                                 sendAttempt++;
 
                                 // http://stackoverflow.com/questions/15349733/setimmediate-vs-nexttick
-                                setImmediate(retry.bind(this));  
+                                setImmediate(retry.bind(this));
                                 //process.nextTick(retry.bind(this));
                                 //retry();
                             }, this.device.timeout);
@@ -459,10 +460,10 @@ USBNode.prototype.transfer = function (chunk, nextCB)
 
                             nextCB(err); // Allow proceed...
                         }
-                    } else 
+                    } else
                         nextCB(error); // Transfer cancelled
                 }
-                else 
+                else
                     nextCB();
             }.bind(this));
         //} catch (error) {
@@ -473,7 +474,7 @@ USBNode.prototype.transfer = function (chunk, nextCB)
     }
 
     retry.bind(this)();
-}
+};
 
 module.exports = USBNode;
 return module.exports;

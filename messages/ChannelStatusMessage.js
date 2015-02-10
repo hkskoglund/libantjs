@@ -1,10 +1,11 @@
 /* global define: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('messages/ANTMessage'),
-    Channel = require('channel');
+var ANTMessage = require('./ANTMessage'),
+    Channel = require('../channel');
 
 
 function ChannelStatusMessage(data) {
@@ -19,7 +20,7 @@ function ChannelStatusMessage(data) {
     this.id = ANTMessage.prototype.MESSAGE.CHANNEL_STATUS;
     this.type = ANTMessage.prototype.TYPE.RESPONSE;
     this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
-    
+
     if (data)
         this.parse();
 
@@ -50,13 +51,13 @@ ChannelStatusMessage.prototype.parse = function () {
     };
 
     // Tip from http://www.i-programmer.info/programming/javascript/2550-javascript-bit-manipulation.html
-    
+
     switch (this.channelStatus.state) {
         case ChannelStatusMessage.prototype.STATE.UN_ASSIGNED : this.channelStatus.stateMessage = "UN-ASSIGNED"; break;
         case ChannelStatusMessage.prototype.STATE.ASSIGNED: this.channelStatus.stateMessage = "ASSIGNED"; break;
         case ChannelStatusMessage.prototype.STATE.SEARCHING: this.channelStatus.stateMessage = "SEARCHING"; break;
         case ChannelStatusMessage.prototype.STATE.TRACKING: this.channelStatus.stateMessage = "TRACKING"; break;
-        default: throw new Error('Unknown state for channel ' + this.channelStatus.state); 
+        default: throw new Error('Unknown state for channel ' + this.channelStatus.state);
     }
 
     //console.log("Channel status", this.channelNumber, this.channelStatus);

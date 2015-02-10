@@ -1,9 +1,10 @@
 /* global define: true, DataView: true, ArrayBuffer: true */
-//if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('messages/ANTMessage');
+var ANTMessage = require('./ANTMessage');
 
 
 function SetChannelPeriodMessage(channel, messagePeriod) {
