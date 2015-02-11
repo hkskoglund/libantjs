@@ -4,7 +4,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 
 define(function (require, exports, module) {
-  'use strict';
+
+    'use strict';
 
     var Logger = require('../logger'),
         EventEmitter = require('../events');
@@ -13,9 +14,7 @@ define(function (require, exports, module) {
     function USBDevice(options) {
 
        EventEmitter.call(this,options);
-        // Stream inherits from event emitter
-    //    Duplex.call(this, options);
-    //    this._burstBuffer = new Buffer(0);
+
         this.options = options;
         if (options)
             options.logSource = this;
@@ -40,12 +39,6 @@ define(function (require, exports, module) {
     };
 
     USBDevice.prototype.ANT_DEVICE_TIMEOUT = 12; // 11.11 ms to transfer 64 bytes (max. endpoint size) at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms
-
-    USBDevice.prototype.getKnownANTDevices = function ()
-    {
-      return [ { "vendorId" : 4047, "productId" : 4104, "name" : "ANT USB2 Stick" },
-               { "vendorId" : 4047, "productId" : 4105, "name" : "ANT USB-m Stick" } ];
-    };
 
     USBDevice.prototype.setBurstMode = function (value) {
         this.burstMode = value;
@@ -84,14 +77,13 @@ define(function (require, exports, module) {
 
         return [
 
-           // { name: 'ANT USB-2 Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1008 },
+            { name: 'ANT USB-2 Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1008 },
 
             { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
         ];
     };
 
     module.exports = USBDevice;
-        return module.exports;
-
+    return module.exports;
 
 });
