@@ -82,7 +82,7 @@ define(function (require, exports, module) {
             { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
         ];
     };
-
+    
     module.exports = USBDevice;
     return module.exports;
 
