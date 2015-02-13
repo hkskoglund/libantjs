@@ -164,8 +164,11 @@ define(function (require, exports, module) {
            // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
            this.inEndpoint = this.deviceInterface.endpoints[0];
+           this.inEndpoint.addListener('end',this._onInEndpointEnd.bind(this));
 
            this.outEndpoint = this.deviceInterface.endpoints[1];
+           this.outEndpoint.addListener('error',this._onOutEndpointError.bind(this));
+           this.outEndpoint.addListener('end',this._onOutEndpointEnd.bind(this));
 
            this.deviceInterface.claim(); // Must be called before attempting transfer on endpoints
 
@@ -180,13 +183,23 @@ define(function (require, exports, module) {
 
       };
 
+      USBNode.prototype._onOutEndpointError = function (error)
+      {
+        if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.ERROR,'Out endpoint',error); }
+      };
+
+      USBNode.prototype._onOutEndpointEnd = function ()
+      {
+        if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.ERROR,'Out endpoint stopped/cancelled'); }
+      };
+
       USBNode.prototype.init = function (preferredDeviceIndex,retrn) {
 
           var antInterface,
               err,
               antDevices;
 
-           usb.setDebugLevel(4);
+           usb.setDebugLevel(3);
 
           this.device = this.devices[preferredDeviceIndex];
 
@@ -239,16 +252,32 @@ define(function (require, exports, module) {
 
           else {
 
-            // Arguments to bind precedes actual arguments from passed by calling function
-            // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
-            this.deviceInterface.release(this._onInterfaceReleased.bind(this,retrn));
+            if (this.inEndpoint) {
+
+                  // Arguments to bind precedes actual arguments from passed by calling function
+                  // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
+                  this.deviceInterface.release(true,this._onInterfaceReleased.bind(this,retrn));
 
           }
+
+      }
+    };
+
+      USBNode.prototype._onInEndpointEnd = function()
+      {
+        if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling has been cancelled now'); }
       };
 
-      USBNode.prototype._onData = function (retrn,error,data)
+      USBNode.prototype._onInEndpointError = function (error)
       {
+        console.err(error);
+      };
 
+
+
+      USBNode.prototype._onInEndpointData = function (data)
+      {
+/*
         if (error)
         {
 
@@ -270,6 +299,8 @@ define(function (require, exports, module) {
         }
 
         this.listen(undefined,retrn);
+        */
+        console.log('RX',data);
 
       };
 
@@ -311,19 +342,13 @@ define(function (require, exports, module) {
     }
   };
 
-    USBNode.prototype.listen = function (error,retrn)
+    USBNode.prototype.listen = function ()
        {
 
           var INFINITY = 0, endpointPacketSize = 512;
             //  LISTEN_TIMEOUT = 30000;
 
-            if (error)
-            {
-              console.log('Got error!!!!',error);
-              retrn(error);
-            }
-
-        //this.setInEndpointTimeout(1000);
+        this.setInEndpointTimeout(1000);
 
         if (this.log.logging ) {
           this.log.log(USBDevice.prototype.EVENT.LOG,'Setting in transfer packet size to',endpointPacketSize);
@@ -332,7 +357,10 @@ define(function (require, exports, module) {
         //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
       //  this.inEndpoint.transfer(endpointPacketSize,this._onData.bind(this,retrn));
 
-      this.inEndpoint.startPoll();
+      this.inEndpoint.on('data',this._onInEndpointData.bind(this));
+      this.inEndpoint.on('error',this._onInEndpointError.bind(this));
+
+      this.inEndpoint.startPoll(undefined,endpointPacketSize);
 
       };
 
