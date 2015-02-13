@@ -13,11 +13,17 @@ define(function (require, exports, module) {
 
           USBDevice.call(this,options);
 
+          // Listen to hotplug events
+
+          usb.addListener('attach',function _attach() { console.log('attach',arguments);});
+          usb.addListener('detach',function _attach() { console.log('detach',arguments);});
+
+          usb.addListener('error',function _error(error) { console.log('error got you',error); });
+
           this.devices = this.getDevices();
 
           this.deviceInterface = undefined;
 
-// Do we needs these?
           this.inEndpoint = undefined;
           this.outEndpoint = undefined;
 
@@ -218,7 +224,7 @@ define(function (require, exports, module) {
 
           if (error) {
               this.emit(USBDevice.prototype.EVENT.ERROR, error);
-              retrn(err);
+              retrn(error);
             }
           else {
 
@@ -270,10 +276,8 @@ define(function (require, exports, module) {
 
       USBNode.prototype._onInEndpointError = function (error)
       {
-        console.err(error);
+        if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.ERROR, 'In endpoint error',error); }
       };
-
-
 
       USBNode.prototype._onInEndpointData = function (data)
       {
@@ -348,7 +352,7 @@ define(function (require, exports, module) {
           var INFINITY = 0, endpointPacketSize = 512;
             //  LISTEN_TIMEOUT = 30000;
 
-        this.setInEndpointTimeout(1000);
+        //this.setInEndpointTimeout(1000);
 
         if (this.log.logging ) {
           this.log.log(USBDevice.prototype.EVENT.LOG,'Setting in transfer packet size to',endpointPacketSize);
@@ -360,7 +364,7 @@ define(function (require, exports, module) {
       this.inEndpoint.on('data',this._onInEndpointData.bind(this));
       this.inEndpoint.on('error',this._onInEndpointError.bind(this));
 
-      this.inEndpoint.startPoll(undefined,endpointPacketSize);
+      this.inEndpoint.startPoll(1,endpointPacketSize);
 
       };
 
