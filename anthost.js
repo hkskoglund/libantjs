@@ -860,8 +860,8 @@ ANTHost.prototype.init = function (options, initCB) {
         else {
             // Start listening for data on in endpoint and send it to host parser
 
-            this.usb.removeAllEventListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
-            this.usb.addEventListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+            this.usb.removeAllListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
+            this.usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
             this.usb.listen();
 
             resetCapabilitiesLibConfig(initCB);

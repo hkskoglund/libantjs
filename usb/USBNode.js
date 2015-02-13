@@ -186,7 +186,7 @@ define(function (require, exports, module) {
               err,
               antDevices;
 
-           usb.setDebugLevel(3);
+           usb.setDebugLevel(4);
 
           this.device = this.devices[preferredDeviceIndex];
 
@@ -239,31 +239,22 @@ define(function (require, exports, module) {
 
           else {
 
-            if (this.inTransfer) {
-                this.inTransfer.cancel();
-            }
-
-            if (this.outTransfer) {
-                this.outTransfer.cancel();
-            }
-
-            if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.LOG,'About to release interface'); }
-
             // Arguments to bind precedes actual arguments from passed by calling function
+            // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
             this.deviceInterface.release(this._onInterfaceReleased.bind(this,retrn));
 
           }
       };
 
-      USBNode.prototype._onData = function (error,data,retrn)
+      USBNode.prototype._onData = function (retrn,error,data)
       {
 
         if (error)
         {
 
-          if (this.isTimeoutError(error)) {
+          if (this.isTimeoutError(error)) { // Allow timeout, just reschedule listening
             if (this.log.logging) { this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.USB_TIMEOUT.message); }
-               this.listen(retrn);
+               this.listen(undefined,retrn);
           } else {
 
               retrn(error);
@@ -278,31 +269,83 @@ define(function (require, exports, module) {
 
         }
 
+        this.listen(undefined,retrn);
+
       };
 
-    USBNode.prototype.listen = function (retrn)
+    USBNode.prototype.setInEndpointTimeout = function (timeout)
+    {
+
+        var prevTimeout = this.inEndpoint.timeout;
+
+        if (prevTimeout !== timeout) {
+
+            this.inEndpoint.timeout = timeout;
+
+            if (this.log.logging ) {
+              this.log.log(USBDevice.prototype.EVENT.LOG,'In endpoint timeout changed from', prevTimeout,'to',timeout);
+            }
+        } else
+        {
+          if (this.log.logging ) {
+            this.log.log(USBDevice.prototype.EVENT.LOG,'In endpoint timeout no change, still', this.inEndpoint.timeout);
+          }
+        }
+    };
+
+    USBNode.prototype.setOutEndpointTimeout = function (timeout)
+    {
+
+      var prevTimeout = this.outEndpoint.timeout;
+
+      if (prevTimeout !== timeout) {
+        this.outEndpoint.timeout = timeout;
+        if (this.log.logging ) {
+          this.log.log(USBDevice.prototype.EVENT.LOG,'Out endpoint timeout changed from', prevTimeout,'to',timeout);
+        }
+    } else
+    {
+      if (this.log.logging ) {
+        this.log.log(USBDevice.prototype.EVENT.LOG,'Out endpoint timeout no change, still', this.outEndpoint.timeout);
+      }
+    }
+  };
+
+    USBNode.prototype.listen = function (error,retrn)
        {
 
-          var INFINITY = 0;
+          var INFINITY = 0, endpointPacketSize = 512;
             //  LISTEN_TIMEOUT = 30000;
 
-          this.setDeviceTimeout(INFINITY);
+            if (error)
+            {
+              console.log('Got error!!!!',error);
+              retrn(error);
+            }
 
-          this.inTransfer = this.inEndpoint.transfer(this._getINEndpointPacketSize(), this._onData.bind(this,error,data,retrn));
+        //this.setInEndpointTimeout(1000);
+
+        if (this.log.logging ) {
+          this.log.log(USBDevice.prototype.EVENT.LOG,'Setting in transfer packet size to',endpointPacketSize);
+        }
+
+        //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
+      //  this.inEndpoint.transfer(endpointPacketSize,this._onData.bind(this,retrn));
+
+      this.inEndpoint.startPoll();
 
       };
 
       USBNode.prototype.transfer = function (chunk, retrn)
       {
-         var chunkToNodeBuffer =
 
-          this.setDirectANTChipCommunicationTimeout();
+         //this.setOutEndpointTimeout(1000);
 
           if (this.log.logging ) {
             this.log.log(USBDevice.prototype.EVENT.LOG,'TX', Util.prototype.toNodeBuffer(chunk));
           }
 
-          this.outTransfer = this.outEndpoint.transfer(chunkToNodeBuffer, retrn);
+        this.outEndpoint.transfer(Util.prototype.toNodeBuffer(chunk), retrn);
 
       };
 

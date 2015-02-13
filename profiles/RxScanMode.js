@@ -58,7 +58,7 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
     // Override default stop of device profile
     RxScanMode.prototype.stop = function ()
     {
-        this.removeAllEventListeners('page'); // In case someone is listening on our page event
+        this.removeAllListeners('page'); // In case someone is listening on our page event
 
         for (var sensorId in this.profile)
         {
@@ -77,14 +77,14 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
         this.profile[sensorId] = profile;
 
-        profile.addEventListener('page',this.onPage.bind(this)); // Forward
+        profile.addListener('page',this.onPage.bind(this)); // Forward
 
         if (this.log.logging) {
             this.log.log('info', 'Added profile for sensorId '+sensorId+' to RX SCAN mode channel', profile);
         }
     };
 
-    // Scan mode receives all broadcasts on channel 0 
+    // Scan mode receives all broadcasts on channel 0
     // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
     RxScanMode.prototype.broadCast = function (broadcast) {
 

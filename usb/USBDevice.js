@@ -8,11 +8,27 @@ define(function (require, exports, module) {
     'use strict';
 
     var Logger = require('../logger'),
+         EventEmitter,
+         nodePlatform;
+
+    // Using typeof, otherwise ReferenceError on process on the web
+    if (typeof process !== 'undefined' && process.title === 'node')
+      nodePlatform = true;
+
+    if (nodePlatform) // Use native library on node platform
+    {
+      EventEmitter = require('events').EventEmitter;
+    }
+    else { // Fallback to simple library on web
         EventEmitter = require('../events');
+    }
 
     // Abstract USB device
     function USBDevice(options) {
 
+      if (nodePlatform)
+       EventEmitter.call(this);
+      else
        EventEmitter.call(this,options);
 
         this.options = options;
@@ -82,7 +98,7 @@ define(function (require, exports, module) {
             { name: 'ANT USB-m Stick', id: undefined, vendorId: 0x0FCF, productId: 0x1009 }
         ];
     };
-    
+
     module.exports = USBDevice;
     return module.exports;
 

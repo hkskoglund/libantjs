@@ -275,8 +275,8 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         if (this.timer.onPage !== undefined) {
             clearInterval(this.timer.onPage);
         }
-        
-        this.removeAllEventListeners('page');
+
+        this.removeAllListeners('page');
 
     };
 
@@ -324,7 +324,7 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         }
 
         this.timer.onPage = setInterval(this.getLatestPage.bind(this,processHook),timeout);
-         
+
         if (this.log && this.log.logging) {
             this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
         }

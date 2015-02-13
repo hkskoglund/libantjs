@@ -10,12 +10,10 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     function EventEmitter(configuration) {
 
-
-
         this._events = {};
     }
 
-    EventEmitter.prototype.addEventListener = function (type, listener) {
+    EventEmitter.prototype.addListener = function (type, listener) {
 
         checkListener(listener);
 
@@ -27,7 +25,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
         return this;
     };
 
-    EventEmitter.prototype.removeEventListener = function (type, listener) {
+    EventEmitter.prototype.removeListener = function (type, listener) {
 
         var listeners,
             index;
@@ -48,7 +46,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     };
 
-    EventEmitter.prototype.removeAllEventListeners = function (type) {
+    EventEmitter.prototype.removeAllListeners = function (type) {
 
         var listeners = this._events[type];
 
