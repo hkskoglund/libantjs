@@ -28,7 +28,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         this.ANTWatcher = undefined;
         this.ANTdevice = undefined;
 
-        this.enumeratedDevice = [];
+        this.devices = [];
 
     }
 
@@ -74,16 +74,16 @@ define(['usb/USBDevice'],function (USBDevice) {
         var vid = parseInt(deviceInformation.id.substr(12,4),16);
         var pid = parseInt(deviceInformation.id.substr(21,4),16);
 
-        
+
 
         for (devNum = 0; devNum < knownDevices.length; devNum++) {
 
             if (knownDevices[devNum].vendorId === vid && knownDevices[devNum].productId === pid)
             {
-              
+
                 // Update current deviceId
                 this.options.deviceId = deviceInformation.id;
-                        
+
                 if (this.log && this.log.logging)
                     this.log.log('log', 'Found ' + knownDevices[devNum].name + ' with vid ' + vid + ' pid ' + pid + ' among known devices, trying to use this device by convention without involving user');
                 Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
@@ -99,7 +99,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     };
 
     USBWindows.prototype._notFoundANTDevice =   function (err) {
-      
+
         var msg = 'Failed to find USB device from id ' + this.deviceId + ' ' + err.toString();
         if (this.log && this.log.logging)
             this.log.log('error', msg);
@@ -111,7 +111,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         if (this.log && this.log.logging)
             this.log.log('log', 'Found ANT USB device', usbDevice);
 
-       
+
 
         var deviceInfoid = this.options.deviceId;
 
@@ -158,7 +158,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         this.ANTdevice = usbDevice;
 
         if (usbDevice.defaultInterface.bulkInPipes.length >= 1) {
-    
+
             this.dataReader = new Windows.Storage.Streams.DataReader(usbDevice.defaultInterface.bulkInPipes[0].inputStream);
         }
         else {
@@ -167,34 +167,34 @@ define(['usb/USBDevice'],function (USBDevice) {
         }
 
         if (usbDevice.defaultInterface.bulkOutPipes.length >= 1) {
-             
+
             this.dataWriter = new Windows.Storage.Streams.DataWriter(usbDevice.defaultInterface.bulkOutPipes[0].outputStream);
         }
         else {
-          
+
                 this._initCallback(new Error('No out bulk pipe found on interface'));
-           
+
             return;
         }
 
 
-        
+
            this._initCallback();
 
     };
 
     USBWindows.prototype._getIndexOfEnumeratedDevice = function (deviceInformation) {
-        var devNum, len = this.enumeratedDevice.length;
+        var devNum, len = this.devices.length;
         for (devNum = 0;devNum<len;devNum++)
         {
-            if (deviceInformation.id === this.enumeratedDevice[devNum].id)
+            if (deviceInformation.id === this.devices[devNum].id)
                 return devNum;
         }
 
         return -1;
 
     };
-  
+
     USBWindows.prototype._initializeDeviceWatcher = function () {
         // returns an AQS - Advanced Query String for finding the device
         //var ANTSelector = Windows.Devices.Usb.UsbDevice.getDeviceSelector(this.options.vid, this.options.pid);
@@ -220,10 +220,10 @@ define(['usb/USBDevice'],function (USBDevice) {
             if (this.log && this.log.logging)
                 this.log.log('log', deviceInformation.name + ' added (id: ' + deviceInformation.id + ')');
 
-            this.enumeratedDevice.push(deviceInformation);
+            this.devices.push(deviceInformation);
 
-            
-           
+
+
 
         }.bind(this);
 
@@ -237,13 +237,13 @@ define(['usb/USBDevice'],function (USBDevice) {
             var removedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
 
             if (removedIndex !== -1)
-              this.enumeratedDevice.splice(removedIndex, 1);
+              this.devices.splice(removedIndex, 1);
 
             if (this.options.deviceId && this.options.deviceId === deviceInformation.id) {
 
                 this.releaseDevice();
             }
-            
+
 
         }.bind(this);
 
@@ -254,7 +254,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             var updatedIndex = this._getIndexOfEnumeratedDevice(deviceInformation);
 
             if (updatedIndex !== -1)
-               this.enumeratedDevice[updatedIndex] = deviceInformation;
+               this.devices[updatedIndex] = deviceInformation;
 
         }.bind(this);
 
@@ -262,14 +262,14 @@ define(['usb/USBDevice'],function (USBDevice) {
         var _onEnumerationComplete = function (event) {
             var deviceInformation;
 
-            this.emit(USBDevice.prototype.EVENT.ENUMERATIONCOMPLETE,this.enumeratedDevice);
+            this.emit(USBDevice.prototype.EVENT.ENUMERATIONCOMPLETE,this.devices);
 
             if (this.log && this.log.logging)
-                this.log.log('log', 'USB device enumeration complete, found ' + this.enumeratedDevice.length + ' devices');
+                this.log.log('log', 'USB device enumeration complete, found ' + this.devices.length + ' devices');
 
             // If no default device Id, or no ANT device found, then pick the first enumerated device by default
-            if (this.enumeratedDevice && this.enumeratedDevice.length && (!this.options.deviceId   || (this.options.deviceId && !this.ANTdevice))) {
-                this._tryFindANTDeviceFromKnownDevices(this.enumeratedDevice[0]);
+            if (this.devices && this.devices.length && (!this.options.deviceId   || (this.options.deviceId && !this.ANTdevice))) {
+                this._tryFindANTDeviceFromKnownDevices(this.devices[0]);
 
             }
 
@@ -277,8 +277,8 @@ define(['usb/USBDevice'],function (USBDevice) {
 
             else if (this.options.deviceId ) {
 
-                for (var devNum = 0; devNum < this.enumeratedDevice.length; devNum++) {
-                    deviceInformation = this.enumeratedDevice[devNum];
+                for (var devNum = 0; devNum < this.devices.length; devNum++) {
+                    deviceInformation = this.devices[devNum];
                     if (this.options.deviceId === deviceInformation.id) {
 
                         if (this.log && this.log.logging)
@@ -290,7 +290,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
                     }
                 }
-                
+
             }
 
 
@@ -300,12 +300,12 @@ define(['usb/USBDevice'],function (USBDevice) {
         }.bind(this);
 
         var _onStopped = function (event) {
-            this.enumeratedDevice = [];
+            this.devices = [];
             if (this.log && this.log.logging)
                 this.log.log('log', 'Stopped ANT USB device watching');
         }.bind(this);
 
-     
+
 
         this.ANTWatcher.addEventListener("added", _onAdded);
         this.ANTWatcher.addEventListener("removed", _onRemoved);
@@ -373,7 +373,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         if (this.readingPromise) {
             this.readingPromise.cancel();
             //this.readingPromise = undefined;
-           
+
         }
 
         if (this.log && this.log.logging)
@@ -417,7 +417,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             this.ANTWatcher.stop();
 
         this.releaseDevice();
-        
+
        // callback();
 
     };
@@ -486,7 +486,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             else
                 newError = new Error('Too many failed attempts to read from device, reading stopped');
                 if (this.log && this.log.logging)
-                   
+
                     this.log.log('error', newError);
 
                 this.emit(USBDevice.prototype.EVENT.ERROR, newError);
@@ -512,7 +512,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
             }
         }.bind(this);
-        
+
         MAX_IN_PACKET_SIZE = this.ANTdevice.defaultInterface.bulkInPipes[0].endpointDescriptor.maxPacketSize || 64;
         REQUESTED_TRANSFER_SIZE = this.options.length.in || MAX_IN_PACKET_SIZE;
 
@@ -528,7 +528,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     USBWindows.prototype.transfer = function (chunk, callback) {
         // At the moment : Higher level code in anthost will attempt resend of message if no response is received
 
-        try 
+        try
         {
             if (this.dataWriter)
                 this.dataWriter.writeBytes(chunk);

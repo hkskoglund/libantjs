@@ -1,23 +1,5 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
-
-//var requirejs = require('requirejs');
-//
-//requirejs.config({
-//    //Pass the top-level main.js/index.js require
-//    //function to requirejs so that node modules
-//    //are loaded relative to the top-level JS file.
-//    nodeRequire: require
-//});
-//
-////requirejs(['events','channel'], function (events,channel)
-////          {
-////              console.log("events",events,channel);
-////          });
-
-// Allows using define in node.js
-// Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
-
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
