@@ -59,232 +59,77 @@ define(function (require, exports, module) {
     ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
     ChannelStatusMessage = require('./messages/ChannelStatusMessage'),
 
-    ChannelId = require('./messages/channelId');
+    ChannelId = require('./messages/channelId'),
+
+    usb,  // Don't expose usb interface to higher level code, use wrappers instead on host
+
+    _ANTMessage = new ANTMessage(); // For CRC verification
 
 // Host for USB ANT communication
-function ANTHost(options) {
+function Host(options) {
+
+    var usbLibraryPath;
 
     if (!options) {
       options = {};
     }
 
-    this._channel = {};
+    options.logSource = this;
 
-//
-//    this.retryQueue = {}; // Queue of packets that are sent as acknowledged using the stop-and wait ARQ-paradigm, initialized when parsing capabilities (number of ANT channels of device) -> a retry queue for each channel
-//    this.burstQueue = {}; // Queue outgoing burst packets and optionally adds a parser to the burst response
-
-    // Callbacks when response is received for a command
-    this.callback = {};
-
-    // Timeouts for expected response
-    this.resendTimeoutID = {};
-
-    // Logging
-    if (options) {
-        options.logSource = this;
-    }
+    this.options = options;
 
     this.log = new Logger(options);
 
-    // Declare/reuse broadcast to minimize garbage collection
-   // this.broadcast = new BroadcastDataMessage();
+    // Detect host environment, i.e if running on node load node specific USB library
 
-   // this.channelResponseMessage = new ChannelResponseMessage();
+    // Node
 
-    // PRIVATE function are hidden here, another approach would be to include them in the prototype, i.e ANTHost.prototype._privateFunc, yet another approach could be to lift it to a module var (must be called with this bound to host instance)
+    if (typeof process !== 'undefined' && process.title === 'node')
+      {
+        usbLibraryPath = './usb/USBNode';
+      }
 
- this._responseCallback = function (msg) {
+    // Chrome packaged app
 
-     var targetMessageId = msg.id,
-         resendMessage = false,
-         cb = function _targetMessage(error)
-         {
-              delete this.callback[targetMessageId];
-              msgCallback(error,msg);
-         }.bind(this);
+      else if (typeof window !== 'undefined' && window.location.protocol === 'chrome:')
+      {
+        usbLibraryPath = './usb/USBChrome';
+      }
 
-     // Handle channel response
+    if (this.log.logging) { this.log.log('log','Loading USB library from relative path ',usbLibraryPath); }
 
-     if (targetMessageId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE) {
-         targetMessageId = msg.initiatingId; // Initiating message id, i.e libconfig - configuration command
-         if (this.log.logging)
-             this.log.log('log', 'Initiating message id for channel response is 0x' + targetMessageId.toString(16) + ' ' + ANTMessage.prototype.MESSAGE[targetMessageId], msg);
+    usb = new (require(usbLibraryPath))({ log : options.log});
 
-         if (msg.responseCode !== ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES.RESPONSE_NO_ERROR) {
-             if (this.log.logging)
-                 this.log.log('warn', 'Normally a response no error is received, but got ', msg.message);
-            resendMessage = true;
-        }
-
-
-     }
-
-     if (resendMessage) // Should be resent in _sendMessage
-         return;
-
-     var msgCallback = this.callback[targetMessageId],
-         RESET_DELAY_TIMEOUT;
-
-     if (typeof this.options.resetDelay !== "number")
-         RESET_DELAY_TIMEOUT = 500; // Allow 500 ms after reset command before continuing;
-     else
-         RESET_DELAY_TIMEOUT = this.options.resetDelay;
-
-        if (this.resendTimeoutID[targetMessageId]) {
-            clearTimeout(this.resendTimeoutID[targetMessageId]);
-            delete this.resendTimeoutID[targetMessageId];
-        }
-        else if (this.log.logging)
-          this.log.log('warn','No timeout registered for response '+msg.name);
-
-        if (typeof msgCallback !== 'function' ) {
-            if (this.log.logging) this.log.log('warn', 'No callback registered for ' + msg + ' ' + msg.toString());
-        }
-
-        else {
-
-         if (targetMessageId === ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP) {
-
-             if (RESET_DELAY_TIMEOUT > 0)
-                setTimeout(cb, RESET_DELAY_TIMEOUT); // ASYNC-call, let hosting environment schedule new timer event
-             else
-                 cb(); // SYNC-call
-         }
-         else cb();
-
-        }
-
-    }.bind(this);
-
-    // Register response callback, its fired during RXparse
-    // It also can be considered as a mutex - only allow send of request if there is no previously registered callback for this particular request.
-    this._setResponseCallback = function (message,callback)
-    {
-          var targetMsgId = message.responseId;
-
-        // Special handling of messages that have a channel response
-
-        if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
-            targetMsgId = message.id; // Initiating message id, i.e lib config
-
-         if (this.callback[targetMsgId] !== undefined) {
-              // this.log.log('log','Awaiting response for a previous resetSystem message, this request is ignored');
-            callback(new Error('Awaiting response for a previous '+ message.name+' target msg. id '+targetMsgId+' , cannot register a new request callback'));
-            return false;
-         }
-
-          this.callback[targetMsgId] = callback;
-
-
-            return true;
-
-    }.bind(this); // bind sets the right context for the function, not necessary to use .call(this in function call
-
-    // Send a message to ANT
-    this._sendMessage = function (message, callback) {
-
-
-    if (!this._setResponseCallback(message,callback)) // If response callback is set already, don't allow another request
-//    {
-//        this.log.log('warn','Already awaiting response for ',message);
-        return;
-//    }
-
-    var
-       timeMsg,
-
-        PROCESSING_LATENCY = this.options.transferProcessingLatency || 10,
-
-        TIMEOUT = USBDevice.prototype.ANT_DEVICE_TIMEOUT*2+PROCESSING_LATENCY,
-        targetMsgId = message.responseId,
-        MAX_RETRY = this.options.maxTransferRetries || 5,
-        retryNr = 0;
-
-    // Set up timer for resend if no response is received
-        if (targetMsgId === ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE)
-            targetMsgId = message.id; // Initiating message id
-
-//    if (message.id !== ANTMessage.prototype.MESSAGE.REQUEST)
-//       timeMsg = ANTMessage.prototype.MESSAGE[targetMsgId];
-//
-//    else {
-//        //this.log.log('log','Request message for id 0x',message.responseId.toString(16));
-//        if (message.responseId)
-//           timeMsg = ANTMessage.prototype.MESSAGE[message.responseId];
-//        else
-//            this.log.log('warn','Message has no responseId',message);
-//    }
-//
-//    if (timeMsg) {
-//       // this.log.log('log','Setting performance timer (time-timeEnd) for ',timeMsg);
-//        this.log.time(timeMsg);
-//    }
-
-
-     var usbTransferCB = function _usbTransferCB (error)
-                          {
-
-                              //console.timeEnd('sendMessageUSBtransfer');
-         if (error) {
-             if (this.log.logging)   this.log.log('error', 'TX failed of ' + message.toString(),error);
-         }
-                              // A response callback is already registered in _setResponseCallback to be called during RXparse
-                             // callback(error);
-
-                          }.bind(this);
-
-    var transferMessage = function _transfermessage() {
-
-        //this.log.time('sendMessageUSBtransfer');
-        if (retryNr === 0 ) {
-          if (this.log.logging)  this.log.log('log', 'Sending message ', message, 'retry timeout in ' + TIMEOUT + ' ms.');
-        }
-
-        else if (this.log.logging)
-           this.log.log('warn','Retry '+retryNr+' sending message',message);
-
-        //this.log.time(ANTMessage.prototype.MESSAGE[message.id]); // Will keep first time on retries
-
-        this.resendTimeoutID[targetMsgId] = setTimeout(function _responseTimeoutCB()
-                             {
-            if (this.callback[message.responseId] !== undefined) {
-               if (this.log.logging) this.log.log('warn', 'No response to request for ' + message.name + ' in ' + TIMEOUT + ' ms');
-            }
-
-
-                                     // It should be quite safe to just start a new transfer now (assuming no response from device)
-                                     if (++retryNr <= MAX_RETRY)
-                                         transferMessage();
-                                     else {
-                                         if (this.log.logging)
-                                             this.log.log('log', 'Reached max. number of retries for transfer of message', message);
-                                         callback(new Error('Reached maximum number of retries for transfer of message'));
-                                     }
-
-                             }.bind(this),TIMEOUT);
-
-
-        this.usb.transfer(message.getRawMessage(),usbTransferCB);
-
-    }.bind(this);
-
-    transferMessage();
-
-    }.bind(this);
-
-    // For verifying CRC
-    this._ANTMessage = new ANTMessage();
+    this._channel = {};
 
 }
 
-//ANTHost.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
+//Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
 //                                                                        enumerable : false,
 //                                                                        writeable : true,
 //                                                                        configurable : true } });
 
+// Send a message to ANT
+Host.prototype.sendMessage = function (message, callback) {
+
+   var _sendMessageCB = function (error)
+   {
+     if (error) {
+         if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+     }
+
+     callback(error);
+
+   }.bind(this);
+
+    if (this.log.logging) { this.log.log('log', 'Sending message ', message); }
+
+    usb.transfer(message.getRawMessage(),_sendMessageCB);
+
+};
+
 // for event emitter
-ANTHost.prototype.EVENT = {
+Host.prototype.EVENT = {
 
 //    LOG_MESSAGE: 'logMessage',
 //    ERROR : 'error',
@@ -303,7 +148,7 @@ ANTHost.prototype.EVENT = {
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
 // Assign channel and set channel ID MUST be set before opening
-ANTHost.prototype.establishChannel = function (channelInfo, callback) {
+Host.prototype.establishChannel = function (channelInfo, callback) {
     var     channelNumber = channelInfo.channelNumber,
     networkNumber = channelInfo.networkNumber,
     configurationName = channelInfo.configurationName,
@@ -682,158 +527,27 @@ ANTHost.prototype.establishChannel = function (channelInfo, callback) {
     }.bind(this));
 };
 
+Host.prototype.getDevices = function ()
+{
+   return usb.getDevices();
 
-// Initializes Host
-ANTHost.prototype.init = function (options, initCB) {
+};
 
-    this.options = options;
-    this.options.initCB = initCB;
+Host.prototype.init = function (iDevice,initCB) {
 
-    // In case of reinitialization, i.e from life cycle suspend to resume
+      /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
 
-    this.usb = options.usb;
-
-
-    // Logging
-    this.log.logging = options.log;
-
-    if (this.log.logging)
-        this.log.log('log', options);
-    //console.trace();
-    // options : {
-    //   vid : 4047,
-    //   pid : 4104,
-    //   libconfig : "channelId,rxtimestamp" or number
-    //   log_usb : true
-    //   reset : true
-    //   capabilities : true
-    // }
-
-    var doLibConfig = function (_doLibConfigCB) {
-
-        if (!this.options || !this.capabilities) {
-            _doLibConfigCB(new Error('Could not find capabilities for extended messaging'));
-            return;
-        }
-
-        var libConfigOptions = this.options.libconfig,
-            libConfig,
-            libConfigOptionsSplit;
-
-        if (typeof libConfigOptions === "undefined") {
-            if (this.log.logging)
-                this.log.log('warn', 'No library configuration options specified for extended messaging');
-            _doLibConfigCB(new Error('No library configuration options specified for extended messaging'));
-            return;
-        }
-
-        if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED) {
-            if (this.log.logging)
-                this.log.log('warn', 'Device does not have capability for extended messaging');
-            _doLibConfigCB(new Error('Device does not have capability for extended messaging'));
-            return;
-        }
-
-
-        libConfig = new LibConfig();
-
-
-        if (typeof libConfigOptions === 'number')
-            libConfig.setFlagsByte(libConfigOptions);
-
-        else if (typeof libConfigOptions === 'string') { // channelid, rssi, rxtimestamp
-
-            libConfigOptionsSplit = libConfigOptions.toLowerCase().split(',');
-
-            if (libConfigOptionsSplit.indexOf("channelid") !== -1)
-                libConfig.setEnableChannelId();
-
-            if (libConfigOptionsSplit.indexOf("rssi") !== -1)
-                libConfig.setEnableRSSI();
-
-            if (libConfigOptionsSplit.indexOf("rxtimestamp") !== -1)
-                libConfig.setEnableRXTimestamp();
-        }
-
-        else _doLibConfigCB(new Error('Unable to parse library configuration options'));
-
-        //libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
         this.libConfig(libConfig.getFlagsByte(),
             function _libConfig(error, channelResponse) {
                 if (!error) {
-                    this.currentLibConfig = libConfig;
+
                     if (this.log.logging)
                         this.log.log('log', libConfig.toString());
                     _doLibConfigCB();
                 }
                 else
                     _doLibConfigCB(error);
-            }.bind(this));
-    }.bind(this);
-
-    var getANTVersionAndDeviceNumber = function (_getANTVersionAndDeviceNumberCB) {
-        this.getANTVersion(function (error, version) {
-            if (!error) {
-                if (this.log.logging)
-                    this.log.log('log', version.toString());
-
-                this.getDeviceSerialNumber(function (error, serialNumberMsg) {
-                    if (!error ) {
-                        if (this.log.logging) this.log.log('log', serialNumberMsg.toString());
-                    }
-
-
-                    _getANTVersionAndDeviceNumberCB(error);
-
-                }.bind(this));
-            } else
-                _getANTVersionAndDeviceNumberCB(error);
-        }.bind(this));
-    }.bind(this);
-
-    var getDeviceInfo = function (getDeviceInfoCB) {
-
-        this.getCapabilities(function (error, capabilities) {
-            if (!error) {
-
-                if (!options.reset) {
-                    // Get channel status if device is not reset
-                    this.getChannelStatusAll(function (error) {
-                        if (error)
-                            getDeviceInfoCB(error);
-
-                        getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
-
-                    }.bind(this));
-                } else
-                    getANTVersionAndDeviceNumber(function (error) { getDeviceInfoCB(error); });
-
-            } else
-                getDeviceInfoCB(error);
-
-        }.bind(this));
-    }.bind(this);
-
-    var resetCapabilitiesLibConfig = function _resetSystem(callback) {
-
-        if (options.reset) {
-            this.resetSystem(function _resetSystem(error, notification) {
-                if (!error) {
-                    getDeviceInfo(function _getDeviceInfo(error) {
-                        if (!error)
-                            doLibConfig(function _doLibConfig (error) { callback(error); });
-                        else
-                            callback(error);
-                    });
-                } else {
-                    callback(error);
-                }
-            }.bind(this));
-        }
-        else
-            getDeviceInfo(function _getDeviceInfo (error) { callback(error); });
-
-    }.bind(this);
+            }.bind(this)); */
 
     var usbInitCB = function _usbInitCB(error) {
 
@@ -842,33 +556,31 @@ ANTHost.prototype.init = function (options, initCB) {
         else {
             // Start listening for data on in endpoint and send it to host parser
 
-            this.usb.removeAllListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
-            this.usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
-            this.usb.listen();
+            usb.removeAllListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
+            usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+            usb.listen();
 
-            resetCapabilitiesLibConfig(initCB);
+            initCB();
+
+          //  resetCapabilitiesLibConfig(initCB);
         }
 
     }.bind(this);
 
-
-    if (typeof options.maxTransferRetries === 'undefined')
-        this.options.maxTransferRetries = 5;
-
-    this.usb.init(usbInitCB);
+    usb.init(iDevice,usbInitCB);
 
 };
 
 // Exit host
-ANTHost.prototype.exit = function (callback) {
+Host.prototype.exit = function (callback) {
 
-    this.usb.exit(callback);
+    usb.exit(callback);
 
 };
 
 
 
-ANTHost.prototype.RXparse = function ( data) {
+Host.prototype.RXparse = function ( data) {
 
 //    data = new Uint8Array(1);
 //    data[0] = 164;
@@ -951,7 +663,7 @@ ANTHost.prototype.RXparse = function ( data) {
         return;
     }
 
-    var CRC = this._ANTMessage.getCRC(message);
+    var CRC = _ANTMessage.getCRC(message);
 
     if (receivedCRC !== CRC)
     {
@@ -1279,11 +991,11 @@ ANTHost.prototype.RXparse = function ( data) {
 
 
 // Send a reset device command
-ANTHost.prototype.resetSystem = function (callback) {
+Host.prototype.resetSystem = function (callback) {
 
     var msg = new ResetSystemMessage();
 
-        this._sendMessage(msg, callback);
+        this.sendMessage(msg, callback);
 
     // return Promise?
     // Promise - split responsibility for handling data in fullfilment-callback and error in rejected-callback
@@ -1296,32 +1008,32 @@ ANTHost.prototype.resetSystem = function (callback) {
 };
 
 // Send request for channel ID
-ANTHost.prototype.getChannelId = function (channel, callback) {
+Host.prototype.getChannelId = function (channel, callback) {
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_ID));
 
-    this._sendMessage(msg, callback);
+    this.sendMessage(msg, callback);
 };
 
 // Send a request for ANT version
-ANTHost.prototype.getANTVersion = function (callback) {
+Host.prototype.getANTVersion = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
-    this._sendMessage(msg,callback);
+    this.sendMessage(msg,callback);
 
 };
 
 // Send a request for device capabilities
-ANTHost.prototype.getCapabilities = function (callback) {
+Host.prototype.getCapabilities = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
 
-    this._sendMessage(msg, callback);
+    this.sendMessage(msg, callback);
 
 };
 
 // Send a request for device serial number
-ANTHost.prototype.getDeviceSerialNumber = function (callback) {
+Host.prototype.getDeviceSerialNumber = function (callback) {
 
     var fetchSerialNumber = function () {
 
@@ -1333,7 +1045,7 @@ ANTHost.prototype.getDeviceSerialNumber = function (callback) {
         var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
 
 
-            this._sendMessage(msg,  callback);
+            this.sendMessage(msg,  callback);
      }.bind(this);
 
     if (typeof this.capabilities === "undefined")
@@ -1395,19 +1107,19 @@ function verifyRange(capabilities,type, value, low, high) {
 }
 
 // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
-ANTHost.prototype.getChannelStatus = function (channel, callback) {
+Host.prototype.getChannelStatus = function (channel, callback) {
 
     verifyRange(this.capabilities,'channel',channel);
 
     var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS));
 
-     this._sendMessage(msg, callback);
+     this.sendMessage(msg, callback);
 
 };
 
 
 
-ANTHost.prototype.getChannelStatusAll = function (callback) {
+Host.prototype.getChannelStatusAll = function (callback) {
     var channelNumber = 0,
         msg;
 
@@ -1451,32 +1163,32 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
-    ANTHost.prototype.libConfig = function (libConfig, callback) {
+    Host.prototype.libConfig = function (libConfig, callback) {
 
 //        assert.equal(typeof this.capabilities, "object", "Capabilities not available");
 //        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED, "Extended messaging not supported on device");
 
      var configurationMsg = new LibConfigMessage(libConfig);
 
-    this._sendMessage(configurationMsg, callback);
+    this.sendMessage(configurationMsg, callback);
 
  };
 
     //// Only enables Channel ID extension of messages
-    //ANTHost.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
+    //Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
     //    var self = this, filler = 0, message = new ANTMessage();
 
-    //    self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
+    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
 
     //    if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
     //        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), ANTMessage.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
     //    else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-    //        self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
+    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
     //};
 
     // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
     // This is the case for ANT-FS and ANT+ device profile like i.e HRM
-    //ANTHost.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
+    //Host.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
     //    var self = this, message = new ANTMessage();
 
     //    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), ANTMessage.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
@@ -1485,7 +1197,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
 
 // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
-    ANTHost.prototype.unAssignChannel = function (channelNr, callback) {
+    Host.prototype.unAssignChannel = function (channelNr, callback) {
 
         var configurationMsg;
 
@@ -1493,14 +1205,14 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new UnAssignChannelMessage();
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
 
     };
 
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
  Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
  also sets defaults values for RF, period, tx power, search timeout p.22 */
-    ANTHost.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback) {
+    Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback) {
         var cb, configurationMsg;
 
         verifyRange(this.capabilities,'channel', channelNumber);
@@ -1519,14 +1231,14 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
                 cb(new Error('Device does not support extended assignment'));
         }
 
-        this._sendMessage(configurationMsg, cb);
+        this.sendMessage(configurationMsg, cb);
 
     };
 
 /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
 "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
 */
-    ANTHost.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
+    Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
 
         var configurationMsg;
 
@@ -1534,12 +1246,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
 
     };
 
 // Uses the lower 2 bytes of the device serial number as channel Id.
-    ANTHost.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback) {
+    Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback) {
 
 
 
@@ -1555,11 +1267,11 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
 
-            this._sendMessage(configurationMsg,  callback);
+            this.sendMessage(configurationMsg,  callback);
 
     };
 
-    ANTHost.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
+    Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
 
         //if (channel.isBackgroundSearchChannel())
         //    msg = "(Background search channel)";
@@ -1572,14 +1284,14 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
 
-        this._sendMessage(configurationMsg,  callback);
+        this.sendMessage(configurationMsg,  callback);
 
     };
 
     // Low priority search mode
     // Spec. p. 72 : "...a low priority search will not interrupt other open channels on the device while searching",
     // "If the low priority search times out, the module will switch to high priority mode"
-    ANTHost.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback) {
+    Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback) {
 
         // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
 
@@ -1596,12 +1308,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
             configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
 
-            this._sendMessage(configurationMsg,  callback);
+            this.sendMessage(configurationMsg,  callback);
 
     };
 
 // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
-    ANTHost.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback) {
+    Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback) {
 
         var configurationMsg;
 
@@ -1609,12 +1321,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
-        this._sendMessage(configurationMsg,  callback);
+        this.sendMessage(configurationMsg,  callback);
 
     };
 
 // Set the RF frequency, i.e 66 = 2466 MHz
-    ANTHost.prototype.setChannelRFFreq = function (channel, RFFreq, callback) {
+    Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback) {
 
         var configurationMsg;
 
@@ -1622,12 +1334,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
 
-        this._sendMessage(configurationMsg,  callback);
+        this.sendMessage(configurationMsg,  callback);
 
     };
 
 // Set network key for specific net
-    ANTHost.prototype.setNetworkKey = function (netNumber, key, callback) {
+    Host.prototype.setNetworkKey = function (netNumber, key, callback) {
 
         var configurationMsg;
 
@@ -1635,11 +1347,11 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new SetNetworkKeyMessage(netNumber, key);
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
     };
 
     // Set transmit power for all channels
-//    ANTHost.prototype.setTransmitPower = function (transmitPower, callback) {
+//    Host.prototype.setTransmitPower = function (transmitPower, callback) {
 //
 //        var configurationMsg;
 //
@@ -1647,11 +1359,11 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //
 //        configurationMsg = new SetTransmitPowerMessage(transmitPower);
 //
-//        this._sendMessage(configurationMsg, callback);
+//        this.sendMessage(configurationMsg, callback);
 //    };
 
     // Set transmit power for individual channel
-//    ANTHost.prototype.setChannelTxPower = function (channel,transmitPower, callback) {
+//    Host.prototype.setChannelTxPower = function (channel,transmitPower, callback) {
 //
 //        if (typeof this.capabilities === "undefined")
 //            callback(new Error('getCapabilities should be run first to determine if device has capability for setting individual Tx power for a channel'));
@@ -1666,12 +1378,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //
 //            configurationMsg = new SetChannelTxPowerMessage(channel, transmitPower);
 //
-//            this._sendMessage(configurationMsg, callback);
+//            this.sendMessage(configurationMsg, callback);
 //
 //    };
 
     // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
-//    ANTHost.prototype.setProximitySearch = function (channel, searchThreshold, callback) {
+//    Host.prototype.setProximitySearch = function (channel, searchThreshold, callback) {
 //
 //        if (typeof this.capabilities === "undefined")
 //            callback(new Error('getCapabilities should be run first to determine if device has capability for proximity search'));
@@ -1686,13 +1398,13 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //
 //            configurationMsg = new SetProximitySearchMessage(channel, searchThreshold);
 //
-//            this._sendMessage(configurationMsg, callback);
+//            this.sendMessage(configurationMsg, callback);
 //
 //    };
 
 
 
-     ANTHost.prototype.openRxScanMode = function (channel, callback) {
+     Host.prototype.openRxScanMode = function (channel, callback) {
 
         var configurationMsg;
 
@@ -1700,12 +1412,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new OpenRxScanModeMessage(channel);
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
 
     };
 
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
-    ANTHost.prototype.openChannel = function (channel, callback) {
+    Host.prototype.openChannel = function (channel, callback) {
 
         var configurationMsg;
 
@@ -1713,11 +1425,11 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new OpenChannelMessage(channel);
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
-    ANTHost.prototype.closeChannel = function (channelNumber, callback) {
+    Host.prototype.closeChannel = function (channelNumber, callback) {
 
        // Wait for EVENT_CHANNEL_CLOSED ?
        // If channel status is tracking -> can get broadcast data packet before event channel closed packet
@@ -1734,7 +1446,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 
         configurationMsg = new CloseChannelMessage(channelNumber);
 
-        this._sendMessage(configurationMsg, callback);
+        this.sendMessage(configurationMsg, callback);
 
     };
 
@@ -1744,7 +1456,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
     // 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-//    ANTHost.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
+//    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
 //        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
 //            self = this,
 //            message = new ANTMessage(),
@@ -1768,24 +1480,24 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //                resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
 //                resendMsg.retry++;
 //
-//                if (resendMsg.retry <= ANTHost.prototype.TX_DEFAULT_RETRY) {
+//                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
 //                    resendMsg.lastRetryTimestamp = Date.now();
 //                    // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF
-//                    self.sendOnly(ack_msg, ANTHost.prototype.ANT_DEFAULT_RETRY, ANTHost.prototype.ANT_DEVICE_TIMEOUT,
+//                    self.sendOnly(ack_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
 //                        function error(err) {
-//                            self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
+//                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
 //                            if (typeof errorCallback === "function")
 //                                errorCallback(err);
 //                            else
-//                                self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
+//                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
 //                        },
-//                        function success() { self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
+//                        function success() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
 //                } else {
-//                    self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
+//                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
 //                    if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
 //                        resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
 //                    else
-//                        self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
+//                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
 //                }
 //            }
 //        };
@@ -1798,7 +1510,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //        //resendMsg.timeoutCB = function () {
 //        //    //console.log(Date.now() + "TIMEOUT HANDLER FOR EVENT_TRANSFER_TX_COMPLETED/FAILED - NOT IMPLEMENTED");
 //        //    resendMsg.timeoutRetry++;
-//        //    if (resendMsg.timeoutRetry <= ANTHost.prototype.TX_DEFAULT_RETRY)
+//        //    if (resendMsg.timeoutRetry <= Host.prototype.TX_DEFAULT_RETRY)
 //        //        send();
 //        //    else
 //        //        console.log(Date.now() + " Reached maxium number of timeout retries");
@@ -1809,7 +1521,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //    };
 
 //    // Send an individual packet as part of a bulk transfer
-//    ANTHost.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
+//    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
 //
 //        var buf,
 //            burst_msg,
@@ -1825,12 +1537,12 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //        // p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
 //        // "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
 //
-//        self.sendOnly(burst_msg, ANTHost.prototype.ANT_DEFAULT_RETRY, ANTHost.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
+//        self.sendOnly(burst_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
 //    };
 //
 //    // p. 98 in spec.
 //    // Sends bulk data
-//    ANTHost.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName) {
+//    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName) {
 //        var numberOfPackets = Math.ceil(pucData.length / 8),
 //            packetNr,
 //            lastPacket = numberOfPackets - 1,
@@ -1840,7 +1552,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //            self = this,
 //            burstMsg;
 //
-//        self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Burst transfer of "+numberOfPackets+" packets (8-byte) on channel "+ucChannel+", length of payload is "+pucData.length+" bytes");
+//        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Burst transfer of "+numberOfPackets+" packets (8-byte) on channel "+ucChannel+", length of payload is "+pucData.length+" bytes");
 //
 //        // Add to retry queue -> will only be of length === 1
 //        burstMsg = {
@@ -1864,7 +1576,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //        this.burstQueue[ucChannel].push(burstMsg);
 //
 //        var error = function (err) {
-//            self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
+//            self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
 //        };
 //
 //        var success = function () {
@@ -1873,7 +1585,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //
 //        function sendBurst() {
 //
-//            if (burstMsg.retry <= ANTHost.prototype.TX_DEFAULT_RETRY) {
+//            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
 //                burstMsg.retry++;
 //                burstMsg.lastRetryTimestamp = Date.now();
 //
@@ -1895,11 +1607,11 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //                    self.sendBurstTransferPacket(channelNrField, packet,error,success);
 //                }
 //            } else {
-//                self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries of entire burst of "+ burstMsg.message.friendlyName);
+//                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries of entire burst of "+ burstMsg.message.friendlyName);
 //                if (typeof burstMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
 //                    burstMsg.EVENT_TRANSFER_TX_FAILED_CB();
 //                else
-//                    self.emit(ANTHost.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
+//                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
 //            }
 //        }
 //
@@ -1939,7 +1651,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //        }, function (error) {
 //
 //            if (error) {
-//                host.emit(ANTHost.prototype.EVENT.ERROR, error);
+//                host.emit(Host.prototype.EVENT.ERROR, error);
 //                host.usb.on('closed', function () {
 //                    clearInterval(noopIntervalID);
 //                });
@@ -1951,7 +1663,7 @@ ANTHost.prototype.getChannelStatusAll = function (callback) {
 //        });
 //    }
 
-    module.exports = ANTHost;
+    module.exports = Host;
 
     return module.exports;
 });
