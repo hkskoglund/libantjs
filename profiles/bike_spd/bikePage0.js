@@ -1,8 +1,12 @@
 /* global define: true */
 
-define(['profiles/bike_spdcad/SPDCADShared'], function _requireDefineBikePage0(SPDCADSharedPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineBikePage0(require,exports,module) {
 
     'use strict';
+
+    var SPDCADSharedPage = require('../bike_spdcad/SPDCADShared');
 
     function BikePage0(configuration, broadcast, profile,pageNumber) {
 

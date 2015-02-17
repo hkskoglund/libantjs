@@ -1,9 +1,11 @@
 /* global define: true, DataView: true */
 
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
 define(function (require, exports, module) {
     'use strict';
 
-    var GenericPage = require('profiles/Page');
+    var GenericPage = require('../Page');
 
     function SDMPage1(configuration, broadcast) {
 
@@ -25,7 +27,7 @@ define(function (require, exports, module) {
     SDMPage1.prototype.BIT_FIELD = {
 
         DISTANCE_FRACTIONAL : { START_BIT : 4, LENGTH : 4}
-        
+
 
     };
 
@@ -35,7 +37,7 @@ define(function (require, exports, module) {
 
         UPPER_NIBBLE: 0xF0,
         LOWER_NIBLE : 0X0F
-       
+
     };
 
     // Byte layout
@@ -56,7 +58,7 @@ define(function (require, exports, module) {
         DISTANCE_FRACTIONAL : 1/16, // m
         SPEED_FRACTIONAL: 1 / 256, // m/s
         UPDATE_LATENCY: 1 / 32 //s
-   
+
     };
 
     SDMPage1.prototype.parse = function (broadcast) {
@@ -64,7 +66,7 @@ define(function (require, exports, module) {
         //  dataView = new DataView(data.buffer);
 
         this.broadcast = broadcast;
-      
+
         // Byte 0 - page number
 
         this.number = data[SDMPage1.prototype.BYTE.PAGE_NUMBER];
@@ -76,7 +78,7 @@ define(function (require, exports, module) {
         // Byte 2 - time integer
 
         this.timeInteger = data[SDMPage1.prototype.BYTE.TIME_INTEGER];
-        
+
         this.time = this.timeInteger + this.timeFractional;
 
         // Byte 3 - distance integer
@@ -104,7 +106,7 @@ define(function (require, exports, module) {
     };
 
     SDMPage1.prototype.toString = function () {
-       
+
 
         var msg = "P# " + this.number+' ',
             UNUSED = 0x00;
@@ -134,7 +136,7 @@ define(function (require, exports, module) {
 
 
         // Time starts when SDM is powered ON
-       
+
         if (this.time !== UNUSED)
             msg += "SDM Time : " + this.time + " s";
         else

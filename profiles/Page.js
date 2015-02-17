@@ -1,8 +1,12 @@
 /* global define: true */
 
-define(['logger'],function _requireDefineGenericPage(Logger) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineGenericPage(require,exports,module) {
 
     'use strict';
+
+    var Logger = require('../logger');
 
     function GenericPage(configuration, broadcast,profile,pageNumber) {
 
@@ -100,6 +104,8 @@ define(['logger'],function _requireDefineGenericPage(Logger) {
 
     };
 
-    return GenericPage;
+    module.exports = GenericPage;
+
+    return module.exports;
 
 });

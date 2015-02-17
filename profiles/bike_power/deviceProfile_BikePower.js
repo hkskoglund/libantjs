@@ -1,8 +1,17 @@
 /* global define: true */
 
-define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','profiles/backgroundPage','profiles/bike_power/calibrationMain'],function (DeviceProfile,PowerOnlyMainPage0x10, BackgroundPage, CalibrationMainPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
- 'use strict';
+define(function (require,exports,module) {
+  'use strict';
+
+  var
+
+   DeviceProfile = require('../deviceProfile'),
+   PowerOnlyMainPage0x10 = require('../bike_power/powerOnlyMainPage0x10'),
+   BackgroundPage = require('../backgroundPage'),
+  CalibrationMainPage = require('../bike_power/calibrationMain');
+
 
     function DeviceProfile_BikePower(configuration) {
 
@@ -96,5 +105,6 @@ define(['profiles/deviceProfile','profiles/bike_power/powerOnlyMainPage0x10','pr
 
     };
 
-    return DeviceProfile_BikePower;
+    module.exports =  DeviceProfile_BikePower;
+    return module.exports;
 });

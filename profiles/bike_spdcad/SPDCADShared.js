@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/mainPage'], function (MainPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require,exports,module) {
 
     'use strict';
+
+    var MainPage = require('../mainPage');
 
     function SPDCADSharedPage(configuration, broadcast,profile,pageNumber) {
 
@@ -148,6 +152,7 @@ define(['profiles/mainPage'], function (MainPage) {
 
     };
 
-    return SPDCADSharedPage;
+    module.exports =  SPDCADSharedPage;
+    return module.exports;
 
 });

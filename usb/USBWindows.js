@@ -409,11 +409,11 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     USBWindows.prototype.exit = function () {
 
+      this.removeAllListeners(USBDevice.prototype.EVENT.DATA);
+
         // Stop wathcing from ANT devices
 
-
-
-        if (this.ANTWatcher)
+       if (this.ANTWatcher)
             this.ANTWatcher.stop();
 
         this.releaseDevice();

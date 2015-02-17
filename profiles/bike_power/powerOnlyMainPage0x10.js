@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/mainPage'], function _requireDefinePowerOnlyMainpage0x10(MainPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefinePowerOnlyMainpage0x10(require,exports,module) {
 
     'use strict';
+
+    var MainPage = require('../mainPage');
 
     function PowerOnlyMainPage0x10(configuration, broadcast, profile,pageNumber) {
 
@@ -62,5 +66,6 @@ define(['profiles/mainPage'], function _requireDefinePowerOnlyMainpage0x10(MainP
         this.readPower();
     };
 
-    return PowerOnlyMainPage0x10;
+    module.exports =  PowerOnlyMainPage0x10;
+    return module.exports;
 });

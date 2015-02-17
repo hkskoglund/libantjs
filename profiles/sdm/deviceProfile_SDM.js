@@ -1,13 +1,16 @@
+
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
 define(function (require, exports, module) {
     'use strict';
 
-    var DeviceProfile = require('profiles/deviceProfile'),
-        setting = require('settings'),
-        HighPrioritySearchTimeout = require('messages/HighPrioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout'),
-        SDMPage1 = require('profiles/sdm/SDMPage1'),
-        SDMPage2 = require('profiles/sdm/SDMPage2'),
-        GenericPage = require('profiles/Page');
+    var DeviceProfile = require('../deviceProfile'),
+        setting = require('../../settings'),
+        HighPrioritySearchTimeout = require('../../messages/HighPrioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('../../messages/LowPrioritySearchTimeout'),
+        SDMPage1 = require('./SDMPage1'),
+        SDMPage2 = require('./SDMPage2'),
+        GenericPage = require('../Page');
 
 
     function DeviceProfile_SDM(configuration) {
@@ -67,7 +70,7 @@ define(function (require, exports, module) {
         //    var  data = broadcast.data,
         //         dataView = new DataView(data.buffer);
 
-        //                 
+        //
 
         var page,
             pageNumber = broadcast.data[0],
@@ -97,7 +100,7 @@ define(function (require, exports, module) {
                 // page = new SDMPage1({ log: this.log.logging }, broadcast);
                 page = this.SDMPage1;
                 page.parse(broadcast);
-               
+
                 break;
 
 

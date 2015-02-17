@@ -1,11 +1,13 @@
 /* global define: true, DataView: true */
 
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
 define(function (require, exports, module) {
     'use strict';
 
-    var GenericPage = require('profiles/Page');
+    var GenericPage = require('../Page');
 
-    
+
     function SDMPage2(configuration, broadcast) {
 
         GenericPage.call(this, configuration, broadcast);
@@ -65,7 +67,7 @@ define(function (require, exports, module) {
         SPEED_FRACTIONAL: 5,
         RESERVED_6: 6,
         STATUS : 7
-       
+
     };
 
     SDMPage2.prototype.UNIT = {
@@ -75,7 +77,7 @@ define(function (require, exports, module) {
 
 
     SDMPage2.prototype.parse = function (broadcast) {
-       
+
         var data = broadcast.data;
         // dataView = new DataView(data.buffer);
 
@@ -92,7 +94,7 @@ define(function (require, exports, module) {
         // Byte 3 - cadence - integer
 
         this.cadenceInteger = data[SDMPage2.prototype.BYTE.CADENCE_INTEGER];
-        
+
         // Byte 4 - cadence fractional upper nibble
         this.cadenceFractional = ((data[SDMPage2.prototype.BYTE.CADENCE_FRACTIONAL] & SDMPage2.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage2.prototype.BIT_FIELD.CadenceFractional.START_BIT) * (SDMPage2.prototype.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
         this.cadence = this.cadenceInteger + this.cadenceFractional;
@@ -111,7 +113,7 @@ define(function (require, exports, module) {
         this.status.BatteryStatus = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.BatteryStatus) >> SDMPage2.prototype.BIT_FIELD.BatteryStatus.START_BIT;
          this.status.SDMHealth = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.SDMHealth) >> SDMPage2.prototype.BIT_FIELD.SDMHealth.START_BIT;
          this.status.UseState = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.UseState);
-       
+
 
         switch (this.status.SDMLocation) {
             case 0x00: this.status.SDMLocationFriendly = "Laces"; break;
@@ -144,12 +146,12 @@ define(function (require, exports, module) {
             case 0x03: this.status.UseStateFriendly = "Reserved"; break;
             default: this.status.UseStateFriendly = "? " + this.status.UseState; break;
         }
-     
+
 
     };
 
     SDMPage2.prototype.toString = function () {
-       
+
         var msg = "P# " + this.number + " ",
             UNUSED = 0x00;
 

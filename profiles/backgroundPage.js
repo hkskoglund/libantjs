@@ -1,8 +1,12 @@
 /* global define: true */
 
-define(['profiles/Page'],function _requireDefineGenericPage(GenericPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineGenericPage(require,exports,module) {
 
     'use strict';
+
+    var GenericPage = require('./Page');
 
     function BackgroundPage(configuration, broadcast,profile,pageNumber) {
 
@@ -150,6 +154,8 @@ define(['profiles/Page'],function _requireDefineGenericPage(GenericPage) {
         }
     };
 
-    return BackgroundPage;
+    module.exports = BackgroundPage;
+
+    return module.exports;
 
 });

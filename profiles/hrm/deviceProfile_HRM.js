@@ -1,15 +1,25 @@
 /* global define: true */
 
-define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0','profiles/Page','profiles/hrm/HRMPage'],function (DeviceProfile,HRMPage4,HRMPage0,GenericPage,HRMPage) {
-    
-  'use strict';
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
+define(function (require,exports,module) {
+
+    'use strict';
+
+var
+    DeviceProfile = require('../deviceProfile'),
+    HRMPage4 = require('./HRMPage4'),
+    HRMPage0 = require('./HRMPage0'),
+    GenericPage = require('../Page'),
+
+    HRMPage = require('./HRMPage');
+    
     function DeviceProfile_HRM(configuration) {
-        
+
         DeviceProfile.call(this, configuration);
-        
+
         this.initMasterSlaveConfiguration();
-  
+
         // "Objects are always considered having different class if they don't have exactly the same set of properties in the same order."
         // http://codereview.stackexchange.com/questions/28344/should-i-put-default-values-of-attributes-on-the-prototype-to-save-space/28360#28360
         // "fields that are added to an object outside constructor or object literal, will not be stored directly on the object but in an array external to the object."
@@ -25,12 +35,12 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
         this.aggregatedRR = [];
 
     }
-    
-    DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype); 
-    DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM; 
+
+    DeviceProfile_HRM.prototype = Object.create(DeviceProfile.prototype);
+    DeviceProfile_HRM.prototype.constructor = DeviceProfile_HRM;
 
     DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
-    
+
     // Ca. 4 messages pr. second, or 1 msg. pr 246.3 ms -> max HR supported 246.3 pr/minute
     DeviceProfile_HRM.prototype.CHANNEL_PERIOD = {
         DEFAULT : 8070,
@@ -38,7 +48,7 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
     };
 
     DeviceProfile_HRM.prototype.NAME = 'HRM';
-    
+
     DeviceProfile_HRM.prototype.CHANNEL_ID = {
         DEVICE_TYPE: 0x78,
         TRANSMISSION_TYPE : 0x01
@@ -50,7 +60,7 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
     // It seems like the {timeout} of HRM sensor "GARMIN HRM2-SS" is 2 minutes.
 
     DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
-    
+
     DeviceProfile_HRM.prototype.PAGE_TOGGLE_CAPABLE = true;
 
     // Attach RR interval data to the latestPage
@@ -63,17 +73,17 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
       }
     };
 
-    
+
     DeviceProfile_HRM.prototype.getPage = function (broadcast)
     {
          var page,
              pageNumber = this.getPageNumber(broadcast);
 
           switch (pageNumber) {
-             
+
             // MAIN
 
-            case 4 : 
+            case 4 :
 
                  page = new HRMPage4({ logger: this.log}, broadcast,this,pageNumber);
 
@@ -82,13 +92,13 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
             // Legacy
 
             case 0 :
-                
+
                   page = new HRMPage0({ logger: this.log}, broadcast,this,pageNumber);
-                
+
                   break;
 
             // BACKGROUND
-            
+
             default:
 
                      page= this.getBackgroundPage(broadcast,pageNumber);
@@ -136,6 +146,7 @@ define(['profiles/deviceProfile','profiles/hrm/HRMPage4','profiles/hrm/HRMPage0'
       }
     };
 
-    return DeviceProfile_HRM;
+    module.exports = DeviceProfile_HRM;
+    return module.exports;
 
 });

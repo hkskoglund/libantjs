@@ -336,6 +336,8 @@ define(function (require, exports, module) {
 
       USBNode.prototype.exit = function (retrn) {
 
+        this.removeAllListeners(USBDevice.prototype.EVENT.DATA);
+
           if (this.device === undefined) {
               retrn(this.ERROR.NO_DEVICE);
           }
@@ -433,20 +435,18 @@ define(function (require, exports, module) {
     USBNode.prototype.listen = function ()
        {
 
-          var INFINITY = 0, endpointPacketSize = 512;
-            //  LISTEN_TIMEOUT = 30000;
+          var endpointPacketSize = 512;
 
         //this.setInEndpointTimeout(1000);
 
         if (this.log.logging ) {
-          this.log.log(USBDevice.prototype.EVENT.LOG,'Setting in transfer packet size to',endpointPacketSize);
+          this.log.log(USBDevice.prototype.EVENT.LOG,'Listening with in endpoint transfer packet size ',endpointPacketSize+' bytes');
         }
 
         //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
       //  this.inEndpoint.transfer(endpointPacketSize,this._onData.bind(this,retrn));
 
       this.inEndpoint.on('data',this._onInEndpointData.bind(this));
-
 
       this.inEndpoint.startPoll(1,endpointPacketSize);
 

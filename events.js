@@ -8,6 +8,18 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     'use strict';
 
+    // Using typeof, otherwise ReferenceError on process on the web
+
+    if (typeof process !== 'undefined' && process.title === 'node') // Use native library on node platform
+    {
+      EventEmitter = require('events').EventEmitter;
+
+      module.export = EventEmitter;
+
+      return module.export;
+
+    }
+
     function EventEmitter(configuration) {
 
         this._events = {};

@@ -1,8 +1,20 @@
 /* globals define: true */
 
-define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_cad/bikePage0','profiles/bike_spdcad/SPDCADPage0','profiles/cumulativeOperatingTime','profiles/manufacturerId','profiles/productId','profiles/Page'],function (DeviceProfile, BikeSpdPage0, BikeCadPage0, SPDCADPage0, CumulativeOperatingTime,ManufacturerId, ProductId,GenericPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-    'use strict';
+define(function (require,exports,module) {
+
+'use strict';
+
+var DeviceProfile = require('../deviceProfile'),
+    BikeSpdPage0 = require('../bike_spd/bikePage0'),
+    BikeCadPage0 = require('../bike_cad/bikePage0'),
+    SPDCADPage0 = require('../bike_spdcad/SPDCADPage0'),
+    CumulativeOperatingTime = require('../cumulativeOperatingTime'),
+    ManufacturerId = require('../manufacturerId'),
+    ProductId = require('../productId'),
+    GenericPage = require('../Page');
+
 
     function DeviceProfile_BikeShared(configuration) {
 
@@ -42,6 +54,7 @@ define(['profiles/deviceProfile','profiles/bike_spd/bikePage0','profiles/bike_ca
     };
 
 
-    return DeviceProfile_BikeShared;
+    module.exports = DeviceProfile_BikeShared;
 
+    return module.exports;
 });

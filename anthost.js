@@ -61,14 +61,40 @@ define(function (require, exports, module) {
 
     ChannelId = require('./messages/channelId'),
 
-    usb,  // Don't expose usb interface to higher level code, use wrappers instead on host
+    // Profiles
+
+    RxScanModeProfile = require('./profiles/RxScanMode'),
+
+    // Private objects
+
+    // Don't expose usb interface to higher level code, use wrappers instead on host
+
+    UsbLib,
+    usb,
+    usbLibraryPath,
 
     _ANTMessage = new ANTMessage(); // For CRC verification
 
+    // Detect host environment, i.e if running on node load node specific USB library
+
+    // Node/iojs
+
+    if (typeof process !== 'undefined' && process.title === 'node')
+      {
+        usbLibraryPath = './usb/USBNode';
+      }
+
+    // Chrome packaged app
+
+      else if (typeof window !== 'undefined' && typeof window.chrome === 'object')
+      {
+        usbLibraryPath = './usb/USBChrome';
+      }
+
+    UsbLib = require(usbLibraryPath);
+
 // Host for USB ANT communication
 function Host(options) {
-
-    var usbLibraryPath;
 
     if (!options) {
       options = {};
@@ -80,28 +106,11 @@ function Host(options) {
 
     this.log = new Logger(options);
 
-    // Detect host environment, i.e if running on node load node specific USB library
-
-    // Node
-
-    if (typeof process !== 'undefined' && process.title === 'node')
-      {
-        usbLibraryPath = './usb/USBNode';
-      }
-
-    // Chrome packaged app
-
-      else if (typeof window !== 'undefined' && window.location.protocol === 'chrome:')
-      {
-        usbLibraryPath = './usb/USBChrome';
-      }
-
-    if (this.log.logging) { this.log.log('log','Loading USB library from relative path ',usbLibraryPath); }
-
-    usb = new (require(usbLibraryPath))({ log : options.log});
-
     this._channel = {};
 
+    if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
+
+    usb = new UsbLib({ log : options.log});
 }
 
 //Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
@@ -144,6 +153,37 @@ Host.prototype.EVENT = {
 
     PAGE : 'page' // Page from ANT+ sensor / device profile
 
+};
+
+Host.prototype.establishRXScanModeChannel = function (onPage)
+{
+
+  var channel = new RxScanModeProfile({
+      log: true,
+      channelId: {
+          deviceNumber: 0,
+          deviceType: 0,
+          transmissionType: 0
+      }
+  });
+
+  channel.addListener('page', onPage);
+
+  function onChannelEstablished(error)
+  {
+    console.log('onChannelEstablished',arguments);
+
+  }
+
+  this.establishChannel({
+      channelNumber: 0,
+      networkNumber: 0,
+      // channelPeriod will be ignored for RxScanMode channel
+      //channelPeriod: TEMPprofile.prototype.CHANNEL_PERIOD_ALTERNATIVE, // 0.5 Hz - every 2 seconds
+      configurationName: 'slave only',
+      channel: channel,
+      open: true
+  }, onChannelEstablished);
 };
 
 // Spec. p. 21 sec. 5.3 Establishing a channel
@@ -551,16 +591,22 @@ Host.prototype.init = function (iDevice,initCB) {
 
     var usbInitCB = function _usbInitCB(error) {
 
-        if (error)
-            initCB(error);
-        else {
-            // Start listening for data on in endpoint and send it to host parser
+console.log('usbInitCB',error);
 
-            usb.removeAllListeners(USBDevice.prototype.EVENT.DATA); // In case of reinitialization, remove previous listeners
+        if (error) {
+          initCB(error);
+        }
+        else {
+
             usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+
             usb.listen();
 
-            initCB();
+            this.getCapabilities(function (error,capabilities) {
+              if (!error)
+                this.capabilities = capabilities;
+              initCB(error);
+            }.bind(this));
 
           //  resetCapabilitiesLibConfig(initCB);
         }
@@ -573,6 +619,8 @@ Host.prototype.init = function (iDevice,initCB) {
 
 // Exit host
 Host.prototype.exit = function (callback) {
+
+   // TO DO? Close open channels? Exit channels/profiles?
 
     usb.exit(callback);
 
@@ -611,37 +659,6 @@ Host.prototype.RXparse = function ( data) {
 
     messageLength = data.length;
 
-
-    // Check for partial message that crosses LIBUSB transfer length boundary (typically multiple of max packet size for in endpoint)
-
-    if (this.partialMessage) {
-        var firstBufferLength = this.partialMessage.first[LENGTH_OFFSET];
-        if (typeof firstBufferLength === 'undefined') // Length is the first byte in new data buffer and SYNC the last byte of the previous buffer
-           firstBufferLength = data[0];
-
-        this.partialMessage.next = data.subarray(0,firstBufferLength-(this.partialMessage.first.length-NUMBER_OF_FIXED_BYTES));
-        if (this.log.logging)
-            this.log.log('log', this.partialMessage);
-        message = new Uint8Array(this.partialMessage.first.length+this.partialMessage.next.length);
-        message.set(this.partialMessage.first,0);
-        message.set(this.partialMessage.next,this.partialMessage.first.length);
-        if (this.log.logging) this.log.log('log', 'Reconstructed ', message);
-
-    } else {
-         if (typeof data[LENGTH_OFFSET] === 'undefined') {
-             if (this.log.logging) this.log.log('warn', 'No message length found in partial message ', data);
-            message = data; // Only 1 SYNC byte
-            this.partialMessage = {  first : message };
-            return;
-        } else {
-            message = data.subarray(0,data[LENGTH_OFFSET]+NUMBER_OF_FIXED_BYTES);
-            if (message.length < data[LENGTH_OFFSET]+NUMBER_OF_FIXED_BYTES) {
-                this.partialMessage = {  first : message };
-                return;
-            }
-
-        }
-    }
 
 
     if (message[SYNC_OFFSET] !== ANTMessage.prototype.SYNC) {
@@ -969,22 +986,6 @@ Host.prototype.RXparse = function ( data) {
             if (this.log.logging)
                 this.log.log('log', "Unable to parse received data", data, ' msg id ', message[ID_OFFSET]);
             break;
-    }
-
-    // There might be more buffered messages from LIBUSB available
-
-
-    if (this.partialMessage) {
-        nextSYNCIndex = this.partialMessage.next.length;
-       delete this.partialMessage; // Remove from heap
-    } else
-        nextSYNCIndex = message.length;
-
-    if (data.length > nextSYNCIndex)
-    {
-        //this.log.log('log','Parsing next ANT message, expecting SYNC byte at byteOffset ', nextSYNCIndex,data);
-        // console.log(data.slice(nextExpectedSYNCIndex));
-        return this.RXparse(data.subarray(nextSYNCIndex));
     }
 
 };

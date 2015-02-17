@@ -1,19 +1,23 @@
 /* global define: true */
 
-define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingTimeShared) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require,exports,module) {
 
     'use strict';
+
+    var CumulativeOperatingTimeShared = require('./cumulativeOperatingTimeShared');
 
     function CumulativeOperatingTime(configuration,broadcast,profile,pageNumber)
     {
 
-       CumultiveOperatingTimeShared.call(this,configuration,broadcast,profile,pageNumber);
+       CumulativeOperatingTimeShared.call(this,configuration,broadcast,profile,pageNumber);
 
        this.read(broadcast);
 
     }
 
-    CumulativeOperatingTime.prototype = Object.create(CumultiveOperatingTimeShared.prototype);
+    CumulativeOperatingTime.prototype = Object.create(CumulativeOperatingTimeShared.prototype);
     CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
 
 
@@ -84,6 +88,7 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumultiveOperatingT
         return batteryStatusString;
     };
 
-    return CumulativeOperatingTime;
+    module.exports = CumulativeOperatingTime;
+    return module.exports;
 
 });

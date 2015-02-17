@@ -1,12 +1,24 @@
 /* global define: true, clearInterval: true, setInterval: true, setTimeout: true  */
 
-define(['channel','profiles/Page','profiles/mainPage','profiles/backgroundPage','messages/HighPrioritySearchTimeout','messages/LowPrioritySearchTimeout','settings',
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
-        'profiles/manufacturerId','profiles/productId','profiles/cumulativeOperatingTime',
-        'profiles/manufacturerId0x50','profiles/productId0x51','profiles/cumulativeOperatingTime0x52'],function (Channel, GenericPage,MainPage,BackgroundPage,HighPrioritySearchTimeout,LowPrioritySearchTimeout,setting,
-ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x51,CumulativeOperatingTime0x52) {
+define(function (require, exports, module) {
+  'use strict';
 
-    'use strict';
+  var
+          Channel = require('../channel'),
+           GenericPage = require('./Page'),
+           MainPage = require('./mainPage'),
+           BackgroundPage = require('./backgroundPage'),
+           HighPrioritySearchTimeout = require('../messages/HighPrioritySearchTimeout'),
+           LowPrioritySearchTimeout = require('../messages/LowPrioritySearchTimeout'),
+           setting= require('../settings'),
+           ManufacturerId= require('./manufacturerId'),
+           ProductId= require('./productId'),
+           CumulativeOperatingTime= require('./cumulativeOperatingTime'),
+           ManufacturerId0x50= require('./manufacturerId0x50'),
+           ProductId0x51= require('./productId0x51'),
+           CumulativeOperatingTime0x52= require('./cumulativeOperatingTime0x52');
 
     function DeviceProfile(configuration) {
 
@@ -526,6 +538,8 @@ ManufacturerId,ProductId,CumulativeOperatingTime,ManufacturerId0x50,ProductId0x5
         }
     };
 
-   return DeviceProfile;
+    module.exports = DeviceProfile;
+
+    return module.exports;
 
 });

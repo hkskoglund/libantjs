@@ -1,8 +1,12 @@
 /* global define: true */
 
-define(['profiles/cumulativeOperatingTimeShared'], function (CumulativeOperatingTimeShared) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require,exports,module) {
 
     'use strict';
+
+    var CumulativeOperatingTimeShared = require('./cumulativeOperatingTimeShared');
 
     function CumulativeOperatingTime(configuration,broadcast,profile,pageNumber)
     {
@@ -22,6 +26,7 @@ define(['profiles/cumulativeOperatingTimeShared'], function (CumulativeOperating
         return msg;
     };
 
-    return CumulativeOperatingTime;
+    module.exports = CumulativeOperatingTime;
+    return module.exports;
 
 });

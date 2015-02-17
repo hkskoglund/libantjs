@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/backgroundPage'], function (BackgroundPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require,exports,module) {
 
     'use strict';
+
+    var BackgroundPage = require('./backgroundPage');
 
     function ProductId(configuration,broadcast,profile,pageNumber)
     {
@@ -82,6 +86,7 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
         return msg;
     };
 
-    return ProductId;
+    module.exports = ProductId;
+    return module.exports;
 
 });

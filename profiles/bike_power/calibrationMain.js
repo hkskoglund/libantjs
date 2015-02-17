@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/mainPage'], function _requireDefineCalibrationMain(MainPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineCalibrationMain(require,exports,module) {
 
     'use strict';
+
+    var MainPage = require('../mainPage');
 
     function CalibrationMain(configuration, broadcast, profile,pageNumber) {
 
@@ -100,5 +104,6 @@ define(['profiles/mainPage'], function _requireDefineCalibrationMain(MainPage) {
         return 'Calibration ID: '+this.ID[this.calibrationID]+' (0x'+this.calibrationID.toString(16)+'), '+this.AUTO_ZERO[this.autoZeroStatus]+' (0x'+this.autoZeroStatus.toString(16)+'), Calibration data '+this.calibrationData+' (0x'+this.calibrationData.toString(16)+')';
     };
 
-    return CalibrationMain;
+    module.exports =  CalibrationMain;
+    return module.exports;
 });

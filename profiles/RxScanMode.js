@@ -1,11 +1,20 @@
 /* global define: true */
 
-define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_ENVIRONMENT',
-        'profiles/hrm/deviceProfile_HRM','profiles/sdm/deviceProfile_SDM','profiles/bike_spdcad/deviceProfile_SPDCAD',
-       'profiles/bike_spd/deviceProfile_BikeSpd','profiles/bike_cad/deviceProfile_BikeCad','profiles/bike_power/deviceProfile_BikePower'],
-        function (DeviceProfile,setting,TEMPProfile,HRMProfile,SDMProfile,SPDCADProfile,BikeSpdProfile, BikeCadProfile, BikePowerProfile) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require, exports, module) {
 
     'use strict';
+
+    var DeviceProfile = require('./deviceProfile'),
+        setting = require('../settings'),
+        TEMPProfile = require('./environment/deviceProfile_ENVIRONMENT'),
+        HRMProfile = require('./hrm/deviceProfile_HRM'),
+        SDMProfile = require('./sdm/deviceProfile_SDM'),
+        SPDCADProfile = require('./bike_spdcad/deviceProfile_SPDCAD'),
+        BikeSpdProfile =require('./bike_spd/deviceProfile_BikeSpd'),
+        BikeCadProfile =require('./bike_cad/deviceProfile_BikeCad'),
+        BikePowerProfile = require('./bike_power/deviceProfile_BikePower');
 
     // Just in case errors with loading
 
@@ -164,6 +173,8 @@ define(['profiles/deviceProfile','settings','profiles/environment/deviceProfile_
 
     };
 
-    return RxScanMode;
+    module.exports = RxScanMode;
+
+    return module.exports;
 
 });

@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/mainPage'], function _requireDefineHRMPage(MainPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function _requireDefineHRMPage(require,exports,module) {
 
     'use strict';
+
+    var MainPage = require('../mainPage');
 
     function HRMPage(configuration, broadcast, profile,pageNumber) {
 
@@ -82,6 +86,7 @@ define(['profiles/mainPage'], function _requireDefineHRMPage(MainPage) {
         return msg;
     };
 
-    return HRMPage;
+    module.exports =  HRMPage;
+    return module.exports;
 
 });

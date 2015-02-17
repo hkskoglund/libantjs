@@ -1,8 +1,12 @@
 /* global define: true, DataView: true */
 
-define(['profiles/backgroundPage'], function (BackgroundPage) {
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
+
+define(function (require,exports,module) {
 
     'use strict';
+
+    var BackgroundPage = require('./backgroundPage');
 
     function CumulativeOperatingTime(configuration,broadcast,profile,pageNumber)
     {
@@ -43,6 +47,7 @@ define(['profiles/backgroundPage'], function (BackgroundPage) {
             this.lastBatteryReset = (new Date(Date.now() - this.cumulativeOperatingTime * 1000)).toLocaleString();
         };
 
-    return CumulativeOperatingTime;
+    module.exports = CumulativeOperatingTime;
+    return module.exports;
 
 });
