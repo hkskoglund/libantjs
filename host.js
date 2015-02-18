@@ -215,9 +215,6 @@ Host.prototype.establishChannel = function (channelInfo, callback) {
 
     //console.log("Options", parameters);
 
-    verifyRange(this.capabilities,'channel', channelNumber);
-    verifyRange(this.capabilities,'network', networkNumber);
-
     if (typeof parameters.channelType === "undefined") {
         callback(new Error('No channel type specified'));
         return;
@@ -626,8 +623,6 @@ Host.prototype.exit = function (callback) {
 
 };
 
-
-
 Host.prototype.RXparse = function ( data) {
 
 //    data = new Uint8Array(1);
@@ -637,9 +632,7 @@ Host.prototype.RXparse = function ( data) {
       SYNC_OFFSET = 0,
       LENGTH_OFFSET = 1,
       ID_OFFSET = 2,
-      NUMBER_OF_FIXED_BYTES = 4, // SYNC LENGTH ID CRC
-      nextSYNCIndex;
-
+      NUMBER_OF_FIXED_BYTES = 4; // SYNC LENGTH ID CRC
 
     //if (error ) {
     //    if (this.log.logging)
@@ -658,8 +651,6 @@ Host.prototype.RXparse = function ( data) {
     }
 
     messageLength = data.length;
-
-
 
     if (message[SYNC_OFFSET] !== ANTMessage.prototype.SYNC) {
 
@@ -687,10 +678,6 @@ Host.prototype.RXparse = function ( data) {
         if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
         return;
     }
-
-
-    //if (ANTmsg.LENGTH+data.byteOffset < 64)
-
 
     switch (message[ID_OFFSET])
     {
@@ -842,19 +829,8 @@ Host.prototype.RXparse = function ( data) {
         case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
             notification = new NotificationStartup(message);
-           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[notification.requestId]);
-            if (this.log.logging)
-                this.log.log('log', notification.toString());
-            // NOT USED this.lastNotificationStartup = notification;
 
-//            console.log("Notification startup ",notification);
-//
-//            if (this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]) {
-//              clearTimeout(this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM]);
-//                delete this.resendTimeoutID[ANTMessage.prototype.MESSAGE.RESET_SYSTEM];
-//            }
-//            else
-//              this.log.log('warn','No timeout registered for response time for reset command');
+            if (this.log.logging) this.log.log('log', notification.toString());
 
             this._responseCallback(notification);
 
@@ -1061,64 +1037,14 @@ Host.prototype.getDeviceSerialNumber = function (callback) {
 
 };
 
-// Determine valid channel/network
-function verifyRange(capabilities,type, value, low, high) {
-
-
-    if (typeof value === "undefined")
-        throw new TypeError('Number specified is undefined');
-
-    switch (type) {
-        case 'channel':
-            if (typeof capabilities === "undefined")
-                throw new Error("getCabilities should be run to determine max. channels and networks");
-
-            if (capabilities && (value > (capabilities.MAX_CHAN - 1) || value < 0))
-                throw new RangeError('Channel nr ' + value + ' out of bounds');
-
-            break;
-
-        case 'network':
-
-            if (typeof capabilities === "undefined")
-                throw new Error("getCabilities should be run to determine max. channels and networks");
-
-            if (capabilities && (value > (capabilities.MAX_NET - 1) || value < 0))
-                throw new RangeError('Network nr ' + value + ' out of bounds');
-
-            break;
-
-        case 'transmitPower':
-
-            if (value > high || value < low)
-                throw new RangeError('Transmit power out of bounds');
-
-            break;
-
-        case 'searchThreshold':
-
-            if (value > high || value < low)
-                throw new RangeError('Proximity search threshold out of bounds');
-
-            break;
-
-        default: throw new Error('Unknown type, cannot verify range');
-
-    }
-}
-
 // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
 Host.prototype.getChannelStatus = function (channel, callback) {
 
-    verifyRange(this.capabilities,'channel',channel);
-
-    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS));
+    var msg = new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS);
 
      this.sendMessage(msg, callback);
 
 };
-
-
 
 Host.prototype.getChannelStatusAll = function (callback) {
     var channelNumber = 0,
@@ -1200,11 +1126,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
     Host.prototype.unAssignChannel = function (channelNr, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel', channelNr);
-
-        configurationMsg = new UnAssignChannelMessage();
+        var configurationMsg = new UnAssignChannelMessage();
 
         this.sendMessage(configurationMsg, callback);
 
@@ -1214,11 +1136,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
  Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
  also sets defaults values for RF, period, tx power, search timeout p.22 */
     Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback) {
-        var cb, configurationMsg;
-
-        verifyRange(this.capabilities,'channel', channelNumber);
-
-        configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
+        var cb, configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
 
         if (typeof extend === "function")
             cb = extend; // If no extended assignment use parameter as callback
@@ -1241,11 +1159,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 */
     Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel',channel);
-
-        configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
+        var configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
 
         this.sendMessage(configurationMsg, callback);
 
@@ -1254,19 +1168,13 @@ Host.prototype.getChannelStatusAll = function (callback) {
 // Uses the lower 2 bytes of the device serial number as channel Id.
     Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback) {
 
-
-
         if (typeof this.capabilities === "undefined")
             callback(new Error('getCapabilities should be run to determine capability for device serial number'));
 
         if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
             callback(new Error('Device does not support serial number - cannot use lower 2 bytes of serial number as device number in the channel ID'));
 
-            var configurationMsg;
-
-            verifyRange(this.capabilities,'channel', channel);
-
-            configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
+            var configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
 
             this.sendMessage(configurationMsg,  callback);
 
@@ -1277,13 +1185,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
         //if (channel.isBackgroundSearchChannel())
         //    msg = "(Background search channel)";
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel',channel);
-        if (this.log.logging)
-            this.log.log('log', 'Channel period (Tch) is ', messagePeriod);
-
-        configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
+        var configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
 
         this.sendMessage(configurationMsg,  callback);
 
@@ -1303,11 +1205,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
         if (!this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
             callback(new Error("Device does not support setting low priority search"));
 
-            var configurationMsg;
-
-            verifyRange(this.capabilities,'channel', channel);
-
-            configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
+            var configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
 
             this.sendMessage(configurationMsg,  callback);
 
@@ -1316,11 +1214,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
     Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel',channel);
-
-        configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
+        var configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
 
         this.sendMessage(configurationMsg,  callback);
 
@@ -1329,11 +1223,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 // Set the RF frequency, i.e 66 = 2466 MHz
     Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel',channel);
-
-        configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
+        var configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
 
         this.sendMessage(configurationMsg,  callback);
 
@@ -1342,11 +1232,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 // Set network key for specific net
     Host.prototype.setNetworkKey = function (netNumber, key, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'network',netNumber);
-
-        configurationMsg = new SetNetworkKeyMessage(netNumber, key);
+        var configurationMsg = new SetNetworkKeyMessage(netNumber, key);
 
         this.sendMessage(configurationMsg, callback);
     };
@@ -1407,11 +1293,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
      Host.prototype.openRxScanMode = function (channel, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel', channel);
-
-        configurationMsg = new OpenRxScanModeMessage(channel);
+        var configurationMsg = new OpenRxScanModeMessage(channel);
 
         this.sendMessage(configurationMsg, callback);
 
@@ -1420,11 +1302,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
     Host.prototype.openChannel = function (channel, callback) {
 
-        var configurationMsg;
-
-        verifyRange(this.capabilities,'channel', channel);
-
-        configurationMsg = new OpenChannelMessage(channel);
+        var configurationMsg = new OpenChannelMessage(channel);
 
         this.sendMessage(configurationMsg, callback);
     };
@@ -1442,8 +1320,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
         }
 
         var configurationMsg;
-
-        verifyRange(this.capabilities,'channel', channelNumber);
 
         configurationMsg = new CloseChannelMessage(channelNumber);
 

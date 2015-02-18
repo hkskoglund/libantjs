@@ -526,7 +526,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     };
 
     USBWindows.prototype.transfer = function (chunk, callback) {
-        // At the moment : Higher level code in anthost will attempt resend of message if no response is received
+        // At the moment : Higher level code in host will attempt resend of message if no response is received
 
         try
         {

@@ -2,7 +2,7 @@
   "name": "libant",
   "version": "0.1.5",
   "description": "ANT wireless USB library",
-  "main": "anthost.js",
+  "main": "host.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -7,18 +7,18 @@ define(function (require,exports,module) {
   var Logger = require('./logger'),
       EventEmitter = require('./events');
 
-    function Channel(configuration) {
+    function Channel(options) {
 
-        EventEmitter.call(this,configuration);
+        EventEmitter.call(this,options);
 
-        this.options = configuration;
+        this.options = options;
 
-        if (!configuration)
-            configuration = {};
+        if (!options)
+            options = {};
 
-        configuration.logSource = this;
+        options.logSource = this;
 
-        this.log = configuration.logger || new Logger(configuration);
+        this.log = options.logger || new Logger(options);
 
         this.parameters = {};
 
