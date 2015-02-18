@@ -111,6 +111,9 @@ function Host(options) {
     if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
 
     usb = new UsbLib({ log : options.log});
+
+    this.state = this.STATE.INIT;
+    this.responseCallback  = undefined; // Function to call when receiving a response from ANT chip
 }
 
 //Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
@@ -118,20 +121,39 @@ function Host(options) {
 //                                                                        writeable : true,
 //                                                                        configurable : true } });
 
+//Use state-machine for keeping track of messaging state
+Host.prototype.STATE = {
+  INIT : 0x00,
+  RTS : 0x01, // Ready to send next message to ANT
+  WAIT : 0x02, // Waiting for response from ANT
+  ERROR : 0x03 // Something went wrong
+};
+
 // Send a message to ANT
 Host.prototype.sendMessage = function (message, callback) {
 
+  if (this.state !== this.STATE.RTS) {
+    callback(new Error('Unable to send message state is '+this.state));
+    return;
+  }
+
    var _sendMessageCB = function (error)
    {
+
      if (error) {
-         if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+        this.state = this.STATE.ERROR;
+        if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+        this.responseCallback(error);
      }
 
-     callback(error);
+     // on success, responseCallback is called during pasring of response in RXparse
 
    }.bind(this);
 
-    if (this.log.logging) { this.log.log('log', 'Sending message ', message); }
+    if (this.log.logging) { this.log.log('log', 'Sending message '+ message.name); }
+
+    this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
+    this.responseCallback = callback;
 
     usb.transfer(message.getRawMessage(),_sendMessageCB);
 
@@ -591,6 +613,7 @@ Host.prototype.init = function (iDevice,initCB) {
 console.log('usbInitCB',error);
 
         if (error) {
+          this.state = this.state.ERROR;
           initCB(error);
         }
         else {
@@ -599,13 +622,21 @@ console.log('usbInitCB',error);
 
             usb.listen();
 
-            this.getCapabilities(function (error,capabilities) {
-              if (!error)
+        /*    this.getCapabilities(function (error,capabilities) {
+              if (!error) {
                 this.capabilities = capabilities;
+                this.state = this.STATE.RTS;
+              } else
+                 {
+                   this.state = this.state.ERROR;
+                 }
               initCB(error);
-            }.bind(this));
+            }.bind(this)); */
 
           //  resetCapabilitiesLibConfig(initCB);
+
+          this.state = this.STATE.RTS;
+          initCB();
         }
 
     }.bind(this);
@@ -623,48 +654,41 @@ Host.prototype.exit = function (callback) {
 
 };
 
-Host.prototype.RXparse = function ( data) {
+// param data - ArrayBuffer from USB
+Host.prototype.RXparse = function (data) {
 
-//    data = new Uint8Array(1);
-//    data[0] = 164;
   var message,
-      messageLength, // Uint8Array .length === .byteLength
-      SYNC_OFFSET = 0,
-      LENGTH_OFFSET = 1,
-      ID_OFFSET = 2,
-      NUMBER_OF_FIXED_BYTES = 4; // SYNC LENGTH ID CRC
-
-    //if (error ) {
-    //    if (this.log.logging)
-    //        this.log.log('error', error);
-    //    //throw new Error(error);
-    //    return;
-    //}
-
-    //this.log.time('parse');
+      iSYNC = 0,
+      iLength = 1,
+      iID = 2,
+      iCRC;
 
     if (data === undefined)
     {
-        if (this.log.logging)
-            this.log.log('error','Undefined data received in RX parser, may indicate problems with USB provider, i.e USBChrome');
+        if (this.log.logging) this.log.log('error','Undefined data received in RX parser, may indicate problems with USB provider');
+
         return;
     }
 
-    messageLength = data.length;
+    if (data[iSYNC] !== ANTMessage.prototype.SYNC) {
 
-    if (message[SYNC_OFFSET] !== ANTMessage.prototype.SYNC) {
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[iSYNC] + ' expected ' + ANTMessage.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + message[SYNC_OFFSET] + ' expected ' + ANTMessage.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data, message);
-            return;
+        return;
     }
 
+    if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength);
+
+    message = data.subarray(0,data[iLength] + 4);
+    if (this.log.logging) this.log.log('log', 'Current message for parsing',message);
 
     var notification;
 
-
     //// Check CRC
 
-    var receivedCRC = message[message[LENGTH_OFFSET] + 3];
+    iCRC = message[iLength] + 3;
+    var receivedCRC = message[iCRC];
+
     if (typeof receivedCRC === 'undefined')
     {
         if (this.log.logging) this.log.log('Unable to get CRC of ANT message', message);
@@ -679,8 +703,32 @@ Host.prototype.RXparse = function ( data) {
         return;
     }
 
-    switch (message[ID_OFFSET])
+    switch (message[iID])
     {
+
+      // Notifications
+
+      case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
+
+          notification = new NotificationStartup(message);
+
+          if (this.log.logging) this.log.log('log', notification.toString());
+
+          this.state = this.STATE.RTS;
+          this.responseCallback(undefined,notification);
+
+          break;
+
+      case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
+
+          notification = new NotificationSerialError(message);
+
+          if (this.log.logging) this.log.log('log', "Notification serial error: ", notification.toString());
+
+          this.state = this.STATE.ERROR;
+          this.responseCallback(new Error('Notification: Serial error'),notification);
+
+          break;
 
 //        //// Data
 //
@@ -749,63 +797,14 @@ Host.prototype.RXparse = function ( data) {
 //        //    break;
 //
         case ANTMessage.prototype.MESSAGE.BROADCAST_DATA:
-//
-//        //    msgStr += ANTMessage.prototype.MESSAGE.broadcast_data.friendly + " ";
-//
-//        //    channelNr = data[3];
-//        //    msgStr += " on channel " + channelNr;
-//
-//        //    // Parse flagged extended message info. if neccessary
-//        //    if (ANTmsg.length > 9) {
-//        //        msgFlag = data[12];
-//        //        //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-//        //        this.parse_extended_message(channelNr, data); // i.e channel ID
-//        //    }
-//
-//        //    // Check for updated channel ID to the connected device (ONLY FOR IF CHANNEL ID IS NOT ENABLED IN EXTENDED PACKET INFO)
-//
-//        //    if (typeof antInstance.channelConfiguration[channelNr].hasUpdatedChannelID === "undefined") {
-//
-//        //        antInstance.getUpdatedChannelID(channelNr,
-//        //            function error() {
-//        //                this.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Failed to get updated channel ID");
-//        //            },
-//        //           function success(data) {
-//        //               antInstance.channelConfiguration[channelNr].hasUpdatedChannelID = true;
-//        //           });
-//
-//        //    }
-//
-//        //    // Call to broadcast handler for channel
-//        //    if (!antInstance.channelConfiguration[channelNr].emit(Channel.prototype.EVENT.BROADCAST, data))
-//        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE,"No listener for event Channel.prototype.EVENT.BROADCAST on channel "+channelNr);
-//
-//            //    //antInstance.channelConfiguration[channelNr].broadCastDataParser(data);
-//
+
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
-//
 
             var broadcast = new BroadcastDataMessage();
-           // var broadcast = this.broadcast;
+
             broadcast.parse(message);
 
-//            // TEST RSSI
-//
-//            broadcast.RSSI.measurementType = 0x20; // dBm
-//            broadcast.RSSI.RSSIValue = 0;
-// Spec. p. 61 9.4.3 "Output power level settings" nRF24AP2-USB
-//           0 = -18dBm, 1= -12dBm, 2= -6dBm, 3 = 0dBm (= 1mW)
-
-//            broadcast.RSSI.thresholdConfigurationValue = -128; // off
-//             broadcast.RSSI.thresholdConfigurationValue = 3;
-//
-           /* if (this.log.logging)
-                this.log.log('log', broadcast.toString());*/
-//
-//            // Question ? Filtering of identical messages should it be done here or delayed to i.e device profile ??
-//            // The number of function calls can be limited if filtering is done here....
-//
-             // Send broad to specific channel handler
+         // Send broad to specific channel handler
             if (typeof this._channel[broadcast.channel] !== "undefined") {
 
                 if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function') {
@@ -824,26 +823,7 @@ Host.prototype.RXparse = function ( data) {
 
             break;
 
-        // Notifications
 
-        case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
-
-            notification = new NotificationStartup(message);
-
-            if (this.log.logging) this.log.log('log', notification.toString());
-
-            this._responseCallback(notification);
-
-            break;
-
-        case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
-
-            notification = new NotificationSerialError(message);
-            // NOT USED this.lastNotificationError = notification;
-            if (this.log.logging)
-                this.log.log('log', "Notification serial error: ", notification.toString());
-
-            break;
 //
 //            // Channel event or responses
 //
@@ -960,9 +940,11 @@ Host.prototype.RXparse = function ( data) {
         default:
             //msgStr += "* NO parser specified *";
             if (this.log.logging)
-                this.log.log('log', "Unable to parse received data", data, ' msg id ', message[ID_OFFSET]);
+                this.log.log('log', "Unable to parse received data", data, ' msg id ', message[iID]);
             break;
     }
+
+    // TO DO : parse reset of data (next message)
 
 };
 
@@ -972,15 +954,7 @@ Host.prototype.resetSystem = function (callback) {
 
     var msg = new ResetSystemMessage();
 
-        this.sendMessage(msg, callback);
-
-    // return Promise?
-    // Promise - split responsibility for handling data in fullfilment-callback and error in rejected-callback
-    // registered with the .then method. Current callback strategy uses the "continuation"-callback style callback(err,data) like in node.js.
-    // promise: when fullfilled -> calls fulfillment-callbacks in sequence
-    // Drawback: dependency on external library like i.e when,
-    // rewrite code that works
-    // Rather hard to understand the Promises/A+ specification
+    this.sendMessage(msg, callback);
 
 };
 
