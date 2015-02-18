@@ -625,7 +625,11 @@ Host.prototype.init = function (iDevice,initCB) {
     var onReset = function _onReset(error,notification)
     {
       if (!error)
-      this.getCapabilities(onCapabilities);
+         this.getCapabilities(onCapabilities);
+      else {
+         this.state = this.state.ERROR;
+         initCB(error,notification);
+       }
     }.bind(this);
 
     var usbInitCB = function _usbInitCB(error) {
@@ -642,7 +646,7 @@ Host.prototype.init = function (iDevice,initCB) {
 
             this.state = this.STATE.RTS;
 
-            this.getCapabilities(onCapabilities);
+            this.resetSystem(onReset);
 
           //  resetCapabilitiesLibConfig(initCB);
 
@@ -669,6 +673,9 @@ Host.prototype._runResponseCallback = function (error,message)
       this.state = this.STATE.ERROR;
     else
       this.state = this.STATE.RTS;
+
+    if (this.log.logging)
+          this.log.log('log', message.toString());
 
     this.responseCallback(error,message);
 
@@ -732,8 +739,6 @@ Host.prototype.RXparse = function (data) {
 
           notification = new NotificationStartup(message);
 
-          if (this.log.logging) this.log.log('log', notification.toString());
-
           this._runResponseCallback(undefined,notification);
 
           break;
@@ -741,8 +746,6 @@ Host.prototype.RXparse = function (data) {
       case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
           notification = new NotificationSerialError(message);
-
-          if (this.log.logging) this.log.log('log', "Notification serial error: ", notification.toString());
 
           this._runResponseCallback(new Error('Notification: Serial error'),notification);
 
@@ -754,11 +757,23 @@ Host.prototype.RXparse = function (data) {
 
           this.capabilities = capabilitiesMsg;
 
-          if (this.log.logging)
-              this.log.log('log', capabilitiesMsg.toString());
-
-
           this._runResponseCallback(undefined,capabilitiesMsg);
+
+          break;
+
+      case ANTMessage.prototype.MESSAGE.ANT_VERSION:
+
+          this.responseCallback(undefined,new ANTVersionMessage(message));
+
+          break;
+
+      case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
+
+          var serialNumberMsg = new DeviceSerialNumberMessage(message);
+
+          this.deviceSerialNumber = serialNumberMsg.serialNumber;
+
+          this.responseCallback(undefined,serialNumberMsg);
 
           break;
 
@@ -874,7 +889,7 @@ Host.prototype.RXparse = function (data) {
 
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
-                this.responseCallback(undefinedchannelResponseMsg);
+                this.responseCallback(undefined,channelResponseMsg);
 //            else
 //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
 //
@@ -906,7 +921,7 @@ Host.prototype.RXparse = function (data) {
 //            channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
 
-           this.responseCallback(undefinedchannelStatusMsg);
+           this.responseCallback(undefined,channelStatusMsg);
 
             break;
 //
@@ -929,34 +944,10 @@ Host.prototype.RXparse = function (data) {
 //
 //            // ANT device specific, i.e nRF24AP2
 //
-        case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-            var versionMsg = new ANTVersionMessage(message);
-           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[versionMsg.id]);
-//            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            versionMsg.parse();
-
-            this.responseCallback(undefinedversionMsg);
-
-
-            break;
-
-
-
-        case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
-
-            var serialNumberMsg = new DeviceSerialNumberMessage(message);
-          //   this.log.timeEnd(ANTMessage.prototype.MESSAGE[serialNumberMsg.id]);
-//            serialNumberMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            serialNumberMsg.parse();
-            this.deviceSerialNumber = serialNumberMsg.serialNumber;
-
-            this.responseCallback(undefinedserialNumberMsg);
-
-            break;
 
         default:
-            //msgStr += "* NO parser specified *";
+
             if (this.log.logging)
                 this.log.log('log', "Unable to parse received data", data, ' msg id ', message[iID]);
             break;
