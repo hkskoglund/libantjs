@@ -176,65 +176,65 @@ CapabilitiesMessage.prototype.parse = function () {
 CapabilitiesMessage.prototype.toString = function () {
     //console.log("capabilities", this);
     // " ID 0x" + this.id.toString(16)
-    var msg = this.name + " Max channels: " + this.getNumberOfChannels() + " Max networks:" + this.getNumberOfNetworks()+ ' Max sensRcore channels: ' + this.maxSensRcoreChannels+' ';
+    var msg = this.name + " Channels " + this.getNumberOfChannels() + " | Networks " + this.getNumberOfNetworks()+ ' | sensRcore channels ' + this.maxSensRcoreChannels+' | ';
 
     if (this.standardOptions.CAPABILITIES_NO_RECEIVE_CHANNELS)
-        msg += "No receive channels ";
+        msg += "No receive channels | ";
     if (this.standardOptions.CAPABILITIES_NO_TRANSMIT_CHANNELS)
-        msg += "No transmit channels ";
+        msg += "No transmit channels | ";
     if (this.standardOptions.CAPABILITIES_NO_RECEIVE_MESSAGES)
-        msg += "No receive messages ";
+        msg += "No receive messages | ";
     if (this.standardOptions.CAPABILITIES_NO_TRANSMIT_MESSAGES)
-        msg += "No transmit messages" ;
+        msg += "No transmit messages | " ;
     if (this.standardOptions.CAPABILITIES_NO_ACKD_MESSAGES)
-        msg += "No ackd. messages ";
+        msg += "No ackd. messages | ";
     if (this.standardOptions.CAPABILITIES_NO_BURST_MESSAGES)
-        msg += "No burst messages ";
+        msg += "No burst messages | ";
 
     if (this.advancedOptions.CAPABILITIES_NETWORK_ENABLED)
-        msg += "Network ";
+        msg += "Network | ";
     if (this.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
-        msg += "Serial number ";
+        msg += "Serial number | ";
     if (this.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
-        msg += "Per channel Tx Power ";
+        msg += "Per channel Tx Power | ";
     if (this.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
-        msg += "Low priority search " ;
+        msg += "Low priority search | " ;
     if (this.advancedOptions.CAPABILITIES_SCRIPT_ENABLED)
-        msg += "Script ";
+        msg += "Script | ";
     if (this.advancedOptions.CAPABILITIES_SEARCH_LIST_ENABLED)
-        msg += "Search list ";
+        msg += "Search list | ";
 
     if (this.advancedOptions2) {
         if (this.advancedOptions2.CAPABILITIES_LED_ENABLED)
-            msg += "Led ";
+            msg += "Led | ";
         if (this.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
-            msg += "Extended messages ";
+            msg += "Extended messages | ";
         if (this.advancedOptions2.CAPABILITIES_SCAN_MODE_ENABLED)
-            msg += "Scan mode ";
+            msg += "Scan mode | ";
         if (this.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
-            msg += "Proximity search ";
+            msg += "Proximity search | ";
         if (this.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
-            msg += "Extended assign ";
+            msg += "Extended assign | ";
         if (this.advancedOptions2.CAPABILITIES__FS_ANTFS_ENABLED)
-            msg += "ANT-FS ";
+            msg += "ANT-FS | ";
     }
 
     if (this.advancedOptions3) {
         if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
-            msg += "Advanced burst ";
+            msg += "Advanced burst | ";
         if (this.advancedOptions3.CAPABILITIES_EVENT_BUFFERING_ENABLED)
-            msg += "Event buffering ";
+            msg += "Event buffering | ";
         if (this.advancedOptions3.CAPABILITIES_EVENT_FILTERING_ENABLED)
-            msg += "Event filtering ";
+            msg += "Event filtering | ";
         if (this.advancedOptions3.CAPABILITIES_HIGH_DUTY_SEARCH_ENABLED)
-            msg += "High duty search ";
+            msg += "High duty search | ";
         if (this.advancedOptions3.CAPABILITIES_SELECTIVE_DATA_ENABLED)
-            msg += "Selective data ";
+            msg += "Selective data | ";
     }
 
     if (this.advancedOptions4) {
         if (this.advancedOptions4.CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED)
-            msg += " RF Active notification";
+            msg += " RF Active notification | ";
     }
 
     return msg;

@@ -608,11 +608,29 @@ Host.prototype.init = function (iDevice,initCB) {
                     _doLibConfigCB(error);
             }.bind(this)); */
 
+    var onCapabilities = function _onCapabilities(error,capabilities)
+    {
+
+      if (!error) {
+        this.state = this.STATE.RTS;
+      } else
+         {
+           this.state = this.state.ERROR;
+         }
+
+      initCB(error);
+
+    }.bind(this);
+
+    var onReset = function _onReset(error,notification)
+    {
+      if (!error)
+      this.getCapabilities(onCapabilities);
+    }.bind(this);
+
     var usbInitCB = function _usbInitCB(error) {
 
-console.log('usbInitCB',error);
-
-        if (error) {
+      if (error) {
           this.state = this.state.ERROR;
           initCB(error);
         }
@@ -622,21 +640,12 @@ console.log('usbInitCB',error);
 
             usb.listen();
 
-        /*    this.getCapabilities(function (error,capabilities) {
-              if (!error) {
-                this.capabilities = capabilities;
-                this.state = this.STATE.RTS;
-              } else
-                 {
-                   this.state = this.state.ERROR;
-                 }
-              initCB(error);
-            }.bind(this)); */
+            this.state = this.STATE.RTS;
+
+            this.getCapabilities(onCapabilities);
 
           //  resetCapabilitiesLibConfig(initCB);
 
-          this.state = this.STATE.RTS;
-          initCB();
         }
 
     }.bind(this);
@@ -651,6 +660,17 @@ Host.prototype.exit = function (callback) {
    // TO DO? Close open channels? Exit channels/profiles?
 
     usb.exit(callback);
+
+};
+
+Host.prototype._runResponseCallback = function (error,message)
+{
+    if (error)
+      this.state = this.STATE.ERROR;
+    else
+      this.state = this.STATE.RTS;
+
+    this.responseCallback(error,message);
 
 };
 
@@ -714,8 +734,7 @@ Host.prototype.RXparse = function (data) {
 
           if (this.log.logging) this.log.log('log', notification.toString());
 
-          this.state = this.STATE.RTS;
-          this.responseCallback(undefined,notification);
+          this._runResponseCallback(undefined,notification);
 
           break;
 
@@ -725,8 +744,21 @@ Host.prototype.RXparse = function (data) {
 
           if (this.log.logging) this.log.log('log', "Notification serial error: ", notification.toString());
 
-          this.state = this.STATE.ERROR;
-          this.responseCallback(new Error('Notification: Serial error'),notification);
+          this._runResponseCallback(new Error('Notification: Serial error'),notification);
+
+          break;
+
+      case ANTMessage.prototype.MESSAGE.CAPABILITIES:
+
+          var capabilitiesMsg = new CapabilitiesMessage(message);
+
+          this.capabilities = capabilitiesMsg;
+
+          if (this.log.logging)
+              this.log.log('log', capabilitiesMsg.toString());
+
+
+          this._runResponseCallback(undefined,capabilitiesMsg);
 
           break;
 
@@ -842,7 +874,7 @@ Host.prototype.RXparse = function (data) {
 
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
-                this._responseCallback(channelResponseMsg);
+                this.responseCallback(undefinedchannelResponseMsg);
 //            else
 //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
 //
@@ -874,7 +906,7 @@ Host.prototype.RXparse = function (data) {
 //            channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
 
-           this._responseCallback(channelStatusMsg);
+           this.responseCallback(undefinedchannelStatusMsg);
 
             break;
 //
@@ -904,26 +936,12 @@ Host.prototype.RXparse = function (data) {
 //            versionMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            versionMsg.parse();
 
-            this._responseCallback(versionMsg);
+            this.responseCallback(undefinedversionMsg);
 
 
             break;
 
-        case ANTMessage.prototype.MESSAGE.CAPABILITIES:
 
-            var capabilitiesMsg = new CapabilitiesMessage(message);
-          //  this.log.timeEnd(ANTMessage.prototype.MESSAGE[capabilitiesMsg.id]);
-//            capabilitiesMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            capabilitiesMsg.parse();
-
-            this.capabilities = capabilitiesMsg;
-
-            if (this.log.logging)
-                this.log.log('log', capabilitiesMsg.toString());
-
-            this._responseCallback(capabilitiesMsg);
-
-            break;
 
         case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
 
@@ -933,7 +951,7 @@ Host.prototype.RXparse = function (data) {
 //            serialNumberMsg.parse();
             this.deviceSerialNumber = serialNumberMsg.serialNumber;
 
-            this._responseCallback(serialNumberMsg);
+            this.responseCallback(undefinedserialNumberMsg);
 
             break;
 
