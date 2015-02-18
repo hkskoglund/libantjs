@@ -36,7 +36,7 @@ define(function (require, exports, module) {
     };
 
     DeviceSerialNumberMessage.prototype.toString = function () {
-        return this.name +  " " + this.serialNumber+" lower 2-bytes "+this.serialNumberAsChannelId;
+        return this.name +  " " + this.serialNumber+' (0x'+this.serialNumber.toString(16)+')'+" lower 2-bytes "+this.serialNumberAsChannelId +' (0x'+this.serialNumberAsChannelId.toString(16)+')';
     };
 
     module.exports = DeviceSerialNumberMessage;

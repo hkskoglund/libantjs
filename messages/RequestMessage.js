@@ -55,7 +55,7 @@ RequestMessage.prototype = Object.create(ANTMessage.prototype);
 RequestMessage.prototype.constructor = RequestMessage;
 
 RequestMessage.prototype.toString = function () {
-    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id " + this.responseId;
+    var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id 0x" + this.responseId.toString(16);
     if (this.NVMaddr)
         msg += " NVMaddr " + this.NVMaddr;
     if (this.NVMsize)

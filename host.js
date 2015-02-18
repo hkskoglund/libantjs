@@ -150,7 +150,7 @@ Host.prototype.sendMessage = function (message, callback) {
 
    }.bind(this);
 
-    if (this.log.logging) { this.log.log('log', 'Sending message '+ message.name); }
+    if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
 
     this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
     this.responseCallback = callback;
@@ -592,7 +592,7 @@ Host.prototype.getDevices = function ()
 
 };
 
-Host.prototype.init = function (iDevice,initCB) {
+Host.prototype.init = function (iDevice,onInit) {
 
       /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
 
@@ -608,53 +608,74 @@ Host.prototype.init = function (iDevice,initCB) {
                     _doLibConfigCB(error);
             }.bind(this)); */
 
-    var onCapabilities = function _onCapabilities(error,capabilities)
-    {
 
-      if (!error) {
-        this.state = this.STATE.RTS;
-      } else
-         {
-           this.state = this.state.ERROR;
-         }
+        var onUSBinit = function _onUSBinit(error) {
 
-      initCB(error);
+          if (error) {
+              this.state = this.state.ERROR;
+              onInit(error);
+            }
+            else {
 
-    }.bind(this);
+                usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
 
-    var onReset = function _onReset(error,notification)
-    {
-      if (!error)
-         this.getCapabilities(onCapabilities);
-      else {
-         this.state = this.state.ERROR;
-         initCB(error,notification);
-       }
-    }.bind(this);
+                usb.listen();
 
-    var usbInitCB = function _usbInitCB(error) {
+                this.state = this.STATE.RTS;
 
-      if (error) {
-          this.state = this.state.ERROR;
-          initCB(error);
-        }
-        else {
+                this.resetSystem(onReset);
 
-            usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+              //  resetCapabilitiesLibConfig(onInit);
 
-            usb.listen();
+            }
 
-            this.state = this.STATE.RTS;
+        }.bind(this);
 
-            this.resetSystem(onReset);
+        // THEN
 
-          //  resetCapabilitiesLibConfig(initCB);
+        var onReset = function _onReset(error,notification)
+        {
+          if (!error)
+             this.getCapabilities(onCapabilities);
+          else {
+             onInit(error,notification);
+           }
+        }.bind(this);
 
-        }
+        // THEN
 
-    }.bind(this);
+        var onCapabilities = function _onCapabilities(error,capabilities)
+        {
 
-    usb.init(iDevice,usbInitCB);
+          if (!error) {
+            this.getVersion(onVersion);
+          } else
+             {
+               onInit(error,capabilities);
+             }
+
+        }.bind(this);
+
+        // THEN
+
+        var onVersion = function _onVersion(error,version)
+        {
+          if (!error) {
+            this.getSerialNumber(onSerialNumber);
+          } else
+             {
+               onInit(error,version);
+             }
+        }.bind(this);
+
+        // THEN
+
+        var onSerialNumber = function _onSerialNumber(error,serialNumber)
+        {
+           onInit(error,serialNumber);
+        }.bind(this);
+
+    usb.init(iDevice,onUSBinit);
 
 };
 
@@ -669,6 +690,7 @@ Host.prototype.exit = function (callback) {
 
 Host.prototype._runResponseCallback = function (error,message)
 {
+
     if (error)
       this.state = this.STATE.ERROR;
     else
@@ -707,7 +729,7 @@ Host.prototype.RXparse = function (data) {
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength);
 
     message = data.subarray(0,data[iLength] + 4);
-    if (this.log.logging) this.log.log('log', 'Current message for parsing',message);
+    if (this.log.logging) this.log.log('log', 'Parsing',message);
 
     var notification;
 
@@ -763,7 +785,7 @@ Host.prototype.RXparse = function (data) {
 
       case ANTMessage.prototype.MESSAGE.ANT_VERSION:
 
-          this.responseCallback(undefined,new ANTVersionMessage(message));
+          this._runResponseCallback(undefined,new ANTVersionMessage(message));
 
           break;
 
@@ -773,7 +795,7 @@ Host.prototype.RXparse = function (data) {
 
           this.deviceSerialNumber = serialNumberMsg.serialNumber;
 
-          this.responseCallback(undefined,serialNumberMsg);
+          this._runResponseCallback(undefined,serialNumberMsg);
 
           break;
 
@@ -975,7 +997,7 @@ Host.prototype.getChannelId = function (channel, callback) {
 };
 
 // Send a request for ANT version
-Host.prototype.getANTVersion = function (callback) {
+Host.prototype.getVersion = function (callback) {
 
     var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION));
 
@@ -993,30 +1015,16 @@ Host.prototype.getCapabilities = function (callback) {
 };
 
 // Send a request for device serial number
-Host.prototype.getDeviceSerialNumber = function (callback) {
+Host.prototype.getSerialNumber = function (callback) {
 
-    var fetchSerialNumber = function () {
+      if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
+           callback(new Error('Device does not have capability to determine serial number'));
+          return;
+      }
 
-        if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
-             callback(new Error('Device does not have capability to determine serial number'));
-            return;
-        }
+      var msg = new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER);
 
-        var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER));
-
-
-            this.sendMessage(msg,  callback);
-     }.bind(this);
-
-    if (typeof this.capabilities === "undefined")
-    {
-        if (this.log.logging)
-            this.log.log('warn', 'Cannot determine if device has capability for serial number - getCapabilities should be run first, attempting to get capabilities now');
-        this.getCapabilities(function (error,capabilities) { if (!error) fetchSerialNumber(); else callback(error); });
-
-    } else
-        fetchSerialNumber();
-
+      this.sendMessage(msg,  callback);
 
 };
 
