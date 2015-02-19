@@ -55,7 +55,6 @@ define(function (require, exports, module) {
     LibConfigMessage = require('./messages/LibConfigMessage'),
     LibConfig = require('./messages/libConfig'),
 
-
     ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
     ChannelStatusMessage = require('./messages/ChannelStatusMessage'),
 
@@ -592,6 +591,62 @@ Host.prototype.getDevices = function ()
 
 };
 
+Host.prototype._onSerialNumber = function(onInit,error,serialNumber)
+{
+  onInit(error,serialNumber);
+};
+
+Host.prototype._onVersion = function (onInit,error,version)
+{
+  if (!error) {
+    this.getSerialNumber(this._onSerialNumber.bind(this,onInit));
+  } else
+     {
+       onInit(error,version);
+     }
+};
+
+Host.prototype._onCapabilities = function (onInit,error,capabilities)
+{
+  if (!error) {
+    this.getVersion(this._onVersion.bind(this,onInit));
+  } else
+     {
+       onInit(error,capabilities);
+     }
+};
+
+Host.prototype._onReset = function (onInit,error,notification)
+{
+  if (!error)
+     this.getCapabilities(this._onCapabilities.bind(this,onInit));
+  else {
+     onInit(error,notification);
+   }
+};
+
+Host.prototype._onUSBinit = function (onInit,error)
+{
+  if (error) {
+      this.state = this.state.ERROR;
+      onInit(error);
+    }
+    else {
+
+        usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+
+        usb.listen();
+
+        this.state = this.STATE.RTS;
+
+        this.resetSystem(this._onReset.bind(this,onInit));
+
+      //  resetCapabilitiesLibConfig(onInit);
+
+    }
+
+};
+
 Host.prototype.init = function (iDevice,onInit) {
 
       /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
@@ -608,74 +663,7 @@ Host.prototype.init = function (iDevice,onInit) {
                     _doLibConfigCB(error);
             }.bind(this)); */
 
-
-        var onUSBinit = function _onUSBinit(error) {
-
-          if (error) {
-              this.state = this.state.ERROR;
-              onInit(error);
-            }
-            else {
-
-                usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
-
-                usb.listen();
-
-                this.state = this.STATE.RTS;
-
-                this.resetSystem(onReset);
-
-              //  resetCapabilitiesLibConfig(onInit);
-
-            }
-
-        }.bind(this);
-
-        // THEN
-
-        var onReset = function _onReset(error,notification)
-        {
-          if (!error)
-             this.getCapabilities(onCapabilities);
-          else {
-             onInit(error,notification);
-           }
-        }.bind(this);
-
-        // THEN
-
-        var onCapabilities = function _onCapabilities(error,capabilities)
-        {
-
-          if (!error) {
-            this.getVersion(onVersion);
-          } else
-             {
-               onInit(error,capabilities);
-             }
-
-        }.bind(this);
-
-        // THEN
-
-        var onVersion = function _onVersion(error,version)
-        {
-          if (!error) {
-            this.getSerialNumber(onSerialNumber);
-          } else
-             {
-               onInit(error,version);
-             }
-        }.bind(this);
-
-        // THEN
-
-        var onSerialNumber = function _onSerialNumber(error,serialNumber)
-        {
-           onInit(error,serialNumber);
-        }.bind(this);
-
-    usb.init(iDevice,onUSBinit);
+    usb.init(iDevice,this._onUSBinit.bind(this,onInit));
 
 };
 
