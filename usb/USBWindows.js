@@ -459,13 +459,13 @@ define(['usb/USBDevice'],function (USBDevice) {
 
 
             if (this.log && this.log.logging && console && console.time)
-                console.time('RXparse');
+                console.time('messageFactory');
 
             //rxParser(undefined, buf);
             this.emit(USBDevice.prototype.EVENT.DATA, buf); // Using events allows adding more listeners of usb data, e.g logging/debugging
 
             if (this.log && this.log.logging && console && console.timeEnd)
-                console.timeEnd('RXparse');
+                console.timeEnd('messageFactory');
 
             retry();
 

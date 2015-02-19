@@ -11,7 +11,6 @@ define(function (require, exports, module) {
 
         var msgBuffer = new Uint8Array([channel]);
 
-
         Message.call(this,undefined,Message.prototype.MESSAGE.UNASSIGN_CHANNEL);
 
         // Parameters

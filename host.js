@@ -92,620 +92,611 @@ define(function (require, exports, module) {
 
     UsbLib = require(usbLibraryPath);
 
-// Host for USB ANT communication
-function Host(options) {
+    // Host for USB ANT communication
+    function Host(options) {
 
-    if (!options) {
-      options = {};
+        if (!options) {
+          options = {};
+        }
+
+        options.logSource = this;
+
+        this.options = options;
+
+        this.log = new Logger(options);
+
+        this._channel = {};
+
+        if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
+
+        usb = new UsbLib({ log : options.log});
+
+        this.state = this.STATE.INIT;
+        this.responseCallback  = undefined; // Function to call when receiving a response from ANT chip
     }
 
-    options.logSource = this;
+    //Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
+    //                                                                        enumerable : false,
+    //                                                                        writeable : true,
+    //                                                                        configurable : true } });
 
-    this.options = options;
+    //Use state-machine for keeping track of messaging state
+    Host.prototype.STATE = {
+      INIT : 0x00,
+      RTS : 0x01, // Ready to send next message to ANT
+      WAIT : 0x02, // Waiting for response from ANT
+      ERROR : 0x03 // Something went wrong
+    };
 
-    this.log = new Logger(options);
+    // Send a message to ANT
+    Host.prototype.sendMessage = function (message, callback) {
 
-    this._channel = {};
-
-    if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
-
-    usb = new UsbLib({ log : options.log});
-
-    this.state = this.STATE.INIT;
-    this.responseCallback  = undefined; // Function to call when receiving a response from ANT chip
-}
-
-//Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
-//                                                                        enumerable : false,
-//                                                                        writeable : true,
-//                                                                        configurable : true } });
-
-//Use state-machine for keeping track of messaging state
-Host.prototype.STATE = {
-  INIT : 0x00,
-  RTS : 0x01, // Ready to send next message to ANT
-  WAIT : 0x02, // Waiting for response from ANT
-  ERROR : 0x03 // Something went wrong
-};
-
-// Send a message to ANT
-Host.prototype.sendMessage = function (message, callback) {
-
-  if (this.state !== this.STATE.RTS) {
-    callback(new Error('Unable to send message state is '+this.state));
-    return;
-  }
-
-   var _sendMessageCB = function (error)
-   {
-
-     if (error) {
-        this.state = this.STATE.ERROR;
-        if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
-        this.responseCallback(error);
-     }
-
-     // on success, responseCallback is called during pasring of response in RXparse
-
-   }.bind(this);
-
-    if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
-
-    this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
-    this.responseCallback = callback;
-
-    usb.transfer(message.getRawMessage(),_sendMessageCB);
-
-};
-
-// for event emitter
-Host.prototype.EVENT = {
-
-//    LOG_MESSAGE: 'logMessage',
-//    ERROR : 'error',
-
-    //SET_CHANNEL_ID: 'setChannelId',
-
-    // Data
-    BROADCAST: 'broadcast',
-    BURST: 'burst',
-
-    //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
-
-    PAGE : 'page' // Page from ANT+ sensor / device profile
-
-};
-
-Host.prototype.establishRXScanModeChannel = function (onPage)
-{
-
-  var channel = new RxScanModeProfile({
-      log: true,
-      channelId: {
-          deviceNumber: 0,
-          deviceType: 0,
-          transmissionType: 0
+      if (this.state !== this.STATE.RTS) {
+        callback(new Error('Unable to send message state is '+this.state));
+        return;
       }
-  });
 
-  channel.addListener('page', onPage);
+       var _sendMessageCB = function (error)
+       {
 
-  function onChannelEstablished(error)
-  {
-    console.log('onChannelEstablished',arguments);
+         if (error) {
+            this.state = this.STATE.ERROR;
+            if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+            this.responseCallback(error);
+         }
 
-  }
+         // on success, responseCallback is called during pasring of response in messageFactory
 
-  this.establishChannel({
-      channelNumber: 0,
-      networkNumber: 0,
-      // channelPeriod will be ignored for RxScanMode channel
-      //channelPeriod: TEMPprofile.prototype.CHANNEL_PERIOD_ALTERNATIVE, // 0.5 Hz - every 2 seconds
-      configurationName: 'slave only',
-      channel: channel,
-      open: true
-  }, onChannelEstablished);
-};
+       }.bind(this);
 
-// Spec. p. 21 sec. 5.3 Establishing a channel
-// Assign channel and set channel ID MUST be set before opening
-Host.prototype.establishChannel = function (channelInfo, callback) {
-    var     channelNumber = channelInfo.channelNumber,
-    networkNumber = channelInfo.networkNumber,
-    configurationName = channelInfo.configurationName,
-    channel = channelInfo.channel,
-    channelPeriod = channelInfo.channelPeriod,
-    open = channelInfo.open;
+        if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
 
-    var parameters = channel.parameters[configurationName],
-        //channelType,
-        isMasterChannel,
-        msg;
+        this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
+        this.responseCallback = callback;
 
-     if (parameters === undefined)
-     {
-        callback(new Error('Could not find configuration '+configurationName));
-        return;
-     }
+        usb.transfer(message.getRawMessage(),_sendMessageCB);
 
-     isMasterChannel = channel.isMaster(configurationName);
+    };
 
-     if (this.log.logging)
-         this.log.log('log', 'Establishing channel for configuration', configurationName, parameters, 'Master channel : ' + isMasterChannel);
+    // for event emitter
+    Host.prototype.EVENT = {
 
+    //    LOG_MESSAGE: 'logMessage',
+    //    ERROR : 'error',
 
-    //console.log("Options", parameters);
+        //SET_CHANNEL_ID: 'setChannelId',
 
-    if (typeof parameters.channelType === "undefined") {
-        callback(new Error('No channel type specified'));
-        return;
-    }
+        // Data
+        BROADCAST: 'broadcast',
+        BURST: 'burst',
 
-    if (typeof parameters.channelType === "string")
-        switch (parameters.channelType.toLowerCase()) {
-            case 'slave':
-                parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
-                break;
+        //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
-            case 'master':
-                parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
-                break;
+        PAGE : 'page' // Page from ANT+ sensor / device profile
 
-            case 'shared slave':
-                parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
-                break;
+    };
 
-            case 'shared master':
-                parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
-                break;
-
-            case 'slave only':
-                parameters.channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
-                break;
-
-            case 'master only':
-                parameters.channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
-                break;
-
-            default:
-                callback(new Error('Unknown channel type specified ' + parameters.channelType));
-                return;
-
-        }
-    else if (typeof Channel.prototype.TYPE[parameters.channelType] === "undefined") {
-        callback(new Error('Unknown channel type specified ' + parameters.channelType));
-        return;
-    }
-
-    if (!parameters.channelId) {
-        callback(new Error('No channel ID specified'));
-        return;
-    }
-
-    // Slave - convert declarative syntax to channelId object
-    if (!(parameters.channelId instanceof ChannelId) && !isMasterChannel) { // Allow for channel Id. object literal with '*' as 0x00
-
-        if (typeof parameters.channelId.deviceNumber === "undefined" || parameters.channelId.deviceNumber === '*' || typeof parameters.channelId.deviceNumber !== 'number')
-            parameters.channelId.deviceNumber = 0x00;
-
-        if (typeof parameters.channelId.deviceType === "undefined" || parameters.channelId.deviceType === '*' || typeof parameters.channelId.deviceType !== 'number')
-            parameters.channelId.deviceType = 0x00;
-
-        if (typeof parameters.channelId.transmissionType === "undefined" || parameters.channelId.transmissionType === '*' || typeof parameters.channelId.transmissionType !== 'number')
-            parameters.channelId.transmissionType = 0x00;
-
-        parameters.channelId = new ChannelId(parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType);
-    }
-
-    // Master - convert declarative syntax to channelId object
-    if (!(parameters.channelId instanceof ChannelId) && isMasterChannel) {
-
-        if (typeof parameters.channelId.deviceNumber === "undefined") {
-            callback(new Error('No device number specified in channel Id'));
-            return;
-        }
-
-        if (typeof parameters.channelId.deviceType === "undefined") {
-            callback(new Error('No device type specified in channel Id'));
-            return;
-        }
-
-        if (typeof parameters.channelId.transmissionType === "undefined") {
-            callback(new Error('No transmission type specified in channel Id'));
-            return;
-        }
-
-        if (parameters.channelId.deviceNumber === 'serial number' && (typeof this.deviceSerialNumber === "undefined" || (this.deviceSerialNumber & 0xFFFF) === 0x00))
-            {
-                callback(new Error('No ANT device serial number available or the 2 least significant bytes of serial number is 0, device serial number 0x'+this.deviceSerialNumber.toString(16)));
-                return;
-            }
-
-        parameters.channelId = new ChannelId(this.deviceSerialNumber & 0xFFFF, parameters.channelId.deviceType, parameters.channelId.transmissionType);
-
-    }
-
-    if (parameters.extendedAssignment && typeof parameters.extendedAssignment === 'string')
-        switch (parameters.extendedAssignment.toLowerCase()) {
-            case 'background scanning':
-                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE;
-                break;
-            case 'frequency agility':
-                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FREQUENCY_AGILITY_ENABLE;
-                break;
-            case 'fast channel initiation':
-                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FAST_CHANNEL_INITIATION_ENABLE; // Skips search window check, reduce latency between open and transmission
-                break;
-            case 'asynchronous transmission':
-                parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.ASYNCHRONOUS_TRANSMISSION_ENABLE;
-                break;
-            default:
-                if (this.log.logging)
-                    this.log.log('error', 'Unknown extended assignment ' + parameters.extendedAssignment);
-                parameters.extendedAssignment = undefined;
-                break;
-        }
-
-    // If neccessary override channelNumber if channel type is 'Rx only'/'slave only'
-
-    if (parameters.RxScanMode && channelNumber !== 0)
+    Host.prototype.establishRXScanModeChannel = function (onPage)
     {
-        if (this.log.logging)
-            this.log.log('log', 'C# ', channelNumber, ' not allowed for continous Rx scan mode. Setting it to 0');
-        channelInfo.channelNumber = 0;
-        channelNumber = 0;
-    }
 
-    if (this.log.logging)
-        this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
+      var channel = new RxScanModeProfile({
+          log: true,
+          channelId: {
+              deviceNumber: 0,
+              deviceType: 0,
+              transmissionType: 0
+          }
+      });
 
-    if (this._channel[channelNumber] === undefined)
-        this._channel[channelNumber] = {};
-    else if (this.log.logging)
-       this.log.log('warn','Overwriting previous channel information for channel C# '+channelNumber,this._channel[channelNumber]);
+      channel.addListener('page', onPage);
 
-    this._channel[channelNumber].channel = channel; // Associate channel with particular channel number on host
-    this._channel[channelNumber].network = networkNumber;
+      function onChannelEstablished(error)
+      {
+        console.log('onChannelEstablished',arguments);
 
-    this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
-        if (!error) {
+      }
 
-            if (statusMsg.channelStatus.state !== ChannelStatusMessage.prototype.STATE.UN_ASSIGNED) {
-                msg = 'Channel ' + channelNumber + ' on network ' + networkNumber + 'is ' + statusMsg.channelStatus.stateMessage;
-                if (this.log.logging)
-                    this.log.log('log', msg);
-                callback(new Error(msg));
+      this.establishChannel({
+          channelNumber: 0,
+          networkNumber: 0,
+          // channelPeriod will be ignored for RxScanMode channel
+          //channelPeriod: TEMPprofile.prototype.CHANNEL_PERIOD_ALTERNATIVE, // 0.5 Hz - every 2 seconds
+          configurationName: 'slave only',
+          channel: channel,
+          open: true
+      }, onChannelEstablished);
+    };
+
+    // Spec. p. 21 sec. 5.3 Establishing a channel
+    // Assign channel and set channel ID MUST be set before opening
+    Host.prototype.establishChannel = function (channelInfo, callback) {
+        var     channelNumber = channelInfo.channelNumber,
+        networkNumber = channelInfo.networkNumber,
+        configurationName = channelInfo.configurationName,
+        channel = channelInfo.channel,
+        channelPeriod = channelInfo.channelPeriod,
+        open = channelInfo.open;
+
+        var parameters = channel.parameters[configurationName],
+            //channelType,
+            isMasterChannel,
+            msg;
+
+         if (parameters === undefined)
+         {
+            callback(new Error('Could not find configuration '+configurationName));
+            return;
+         }
+
+         isMasterChannel = channel.isMaster(configurationName);
+
+         if (this.log.logging)
+             this.log.log('log', 'Establishing channel for configuration', configurationName, parameters, 'Master channel : ' + isMasterChannel);
+
+
+        //console.log("Options", parameters);
+
+        if (typeof parameters.channelType === "undefined") {
+            callback(new Error('No channel type specified'));
+            return;
+        }
+
+        if (typeof parameters.channelType === "string")
+            switch (parameters.channelType.toLowerCase()) {
+                case 'slave':
+                    parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
+                    break;
+
+                case 'master':
+                    parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL;
+                    break;
+
+                case 'shared slave':
+                    parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_SLAVE_CHANNEL;
+                    break;
+
+                case 'shared master':
+                    parameters.channelType = Channel.prototype.TYPE.SHARED_BIDIRECTIONAL_MASTER_CHANNEL;
+                    break;
+
+                case 'slave only':
+                    parameters.channelType = Channel.prototype.TYPE.SLAVE_RECEIVE_ONLY_CHANNEL;  // Only receive BROADCAST - "recommended for diagnostic applications using continous scan mode". (spec. p. 15)
+                    break;
+
+                case 'master only':
+                    parameters.channelType = Channel.prototype.TYPE.MASTER_TRANSMIT_ONLY_CHANNEL; // Only transmit BROADCAST -"not recommended for general use, disables the ANT channel management mechanisms" (spec p. 15)
+                    break;
+
+                default:
+                    callback(new Error('Unknown channel type specified ' + parameters.channelType));
+                    return;
+
+            }
+        else if (typeof Channel.prototype.TYPE[parameters.channelType] === "undefined") {
+            callback(new Error('Unknown channel type specified ' + parameters.channelType));
+            return;
+        }
+
+        if (!parameters.channelId) {
+            callback(new Error('No channel ID specified'));
+            return;
+        }
+
+        // Slave - convert declarative syntax to channelId object
+        if (!(parameters.channelId instanceof ChannelId) && !isMasterChannel) { // Allow for channel Id. object literal with '*' as 0x00
+
+            if (typeof parameters.channelId.deviceNumber === "undefined" || parameters.channelId.deviceNumber === '*' || typeof parameters.channelId.deviceNumber !== 'number')
+                parameters.channelId.deviceNumber = 0x00;
+
+            if (typeof parameters.channelId.deviceType === "undefined" || parameters.channelId.deviceType === '*' || typeof parameters.channelId.deviceType !== 'number')
+                parameters.channelId.deviceType = 0x00;
+
+            if (typeof parameters.channelId.transmissionType === "undefined" || parameters.channelId.transmissionType === '*' || typeof parameters.channelId.transmissionType !== 'number')
+                parameters.channelId.transmissionType = 0x00;
+
+            parameters.channelId = new ChannelId(parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType);
+        }
+
+        // Master - convert declarative syntax to channelId object
+        if (!(parameters.channelId instanceof ChannelId) && isMasterChannel) {
+
+            if (typeof parameters.channelId.deviceNumber === "undefined") {
+                callback(new Error('No device number specified in channel Id'));
                 return;
             }
 
-            // MUST have - assign channel + set channel ID
+            if (typeof parameters.channelId.deviceType === "undefined") {
+                callback(new Error('No device type specified in channel Id'));
+                return;
+            }
 
-            var assignChannelSetChannelId = function _setNetworkKeyCB() {
-                this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response) {
+            if (typeof parameters.channelId.transmissionType === "undefined") {
+                callback(new Error('No transmission type specified in channel Id'));
+                return;
+            }
 
-                    if (!error) {
-                        if (this.log.logging)
-                            this.log.log('log', response.toString());
-                        //setTimeout(function () {
-                        this.setChannelId(channelNumber, parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType, function (error, response) {
+            if (parameters.channelId.deviceNumber === 'serial number' && (typeof this.deviceSerialNumber === "undefined" || (this.deviceSerialNumber & 0xFFFF) === 0x00))
+                {
+                    callback(new Error('No ANT device serial number available or the 2 least significant bytes of serial number is 0, device serial number 0x'+this.deviceSerialNumber.toString(16)));
+                    return;
+                }
+
+            parameters.channelId = new ChannelId(this.deviceSerialNumber & 0xFFFF, parameters.channelId.deviceType, parameters.channelId.transmissionType);
+
+        }
+
+        if (parameters.extendedAssignment && typeof parameters.extendedAssignment === 'string')
+            switch (parameters.extendedAssignment.toLowerCase()) {
+                case 'background scanning':
+                    parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE;
+                    break;
+                case 'frequency agility':
+                    parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FREQUENCY_AGILITY_ENABLE;
+                    break;
+                case 'fast channel initiation':
+                    parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.FAST_CHANNEL_INITIATION_ENABLE; // Skips search window check, reduce latency between open and transmission
+                    break;
+                case 'asynchronous transmission':
+                    parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.ASYNCHRONOUS_TRANSMISSION_ENABLE;
+                    break;
+                default:
+                    if (this.log.logging)
+                        this.log.log('error', 'Unknown extended assignment ' + parameters.extendedAssignment);
+                    parameters.extendedAssignment = undefined;
+                    break;
+            }
+
+        // If neccessary override channelNumber if channel type is 'Rx only'/'slave only'
+
+        if (parameters.RxScanMode && channelNumber !== 0)
+        {
+            if (this.log.logging)
+                this.log.log('log', 'C# ', channelNumber, ' not allowed for continous Rx scan mode. Setting it to 0');
+            channelInfo.channelNumber = 0;
+            channelNumber = 0;
+        }
+
+        if (this.log.logging)
+            this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
+
+        if (this._channel[channelNumber] === undefined)
+            this._channel[channelNumber] = {};
+        else if (this.log.logging)
+           this.log.log('warn','Overwriting previous channel information for channel C# '+channelNumber,this._channel[channelNumber]);
+
+        this._channel[channelNumber].channel = channel; // Associate channel with particular channel number on host
+        this._channel[channelNumber].network = networkNumber;
+
+        this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
+            if (!error) {
+
+                if (statusMsg.channelStatus.state !== ChannelStatusMessage.prototype.STATE.UN_ASSIGNED) {
+                    msg = 'Channel ' + channelNumber + ' on network ' + networkNumber + 'is ' + statusMsg.channelStatus.stateMessage;
+                    if (this.log.logging)
+                        this.log.log('log', msg);
+                    callback(new Error(msg));
+                    return;
+                }
+
+                // MUST have - assign channel + set channel ID
+
+                var assignChannelSetChannelId = function _setNetworkKeyCB() {
+                    this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response) {
+
+                        if (!error) {
+                            if (this.log.logging)
+                                this.log.log('log', response.toString());
+                            //setTimeout(function () {
+                            this.setChannelId(channelNumber, parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType, function (error, response) {
+                                if (!error) {
+                                    //this.once("assignChannelSetChannelId");
+
+                                    if (this.log.logging)
+                                        this.log.log('log', response.toString());
+                                    setChannelRFFreq();
+                                }
+                                else
+                                    callback(error);
+                            }.bind(this));
+                            //}.bind(this), 100);
+                        }
+                        else
+                            callback(error);
+                    }.bind(this));
+                }.bind(this);
+
+
+                var setChannelPeriod = function () {
+                    var cPeriod;
+                    if (Array.isArray(parameters.channelPeriod)) // i.e [8192, 65535 ]
+                      cPeriod = channelPeriod || parameters.channelPeriod[0];
+                    else
+                      cPeriod = channelPeriod || parameters.channelPeriod;
+
+                    if (cPeriod === undefined && !parameters.RxScanMode)
+                    {
+
+                        callback(new Error('Channel period is undefined'));
+                        return;
+                    }
+
+                    if (parameters.RxScanMode)
+                    {
+                        openChannel();
+                    }
+                    else
+
+                        this.setChannelPeriod(channelNumber, cPeriod, function (error, response) {
                             if (!error) {
-                                //this.once("assignChannelSetChannelId");
-
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
-                                setChannelRFFreq();
+                                setChannelSearchTimeout();
                             }
                             else
                                 callback(error);
                         }.bind(this));
-                        //}.bind(this), 100);
-                    }
+
+                }.bind(this);
+
+                // Default 66 = 2466 MHz
+
+                var setChannelRFFreq =  function () {
+                    if (parameters.RFfrequency)
+                        this.setChannelRFFreq(channelNumber, parameters.RFfrequency, function (error, response) {
+                            if (!error) {
+                                if (this.log.logging)
+                                    this.log.log('log', response.toString());
+                                setChannelPeriod();
+                            }
+                            else
+                                callback(error);
+                        }.bind(this));
                     else
-                        callback(error);
-                }.bind(this));
-            }.bind(this);
+                        setChannelPeriod();
 
+                }.bind(this);
 
-            var setChannelPeriod = function () {
-                var cPeriod;
-                if (Array.isArray(parameters.channelPeriod)) // i.e [8192, 65535 ]
-                  cPeriod = channelPeriod || parameters.channelPeriod[0];
-                else
-                  cPeriod = channelPeriod || parameters.channelPeriod;
+                ////// Default 3 = 0bDm
 
-                if (cPeriod === undefined && !parameters.RxScanMode)
-                {
+                //var setTransmitPower = function () {
+                //    if (parameters.transmitPower)
+                //        this.setTransmitPower(parameters.transmitPower, function (error, response) {
+                //            if (!error) {
+                //                this.log.log('log',response.toString());
+                //                setChannelTxPower();
+                //            }
+                //            else
+                //                this.log.log( error);
+                //        }.bind(this));
+                //    else
+                //        setChannelTxPower();
+                //}.bind(this);
 
-                    callback(new Error('Channel period is undefined'));
-                    return;
-                }
+                //var setChannelTxPower = function () {
+                //    if (parameters.channelTxPower)
+                //        this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
+                //            if (!error) {
+                //                this.log.log( response.toString());
+                //                setChannelSearchTimeout();
+                //            }
+                //            else
+                //                this.log.log( error);
+                //        }.bind(this));
+                //    else
+                //        setChannelSearchTimeout();
+                //}.bind(this);
 
-                if (parameters.RxScanMode)
-                {
-                    openChannel();
-                }
-                else
+                // Optional
 
-                    this.setChannelPeriod(channelNumber, cPeriod, function (error, response) {
+                if (parameters.networkKey)
+
+                    this.setNetworkKey(networkNumber, parameters.networkKey, function _setNetworkKeyCB(error, response) {
                         if (!error) {
                             if (this.log.logging)
                                 this.log.log('log', response.toString());
-                            setChannelSearchTimeout();
+                            assignChannelSetChannelId();
                         }
                         else
                             callback(error);
                     }.bind(this));
-
-            }.bind(this);
-
-            // Default 66 = 2466 MHz
-
-            var setChannelRFFreq =  function () {
-                if (parameters.RFfrequency)
-                    this.setChannelRFFreq(channelNumber, parameters.RFfrequency, function (error, response) {
-                        if (!error) {
-                            if (this.log.logging)
-                                this.log.log('log', response.toString());
-                            setChannelPeriod();
-                        }
-                        else
-                            callback(error);
-                    }.bind(this));
                 else
-                    setChannelPeriod();
+                    assignChannelSetChannelId();
 
-            }.bind(this);
+                //// Optional
 
-            ////// Default 3 = 0bDm
+                //// SLAVE SEARCH TIMEOUTS : high priority and low priority
 
-            //var setTransmitPower = function () {
-            //    if (parameters.transmitPower)
-            //        this.setTransmitPower(parameters.transmitPower, function (error, response) {
-            //            if (!error) {
-            //                this.log.log('log',response.toString());
-            //                setChannelTxPower();
-            //            }
-            //            else
-            //                this.log.log( error);
-            //        }.bind(this));
-            //    else
-            //        setChannelTxPower();
-            //}.bind(this);
+                //    this.log.log("Channel "+channelNumber+" type "+ Channel.prototype.TYPE[parameters.channelType]);
 
-            //var setChannelTxPower = function () {
-            //    if (parameters.channelTxPower)
-            //        this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
-            //            if (!error) {
-            //                this.log.log( response.toString());
-            //                setChannelSearchTimeout();
-            //            }
-            //            else
-            //                this.log.log( error);
-            //        }.bind(this));
-            //    else
-            //        setChannelSearchTimeout();
-            //}.bind(this);
-
-            // Optional
-
-            if (parameters.networkKey)
-
-                this.setNetworkKey(networkNumber, parameters.networkKey, function _setNetworkKeyCB(error, response) {
-                    if (!error) {
-                        if (this.log.logging)
-                            this.log.log('log', response.toString());
-                        assignChannelSetChannelId();
-                    }
+                var setChannelSearchTimeout = function () {
+                    // Default HP = 10 -> 25 seconds
+                    if (!isMasterChannel && parameters.HPsearchTimeout)
+                        this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response) {
+                            if (!error) {
+                                setLowPriorityChannelSearchTimeout();
+                                if (this.log.logging)
+                                    this.log.log('log', response.toString());
+                            }
+                            else
+                                callback(error);
+                        }.bind(this));
                     else
-                        callback(error);
-                }.bind(this));
+                        setLowPriorityChannelSearchTimeout();
+                }.bind(this);
+
+                var setLowPriorityChannelSearchTimeout = function () {
+                    // Default LP = 2 -> 5 seconds
+                    if (!isMasterChannel && parameters.LPsearchTimeout)
+                        this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response) {
+                            if (!error) {
+                                if (this.log.logging)
+                                    this.log.log('log', response.toString());
+                                openChannel();
+                            }
+                            else
+                                callback(error);
+                        }.bind(this));
+                    else
+                        openChannel();
+                }.bind(this);
+
+    //            var setProximitySearch = function () {
+    //                if (parameters.proximitySearch)
+    //                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
+    //                        if (!error) {
+    //                            this.log.log('log', response.toString());
+    //                            openChannel();
+    //                        }
+    //                        else
+    //                            callback(error);
+    //                    }.bind(this));
+    //                else
+    //                    openChannel();
+    //            }.bind(this);
+
+
+                var openChannel = function () {
+
+                    // Attach etablished channel info (C#,N#,...)
+                    channel.establish = channelInfo;
+
+                    var openResponseHandler = function (error, response) {
+                            if (!error) {
+                                if (this.log.logging)
+                                    this.log.log('log', response.toString());
+                                callback(undefined,channel);
+                            }
+                            else
+                                callback(error,channel);
+                        }.bind(this);
+
+                    if (open) {
+                        if (!parameters.RxScanMode)
+                          this.openChannel(channelNumber, openResponseHandler);
+                        else
+                            this.openRxScanMode(channelNumber, openResponseHandler); // channelNumber should be 0
+                    } else callback();
+
+                }.bind(this);
+
+            }
             else
-                assignChannelSetChannelId();
+                callback(error);
+        }.bind(this));
+    };
 
-            //// Optional
+    Host.prototype.getDevices = function ()
+    {
+       return usb.getDevices();
 
-            //// SLAVE SEARCH TIMEOUTS : high priority and low priority
+    };
 
-            //    this.log.log("Channel "+channelNumber+" type "+ Channel.prototype.TYPE[parameters.channelType]);
+    Host.prototype._onSerialNumber = function(onInit,error,serialNumber)
+    {
+      onInit(error,serialNumber);
+    };
 
-            var setChannelSearchTimeout = function () {
-                // Default HP = 10 -> 25 seconds
-                if (!isMasterChannel && parameters.HPsearchTimeout)
-                    this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response) {
-                        if (!error) {
-                            setLowPriorityChannelSearchTimeout();
-                            if (this.log.logging)
-                                this.log.log('log', response.toString());
-                        }
-                        else
-                            callback(error);
-                    }.bind(this));
-                else
-                    setLowPriorityChannelSearchTimeout();
-            }.bind(this);
+    Host.prototype._onVersion = function (onInit,error,version)
+    {
+      if (!error) {
+        this.getSerialNumber(this._onSerialNumber.bind(this,onInit));
+      } else
+         {
+           onInit(error,version);
+         }
+    };
 
-            var setLowPriorityChannelSearchTimeout = function () {
-                // Default LP = 2 -> 5 seconds
-                if (!isMasterChannel && parameters.LPsearchTimeout)
-                    this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response) {
-                        if (!error) {
-                            if (this.log.logging)
-                                this.log.log('log', response.toString());
-                            openChannel();
-                        }
-                        else
-                            callback(error);
-                    }.bind(this));
-                else
-                    openChannel();
-            }.bind(this);
+    Host.prototype._onCapabilities = function (onInit,error,capabilities)
+    {
+      if (!error) {
+        this.getVersion(this._onVersion.bind(this,onInit));
+      } else
+         {
+           onInit(error,capabilities);
+         }
+    };
 
-//            var setProximitySearch = function () {
-//                if (parameters.proximitySearch)
-//                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
-//                        if (!error) {
-//                            this.log.log('log', response.toString());
-//                            openChannel();
-//                        }
-//                        else
-//                            callback(error);
-//                    }.bind(this));
-//                else
-//                    openChannel();
-//            }.bind(this);
+    Host.prototype._onReset = function (onInit,error,notification)
+    {
+      if (!error)
+         this.getCapabilities(this._onCapabilities.bind(this,onInit));
+      else {
+         onInit(error,notification);
+       }
+    };
 
+    Host.prototype._onUSBinit = function (onInit,error)
+    {
+      if (error) {
+          this.state = this.state.ERROR;
+          onInit(error);
+        }
+        else {
 
-            var openChannel = function () {
+            usb.addListener(USBDevice.prototype.EVENT.DATA, this.messageFactory.bind(this));
 
-                // Attach etablished channel info (C#,N#,...)
-                channel.establish = channelInfo;
+            usb.listen();
 
-                var openResponseHandler = function (error, response) {
-                        if (!error) {
-                            if (this.log.logging)
-                                this.log.log('log', response.toString());
-                            callback(undefined,channel);
-                        }
-                        else
-                            callback(error,channel);
-                    }.bind(this);
+            this.state = this.STATE.RTS;
 
-                if (open) {
-                    if (!parameters.RxScanMode)
-                      this.openChannel(channelNumber, openResponseHandler);
-                    else
-                        this.openRxScanMode(channelNumber, openResponseHandler); // channelNumber should be 0
-                } else callback();
-
-            }.bind(this);
+            this.resetSystem(this._onReset.bind(this,onInit));
 
         }
-        else
-            callback(error);
-    }.bind(this));
-};
 
-Host.prototype.getDevices = function ()
-{
-   return usb.getDevices();
+    };
 
-};
+    Host.prototype.init = function (iDevice,onInit) {
 
-Host.prototype._onSerialNumber = function(onInit,error,serialNumber)
-{
-  onInit(error,serialNumber);
-};
+          /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
 
-Host.prototype._onVersion = function (onInit,error,version)
-{
-  if (!error) {
-    this.getSerialNumber(this._onSerialNumber.bind(this,onInit));
-  } else
-     {
-       onInit(error,version);
-     }
-};
+            this.libConfig(libConfig.getFlagsByte(),
+                function _libConfig(error, channelResponse) {
+                    if (!error) {
 
-Host.prototype._onCapabilities = function (onInit,error,capabilities)
-{
-  if (!error) {
-    this.getVersion(this._onVersion.bind(this,onInit));
-  } else
-     {
-       onInit(error,capabilities);
-     }
-};
+                        if (this.log.logging)
+                            this.log.log('log', libConfig.toString());
+                        _doLibConfigCB();
+                    }
+                    else
+                        _doLibConfigCB(error);
+                }.bind(this)); */
 
-Host.prototype._onReset = function (onInit,error,notification)
-{
-  if (!error)
-     this.getCapabilities(this._onCapabilities.bind(this,onInit));
-  else {
-     onInit(error,notification);
-   }
-};
+        usb.init(iDevice,this._onUSBinit.bind(this,onInit));
 
-Host.prototype._onUSBinit = function (onInit,error)
-{
-  if (error) {
-      this.state = this.state.ERROR;
-      onInit(error);
-    }
-    else {
+    };
 
-        usb.addListener(USBDevice.prototype.EVENT.DATA, this.RXparse.bind(this));
+    // Exit host
+    Host.prototype.exit = function (callback) {
 
-        usb.listen();
+       // TO DO? Close open channels? Exit channels/profiles?
 
+        usb.exit(callback);
+
+    };
+
+  // Sets appropiate state based on error after a message is created in the message factory
+  Host.prototype._runResponseCallback = function (error,message)
+  {
+      if (error)
+        this.state = this.STATE.ERROR;
+      else
         this.state = this.STATE.RTS;
 
-        this.resetSystem(this._onReset.bind(this,onInit));
+      if (this.log.logging)
+            this.log.log('log', message.toString());
 
-      //  resetCapabilitiesLibConfig(onInit);
+      this.responseCallback(error,message);
 
-    }
+  };
 
-};
-
-Host.prototype.init = function (iDevice,onInit) {
-
-      /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-
-        this.libConfig(libConfig.getFlagsByte(),
-            function _libConfig(error, channelResponse) {
-                if (!error) {
-
-                    if (this.log.logging)
-                        this.log.log('log', libConfig.toString());
-                    _doLibConfigCB();
-                }
-                else
-                    _doLibConfigCB(error);
-            }.bind(this)); */
-
-    usb.init(iDevice,this._onUSBinit.bind(this,onInit));
-
-};
-
-// Exit host
-Host.prototype.exit = function (callback) {
-
-   // TO DO? Close open channels? Exit channels/profiles?
-
-    usb.exit(callback);
-
-};
-
-Host.prototype._runResponseCallback = function (error,message)
-{
-
-    if (error)
-      this.state = this.STATE.ERROR;
-    else
-      this.state = this.STATE.RTS;
-
-    if (this.log.logging)
-          this.log.log('log', message.toString());
-
-    this.responseCallback(error,message);
-
-};
-
-// param data - ArrayBuffer from USB
-Host.prototype.RXparse = function (data) {
+  // param data - ArrayBuffer from USB
+  Host.prototype.messageFactory = function (data) {
 
   var message,
       iSYNC = 0,
       iLength = 1,
       iID = 2,
       iCRC;
-
-    if (data === undefined)
-    {
-        if (this.log.logging) this.log.log('error','Undefined data received in RX parser, may indicate problems with USB provider');
-
-        return;
-    }
 
     if (data[iSYNC] !== Message.prototype.SYNC) {
 
@@ -721,7 +712,7 @@ Host.prototype.RXparse = function (data) {
 
     var notification;
 
-    //// Check CRC
+    // Verify CRC
 
     iCRC = message[iLength] + Message.prototype.HEADER_LENGTH;
     var receivedCRC = message[iCRC];
@@ -739,6 +730,8 @@ Host.prototype.RXparse = function (data) {
         if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
         return;
     }
+
+    // Construct messages
 
     switch (message[iID])
     {
@@ -883,10 +876,8 @@ Host.prototype.RXparse = function (data) {
 
             break;
 
-
-//
 //            // Channel event or responses
-//
+
         case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
 
             var channelResponseMsg = new ChannelResponseMessage(message);
@@ -970,163 +961,111 @@ Host.prototype.RXparse = function (data) {
 
 };
 
+    // Send a reset device command
+    Host.prototype.resetSystem = function (callback) {
+      this.sendMessage(new ResetSystemMessage(), callback);
+    };
 
-// Send a reset device command
-Host.prototype.resetSystem = function (callback) {
+    // Send request for channel ID
+    Host.prototype.getChannelId = function (channel, callback) {
+        this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_ID), callback);
+    };
 
-    var msg = new ResetSystemMessage();
+    // Send a request for ANT version
+    Host.prototype.getVersion = function (callback) {
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.ANT_VERSION),callback);
+    };
 
-    this.sendMessage(msg, callback);
+    // Send a request for device capabilities
+    Host.prototype.getCapabilities = function (callback) {
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.CAPABILITIES), callback);
+    };
 
-};
+    // Send a request for device serial number
+    Host.prototype.getSerialNumber = function (callback) {
 
-// Send request for channel ID
-Host.prototype.getChannelId = function (channel, callback) {
-    var msg = (new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_ID));
+          if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
+               callback(new Error('Device does not have capability to determine serial number'));
+              return;
+          }
 
-    this.sendMessage(msg, callback);
-};
+          this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER),  callback);
+    };
 
-// Send a request for ANT version
-Host.prototype.getVersion = function (callback) {
+    // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
+    Host.prototype.getChannelStatus = function (channel, callback)
+    {
+         this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_STATUS), callback);
+    };
 
-    var msg = (new RequestMessage(undefined, Message.prototype.MESSAGE.ANT_VERSION));
+    Host.prototype.getChannelStatusAll = function (callback)
+    {
+      var channelNumber = 0,
+          msg;
 
-    this.sendMessage(msg,callback);
+      var  singleChannelStatus = function () {
+          this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
+              if (!error) {
+                  this._channel[channelNumber].status = statusMsg;
 
-};
+                  msg = channelNumber + '       ' + statusMsg.channelStatus.networkNumber + ' '+statusMsg.channelStatus.stateMessage;
+                  if (this.log.logging)
+                      this.log.log('log', msg);
+                  channelNumber++;
+                  if (channelNumber < this.capabilities.MAX_CHAN)
+                      singleChannelStatus();
+                  else {
 
-// Send a request for device capabilities
-Host.prototype.getCapabilities = function (callback) {
+                      callback();
+                  }
+              }
+              else
+                  callback(error);
+          }.bind(this));
+      }.bind(this);
 
-    var msg = (new RequestMessage(undefined, Message.prototype.MESSAGE.CAPABILITIES));
+      var fetchSingleChannelStatus = function () {
 
-    this.sendMessage(msg, callback);
-
-};
-
-// Send a request for device serial number
-Host.prototype.getSerialNumber = function (callback) {
-
-      if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
-           callback(new Error('Device does not have capability to determine serial number'));
-          return;
-      }
-
-      var msg = new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER);
-
-      this.sendMessage(msg,  callback);
-
-};
-
-// Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
-Host.prototype.getChannelStatus = function (channel, callback) {
-
-    var msg = new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_STATUS);
-
-     this.sendMessage(msg, callback);
-
-};
-
-Host.prototype.getChannelStatusAll = function (callback) {
-    var channelNumber = 0,
-        msg;
-
-    var  singleChannelStatus = function () {
-        this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
-            if (!error) {
-                this._channel[channelNumber].status = statusMsg;
-
-                msg = channelNumber + '       ' + statusMsg.channelStatus.networkNumber + ' '+statusMsg.channelStatus.stateMessage;
-                if (this.log.logging)
-                    this.log.log('log', msg);
-                channelNumber++;
-                if (channelNumber < this.capabilities.MAX_CHAN)
-                    singleChannelStatus();
-                else {
-
-                    callback();
-                }
-            }
-            else
-                callback(error);
-        }.bind(this));
-    }.bind(this);
-
-    var fetchSingleChannelStatus = function () {
-
-        if (this.log.logging)
-            this.log.log('log', 'Channel Network State');
-        singleChannelStatus();
-    }.bind(this);
+          if (this.log.logging)
+              this.log.log('log', 'Channel Network State');
+          singleChannelStatus();
+      }.bind(this);
 
 
-    if (!this.capabilities) {
-        if (this.log.logging)
-            this.log.log('warn', 'Cannot determine max number of channels, capabilities object not available, call .getCapabilities first - trying to getCapabilities now');
-        this.getCapabilities(function (error,capabilities) { if (!error) fetchSingleChannelStatus();
-                                                             else callback(error);  });
-    } else
-       fetchSingleChannelStatus();
-};
+      if (!this.capabilities) {
+          if (this.log.logging)
+              this.log.log('warn', 'Cannot determine max number of channels, capabilities object not available, call .getCapabilities first - trying to getCapabilities now');
+          this.getCapabilities(function (error,capabilities) { if (!error) fetchSingleChannelStatus();
+                                                               else callback(error);  });
+      } else
+         fetchSingleChannelStatus();
+  };
 
-    // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
-    // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
-    Host.prototype.libConfig = function (libConfig, callback) {
-
-//        assert.equal(typeof this.capabilities, "object", "Capabilities not available");
-//        assert.ok(this.capabilities.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED, "Extended messaging not supported on device");
-
-     var configurationMsg = new LibConfigMessage(libConfig);
-
-    this.sendMessage(configurationMsg, callback);
-
- };
-
-    //// Only enables Channel ID extension of messages
-    //Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
-    //    var self = this, filler = 0, message = new Message();
-
-    //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
-
-    //    if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-    //        this.sendAndVerifyResponseNoError(message.create_message(Message.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), Message.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
-    //    else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-    //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
-    //};
-
-    // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
-    // This is the case for ANT-FS and ANT+ device profile like i.e HRM
-    //Host.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
-    //    var self = this, message = new Message();
-
-    //    this.sendAndVerifyResponseNoError(message.create_message(Message.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), Message.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
-
-    //};
-
+  // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
+  // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
+    Host.prototype.libConfig = function (libConfig, callback)
+    {
+      this.sendMessage(new LibConfigMessage(libConfig), callback);
+    };
 
 // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
-    Host.prototype.unAssignChannel = function (channelNr, callback) {
-
-        var configurationMsg = new UnAssignChannelMessage();
-
-        this.sendMessage(configurationMsg, callback);
-
+    Host.prototype.unAssignChannel = function (channelNr, callback)
+    {
+        this.sendMessage(new UnAssignChannelMessage(channelNr), callback);
     };
 
 /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
  Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
  also sets defaults values for RF, period, tx power, search timeout p.22 */
-    Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback) {
-        var cb, configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
+    Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback)
+    {
+        var cb,
+        configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
 
         if (typeof extend === "function")
             cb = extend; // If no extended assignment use parameter as callback
         else {
             cb = callback;
-
-            if (typeof this.capabilities === "undefined")
-                cb(new Error('getCapabilities should be run to determine capability for extended assign'));
 
             if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
                 cb(new Error('Device does not support extended assignment'));
@@ -1139,151 +1078,93 @@ Host.prototype.getChannelStatusAll = function (callback) {
 /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
 "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
 */
-    Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback) {
-
-        var configurationMsg = new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType);
-
-        this.sendMessage(configurationMsg, callback);
-
+    Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback)
+    {
+      this.sendMessage(new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType), callback);
     };
 
 // Uses the lower 2 bytes of the device serial number as channel Id.
-    Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback) {
-
-        if (typeof this.capabilities === "undefined")
-            callback(new Error('getCapabilities should be run to determine capability for device serial number'));
+    Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback)
+    {
 
         if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
             callback(new Error('Device does not support serial number - cannot use lower 2 bytes of serial number as device number in the channel ID'));
 
-            var configurationMsg = new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType);
-
-            this.sendMessage(configurationMsg,  callback);
+            this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType),  callback);
 
     };
 
-    Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback) {
-
-        //if (channel.isBackgroundSearchChannel())
-        //    msg = "(Background search channel)";
-
-        var configurationMsg = new SetChannelPeriodMessage(channel, messagePeriod);
-
-        this.sendMessage(configurationMsg,  callback);
-
+    Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback)
+    {
+        this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod),  callback);
     };
 
     // Low priority search mode
     // Spec. p. 72 : "...a low priority search will not interrupt other open channels on the device while searching",
     // "If the low priority search times out, the module will switch to high priority mode"
-    Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback) {
+    Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback)
+    {
 
         // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
-
-        if (typeof this.capabilities === "undefined")
-            callback(new Error('getCapabilities should be run first to determine if device support low priority channel search'));
-
-        if (!this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
+     if (!this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
             callback(new Error("Device does not support setting low priority search"));
 
-            var configurationMsg = new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout);
-
-            this.sendMessage(configurationMsg,  callback);
+            this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
 
     };
 
 // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
-    Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback) {
-
-        var configurationMsg = new SetChannelSearchTimeoutMessage(channel, searchTimeout);
-
-        this.sendMessage(configurationMsg,  callback);
-
+    Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback)
+    {
+        this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
     };
 
 // Set the RF frequency, i.e 66 = 2466 MHz
-    Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback) {
-
-        var configurationMsg = new SetChannelRFFreqMessage(channel, RFFreq);
-
-        this.sendMessage(configurationMsg,  callback);
-
+    Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback)
+    {
+        this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq),  callback);
     };
 
 // Set network key for specific net
-    Host.prototype.setNetworkKey = function (netNumber, key, callback) {
-
-        var configurationMsg = new SetNetworkKeyMessage(netNumber, key);
-
-        this.sendMessage(configurationMsg, callback);
+    Host.prototype.setNetworkKey = function (netNumber, key, callback)
+    {
+        this.sendMessage(new SetNetworkKeyMessage(netNumber, key), callback);
     };
 
     // Set transmit power for all channels
-//    Host.prototype.setTransmitPower = function (transmitPower, callback) {
-//
-//        var configurationMsg;
-//
-//        verifyRange(this.capabilities,'transmitPower', transmitPower,0,4);
-//
-//        configurationMsg = new SetTransmitPowerMessage(transmitPower);
-//
-//        this.sendMessage(configurationMsg, callback);
-//    };
+    Host.prototype.setTransmitPower = function (transmitPower, callback)
+    {
+     this.sendMessage(new SetTransmitPowerMessage(transmitPower), callback);
+    };
 
     // Set transmit power for individual channel
-//    Host.prototype.setChannelTxPower = function (channel,transmitPower, callback) {
-//
-//        if (typeof this.capabilities === "undefined")
-//            callback(new Error('getCapabilities should be run first to determine if device has capability for setting individual Tx power for a channel'));
-//
-//        if (!this.capabilities.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
-//            callback(new Error('Device does not support setting individual Tx power for a channel'));
-//
-//            var configurationMsg;
-//
-//            verifyRange(this.capabilities,'channel', channel);
-//            verifyRange(this.capabilities,'transmitPower', transmitPower, 0, 4);
-//
-//            configurationMsg = new SetChannelTxPowerMessage(channel, transmitPower);
-//
-//            this.sendMessage(configurationMsg, callback);
-//
-//    };
+    Host.prototype.setChannelTxPower = function (channel,transmitPower, callback)
+     {
+        if (!this.capabilities.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
+            callback(new Error('Device does not support setting individual Tx power for a channel'));
+
+            this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), callback);
+    };
 
     // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
-//    Host.prototype.setProximitySearch = function (channel, searchThreshold, callback) {
-//
-//        if (typeof this.capabilities === "undefined")
-//            callback(new Error('getCapabilities should be run first to determine if device has capability for proximity search'));
-//
-//        if (!this.capabilities.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
-//            callback(new Error('Device does not support proximity search'));
-//
-//            var configurationMsg;
-//
-//            verifyRange(this.capabilities,'channel', channel);
-//            verifyRange(this.capabilities,'searchThreshold', searchThreshold, 0, 10);
-//
-//            configurationMsg = new SetProximitySearchMessage(channel, searchThreshold);
-//
-//            this.sendMessage(configurationMsg, callback);
-//
-//    };
+    Host.prototype.setProximitySearch = function (channel, searchThreshold, callback)
+     {
+        if (!this.capabilities.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
+            callback(new Error('Device does not support proximity search'));
 
-     Host.prototype.openRxScanMode = function (channel, callback) {
-
-        var configurationMsg = new OpenRxScanModeMessage(channel);
-
-        this.sendMessage(configurationMsg, callback);
+            this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), callback);
 
     };
 
+     Host.prototype.openRxScanMode = function (channel, callback)
+     {
+       this.sendMessage(new OpenRxScanModeMessage(channel), callback);
+     };
+
     // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
-    Host.prototype.openChannel = function (channel, callback) {
-
-        var configurationMsg = new OpenChannelMessage(channel);
-
-        this.sendMessage(configurationMsg, callback);
+    Host.prototype.openChannel = function (channel, callback)
+    {
+        this.sendMessage(new OpenChannelMessage(channel), callback);
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
@@ -1298,11 +1179,7 @@ Host.prototype.getChannelStatusAll = function (callback) {
             return;
         }
 
-        var configurationMsg;
-
-        configurationMsg = new CloseChannelMessage(channelNumber);
-
-        this.sendMessage(configurationMsg, callback);
+        this.sendMessage(new CloseChannelMessage(channelNumber), callback);
 
     };
 
@@ -1520,6 +1397,5 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //    }
 
     module.exports = Host;
-
     return module.exports;
 });

@@ -110,12 +110,12 @@ define(['usb/USBDevice'],function (USBDevice) {
                     this.log.log('warn', 'Undefined data received', RXinfo.data);
                 try {
 
-                    //if (this.log && this.log.logging) console.time('RXparse');
+                    //if (this.log && this.log.logging) console.time('messageFactory');
 
 
                     if (data)
                         this.emit(USBDevice.prototype.EVENT.DATA, data); // Using events allows more listeners of usb data, e.g logging/debugging
-                    //if (this.log && this.log.logging) console.timeEnd('RXparse');
+                    //if (this.log && this.log.logging) console.timeEnd('messageFactory');
 
                 } catch (e) {
                     if (this.log && this.log.logging)
