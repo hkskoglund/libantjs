@@ -1,10 +1,12 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
+// Convention : _ before a function name indicates that the function should not be used
+
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-'use strict';
+  'use strict';
 
    var
 
@@ -52,6 +54,7 @@ define(function (require, exports, module) {
     SetSerialNumChannelIdMessage = require('./messages/SetSerialNumChannelIdMessage'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
+
     LibConfigMessage = require('./messages/LibConfigMessage'),
     LibConfig = require('./messages/libConfig'),
 
@@ -128,6 +131,18 @@ define(function (require, exports, module) {
       ERROR : 0x03 // Something went wrong
     };
 
+    Host.prototype._onSendMessage = function (error)
+    {
+
+         if (error) {
+            this.state = this.STATE.ERROR;
+            if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+            this.responseCallback(error);
+         }
+
+         // on success, responseCallback is called during  parsing of response in messageFactory
+    };
+
     // Send a message to ANT
     Host.prototype.sendMessage = function (message, callback) {
 
@@ -136,25 +151,12 @@ define(function (require, exports, module) {
         return;
       }
 
-       var _sendMessageCB = function (error)
-       {
+      if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
 
-         if (error) {
-            this.state = this.STATE.ERROR;
-            if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
-            this.responseCallback(error);
-         }
+      this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
+      this.responseCallback = callback;
 
-         // on success, responseCallback is called during pasring of response in messageFactory
-
-       }.bind(this);
-
-        if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
-
-        this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
-        this.responseCallback = callback;
-
-        usb.transfer(message.getRawMessage(),_sendMessageCB);
+      usb.transfer(message.getRawMessage(),this._onSendMessage.bind(this));
 
     };
 
@@ -456,36 +458,6 @@ define(function (require, exports, module) {
 
                 }.bind(this);
 
-                ////// Default 3 = 0bDm
-
-                //var setTransmitPower = function () {
-                //    if (parameters.transmitPower)
-                //        this.setTransmitPower(parameters.transmitPower, function (error, response) {
-                //            if (!error) {
-                //                this.log.log('log',response.toString());
-                //                setChannelTxPower();
-                //            }
-                //            else
-                //                this.log.log( error);
-                //        }.bind(this));
-                //    else
-                //        setChannelTxPower();
-                //}.bind(this);
-
-                //var setChannelTxPower = function () {
-                //    if (parameters.channelTxPower)
-                //        this.setChannelTxPower(channelNumber,parameters.channelTxPower, function (error, response) {
-                //            if (!error) {
-                //                this.log.log( response.toString());
-                //                setChannelSearchTimeout();
-                //            }
-                //            else
-                //                this.log.log( error);
-                //        }.bind(this));
-                //    else
-                //        setChannelSearchTimeout();
-                //}.bind(this);
-
                 // Optional
 
                 if (parameters.networkKey)
@@ -501,8 +473,6 @@ define(function (require, exports, module) {
                     }.bind(this));
                 else
                     assignChannelSetChannelId();
-
-                //// Optional
 
                 //// SLAVE SEARCH TIMEOUTS : high priority and low priority
 
@@ -539,21 +509,6 @@ define(function (require, exports, module) {
                     else
                         openChannel();
                 }.bind(this);
-
-    //            var setProximitySearch = function () {
-    //                if (parameters.proximitySearch)
-    //                    this.setProximitySearch(channelNumber, parameters.proximitySearch, function (error, response) {
-    //                        if (!error) {
-    //                            this.log.log('log', response.toString());
-    //                            openChannel();
-    //                        }
-    //                        else
-    //                            callback(error);
-    //                    }.bind(this));
-    //                else
-    //                    openChannel();
-    //            }.bind(this);
-
 
                 var openChannel = function () {
 
@@ -1041,22 +996,22 @@ define(function (require, exports, module) {
          fetchSingleChannelStatus();
   };
 
-  // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
-  // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
+    // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
+    // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
     Host.prototype.libConfig = function (libConfig, callback)
     {
       this.sendMessage(new LibConfigMessage(libConfig), callback);
     };
 
-// Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
+    // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
     Host.prototype.unAssignChannel = function (channelNr, callback)
     {
         this.sendMessage(new UnAssignChannelMessage(channelNr), callback);
     };
 
-/* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
- Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
- also sets defaults values for RF, period, tx power, search timeout p.22 */
+    /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
+     Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
+     also sets defaults values for RF, period, tx power, search timeout p.22 */
     Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback)
     {
         var cb,
@@ -1075,23 +1030,22 @@ define(function (require, exports, module) {
 
     };
 
-/* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
-"When the device number is fully known the pairing bit is ignored" (spec. p. 65)
-*/
+    /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
+    "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
+    */
     Host.prototype.setChannelId = function (channel, deviceNum, deviceType, transmissionType, callback)
     {
       this.sendMessage(new SetChannelIDMessage(channel, deviceNum,deviceType,transmissionType), callback);
     };
 
-// Uses the lower 2 bytes of the device serial number as channel Id.
+    // Uses the lower 2 bytes of the device serial number as channel Id.
     Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback)
     {
 
-        if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
-            callback(new Error('Device does not support serial number - cannot use lower 2 bytes of serial number as device number in the channel ID'));
+      if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
+          callback(new Error('Device does not support serial number - cannot use lower 2 bytes of serial number as device number in the channel ID'));
 
-            this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType),  callback);
-
+      this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType),  callback);
     };
 
     Host.prototype.setChannelPeriod = function (channel,messagePeriod,callback)
@@ -1110,22 +1064,21 @@ define(function (require, exports, module) {
             callback(new Error("Device does not support setting low priority search"));
 
             this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
-
     };
 
-// Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
+    // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
     Host.prototype.setChannelSearchTimeout = function (channel, searchTimeout,callback)
     {
         this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
     };
 
-// Set the RF frequency, i.e 66 = 2466 MHz
+    // Set the RF frequency, i.e 66 = 2466 MHz
     Host.prototype.setChannelRFFreq = function (channel, RFFreq, callback)
     {
         this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq),  callback);
     };
 
-// Set network key for specific net
+    // Set network key for specific net
     Host.prototype.setNetworkKey = function (netNumber, key, callback)
     {
         this.sendMessage(new SetNetworkKeyMessage(netNumber, key), callback);
