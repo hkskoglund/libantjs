@@ -43,6 +43,10 @@ define(function (require, exports, module) {
 
     Message.prototype.CRC_LENGTH = 1;
 
+    Message.prototype.iSYNC = 0; // Index of sync byte within message
+    Message.prototype.iLENGTH = 1;
+    Message.prototype.iID = 2;
+
     Message.prototype.getName = function ()
     {
        return MESSAGE.prototype.MESSAGE[this.id];

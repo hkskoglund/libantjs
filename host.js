@@ -614,27 +614,26 @@ define(function (require, exports, module) {
   Host.prototype.messageFactory = function (data) {
 
   var message,
-      iSYNC = 0,
-      iLength = 1,
-      iID = 2,
-      iCRC;
+      iCRC,
+      receivedCRC,
+      CRC;
 
-    if (data[iSYNC] !== Message.prototype.SYNC) {
+    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
 
         return;
     }
 
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength);
 
-    message = data.subarray(0,data[iLength] + Message.prototype.HEADER_LENGTH+Message.prototype.CRC_LENGTH);
+    message = data.subarray(0,data[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH+Message.prototype.CRC_LENGTH);
     if (this.log.logging) this.log.log('log', 'Parsing',message);
 
     // Verify CRC
 
-    iCRC = message[iLength] + Message.prototype.HEADER_LENGTH;
-    var receivedCRC = message[iCRC];
+    iCRC = message[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH;
+    receivedCRC = message[iCRC];
 
     if (typeof receivedCRC === 'undefined')
     {
@@ -642,7 +641,7 @@ define(function (require, exports, module) {
         return;
     }
 
-    var CRC = _Message.getCRC(message);
+    CRC = _Message.getCRC(message);
 
     if (receivedCRC !== CRC)
     {
@@ -652,7 +651,7 @@ define(function (require, exports, module) {
 
     // Construct messages
 
-    switch (message[iID])
+    switch (message[Message.prototype.iID])
     {
 
       // Notifications
@@ -860,7 +859,7 @@ define(function (require, exports, module) {
         default:
 
             if (this.log.logging)
-                this.log.log('log', "Unable to parse received data", data, ' msg id ', message[iID]);
+                this.log.log('log', "Unable to parse received data", data, ' msg id ', message[Message.prototype.iID]);
             break;
     }
 
