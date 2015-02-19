@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message'),
         Channel = require('../channel');
@@ -13,10 +13,8 @@ define(function (require, exports, module) {
 
         Message.call(this,data);
 
-        this.id = Message.prototype.MESSAGE.CHANNEL_STATUS;
-
         if (data)
-            this.parse();
+            this.decode();
 
     }
 
@@ -31,7 +29,7 @@ define(function (require, exports, module) {
         TRACKING: 0x03
     };
 
-    ChannelStatusMessage.prototype.parse = function () {
+    ChannelStatusMessage.prototype.decode = function () {
         var status = this.content[1];
 
         this.channelNumber = this.content[0];
@@ -56,7 +54,7 @@ define(function (require, exports, module) {
     };
 
     ChannelStatusMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
+        return Message.prototype.toString() + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
             this.channelStatus.stateMessage;
     };
 

@@ -15,7 +15,7 @@ define(function (require, exports, module) {
        this.id = Message.prototype.MESSAGE.ANT_VERSION;
 
         if (data)
-            this.parse();
+            this.decode();
 
     }
 
@@ -23,7 +23,7 @@ define(function (require, exports, module) {
 
     VersionMessage.prototype.constructor = VersionMessage;
 
-    VersionMessage.prototype.parse = function () {
+    VersionMessage.prototype.decode = function () {
        var version = this.content.subarray(0,-1),
            versionStr = ''; // Content is a 11 - bytes null terminated string - strip off the null
 
@@ -40,7 +40,7 @@ define(function (require, exports, module) {
     };
 
     VersionMessage.prototype.toString = function () {
-        return this.name + " " + this.version;
+        return Message.prototype.toString.call(this) + ' '+this.version;
     };
 
     module.exports = VersionMessage;

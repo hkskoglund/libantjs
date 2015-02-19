@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message'),
         HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout');
@@ -23,9 +23,7 @@ define(function (require, exports, module) {
         else
             msgBuffer[1] = searchTimeout;
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT;
+        Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT);
 
         this.channel = channel;
         this.HPsearchTimeout = searchTimeout;
@@ -39,7 +37,7 @@ define(function (require, exports, module) {
     SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMessage;
 
     SetChannelSearchTimeoutMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16)+ "C# "+this.channel+" HP search timeout" +this.HPsearchTimeout;
+        return Message.prototype.toString()+ "C# "+this.channel+" HP search timeout" +this.HPsearchTimeout;
     };
 
     module.exports = SetChannelSearchTimeoutMessage;

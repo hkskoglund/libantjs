@@ -16,7 +16,7 @@ define(function (require, exports, module) {
             this.profile = broadcast.profile;
 
         if (broadcast && broadcast.data)
-            this.parse(broadcast);
+            this.decode(broadcast);
 
         this.status = {
             SDMLocation: undefined,
@@ -76,7 +76,7 @@ define(function (require, exports, module) {
     };
 
 
-    SDMPage2.prototype.parse = function (broadcast) {
+    SDMPage2.prototype.decode = function (broadcast) {
 
         var data = broadcast.data;
         // dataView = new DataView(data.buffer);

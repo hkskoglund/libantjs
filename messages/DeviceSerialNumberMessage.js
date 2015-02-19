@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var  Message = require('./Message');
 
@@ -12,17 +12,15 @@ define(function (require, exports, module) {
 
         Message.call(this,data);
 
-        this.id = Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER;
-
         if (data)
-            this.parse();
+            this.decode();
     }
 
     DeviceSerialNumberMessage.prototype = Object.create(Message.prototype);
 
     DeviceSerialNumberMessage.prototype.constructor = DeviceSerialNumberMessage;
 
-    DeviceSerialNumberMessage.prototype.parse = function () {
+    DeviceSerialNumberMessage.prototype.decode = function () {
         // SN 4 bytes Little Endian
         var dw = new DataView(this.content.buffer);
 
@@ -31,7 +29,7 @@ define(function (require, exports, module) {
     };
 
     DeviceSerialNumberMessage.prototype.toString = function () {
-        return this.name +  " " + this.serialNumber+' (0x'+this.serialNumber.toString(16)+')'+" lower 2-bytes "+this.serialNumberAsChannelId +' (0x'+this.serialNumberAsChannelId.toString(16)+')';
+        return Message.prototype.toString.call(this)+ " " + this.serialNumber+' (0x'+this.serialNumber.toString(16)+')'+" lower 2-bytes "+this.serialNumberAsChannelId +' (0x'+this.serialNumberAsChannelId.toString(16)+')';
     };
 
     module.exports = DeviceSerialNumberMessage;

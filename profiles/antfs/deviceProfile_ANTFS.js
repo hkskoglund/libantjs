@@ -1,4 +1,4 @@
-﻿"use strict";
+﻿'use strict';
 //console.log(module);
 
 var DeviceProfile = require('./deviceProfile.js');
@@ -316,7 +316,7 @@ DeviceProfile_ANTFS.prototype.getHomeDirectory = function () {
     return this.homeDirectory;
 };
 
-DeviceProfile_ANTFS.prototype.parseBurstData = function (channelNr, data, parser) {
+DeviceProfile_ANTFS.prototype.decodeBurstData = function (channelNr, data, parser) {
     var self = this, beacon, numberOfPackets = data.length / 8,
         authenticate_response = {}, packetNr,
         download_response = {}, currentCRCSeed,
@@ -795,7 +795,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function (config) {
 
     // Functions available as callbacks
     broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
-    parseBurstDataFunc = this.parseBurstData || DeviceProfile.prototype.parseBurstData; // Called on a complete aggregation of burst packets
+    parseBurstDataFunc = this.parseBurstData || DeviceProfile.prototype.decodeBurstData; // Called on a complete aggregation of burst packets
     channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
     //this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, function _crespFunc() {
@@ -838,7 +838,7 @@ DeviceProfile_ANTFS.prototype.channelResponseEvent = function (data) {
     // client (910XT) has closed the channel, fallback for host is to return to search mode again
     // I suppose that when authentication succeeds and we enter transport layer state, the client will step up its game and provide continous stream of data
     // ANT-FS Technical specification p. 40 s. 9.1 Beacon "Client beacon rates will be application dependent. A trade off is made between power and latecy"
-DeviceProfile_ANTFS.prototype.parseClientBeacon = function (data, onlyDataPayload) {
+DeviceProfile_ANTFS.prototype.decodeClientBeacon = function (data, onlyDataPayload) {
 
     // if onlyDataPayload === true, SYNC MSG. LENGTH MSG ID CHANNEL NR is stripped off beacon -> used when assembling burst transfer that contain a beacon in the first packet
     var substractIndex, self = this; // Used to get the adjust index in the data
@@ -1034,7 +1034,7 @@ DeviceProfile_ANTFS.prototype.sendRequestWithPasskey = function (passkey, errorC
 };
 
     // Parses ANT-FS directory at reserved file index 0
-DeviceProfile_ANTFS.prototype.parseDirectory = function (data) {
+DeviceProfile_ANTFS.prototype.decodeDirectory = function (data) {
     var self = this, numberOfFiles, fileNr, file, structureLength, addIndex, totalBytesInDirectory = 0;
 
     self.directory = {

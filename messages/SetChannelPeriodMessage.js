@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-  "use strict";
+  'use strict';
 
   var Message = require('./Message');
 
@@ -15,7 +15,7 @@ define(function (require, exports, module) {
       msgBuffer.setUint8(0,channel);
       msgBuffer.setUint16(1,messagePeriod, true);
 
-      Message.call(this);
+      Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_PERIOD);
 
       this.id = Message.prototype.MESSAGE.SET_CHANNEL_MESSAGING_PERIOD;
 
@@ -32,7 +32,7 @@ define(function (require, exports, module) {
 
 
   SetChannelPeriodMessage.prototype.toString = function () {
-      return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " message period " + this.messagePeriod;
+      return Message.prototype.toString() + " C# " + this.channel + " message period " + this.messagePeriod;
   };
 
   module.exports = SetChannelPeriodMessage;

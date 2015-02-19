@@ -3,7 +3,7 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    "use strict";
+    'use strict';
     var Message = require('./Message');
 
     // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
@@ -11,12 +11,9 @@ define(function (require, exports, module) {
 
         if (typeof data !== "undefined") {
             Message.call(this, data);
-            this.parse();
+            this.decode();
         } else
-            Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.NOTIFICATION_STARTUP;
-
+            Message.call(this,undefined,Message.prototype.MESSAGE.NOTIFICATION_STARTUP);
     }
 
     NotificationStartup.prototype = Object.create(Message.prototype);
@@ -54,7 +51,7 @@ define(function (require, exports, module) {
     };
 
 
-    NotificationStartup.prototype.parse = function () {
+    NotificationStartup.prototype.decode = function () {
         var msg;
             //code;
 
@@ -92,7 +89,7 @@ define(function (require, exports, module) {
     };
 
     NotificationStartup.prototype.toString = function () {
-        return this.name +" ID 0x"+this.id.toString(16)+" " + this.length+" "+this.message.text;
+        return Message.prototype.toString.call(this) +' '+this.message.text;
     };
 
     module.exports = NotificationStartup;

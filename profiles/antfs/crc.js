@@ -1,4 +1,4 @@
-﻿"use strict";
+﻿'use strict';
 
 // Based on ANT-FS PCTOOLS Source Code
 // http://www.thisisant.com/developer/ant/licensing/ant-shared-source-license

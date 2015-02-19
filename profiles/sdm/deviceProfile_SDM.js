@@ -99,7 +99,7 @@ define(function (require, exports, module) {
 
                 // page = new SDMPage1({ log: this.log.logging }, broadcast);
                 page = this.SDMPage1;
-                page.parse(broadcast);
+                page.decode(broadcast);
 
                 break;
 
@@ -108,7 +108,7 @@ define(function (require, exports, module) {
 
                 // page = new SDMPage2({ log: this.log.logging }, broadcast);
                 page = this.SDMPage2;
-                page.parse(broadcast);
+                page.decode(broadcast);
 
                 break;
 
@@ -116,7 +116,7 @@ define(function (require, exports, module) {
 
                 // Check for common page 80,...
                 page = this.genericPage;
-                if (page.parse(broadcast) === -1) // Not a common page
+                if (page.decode(broadcast) === -1) // Not a common page
                 {
                     // Issue : Receive page 2 for temp sensor (does not exist)
                     //  May indicate that a broadcast from another sensor is sent with the wrong channelId in extended data...

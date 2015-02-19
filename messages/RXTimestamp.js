@@ -3,13 +3,13 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    "use strict";
+    'use strict';
     // Function names based on Dynastram Android SDK v 4.00 documentation
     function RXTimestamp(rxTimestamp) {
         this.timestamp = rxTimestamp;
     }
 
-    RXTimestamp.prototype.parse = function (timestamp) {
+    RXTimestamp.prototype.decode = function (timestamp) {
 
         this.timestamp = (new DataView(timestamp.buffer)).getUint16(0+timestamp.byteOffset,true);
 

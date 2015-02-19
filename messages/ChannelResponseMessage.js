@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
 
@@ -12,10 +12,8 @@ define(function (require, exports, module) {
 
         Message.call(this,data);
 
-        this.id = Message.prototype.MESSAGE.CHANNEL_RESPONSE;
-
         if (data)
-          this.parse();
+          this.decode();
 
     }
 
@@ -155,11 +153,11 @@ define(function (require, exports, module) {
     };
 
 
-    ChannelResponseMessage.prototype.parse = function (data) {
+    ChannelResponseMessage.prototype.decode = function (data) {
         var msg;
 
         if (data)
-            this.mainParse(data);
+            Message.prototype.decode.call(this,data);
 
         this.channel = this.content[0];
         this.initiatingId = this.content[1];
@@ -177,7 +175,7 @@ define(function (require, exports, module) {
     };
 
     ChannelResponseMessage.prototype.toString = function () {
-        return this.name + " ID# 0x" + this.id.toString(16) + " "+this.message;
+        return Message.prototype.toString.call(this)+  " "+this.message;
     };
 
     module.exports = ChannelResponseMessage;

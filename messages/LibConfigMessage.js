@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
 
@@ -15,9 +15,7 @@ define(function (require, exports, module) {
         msgBuffer[0] = Message.prototype.FILLER_BYTE; // Filler
         msgBuffer[1] = libConfig;
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.LIBCONFIG;
+        Message.call(this,undefined,Message.prototype.MESSAGE.LIBCONFIG);
 
         this.libConfig = libConfig;
 
@@ -31,7 +29,7 @@ define(function (require, exports, module) {
 
 
     LibConfigMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16) + " lib config " + this.libConfig;
+        return Message.prototype.toString() + " lib config " + this.libConfig;
     };
 
     module.exports = LibConfigMessage;

@@ -4,15 +4,13 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
 
     function ResetSystemMessage() {
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.RESET_SYSTEM;
+        Message.call(this,undefined,Message.prototype.MESSAGE.RESET_SYSTEM);
 
         this.setContent((new Uint8Array(1)).buffer);
 

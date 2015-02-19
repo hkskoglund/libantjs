@@ -3,36 +3,33 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-var Message = require('./Message');
+
+    'use strict';
+
+    var Message = require('./Message');
+
+    function SetChannelTxPowerMessage(channel,transmitPower) {
+
+        var msgBuffer = new Uint8Array(2);
+
+        msgBuffer[0] = channel;
+        msgBuffer[1] = transmitPower; // Range 0..4
+
+        Message.call(this,undefined,Message.prototype.SET_CHANNEL_TX_POWER);
+
+        this.setContent(msgBuffer.buffer);
+
+    }
+
+    SetChannelTxPowerMessage.prototype = Object.create(Message.prototype);
+
+    SetChannelTxPowerMessage.prototype.constructor = SetChannelTxPowerMessage;
 
 
-function SetChannelTxPowerMessage(channel,transmitPower) {
+    SetChannelTxPowerMessage.prototype.toString = function () {
+        return Message.prototype.toString();
+    };
 
-    var msgBuffer = new Uint8Array(2);
-
-    msgBuffer[0] = channel;
-    msgBuffer[1] = transmitPower; // Range 0..4
-
-    Message.call(this);
-
-    this.id = Message.prototype.MESSAGE.SET_CHANNEL_TX_POWER;
-    this.name = "Set channel Tx power";
-
-    this.setContent(msgBuffer.buffer);
-
-    //console.log("SetChannelTxPowerMessage", this);
-}
-
-SetChannelTxPowerMessage.prototype = Object.create(Message.prototype);
-
-SetChannelTxPowerMessage.prototype.constructor = SetChannelTxPowerMessage;
-
-
-SetChannelTxPowerMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16);
-};
-
-module.exports = SetChannelTxPowerMessage;
+    module.exports = SetChannelTxPowerMessage;
     return module.exports;
 });

@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
         //LowPrioritySearchTimeout = require('messages/LowPrioritySearchTimeout');
@@ -20,9 +20,7 @@ define(function (require, exports, module) {
             else
                 msgBuffer[1] = searchTimeout;
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT;
+        Message.call(this,undefined,Message.prototype.MESSAGE.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT);
 
         this.setContent(msgBuffer.buffer);
 
@@ -35,7 +33,7 @@ define(function (require, exports, module) {
 
 
     SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16);
+        return Message.prototype.toString();
     };
 
     module.exports = SetLowPrioriyChannelSearchTimeoutMessage;

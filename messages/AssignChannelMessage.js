@@ -18,10 +18,8 @@ define(function (require, exports, module) {
       else
           msgBuffer = new Uint8Array([channel, channelType, networkNumber]);
 
-      Message.call(this);
+      Message.call(this,undefined,Message.prototype.MESSAGE.ASSIGN_CHANNEL);
 
-      this.id = Message.prototype.MESSAGE.ASSIGN_CHANNEL;
-    
       this.channel = channel;
       this.channelType = channelType;
       this.networkNumber = networkNumber;
@@ -37,7 +35,7 @@ define(function (require, exports, module) {
   AssignChannelMessage.prototype.constructor = AssignChannelMessage;
 
   AssignChannelMessage.prototype.toString = function () {
-      var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
+      var msg = Message.prototype.toString() + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
       if (this.extendedAssignment)
           msg += " extended assignment " + this.extendedAssignment;
       return msg;

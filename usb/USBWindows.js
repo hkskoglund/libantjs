@@ -3,7 +3,7 @@
 // Requires winusb.sys driver - windows 8
 
 define(['usb/USBDevice'],function (USBDevice) {
-    "use strict";
+    'use strict';
 
     function USBWindows(options) {
 

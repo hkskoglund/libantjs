@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-  "use strict";
+  'use strict';
 
   var Message = require('./Message');
 
@@ -17,9 +17,8 @@ define(function (require, exports, module) {
 
       var msgBuffer = new Uint8Array([channel || 0, requestedMessageId]);
 
-      Message.call(this);
+      Message.call(this,undefined,Message.prototype.MESSAGE.REQUEST);
 
-      this.id = Message.prototype.MESSAGE.REQUEST;
       this.requestId = requestedMessageId;
 
       this.channel = channel || 0;
@@ -49,7 +48,7 @@ define(function (require, exports, module) {
   RequestMessage.prototype.constructor = RequestMessage;
 
   RequestMessage.prototype.toString = function () {
-      var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " requested msg. id 0x" + this.requestId.toString(16);
+      var msg = Message.prototype.toString.call(this) + " C# " + this.channel + " ID 0x" + this.requestId.toString(16)+' '+Message.prototype.MESSAGE[this.requestId];
       if (this.NVMaddr)
           msg += " NVMaddr " + this.NVMaddr;
       if (this.NVMsize)

@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
 
@@ -12,9 +12,7 @@ define(function (require, exports, module) {
 
         var msgBuffer = new Uint8Array([channel]);
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.OPEN_CHANNEL;
+        Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_CHANNEL);
 
         this.channel = channel;
 
@@ -27,7 +25,7 @@ define(function (require, exports, module) {
     OpenChannelMessage.prototype.constructor = OpenChannelMessage;
 
     OpenChannelMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16);
+        return Message.prototype.toString();
     };
 
     module.exports = OpenChannelMessage;

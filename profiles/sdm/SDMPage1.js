@@ -17,7 +17,7 @@ define(function (require, exports, module) {
             this.profile = broadcast.profile;
 
         if (broadcast && broadcast.data)
-            this.parse(broadcast);
+            this.decode(broadcast);
     }
 
     SDMPage1.prototype = Object.create(GenericPage.prototype);
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
 
     };
 
-    SDMPage1.prototype.parse = function (broadcast) {
+    SDMPage1.prototype.decode = function (broadcast) {
         var data = broadcast.data;
         //  dataView = new DataView(data.buffer);
 

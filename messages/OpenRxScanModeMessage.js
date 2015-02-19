@@ -12,10 +12,7 @@ define(function (require, exports, module) {
     {
       var content = new Uint8Array(1);
 
-         Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.OPEN_RX_SCAN_MODE;
-        this.name = "Open Rx Scan Mode";
+        Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_RX_SCAN_MODE);
 
         content[0] = Message.prototype.FILLER_BYTE; // By default new UintArray sets underlying array to 0, be sure its 0
 

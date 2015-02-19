@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
 
     var Message = require('./Message');
 
@@ -15,9 +15,7 @@ define(function (require, exports, module) {
         msgBuffer[0] = channel;
         msgBuffer[1] = RFFreq || 66;
 
-        Message.call(this);
-
-        this.id = Message.prototype.MESSAGE.SET_CHANNEL_RFFREQ;
+        Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_RFFREQ);
 
         this.channel = channel;
         this.RFFreq = RFFreq;
@@ -31,7 +29,7 @@ define(function (require, exports, module) {
     SetChannelRFFreqMessage.prototype.constructor = SetChannelRFFreqMessage;
 
     SetChannelRFFreqMessage.prototype.toString = function () {
-        return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel + " RF freq. " + this.RFFreq;
+        return Message.prototype.toString() + " C# " + this.channel + " RF freq. " + this.RFFreq;
     };
 
     module.exports = SetChannelRFFreqMessage;

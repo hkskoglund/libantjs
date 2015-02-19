@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 
-    "use strict";
+    'use strict';
     // Function names based on Dynastram Android SDK v 4.00 documentation
 
     function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
@@ -68,7 +68,7 @@ define(function (require, exports, module) {
     };
 
     // Parse channel ID if enabled via LIBConfig
-    ChannelId.prototype.parse = function (extendedData) {
+    ChannelId.prototype.decode = function (extendedData) {
 
         //var extendedDataUint8 = new Uint8Array(extendedData);
         // | DN # af 41 | DT # 78 |T# 01

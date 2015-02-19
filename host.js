@@ -832,7 +832,7 @@ Host.prototype.RXparse = function (data) {
 //        //            if (ANTmsg.length > 9) {
 //        //                msgFlag = data[12];
 //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-//        //                this.parse_extended_message(ANTmsg.channel, data);
+//        //                this.decode_extended_message(ANTmsg.channel, data);
 //        //            }
 //        //        }
 //        //        else if (ANTmsg.sequenceNr > 0x00)
@@ -850,14 +850,14 @@ Host.prototype.RXparse = function (data) {
 //
 //        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
 //        //            if (typeof burstMsg !== "undefined")
-//        //                burstParser = burstMsg.parser;
+//        //                burstParser = burstMsg.decoder;
 //
 //        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
 //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
 //        //            else
 //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
 //
-//        //            //antInstance.channelConfiguration[channelNr].parseBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
+//        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
 //        //        }
 //        //    }
 //        //    else {
@@ -874,7 +874,7 @@ Host.prototype.RXparse = function (data) {
 
             var broadcast = new BroadcastDataMessage();
 
-            broadcast.parse(message);
+            broadcast.decode(message);
 
          // Send broad to specific channel handler
             if (typeof this._channel[broadcast.channel] !== "undefined") {
@@ -903,12 +903,12 @@ Host.prototype.RXparse = function (data) {
 
             var channelResponseMsg = new ChannelResponseMessage(message);
             //var channelResponseMsg = this.channelResponseMessage;
-            //channelResponseMsg.parse(message);
+            //channelResponseMsg.decode(message);
 
 //            //TEST provoking EVENT_CHANNEL_ACTIVE
 //            //data[5] = 0xF;
 //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            channelResponseMsg.parse();
+//            channelResponseMsg.decode();
             if (channelResponseMsg.initiatingId)
              // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
 
@@ -943,7 +943,7 @@ Host.prototype.RXparse = function (data) {
             var channelStatusMsg = new ChannelStatusMessage(message);
            // this.log.timeEnd(Message.prototype.MESSAGE[channelStatusMsg.id]);
 //            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            channelStatusMsg.parse();
+//            channelStatusMsg.decode();
             //console.log("status", channelStatusMsg);
 
            this.responseCallback(undefined,channelStatusMsg);
@@ -954,7 +954,7 @@ Host.prototype.RXparse = function (data) {
 //
 //            var channelIdMsg = new ChannelIdMessage();
 //            channelIdMsg.setContent(data.slice(3, 3 + ANTmsg.length));
-//            channelIdMsg.parse();
+//            channelIdMsg.decode();
 //
 //            console.log("Got response channel ID", channelIdMsg.toString());
 //

@@ -3,7 +3,7 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    "use strict";
+    'use strict';
 // Function names based on Dynastram Android SDK v 4.00 documentation
 function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
 
@@ -19,7 +19,7 @@ function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
     }
 }
 
-RSSI.prototype.parse = function (extendedData) {
+RSSI.prototype.decode = function (extendedData) {
     //var extendedDataUint8 = new Uint8Array(extendedData); // Allows using [], which cannot be used on an ArrayBuffer
     var extendedDataView = new DataView(extendedData.buffer);
 

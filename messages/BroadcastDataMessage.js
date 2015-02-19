@@ -3,18 +3,17 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-    "use strict";
+
+    'use strict';
+
     var Message = require('./Message');
 
     function BroadcastDataMessage(data) {
 
         Message.call(this,data);
 
-        this.name = "Broadcast Data";
-        this.id = Message.prototype.MESSAGE.BROADCAST_DATA;
-
         if (data)
-            this.parse();
+            this.decode();
     }
 
     BroadcastDataMessage.prototype = Object.create(Message.prototype);
@@ -22,12 +21,12 @@ define(function (require, exports, module) {
     BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
     // Spec. p. 91
-    BroadcastDataMessage.prototype.parse = function (data) {
+    BroadcastDataMessage.prototype.decode = function (data) {
         var sharedAddress,
             dataView;
 
         if (data)
-            this.mainParse(data); // in Message
+            Message.prototype.decode.call(this,data); // in Message
 
         this.channel = this.content[0];
         //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
@@ -41,7 +40,7 @@ define(function (require, exports, module) {
 
 
     BroadcastDataMessage.prototype.toString = function () {
-        var msg = this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel;
+        var msg = Message.prototype.toString() + " C# " + this.channel;
 
         if (this.extendedData) {
             msg += " Flags 0x" + this.flagsByte.toString(16);

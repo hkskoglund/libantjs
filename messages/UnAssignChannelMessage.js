@@ -3,38 +3,33 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-var Message = require('./Message');
+    'use strict';
+
+    var Message = require('./Message');
+
+    function UnAssignChannelMessage(channel) {
+
+        var msgBuffer = new Uint8Array([channel]);
 
 
-function UnAssignChannelMessage(channel) {
+        Message.call(this,undefined,Message.prototype.MESSAGE.UNASSIGN_CHANNEL);
 
-    var msgBuffer = new Uint8Array([channel]);
+        // Parameters
 
+        this.channel = channel;
 
-    Message.call(this);
+        this.setContent(msgBuffer.buffer);
 
-    this.id = Message.prototype.MESSAGE.UNASSIGN_CHANNEL;
-    this.name = "UnAssign Channel";
+    }
 
-    // Parameters
+    UnAssignChannelMessage.prototype = Object.create(Message.prototype);
 
-    this.channel = channel;
+    UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
-    this.setContent(msgBuffer.buffer);
+    UnAssignChannelMessage.prototype.toString = function () {
+        return Message.prototype.toString() + " C# " + this.channel;
+    };
 
-    //console.log("UnAssignChannelMessage", this);
-
-}
-
-UnAssignChannelMessage.prototype = Object.create(Message.prototype);
-
-UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
-
-UnAssignChannelMessage.prototype.toString = function () {
-    return this.name + " ID 0x" + this.id.toString(16) + " C# " + this.channel;
-};
-
-module.exports = UnAssignChannelMessage;
-    return module.exports;
+    module.exports = UnAssignChannelMessage;
+        return module.exports;
 });
