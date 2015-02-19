@@ -546,40 +546,6 @@ define(function (require, exports, module) {
 
     };
 
-    Host.prototype._onSerialNumber = function(onInit,error,serialNumber)
-    {
-      onInit(error,serialNumber);
-    };
-
-    Host.prototype._onVersion = function (onInit,error,version)
-    {
-      if (!error) {
-        this.getSerialNumber(this._onSerialNumber.bind(this,onInit));
-      } else
-         {
-           onInit(error,version);
-         }
-    };
-
-    Host.prototype._onCapabilities = function (onInit,error,capabilities)
-    {
-      if (!error) {
-        this.getVersion(this._onVersion.bind(this,onInit));
-      } else
-         {
-           onInit(error,capabilities);
-         }
-    };
-
-    Host.prototype._onReset = function (onInit,error,notification)
-    {
-      if (!error)
-         this.getCapabilities(this._onCapabilities.bind(this,onInit));
-      else {
-         onInit(error,notification);
-       }
-    };
-
     Host.prototype._onUSBinit = function (onInit,error)
     {
       if (error) {
@@ -594,7 +560,7 @@ define(function (require, exports, module) {
 
             this.state = this.STATE.RTS;
 
-            this.resetSystem(this._onReset.bind(this,onInit));
+            this.resetSystem(onInit);
 
         }
 
@@ -665,8 +631,6 @@ define(function (require, exports, module) {
     message = data.subarray(0,data[iLength] + Message.prototype.HEADER_LENGTH+Message.prototype.CRC_LENGTH);
     if (this.log.logging) this.log.log('log', 'Parsing',message);
 
-    var notification;
-
     // Verify CRC
 
     iCRC = message[iLength] + Message.prototype.HEADER_LENGTH;
@@ -695,17 +659,13 @@ define(function (require, exports, module) {
 
       case Message.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
-          notification = new NotificationStartup(message);
-
-          this._runResponseCallback(undefined,notification);
+          this._runResponseCallback(undefined,new NotificationStartup(message));
 
           break;
 
       case Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-          notification = new NotificationSerialError(message);
-
-          this._runResponseCallback(new Error('Notification: Serial error'),notification);
+          this._runResponseCallback(new Error('Notification: Serial error'),new NotificationSerialError(message));
 
           break;
 
@@ -714,11 +674,7 @@ define(function (require, exports, module) {
 
       case Message.prototype.MESSAGE.CAPABILITIES:
 
-          var capabilitiesMsg = new CapabilitiesMessage(message);
-
-          this.capabilities = capabilitiesMsg;
-
-          this._runResponseCallback(undefined,capabilitiesMsg);
+          this._runResponseCallback(undefined,new CapabilitiesMessage(message));
 
           break;
 
@@ -730,11 +686,7 @@ define(function (require, exports, module) {
 
       case Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
 
-          var serialNumberMsg = new DeviceSerialNumberMessage(message);
-
-          this.deviceSerialNumber = serialNumberMsg.serialNumber;
-
-          this._runResponseCallback(undefined,serialNumberMsg);
+          this._runResponseCallback(undefined,new DeviceSerialNumberMessage(message));
 
           break;
 
@@ -917,33 +869,32 @@ define(function (require, exports, module) {
 };
 
     // Send a reset device command
-    Host.prototype.resetSystem = function (callback) {
-      this.sendMessage(new ResetSystemMessage(), callback);
+    Host.prototype.resetSystem = function (callback)
+     {
+      this.sendMessage(new ResetSystemMessage(), function _wait500ms () { setTimeout(callback,500);});
     };
 
     // Send request for channel ID
-    Host.prototype.getChannelId = function (channel, callback) {
+    Host.prototype.getChannelId = function (channel, callback)
+    {
         this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_ID), callback);
     };
 
     // Send a request for ANT version
-    Host.prototype.getVersion = function (callback) {
+    Host.prototype.getVersion = function (callback)
+    {
         this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.ANT_VERSION),callback);
     };
 
     // Send a request for device capabilities
-    Host.prototype.getCapabilities = function (callback) {
+    Host.prototype.getCapabilities = function (callback)
+     {
         this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.CAPABILITIES), callback);
     };
 
     // Send a request for device serial number
-    Host.prototype.getSerialNumber = function (callback) {
-
-          if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)  {
-               callback(new Error('Device does not have capability to determine serial number'));
-              return;
-          }
-
+    Host.prototype.getSerialNumber = function (callback)
+    {
           this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER),  callback);
     };
 
@@ -952,49 +903,6 @@ define(function (require, exports, module) {
     {
          this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_STATUS), callback);
     };
-
-    Host.prototype.getChannelStatusAll = function (callback)
-    {
-      var channelNumber = 0,
-          msg;
-
-      var  singleChannelStatus = function () {
-          this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
-              if (!error) {
-                  this._channel[channelNumber].status = statusMsg;
-
-                  msg = channelNumber + '       ' + statusMsg.channelStatus.networkNumber + ' '+statusMsg.channelStatus.stateMessage;
-                  if (this.log.logging)
-                      this.log.log('log', msg);
-                  channelNumber++;
-                  if (channelNumber < this.capabilities.MAX_CHAN)
-                      singleChannelStatus();
-                  else {
-
-                      callback();
-                  }
-              }
-              else
-                  callback(error);
-          }.bind(this));
-      }.bind(this);
-
-      var fetchSingleChannelStatus = function () {
-
-          if (this.log.logging)
-              this.log.log('log', 'Channel Network State');
-          singleChannelStatus();
-      }.bind(this);
-
-
-      if (!this.capabilities) {
-          if (this.log.logging)
-              this.log.log('warn', 'Cannot determine max number of channels, capabilities object not available, call .getCapabilities first - trying to getCapabilities now');
-          this.getCapabilities(function (error,capabilities) { if (!error) fetchSingleChannelStatus();
-                                                               else callback(error);  });
-      } else
-         fetchSingleChannelStatus();
-  };
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
     // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
@@ -1021,9 +929,6 @@ define(function (require, exports, module) {
             cb = extend; // If no extended assignment use parameter as callback
         else {
             cb = callback;
-
-            if (!this.capabilities.advancedOptions2.CAPABILITIES_EXT_ASSIGN_ENABLED)
-                cb(new Error('Device does not support extended assignment'));
         }
 
         this.sendMessage(configurationMsg, cb);
@@ -1041,10 +946,6 @@ define(function (require, exports, module) {
     // Uses the lower 2 bytes of the device serial number as channel Id.
     Host.prototype.setSerialNumChannelId = function (channel, deviceType, transmissionType, callback)
     {
-
-      if (!this.capabilities.advancedOptions.CAPABILITIES_SERIAL_NUMBER_ENABLED)
-          callback(new Error('Device does not support serial number - cannot use lower 2 bytes of serial number as device number in the channel ID'));
-
       this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType),  callback);
     };
 
@@ -1058,12 +959,8 @@ define(function (require, exports, module) {
     // "If the low priority search times out, the module will switch to high priority mode"
     Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback)
     {
-
         // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
-     if (!this.capabilities.advancedOptions.CAPABILITIES_LOW_PRIORITY_SEARCH_ENABLED)
-            callback(new Error("Device does not support setting low priority search"));
-
-            this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
+              this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout),  callback);
     };
 
     // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
@@ -1087,26 +984,19 @@ define(function (require, exports, module) {
     // Set transmit power for all channels
     Host.prototype.setTransmitPower = function (transmitPower, callback)
     {
-     this.sendMessage(new SetTransmitPowerMessage(transmitPower), callback);
+      this.sendMessage(new SetTransmitPowerMessage(transmitPower), callback);
     };
 
     // Set transmit power for individual channel
     Host.prototype.setChannelTxPower = function (channel,transmitPower, callback)
      {
-        if (!this.capabilities.advancedOptions.CAPABILITIES_PER_CHANNEL_TX_POWER_ENABLED)
-            callback(new Error('Device does not support setting individual Tx power for a channel'));
-
-            this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), callback);
+       this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), callback);
     };
 
     // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
     Host.prototype.setProximitySearch = function (channel, searchThreshold, callback)
      {
-        if (!this.capabilities.advancedOptions2.CAPABILITIES_PROXY_SEARCH_ENABLED)
-            callback(new Error('Device does not support proximity search'));
-
-            this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), callback);
-
+        this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), callback);
     };
 
      Host.prototype.openRxScanMode = function (channel, callback)
@@ -1306,11 +1196,7 @@ define(function (require, exports, module) {
 //        sendBurst();
 //    };
 
-//    if (runFromCommandLine) {
-//
-//        var noopIntervalID = setInterval(function _noop() { }, 1000 * 60 * 60 * 24);
-//        var testCounter = 0;
-//        var host = new Host();
+
 //        host.init({
 //            vid: 4047,
 //            pid: 4104,
@@ -1332,22 +1218,7 @@ define(function (require, exports, module) {
 //            //    network: 0,
 //            //    configuration: "slaveANTPLUS_ANY"
 //            //    }]
-//
-//
-//        }, function (error) {
-//
-//            if (error) {
-//                host.emit(Host.prototype.EVENT.ERROR, error);
-//                host.usb.on('closed', function () {
-//                    clearInterval(noopIntervalID);
-//                });
-//            } else {
-//                //console.log("Host callback");
-//                //console.trace();
-//            }
-//
-//        });
-//    }
+
 
     module.exports = Host;
     return module.exports;
