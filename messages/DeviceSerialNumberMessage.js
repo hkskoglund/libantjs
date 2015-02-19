@@ -3,27 +3,22 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+
     "use strict";
-    var  ANTMessage = require('./ANTMessage');
+
+    var  Message = require('./Message');
 
     function DeviceSerialNumberMessage(data) {
 
-        //if (typeof data !== "undefined") {
-        //    ANTMessage.call(this, data);
-        //    this.parse();
-        //} else
-            ANTMessage.call(this,data);
+        Message.call(this,data);
 
-        this.id = ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER;
-        this.name = "Device Serial Number";
-        this.type = ANTMessage.prototype.TYPE.RESPONSE;
-        this.requestId = ANTMessage.prototype.MESSAGE.REQUEST;
+        this.id = Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER;
 
         if (data)
             this.parse();
     }
 
-    DeviceSerialNumberMessage.prototype = Object.create(ANTMessage.prototype);
+    DeviceSerialNumberMessage.prototype = Object.create(Message.prototype);
 
     DeviceSerialNumberMessage.prototype.constructor = DeviceSerialNumberMessage;
 
@@ -40,5 +35,5 @@ define(function (require, exports, module) {
     };
 
     module.exports = DeviceSerialNumberMessage;
-        return module.exports;
+    return module.exports;
 });

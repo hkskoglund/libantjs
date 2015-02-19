@@ -4,20 +4,20 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-    var ANTMessage = require('./ANTMessage');
+    var Message = require('./Message');
 
     function BroadcastDataMessage(data) {
 
-        ANTMessage.call(this,data);
+        Message.call(this,data);
 
         this.name = "Broadcast Data";
-        this.id = ANTMessage.prototype.MESSAGE.BROADCAST_DATA;
+        this.id = Message.prototype.MESSAGE.BROADCAST_DATA;
 
         if (data)
             this.parse();
     }
 
-    BroadcastDataMessage.prototype = Object.create(ANTMessage.prototype);
+    BroadcastDataMessage.prototype = Object.create(Message.prototype);
 
     BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
@@ -27,7 +27,7 @@ define(function (require, exports, module) {
             dataView;
 
         if (data)
-            this.mainParse(data); // in ANTMessage
+            this.mainParse(data); // in Message
 
         this.channel = this.content[0];
         //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel

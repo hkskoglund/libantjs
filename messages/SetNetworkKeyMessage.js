@@ -3,9 +3,10 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-    var ANTMessage = require('./ANTMessage');
 
+    "use strict";
+
+    var Message = require('./Message');
 
     function SetNetworkKeyMessage(channel, key) {
 
@@ -23,22 +24,18 @@ define(function (require, exports, module) {
         msgBuffer[0] = channel;
         msgBuffer.set(key,1);
 
-        ANTMessage.call(this);
+        Message.call(this);
 
-        this.id = ANTMessage.prototype.MESSAGE.SET_NETWORK_KEY;
-        this.name = "Set network key";
-        this.type = ANTMessage.prototype.TYPE.REQUEST;
-        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
+        this.id = Message.prototype.MESSAGE.SET_NETWORK_KEY;
 
         this.channel = channel;
         this.key = key;
 
         this.setContent(msgBuffer.buffer);
 
-        //console.log("SetNetworkKeyMessage", this);
     }
 
-    SetNetworkKeyMessage.prototype = Object.create(ANTMessage.prototype);
+    SetNetworkKeyMessage.prototype = Object.create(Message.prototype);
 
     SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
 
@@ -48,5 +45,5 @@ define(function (require, exports, module) {
     };
 
     module.exports = SetNetworkKeyMessage;
-        return module.exports;
+    return module.exports;
 });

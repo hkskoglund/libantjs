@@ -3,9 +3,10 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-    var ANTMessage = require('./ANTMessage');
 
+    "use strict";
+
+    var Message = require('./Message');
 
     function SetProximitySearchMessage(channel, searchThreshold) {
 
@@ -15,22 +16,18 @@ define(function (require, exports, module) {
         msgBuffer[1] = searchThreshold; // 0 - disabled, 1:10 - closes to farthest
 
 
-        ANTMessage.call(this);
+        Message.call(this);
 
-        this.id = ANTMessage.prototype.MESSAGE.SET_PROXIMITY_SEARCH;
-        this.name = "Set proximity search";
-        this.type = ANTMessage.prototype.TYPE.REQUEST;
-        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
+        this.id = Message.prototype.MESSAGE.SET_PROXIMITY_SEARCH;
 
         this.channel = channel;
         this.searchThreshold = searchThreshold;
 
         this.setContent(msgBuffer.buffer);
 
-        //console.log("SetProximitySearchMessage", this);
     }
 
-    SetProximitySearchMessage.prototype = Object.create(ANTMessage.prototype);
+    SetProximitySearchMessage.prototype = Object.create(Message.prototype);
 
     SetProximitySearchMessage.prototype.constructor = SetProximitySearchMessage;
 

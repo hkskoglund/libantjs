@@ -15,7 +15,7 @@ define(function (require, exports, module) {
     Logger = require('./logger'),
     USBDevice = require('./usb/USBDevice'),
     Channel = require('./channel'),
-    ANTMessage = require('./messages/ANTMessage'),
+    Message = require('./messages/Message'),
 
     // Control ANT
     ResetSystemMessage = require('./messages/ResetSystemMessage'),
@@ -33,7 +33,7 @@ define(function (require, exports, module) {
     RequestMessage = require('./messages/RequestMessage'),
 
         CapabilitiesMessage = require('./messages/CapabilitiesMessage'),
-        ANTVersionMessage = require('./messages/ANTVersionMessage'),
+        VersionMessage = require('./messages/VersionMessage'),
         DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage'),
 
     // Configuration
@@ -73,7 +73,7 @@ define(function (require, exports, module) {
     usb,
     usbLibraryPath,
 
-    _ANTMessage = new ANTMessage(); // For CRC verification
+    _Message = new Message(); // For CRC verification
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -719,23 +719,23 @@ Host.prototype.RXparse = function (data) {
         return;
     }
 
-    if (data[iSYNC] !== ANTMessage.prototype.SYNC) {
+    if (data[iSYNC] !== Message.prototype.SYNC) {
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[iSYNC] + ' expected ' + ANTMessage.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
 
         return;
     }
 
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength);
 
-    message = data.subarray(0,data[iLength] + 4);
+    message = data.subarray(0,data[iLength] + Message.prototype.HEADER_LENGTH+Message.prototype.CRC_LENGTH);
     if (this.log.logging) this.log.log('log', 'Parsing',message);
 
     var notification;
 
     //// Check CRC
 
-    iCRC = message[iLength] + 3;
+    iCRC = message[iLength] + Message.prototype.HEADER_LENGTH;
     var receivedCRC = message[iCRC];
 
     if (typeof receivedCRC === 'undefined')
@@ -744,7 +744,7 @@ Host.prototype.RXparse = function (data) {
         return;
     }
 
-    var CRC = _ANTMessage.getCRC(message);
+    var CRC = _Message.getCRC(message);
 
     if (receivedCRC !== CRC)
     {
@@ -757,7 +757,7 @@ Host.prototype.RXparse = function (data) {
 
       // Notifications
 
-      case ANTMessage.prototype.MESSAGE.NOTIFICATION_STARTUP:
+      case Message.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
           notification = new NotificationStartup(message);
 
@@ -765,7 +765,7 @@ Host.prototype.RXparse = function (data) {
 
           break;
 
-      case ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
+      case Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
           notification = new NotificationSerialError(message);
 
@@ -773,7 +773,10 @@ Host.prototype.RXparse = function (data) {
 
           break;
 
-      case ANTMessage.prototype.MESSAGE.CAPABILITIES:
+
+      // Device
+
+      case Message.prototype.MESSAGE.CAPABILITIES:
 
           var capabilitiesMsg = new CapabilitiesMessage(message);
 
@@ -783,13 +786,13 @@ Host.prototype.RXparse = function (data) {
 
           break;
 
-      case ANTMessage.prototype.MESSAGE.ANT_VERSION:
+      case Message.prototype.MESSAGE.ANT_VERSION:
 
-          this._runResponseCallback(undefined,new ANTVersionMessage(message));
+          this._runResponseCallback(undefined,new VersionMessage(message));
 
           break;
 
-      case ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
+      case Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
 
           var serialNumberMsg = new DeviceSerialNumberMessage(message);
 
@@ -801,7 +804,7 @@ Host.prototype.RXparse = function (data) {
 
 //        //// Data
 //
-//        //case ANTMessage.prototype.MESSAGE.burst_transfer_data.id:
+//        //case Message.prototype.MESSAGE.burst_transfer_data.id:
 //
 //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
 //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
@@ -865,7 +868,7 @@ Host.prototype.RXparse = function (data) {
 //
 //        //    break;
 //
-        case ANTMessage.prototype.MESSAGE.BROADCAST_DATA:
+        case Message.prototype.MESSAGE.BROADCAST_DATA:
 
 //            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 
@@ -896,7 +899,7 @@ Host.prototype.RXparse = function (data) {
 //
 //            // Channel event or responses
 //
-        case ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE:
+        case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
 
             var channelResponseMsg = new ChannelResponseMessage(message);
             //var channelResponseMsg = this.channelResponseMessage;
@@ -907,7 +910,7 @@ Host.prototype.RXparse = function (data) {
 //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            channelResponseMsg.parse();
             if (channelResponseMsg.initiatingId)
-             // this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelResponseMsg.initiatingId]);
+             // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
 
             // Handle channel response for channel configuration commands
             if (!channelResponseMsg.isRFEvent())
@@ -935,10 +938,10 @@ Host.prototype.RXparse = function (data) {
 //
 //            // Channel specific
 //
-        case ANTMessage.prototype.MESSAGE.CHANNEL_STATUS:
+        case Message.prototype.MESSAGE.CHANNEL_STATUS:
 
             var channelStatusMsg = new ChannelStatusMessage(message);
-           // this.log.timeEnd(ANTMessage.prototype.MESSAGE[channelStatusMsg.id]);
+           // this.log.timeEnd(Message.prototype.MESSAGE[channelStatusMsg.id]);
 //            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
 //            channelStatusMsg.parse();
             //console.log("status", channelStatusMsg);
@@ -947,7 +950,7 @@ Host.prototype.RXparse = function (data) {
 
             break;
 //
-//        case ANTMessage.prototype.MESSAGE.CHANNEL_ID:
+//        case Message.prototype.MESSAGE.CHANNEL_ID:
 //
 //            var channelIdMsg = new ChannelIdMessage();
 //            channelIdMsg.setContent(data.slice(3, 3 + ANTmsg.length));
@@ -991,7 +994,7 @@ Host.prototype.resetSystem = function (callback) {
 
 // Send request for channel ID
 Host.prototype.getChannelId = function (channel, callback) {
-    var msg = (new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_ID));
+    var msg = (new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_ID));
 
     this.sendMessage(msg, callback);
 };
@@ -999,7 +1002,7 @@ Host.prototype.getChannelId = function (channel, callback) {
 // Send a request for ANT version
 Host.prototype.getVersion = function (callback) {
 
-    var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.ANT_VERSION));
+    var msg = (new RequestMessage(undefined, Message.prototype.MESSAGE.ANT_VERSION));
 
     this.sendMessage(msg,callback);
 
@@ -1008,7 +1011,7 @@ Host.prototype.getVersion = function (callback) {
 // Send a request for device capabilities
 Host.prototype.getCapabilities = function (callback) {
 
-    var msg = (new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.CAPABILITIES));
+    var msg = (new RequestMessage(undefined, Message.prototype.MESSAGE.CAPABILITIES));
 
     this.sendMessage(msg, callback);
 
@@ -1022,7 +1025,7 @@ Host.prototype.getSerialNumber = function (callback) {
           return;
       }
 
-      var msg = new RequestMessage(undefined, ANTMessage.prototype.MESSAGE.DEVICE_SERIAL_NUMBER);
+      var msg = new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER);
 
       this.sendMessage(msg,  callback);
 
@@ -1031,7 +1034,7 @@ Host.prototype.getSerialNumber = function (callback) {
 // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
 Host.prototype.getChannelStatus = function (channel, callback) {
 
-    var msg = new RequestMessage(channel, ANTMessage.prototype.MESSAGE.CHANNEL_STATUS);
+    var msg = new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_STATUS);
 
      this.sendMessage(msg, callback);
 
@@ -1094,12 +1097,12 @@ Host.prototype.getChannelStatusAll = function (callback) {
 
     //// Only enables Channel ID extension of messages
     //Host.prototype.RxExtMesgsEnable = function (ucEnable, errorCallback, successCallback) {
-    //    var self = this, filler = 0, message = new ANTMessage();
+    //    var self = this, filler = 0, message = new Message();
 
     //    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Instead of using this API call libConfig can be used");
 
     //    if (typeof this.capabilities !== "undefined" && this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
-    //        this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), ANTMessage.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
+    //        this.sendAndVerifyResponseNoError(message.create_message(Message.prototype.MESSAGE.RxExtMesgsEnable, new Buffer([filler, ucEnable])), Message.prototype.MESSAGE.RxExtMesgsEnable.id, errorCallback, successCallback);
     //    else if (typeof this.capabilities !== "undefined" && !this.capabilities.options.CAPABILITIES_EXT_MESSAGE_ENABLED)
     //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Device does not support extended messages - tried to configure via RxExtMesgsEnable API call");
     //};
@@ -1107,9 +1110,9 @@ Host.prototype.getChannelStatusAll = function (callback) {
     // Spec. p. 77 "This functionality is primarily for determining precedence with multiple search channels that cannot co-exists (Search channels with different networks or RF frequency settings)"
     // This is the case for ANT-FS and ANT+ device profile like i.e HRM
     //Host.prototype.setChannelSearchPriority = function (ucChannelNum, ucSearchPriority, errorCallback, successCallback) {
-    //    var self = this, message = new ANTMessage();
+    //    var self = this, message = new Message();
 
-    //    this.sendAndVerifyResponseNoError(message.create_message(ANTMessage.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), ANTMessage.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
+    //    this.sendAndVerifyResponseNoError(message.create_message(Message.prototype.MESSAGE.set_channel_search_priority, new Buffer([ucChannelNum, ucSearchPriority])), Message.prototype.MESSAGE.set_channel_search_priority.id, errorCallback, successCallback);
 
     //};
 
@@ -1188,7 +1191,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
     Host.prototype.setLowPriorityChannelSearchTimeout = function (channel, searchTimeout, callback) {
 
         // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
-
 
         if (typeof this.capabilities === "undefined")
             callback(new Error('getCapabilities should be run first to determine if device support low priority channel search'));
@@ -1280,8 +1282,6 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //
 //    };
 
-
-
      Host.prototype.openRxScanMode = function (channel, callback) {
 
         var configurationMsg = new OpenRxScanModeMessage(channel);
@@ -1327,8 +1327,8 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
 //        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
 //            self = this,
-//            message = new ANTMessage(),
-//            ack_msg = message.create_message(ANTMessage.prototype.MESSAGE.acknowledged_data, buf),
+//            message = new Message(),
+//            ack_msg = message.create_message(Message.prototype.MESSAGE.acknowledged_data, buf),
 //            resendMsg;
 //
 //        // Add to retry queue -> will only be of length === 1
@@ -1394,11 +1394,11 @@ Host.prototype.getChannelStatusAll = function (callback) {
 //        var buf,
 //            burst_msg,
 //            self = this,
-//            message = new ANTMessage();
+//            message = new Message();
 //
 //        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
 //
-//        burst_msg = message.create_message(ANTMessage.prototype.MESSAGE.burst_transfer_data, buf);
+//        burst_msg = message.create_message(Message.prototype.MESSAGE.burst_transfer_data, buf);
 //
 //        // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
 //        // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts

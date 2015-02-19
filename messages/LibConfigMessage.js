@@ -3,31 +3,29 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-    var ANTMessage = require('./ANTMessage');
+
+    "use strict";
+
+    var Message = require('./Message');
 
     function LibConfigMessage(libConfig) {
 
         var msgBuffer = new Uint8Array(2);
 
-        msgBuffer[0] = ANTMessage.prototype.FILLER_BYTE; // Filler
+        msgBuffer[0] = Message.prototype.FILLER_BYTE; // Filler
         msgBuffer[1] = libConfig;
 
-        ANTMessage.call(this);
+        Message.call(this);
 
-        this.id = ANTMessage.prototype.MESSAGE.LIBCONFIG;
-        this.name = "Lib Config";
-        this.type = ANTMessage.prototype.TYPE.REQUEST;
-        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
+        this.id = Message.prototype.MESSAGE.LIBCONFIG;
 
         this.libConfig = libConfig;
 
         this.setContent(msgBuffer.buffer);
 
-        //console.log("LibConfigMessage", this);
     }
 
-    LibConfigMessage.prototype = Object.create(ANTMessage.prototype);
+    LibConfigMessage.prototype = Object.create(Message.prototype);
 
     LibConfigMessage.prototype.constructor = LibConfigMessage;
 

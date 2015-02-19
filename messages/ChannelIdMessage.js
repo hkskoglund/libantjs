@@ -4,25 +4,25 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('./ANTMessage'),
+var Message = require('./Message'),
     //Channel = require('../../channel.js');
     ChannelId = require('./channelId');
 
 function ChannelIdMessage() {
 
     //if (typeof data !== "undefined") {
-    //    ANTMessage.call(this, data);
+    //    Message.call(this, data);
     //    this.parse();
     //} else
-    ANTMessage.call(this);
+    Message.call(this);
 
     this.name = "Channel Id";
-    this.id = ANTMessage.prototype.MESSAGE.CHANNEL_ID;
+    this.id = Message.prototype.MESSAGE.CHANNEL_ID;
 
     // console.log("Created ChannelIdMessage", this);
 }
 
-ChannelIdMessage.prototype = Object.create(ANTMessage.prototype);
+ChannelIdMessage.prototype = Object.create(Message.prototype);
 
 ChannelIdMessage.prototype.constructor = ChannelIdMessage;
 

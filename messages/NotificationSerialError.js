@@ -4,19 +4,19 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
     "use strict";
-var ANTMessage = require('./ANTMessage');
+var Message = require('./Message');
 
 function NotificationSerialError(data) {
-    ANTMessage.call(this, data);
+    Message.call(this, data);
 
    // console.log("Notification", data);
     this.parse();
 
     this.name = "Notification: Serial Error";
-    this.id = ANTMessage.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR;
+    this.id = Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR;
 }
 
-NotificationSerialError.prototype = Object.create(ANTMessage.prototype);
+NotificationSerialError.prototype = Object.create(Message.prototype);
 
 NotificationSerialError.prototype.constructor = NotificationSerialError;
 

@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('./ANTMessage');
+var Message = require('./Message');
 
 
 function SetTransmitPowerMessage(transmitPower) {
@@ -14,9 +14,9 @@ function SetTransmitPowerMessage(transmitPower) {
     msgBuffer[0] = 0x00; // Filler
     msgBuffer[1] = transmitPower; // Range 0..4
 
-    ANTMessage.call(this);
+    Message.call(this);
 
-    this.id = ANTMessage.prototype.MESSAGE.SET_TRANSMIT_POWER;
+    this.id = Message.prototype.MESSAGE.SET_TRANSMIT_POWER;
     this.name = "Set transmit power";
 
     this.setContent(msgBuffer.buffer);
@@ -24,7 +24,7 @@ function SetTransmitPowerMessage(transmitPower) {
     //console.log("SetTransmitPowerMessage", this);
 }
 
-SetTransmitPowerMessage.prototype = Object.create(ANTMessage.prototype);
+SetTransmitPowerMessage.prototype = Object.create(Message.prototype);
 
 SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
 

@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('./ANTMessage');
+var Message = require('./Message');
 
 
 function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
@@ -17,13 +17,10 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     msgBuffer.setUint8(3,deviceType); // Slave: 0 = match any device type - Range 0 .. 127 if no pairing
     msgBuffer.setUint8(4, transmissionType); // Slave: 0 = match any transmission type
 
-    ANTMessage.call(this);
+    Message.call(this);
 
-    this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_ID;
-    this.name = "Set channel id";
-    this.type = ANTMessage.prototype.TYPE.REQUEST;
-    this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
-
+    this.id = Message.prototype.MESSAGE.SET_CHANNEL_ID;
+    
     this.channel = channel;
     this.deviceNumber = deviceNum;
     this.deviceType = deviceType;
@@ -35,7 +32,7 @@ function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
     //console.log("SetChannelIDMessage", this);
 }
 
-SetChannelIDMessage.prototype = Object.create(ANTMessage.prototype);
+SetChannelIDMessage.prototype = Object.create(Message.prototype);
 
 SetChannelIDMessage.prototype.constructor = SetChannelIDMessage;
 

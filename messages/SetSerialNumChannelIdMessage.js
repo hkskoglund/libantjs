@@ -3,7 +3,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('./ANTMessage');
+var Message = require('./Message');
 
 
 function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
@@ -16,9 +16,9 @@ function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
     msgBuffer[2] = deviceType & SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK; // Slave: 0 = match any device type - Range 0 .. 127
     msgBuffer[3] = transmissionType; // Slave: 0 = match any transmission type
 
-    ANTMessage.call(this);
+    Message.call(this);
 
-    this.id = ANTMessage.prototype.MESSAGE.SET_SERIAL_NUM_CHANNEL_ID;
+    this.id = Message.prototype.MESSAGE.SET_SERIAL_NUM_CHANNEL_ID;
     this.name = "Set serial num channel id";
 
     this.channel = channel;
@@ -30,7 +30,7 @@ function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
     //console.log("SetSerialNumChannelIdMessage", this);
 }
 
-SetSerialNumChannelIdMessage.prototype = Object.create(ANTMessage.prototype);
+SetSerialNumChannelIdMessage.prototype = Object.create(Message.prototype);
 
 SetSerialNumChannelIdMessage.prototype.constructor = SetSerialNumChannelIdMessage;
 

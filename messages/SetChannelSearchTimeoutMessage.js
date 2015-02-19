@@ -3,8 +3,10 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
-"use strict";
-    var ANTMessage = require('./ANTMessage'),
+
+    "use strict";
+
+    var Message = require('./Message'),
         HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout');
 
     function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
@@ -21,22 +23,18 @@ define(function (require, exports, module) {
         else
             msgBuffer[1] = searchTimeout;
 
-        ANTMessage.call(this);
+        Message.call(this);
 
-        this.id = ANTMessage.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT;
-        this.name = "Set channel search timeout";
-        this.type = ANTMessage.prototype.TYPE.REQUEST;
-        this.responseId = ANTMessage.prototype.MESSAGE.CHANNEL_RESPONSE; // Expect a CHANNEL RESPONSE (hopefully RESPONSE NO ERROR === 0)
+        this.id = Message.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT;
 
         this.channel = channel;
         this.HPsearchTimeout = searchTimeout;
 
         this.setContent(msgBuffer.buffer);
 
-        //console.log("SetChannelSearchTimeoutMessage", this);
     }
 
-    SetChannelSearchTimeoutMessage.prototype = Object.create(ANTMessage.prototype);
+    SetChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
 
     SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMessage;
 
@@ -45,6 +43,5 @@ define(function (require, exports, module) {
     };
 
     module.exports = SetChannelSearchTimeoutMessage;
-
     return module.exports;
 });

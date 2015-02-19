@@ -4,7 +4,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
 "use strict";
-var ANTMessage = require('./ANTMessage');
+var Message = require('./Message');
 
 
 function UnAssignChannelMessage(channel) {
@@ -12,9 +12,9 @@ function UnAssignChannelMessage(channel) {
     var msgBuffer = new Uint8Array([channel]);
 
 
-    ANTMessage.call(this);
+    Message.call(this);
 
-    this.id = ANTMessage.prototype.MESSAGE.UNASSIGN_CHANNEL;
+    this.id = Message.prototype.MESSAGE.UNASSIGN_CHANNEL;
     this.name = "UnAssign Channel";
 
     // Parameters
@@ -27,7 +27,7 @@ function UnAssignChannelMessage(channel) {
 
 }
 
-UnAssignChannelMessage.prototype = Object.create(ANTMessage.prototype);
+UnAssignChannelMessage.prototype = Object.create(Message.prototype);
 
 UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
