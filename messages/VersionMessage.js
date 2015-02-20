@@ -23,7 +23,7 @@ define(function (require, exports, module) {
 
     VersionMessage.prototype.constructor = VersionMessage;
 
-    VersionMessage.prototype.decode = function () {
+    VersionMessage.prototype.decode = function (data) {
        var version = this.content.subarray(0,-1),
            versionStr = ''; // Content is a 11 - bytes null terminated string - strip off the null
 

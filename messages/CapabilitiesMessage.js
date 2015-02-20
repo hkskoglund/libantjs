@@ -35,7 +35,7 @@ define(function (require, exports, module) {
     };
 
     // ANT Message Protocol and Usage. rev 5.0b - page 115
-    CapabilitiesMessage.prototype.decode = function () {
+    CapabilitiesMessage.prototype.decode = function (data) {
 
         this.MAX_CHAN =  this.content[0];
         this.MAX_NET = this.content[1];

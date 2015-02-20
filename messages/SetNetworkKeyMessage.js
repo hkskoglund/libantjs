@@ -10,20 +10,8 @@ define(function (require, exports, module) {
 
     function SetNetworkKeyMessage(channel, key) {
 
-        if (key.length !== 8)
-            throw new TypeError("Key does not have length of 8 bytes");
-
-        var msgBuffer = new Uint8Array(9);
-
-        msgBuffer[0] = channel;
-        msgBuffer.set(key,1);
-
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_NETWORK_KEY);
-
-        this.channel = channel;
-        this.key = key;
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(channel,key);
 
     }
 
@@ -31,6 +19,18 @@ define(function (require, exports, module) {
 
     SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
 
+    SetNetworkKeyMessage.prototype.encode = function (channel, key) {
+      var msgBuffer = new Uint8Array(9);
+
+      msgBuffer[0] = channel;
+      msgBuffer.set(key,1);
+
+      this.channel = channel;
+      this.key = key;
+
+      this.setContent(msgBuffer.buffer);
+
+    };
 
     SetNetworkKeyMessage.prototype.toString = function () {
         return Message.prototype.toString() + " C# " + this.channel + " key " + this.key;

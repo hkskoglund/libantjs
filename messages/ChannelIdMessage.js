@@ -27,7 +27,7 @@ define(function (require, exports, module) {
   //    TRACKING: 0x03
   //}
 
-  ChannelIdMessage.prototype.decode = function () {
+  ChannelIdMessage.prototype.decode = function (data) {
 
       this.channelNumber = this.content[0];
       this.channelId = new ChannelId(new DataView(this.content).getUint16(1,true), this.content[3], this.content[4]);

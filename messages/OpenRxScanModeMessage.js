@@ -10,17 +10,25 @@ define(function (require, exports, module) {
 
     function OpenRxScanModeMessage()
     {
-      var content = new Uint8Array(1);
 
         Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_RX_SCAN_MODE);
+        this.encode();
 
-        content[0] = Message.prototype.FILLER_BYTE; // By default new UintArray sets underlying array to 0, be sure its 0
-
-        this.setContent(content.buffer);
     }
 
     OpenRxScanModeMessage.prototype = Object.create(Message.prototype);
     OpenRxScanModeMessage.prototype.constructor = OpenRxScanModeMessage;
+
+    OpenRxScanModeMessage.prototype.encode = function ()
+    {
+      var content = new Uint8Array(1);
+
+      content[0] = Message.prototype.FILLER_BYTE; // By default new UintArray sets underlying array to 0, be sure its 0
+
+      this.setContent(content.buffer);
+
+    };
+
 
     module.exports = OpenRxScanModeMessage;
     return module.exports;

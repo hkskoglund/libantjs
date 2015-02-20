@@ -6,6 +6,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 // Warning: Not guarateed to be compatible with Android SDK 4.0.0
 // ANT Message Protocol and Usage Spec p. 67
 define(function (require, exports, module) {
+
     'use strict';
 
     function LowPrioritySearchTimeout(timeout) {
@@ -68,7 +69,7 @@ define(function (require, exports, module) {
     LowPrioritySearchTimeout.prototype.toString = function ()
     {
        return this.getRawValue()+" "+this.convertToMilliseconds()+ ' ms.';
-    }
+    };
 
     module.exports = LowPrioritySearchTimeout;
 

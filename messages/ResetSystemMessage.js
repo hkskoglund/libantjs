@@ -12,13 +12,18 @@ define(function (require, exports, module) {
 
         Message.call(this,undefined,Message.prototype.MESSAGE.RESET_SYSTEM);
 
-        this.setContent((new Uint8Array(1)).buffer);
+        this.encode();
 
     }
 
     ResetSystemMessage.prototype = Object.create(Message.prototype);
 
     ResetSystemMessage.prototype.constructor = ResetSystemMessage;
+
+    ResetSystemMessage.prototype.encode = function ()
+    {
+      this.setContent((new Uint8Array(1)).buffer);
+    };
 
     module.exports = ResetSystemMessage;
     return module.exports;

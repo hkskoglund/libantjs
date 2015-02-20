@@ -10,19 +10,21 @@ define(function (require, exports, module) {
 
     function OpenChannelMessage(channel) {
 
-        var msgBuffer = new Uint8Array([channel]);
-
         Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_CHANNEL);
-
-        this.channel = channel;
-
-        this.setContent(msgBuffer.buffer);
-
+        this.encode(channel);
     }
 
     OpenChannelMessage.prototype = Object.create(Message.prototype);
 
     OpenChannelMessage.prototype.constructor = OpenChannelMessage;
+
+    OpenChannelMessage.prototype.encode = function (channel)
+    {
+      var msgBuffer = new Uint8Array([channel]);
+      this.channel = channel;
+
+      this.setContent(msgBuffer.buffer);
+    };
 
     OpenChannelMessage.prototype.toString = function () {
         return Message.prototype.toString();

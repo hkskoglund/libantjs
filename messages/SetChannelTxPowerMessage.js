@@ -8,16 +8,11 @@ define(function (require, exports, module) {
 
     var Message = require('./Message');
 
-    function SetChannelTxPowerMessage(channel,transmitPower) {
-
-        var msgBuffer = new Uint8Array(2);
-
-        msgBuffer[0] = channel;
-        msgBuffer[1] = transmitPower; // Range 0..4
+    function SetChannelTxPowerMessage(channel,transmitPower)
+    {
 
         Message.call(this,undefined,Message.prototype.SET_CHANNEL_TX_POWER);
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(channel,transmitPower);
 
     }
 
@@ -25,6 +20,16 @@ define(function (require, exports, module) {
 
     SetChannelTxPowerMessage.prototype.constructor = SetChannelTxPowerMessage;
 
+    SetChannelTxPowerMessage.prototype.encode = function (channel,transmitPower)
+    {
+      var msgBuffer = new Uint8Array(2);
+
+      msgBuffer[0] = channel;
+      msgBuffer[1] = transmitPower; // Range 0..4
+
+      this.setContent(msgBuffer.buffer);
+
+     };
 
     SetChannelTxPowerMessage.prototype.toString = function () {
         return Message.prototype.toString();

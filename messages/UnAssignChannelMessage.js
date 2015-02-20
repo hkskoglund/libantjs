@@ -7,23 +7,27 @@ define(function (require, exports, module) {
 
     var Message = require('./Message');
 
-    function UnAssignChannelMessage(channel) {
-
-        var msgBuffer = new Uint8Array([channel]);
+    function UnAssignChannelMessage(channel)
+    {
 
         Message.call(this,undefined,Message.prototype.MESSAGE.UNASSIGN_CHANNEL);
-
-        // Parameters
-
-        this.channel = channel;
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(channel);
 
     }
 
     UnAssignChannelMessage.prototype = Object.create(Message.prototype);
 
     UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
+
+    UnAssignChannelMessage.prototype.encode = function (channel)
+     {
+      var msgBuffer = new Uint8Array([channel]);
+
+      this.channel = channel;
+
+      this.setContent(msgBuffer.buffer);
+
+    };
 
     UnAssignChannelMessage.prototype.toString = function () {
         return Message.prototype.toString() + " C# " + this.channel;

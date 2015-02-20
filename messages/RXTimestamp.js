@@ -3,7 +3,9 @@
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module) {
+
     'use strict';
+
     // Function names based on Dynastram Android SDK v 4.00 documentation
     function RXTimestamp(rxTimestamp) {
         this.timestamp = rxTimestamp;

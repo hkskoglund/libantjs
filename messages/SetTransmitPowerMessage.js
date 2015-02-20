@@ -10,14 +10,8 @@ define(function (require, exports, module) {
 
     function SetTransmitPowerMessage(transmitPower) {
 
-        var msgBuffer = new Uint8Array(2);
-
-        msgBuffer[0] = 0x00; // Filler
-        msgBuffer[1] = transmitPower; // Range 0..4
-
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_TRANSMIT_POWER);
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(transmitPower);
 
     }
 
@@ -25,6 +19,15 @@ define(function (require, exports, module) {
 
     SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
 
+    SetTransmitPowerMessage.prototype.encode = function (transmitPower) {
+      var msgBuffer = new Uint8Array(2);
+
+      msgBuffer[0] = 0x00; // Filler
+      msgBuffer[1] = transmitPower; // Range 0..4
+
+     this.setContent(msgBuffer.buffer);
+
+    };
 
     SetTransmitPowerMessage.prototype.toString = function () {
         return Message.prototype.toString();

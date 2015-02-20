@@ -11,10 +11,6 @@ define(function (require, exports, module) {
     function ChannelResponseMessage(data) {
 
         Message.call(this,data);
-
-        if (data)
-          this.decode();
-
     }
 
     ChannelResponseMessage.prototype = Object.create(Message.prototype);

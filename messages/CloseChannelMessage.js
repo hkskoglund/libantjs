@@ -10,16 +10,20 @@ define(function (require, exports, module) {
 
     function CloseChannelMessage(channel) {
 
-        var msgBuffer = new Uint8Array([channel]);
-
         Message.call(this,undefined,Message.prototype.CLOSE_CHANNEL);
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(channel);
 }
 
     CloseChannelMessage.prototype = Object.create(Message.prototype);
 
     CloseChannelMessage.prototype.constructor = CloseChannelMessage;
+
+    CloseChannelMessage.prototype.encode = function (channel)
+    {
+      var msgBuffer = new Uint8Array([channel]);
+      this.setContent(msgBuffer.buffer);
+
+    };
 
     CloseChannelMessage.prototype.toString = function () {
         return Message.prototype.toString();

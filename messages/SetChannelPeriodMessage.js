@@ -10,19 +10,8 @@ define(function (require, exports, module) {
 
   function SetChannelPeriodMessage(channel, messagePeriod) {
 
-      var msgBuffer = new DataView(new ArrayBuffer(3));
-
-      msgBuffer.setUint8(0,channel);
-      msgBuffer.setUint16(1,messagePeriod, true);
-
       Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_PERIOD);
-
-      this.id = Message.prototype.MESSAGE.SET_CHANNEL_MESSAGING_PERIOD;
-
-      this.channel = channel;
-      this.messagePeriod = messagePeriod;
-
-      this.setContent(msgBuffer.buffer);
+      this.encode(channel, messagePeriod);
 
   }
 
@@ -30,6 +19,18 @@ define(function (require, exports, module) {
 
   SetChannelPeriodMessage.prototype.constructor = SetChannelPeriodMessage;
 
+  SetChannelPeriodMessage.prototype.encode = function (channel, messagePeriod) {
+    var msgBuffer = new DataView(new ArrayBuffer(3));
+
+    msgBuffer.setUint8(0,channel);
+    msgBuffer.setUint16(1,messagePeriod, true);
+
+    this.channel = channel;
+    this.messagePeriod = messagePeriod;
+
+    this.setContent(msgBuffer.buffer);
+
+  };
 
   SetChannelPeriodMessage.prototype.toString = function () {
       return Message.prototype.toString() + " C# " + this.channel + " message period " + this.messagePeriod;

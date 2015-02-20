@@ -10,10 +10,8 @@ define(function (require, exports, module) {
 
     function BroadcastDataMessage(data) {
 
-        Message.call(this,data);
+        Message.call(this,data,Message.prototype.MESSAGE.BROADCAST_DATA);
 
-        if (data)
-            this.decode();
     }
 
     BroadcastDataMessage.prototype = Object.create(Message.prototype);
@@ -33,8 +31,6 @@ define(function (require, exports, module) {
         this.data = this.content.subarray(1,9);
         // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
         // 'Broadcast Data ID 0x4e C# 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
-        //this.extendedDataMessage = () ? true : false;
-
 
     };
 

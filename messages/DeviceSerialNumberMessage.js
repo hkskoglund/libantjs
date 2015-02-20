@@ -8,19 +8,17 @@ define(function (require, exports, module) {
 
     var  Message = require('./Message');
 
-    function DeviceSerialNumberMessage(data) {
-
+    function DeviceSerialNumberMessage(data)
+    {
         Message.call(this,data);
-
-        if (data)
-            this.decode();
     }
 
     DeviceSerialNumberMessage.prototype = Object.create(Message.prototype);
 
     DeviceSerialNumberMessage.prototype.constructor = DeviceSerialNumberMessage;
 
-    DeviceSerialNumberMessage.prototype.decode = function () {
+    DeviceSerialNumberMessage.prototype.decode = function (data)
+    {
         // SN 4 bytes Little Endian
         var dw = new DataView(this.content.buffer);
 

@@ -652,8 +652,7 @@ define(function (require, exports, module) {
 
           break;
 
-
-      // Device
+      // Device info.
 
       case Message.prototype.MESSAGE.CAPABILITIES:
 
@@ -673,7 +672,64 @@ define(function (require, exports, module) {
 
           break;
 
-//        //// Data
+      // Data
+
+      case Message.prototype.MESSAGE.BROADCAST_DATA:
+
+      // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
+
+          var broadcast = new BroadcastDataMessage();
+
+          broadcast.decode(message);
+
+       // Send broad to specific channel handler
+          if (typeof this._channel[broadcast.channel] !== "undefined") {
+
+              broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
+              var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
+
+          } else if (this.log.logging)
+              this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
+
+
+          break;
+
+      // Channel event or responses
+
+      case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
+
+          var channelResponseMsg = new ChannelResponseMessage(message);
+          //var channelResponseMsg = this.channelResponseMessage;
+          //channelResponseMsg.decode(message);
+
+      //            //TEST provoking EVENT_CHANNEL_ACTIVE
+      //            //data[5] = 0xF;
+      //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
+      //            channelResponseMsg.decode();
+          if (channelResponseMsg.initiatingId)
+           // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
+
+          // Handle channel response for channel configuration commands
+          if (!channelResponseMsg.isRFEvent())
+              this.responseCallback(undefined,channelResponseMsg);
+      //            else
+      //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
+      //
+          // Check for channel response callback
+         if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
+
+             if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ) {
+               if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
+             }
+
+              else {
+                this._channel[channelResponseMsg.channel].channel.channelResponse(channelResponseMsg);
+              }
+
+         } else if (this.log.logging)
+              this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());
+
+          break;
 //
 //        //case Message.prototype.MESSAGE.burst_transfer_data.id:
 //
@@ -739,69 +795,7 @@ define(function (require, exports, module) {
 //
 //        //    break;
 //
-        case Message.prototype.MESSAGE.BROADCAST_DATA:
 
-//            // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
-
-            var broadcast = new BroadcastDataMessage();
-
-            broadcast.decode(message);
-
-         // Send broad to specific channel handler
-            if (typeof this._channel[broadcast.channel] !== "undefined") {
-
-                if (typeof this._channel[broadcast.channel].channel.broadCast !== 'function') {
-                   if (this.log.logging) this.log.log('warn', "No broadCast function available : on C# " + broadcast.channel);
-                }
-
-                else {
-                    broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
-                    var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
-//                    if (resultBroadcast)
-//                        this.log.log('log',resultBroadcast);
-                }
-            } else if (this.log.logging)
-                this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
-
-
-            break;
-
-//            // Channel event or responses
-
-        case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
-
-            var channelResponseMsg = new ChannelResponseMessage(message);
-            //var channelResponseMsg = this.channelResponseMessage;
-            //channelResponseMsg.decode(message);
-
-//            //TEST provoking EVENT_CHANNEL_ACTIVE
-//            //data[5] = 0xF;
-//            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            channelResponseMsg.decode();
-            if (channelResponseMsg.initiatingId)
-             // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
-
-            // Handle channel response for channel configuration commands
-            if (!channelResponseMsg.isRFEvent())
-                this.responseCallback(undefined,channelResponseMsg);
-//            else
-//                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
-//
-            // Check for channel response callback
-           if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
-
-               if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ) {
-                 if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
-               }
-
-                else {
-                  this._channel[channelResponseMsg.channel].channel.channelResponse(channelResponseMsg);
-                }
-
-           } else if (this.log.logging)
-                this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());
-
-            break;
 //
 //            // Response messages to request
 //

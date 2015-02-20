@@ -12,8 +12,6 @@ define(function (require, exports, module) {
 
         Message.call(this, data);
 
-        this.decode();
-
     }
 
     NotificationSerialError.prototype = Object.create(Message.prototype);
@@ -36,7 +34,7 @@ define(function (require, exports, module) {
     };
 
 
-    NotificationSerialError.prototype.decode = function () {
+    NotificationSerialError.prototype.decode = function (data) {
         var msg, code;
 
         var serialErrorMessage, errorCode,faultMessage;

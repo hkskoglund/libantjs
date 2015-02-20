@@ -13,9 +13,6 @@ define(function (require, exports, module) {
 
         Message.call(this,data);
 
-        if (data)
-            this.decode();
-
     }
 
     ChannelStatusMessage.prototype = Object.create(Message.prototype);
@@ -29,7 +26,7 @@ define(function (require, exports, module) {
         TRACKING: 0x03
     };
 
-    ChannelStatusMessage.prototype.decode = function () {
+    ChannelStatusMessage.prototype.decode = function (data) {
         var status = this.content[1];
 
         this.channelNumber = this.content[0];

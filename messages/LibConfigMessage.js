@@ -10,22 +10,25 @@ define(function (require, exports, module) {
 
     function LibConfigMessage(libConfig) {
 
-        var msgBuffer = new Uint8Array(2);
-
-        msgBuffer[0] = Message.prototype.FILLER_BYTE; // Filler
-        msgBuffer[1] = libConfig;
-
         Message.call(this,undefined,Message.prototype.MESSAGE.LIBCONFIG);
-
-        this.libConfig = libConfig;
-
-        this.setContent(msgBuffer.buffer);
-
+       this.encode(libConfig);
     }
 
     LibConfigMessage.prototype = Object.create(Message.prototype);
 
     LibConfigMessage.prototype.constructor = LibConfigMessage;
+
+    LibConfigMessage.prototype.encode = function (libConfig)
+    {
+      var msgBuffer = new Uint8Array(2);
+
+      msgBuffer[0] = Message.prototype.FILLER_BYTE; // Filler
+      msgBuffer[1] = libConfig;
+
+      this.libConfig = libConfig;
+
+      this.setContent(msgBuffer.buffer);
+    };
 
 
     LibConfigMessage.prototype.toString = function () {

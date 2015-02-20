@@ -9,11 +9,7 @@ define(function (require, exports, module) {
     // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
     function NotificationStartup(data) {
 
-        if (typeof data !== "undefined") {
-            Message.call(this, data);
-            this.decode();
-        } else
-            Message.call(this,undefined,Message.prototype.MESSAGE.NOTIFICATION_STARTUP);
+            Message.call(this,data,Message.prototype.MESSAGE.NOTIFICATION_STARTUP);
     }
 
     NotificationStartup.prototype = Object.create(Message.prototype);
@@ -51,7 +47,7 @@ define(function (require, exports, module) {
     };
 
 
-    NotificationStartup.prototype.decode = function () {
+    NotificationStartup.prototype.decode = function (data) {
         var msg;
             //code;
 

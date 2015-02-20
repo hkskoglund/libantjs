@@ -10,24 +10,28 @@ define(function (require, exports, module) {
 
     function SetProximitySearchMessage(channel, searchThreshold) {
 
-        var msgBuffer = new Uint8Array(2);
-
-        msgBuffer[0] = channel;
-        msgBuffer[1] = searchThreshold; // 0 - disabled, 1:10 - closes to farthest
-
-
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_PROXIMITY_SEARCH);
-
-        this.channel = channel;
-        this.searchThreshold = searchThreshold;
-
-        this.setContent(msgBuffer.buffer);
+        this.encode(channel, searchThreshold);
 
     }
 
     SetProximitySearchMessage.prototype = Object.create(Message.prototype);
 
     SetProximitySearchMessage.prototype.constructor = SetProximitySearchMessage;
+
+    SetProximitySearchMessage.prototype.encode = function (channel, searchThreshold) {
+
+      var msgBuffer = new Uint8Array(2);
+
+      msgBuffer[0] = channel;
+      msgBuffer[1] = searchThreshold; // 0 - disabled, 1:10 - closes to farthest
+
+      this.channel = channel;
+      this.searchThreshold = searchThreshold;
+
+      this.setContent(msgBuffer.buffer);
+
+    };
 
     SetProximitySearchMessage.prototype.toString = function () {
         return Message.prototype.toString() + " C# " + this.channel + " search threshold " + this.searchThreshold;
