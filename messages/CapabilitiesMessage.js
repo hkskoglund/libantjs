@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function CapabilitiesMessage(data) {
+    function CapabilitiesMessage(data){
 
       Message.call(this,data);
 
@@ -35,7 +35,7 @@ define(function (require, exports, module) {
     };
 
     // ANT Message Protocol and Usage. rev 5.0b - page 115
-    CapabilitiesMessage.prototype.decode = function (data) {
+    CapabilitiesMessage.prototype.decode = function (data){
 
         this.MAX_CHAN =  this.content[0];
         this.MAX_NET = this.content[1];
@@ -103,7 +103,7 @@ define(function (require, exports, module) {
                 value: "MSB " + advancedOptions4.toString(2) + " " + advancedOptions4,
                 CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED: advancedOptions4 & 0x01 // Bit 0
                 // Bit 1-7 reserved
-            }
+            };
 
     };
 
@@ -164,7 +164,7 @@ define(function (require, exports, module) {
     //        console.log("Selective data");
     //}
 
-    CapabilitiesMessage.prototype.toString = function () {
+    CapabilitiesMessage.prototype.toString = function (){
 
         var msg = Message.prototype.toString.call(this) + " Channels " + this.getNumberOfChannels() + " | Networks " + this.getNumberOfNetworks()+ ' | sensRcore channels ' + this.maxSensRcoreChannels+' | ';
 
@@ -194,7 +194,7 @@ define(function (require, exports, module) {
         if (this.advancedOptions.CAPABILITIES_SEARCH_LIST_ENABLED)
             msg += "Search list | ";
 
-        if (this.advancedOptions2) {
+        if (this.advancedOptions2){
             if (this.advancedOptions2.CAPABILITIES_LED_ENABLED)
                 msg += "Led | ";
             if (this.advancedOptions2.CAPABILITIES_EXT_MESSAGE_ENABLED)
@@ -209,7 +209,7 @@ define(function (require, exports, module) {
                 msg += "ANT-FS | ";
         }
 
-        if (this.advancedOptions3) {
+        if (this.advancedOptions3){
             if (this.advancedOptions3.CAPABILITIES_ADVANCED_BURST_ENABLED)
                 msg += "Advanced burst | ";
             if (this.advancedOptions3.CAPABILITIES_EVENT_BUFFERING_ENABLED)
@@ -222,7 +222,7 @@ define(function (require, exports, module) {
                 msg += "Selective data | ";
         }
 
-        if (this.advancedOptions4) {
+        if (this.advancedOptions4){
             if (this.advancedOptions4.CAPABILITIES_RFACTIVE_NOTIFICATION_ENABLED)
                 msg += " RF Active notification | ";
         }

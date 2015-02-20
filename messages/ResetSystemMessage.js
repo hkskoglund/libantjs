@@ -1,19 +1,22 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function')
+{ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module)
+{
+  
 
     'use strict';
 
     var Message = require('./Message');
 
-    function ResetSystemMessage() {
+    function ResetSystemMessage()
+{
 
         Message.call(this,undefined,Message.prototype.MESSAGE.RESET_SYSTEM);
 
         this.encode();
-
     }
 
     ResetSystemMessage.prototype = Object.create(Message.prototype);

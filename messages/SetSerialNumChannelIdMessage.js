@@ -1,12 +1,12 @@
 /* global define: true, Uint8Array: true */
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
     'use strict';
 
     var Message = require('./Message');
 
-    function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
+    function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType){
 
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_SERIAL_NUM_CHANNEL_ID);
         this.encode(channel, deviceType, transmissionType);
@@ -21,7 +21,7 @@ define(function (require, exports, module) {
 
     SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
 
-    SetSerialNumChannelIdMessage.prototype.encode = function (channel, deviceType, transmissionType) {
+    SetSerialNumChannelIdMessage.prototype.encode = function (channel, deviceType, transmissionType){
       var msgBuffer = new Uint8Array(4),
           pairingRequest = (deviceType & SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
@@ -38,7 +38,7 @@ define(function (require, exports, module) {
 
     };
 
-    SetSerialNumChannelIdMessage.prototype.toString = function () {
+    SetSerialNumChannelIdMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
     };
 

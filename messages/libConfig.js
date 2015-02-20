@@ -1,19 +1,19 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
     // Function names based on Dynastram Android SDK v 4.00 documentation
     // Support object to be used as parameter to LibConfigMessage (use .getFlagsByte() as param.)
-    function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp) {
+    function LibConfig(enableChannelId, enableRSSI, enableRXTimestamp){
 
         this.enableChannelId = (enableChannelId > 0);
         this.enableRSSI = (enableRSSI > 0);
         this.enableRXTimestamp = (enableRXTimestamp > 0);
 
-        this._updateFlags = function () {
+        this._updateFlags = function (){
         if (this.enableChannelId)
             this.flagsByte = LibConfig.prototype.Flag.CHANNEL_ID_ENABLED;
 
@@ -28,7 +28,7 @@ define(function (require, exports, module) {
     }
 
 
-    LibConfig.prototype.setFlagsByte = function (value) {
+    LibConfig.prototype.setFlagsByte = function (value){
 
         this.flagsByte = value;
 
@@ -43,33 +43,33 @@ define(function (require, exports, module) {
 
     };
 
-    LibConfig.prototype.getFlagsByte = function () {
+    LibConfig.prototype.getFlagsByte = function (){
         return this.flagsByte;
     };
 
-    LibConfig.prototype.getEnableChannelId = function () {
+    LibConfig.prototype.getEnableChannelId = function (){
         return this.enableChannelID;
     };
 
-    LibConfig.prototype.getEnableRSSI = function () {
+    LibConfig.prototype.getEnableRSSI = function (){
         return this.enableRSSI;
     };
 
-    LibConfig.prototype.getEnableRSSI = function () {
+    LibConfig.prototype.getEnableRSSI = function (){
         return this.enableRXTimestamp;
     };
 
-    LibConfig.prototype.setEnableChannelId = function () {
+    LibConfig.prototype.setEnableChannelId = function (){
         this.enableChannelId = true;
         this._updateFlags();
     };
 
-    LibConfig.prototype.setEnableRSSI = function () {
+    LibConfig.prototype.setEnableRSSI = function (){
         this.enableRSSI = true;
         this._updateFlags();
     };
 
-    LibConfig.prototype.setEnableRXTimestamp = function () {
+    LibConfig.prototype.setEnableRXTimestamp = function (){
         this.enableRXTimestamp = true;
         this._updateFlags();
     };
@@ -81,7 +81,7 @@ define(function (require, exports, module) {
         RX_TIMESTAMP_ENABLED: 0x80 // 10000000
     };
 
-    LibConfig.prototype.toString = function () {
+    LibConfig.prototype.toString = function (){
 
         var msg = "Library configured for extended messaging (LIBCONFIG) :";
 

@@ -2,9 +2,9 @@
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     function Logger(options)
     {
@@ -45,10 +45,10 @@ define(function (require, exports, module) {
         // console.trace();
         var formatUint8Array = function (arg)
         {
-            if (arg instanceof Uint8Array) {
+            if (arg instanceof Uint8Array){
                 var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
-                for (i = 0; i < arg.length; i++) {
-                    if (i < MAX_BYTES_TO_FORMAT) {
+                for (i = 0; i < arg.length; i++){
+                    if (i < MAX_BYTES_TO_FORMAT){
                         if (arg[i] <= 0x0F)
                             prefix = '0';
                         else prefix = '';
@@ -68,7 +68,7 @@ define(function (require, exports, module) {
                 return arg;
             };
 
-        if (this.logging && this.console && this.console[type]) {
+        if (this.logging && this.console && this.console[type]){
 
             // Headers
             header = nowStr;
@@ -106,7 +106,7 @@ define(function (require, exports, module) {
 
     Logger.prototype.changeConsole = function (newConsole)
     {
-        if (newConsole) {
+        if (newConsole){
             this.console = newConsole;
            // this.console.info('Console changed to', newConsole);
         }

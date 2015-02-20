@@ -1,12 +1,12 @@
 /* global define: true, Int8Array: true, DataView: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
     // Function names based on Dynastram Android SDK v 4.00 documentation
-    function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
+    function RSSI(measurementType, RSSIValue, proximityBinThreshold){
 
         if (typeof measurementType !== "undefined")
             this.measurementType = measurementType;
@@ -14,13 +14,13 @@ define(function (require, exports, module) {
         if (typeof RSSIValue !== "undefined")
             this.RSSIValue = RSSIValue;
 
-        if (typeof proximityBinThreshold !== "undefined") {
+        if (typeof proximityBinThreshold !== "undefined"){
 
             this.thresholdConfigurationValue = (new Int8Array([proximityBinThreshold]))[0]; // Default -128 dB = "Off" -setting , spec. p. 36, specified in proximity search command
         }
     }
 
-    RSSI.prototype.decode = function (extendedData) {
+    RSSI.prototype.decode = function (extendedData){
         //var extendedDataUint8 = new Uint8Array(extendedData); // Allows using [], which cannot be used on an ArrayBuffer
         var extendedDataView = new DataView(extendedData.buffer);
 
@@ -34,19 +34,19 @@ define(function (require, exports, module) {
         this.thresholdConfigurationValue = extendedDataView.getInt8(extendedData.byteOffset+2); // Signed int (2's complement ?)
     };
 
-    RSSI.prototype.getRawMeasurementType = function () {
+    RSSI.prototype.getRawMeasurementType = function (){
         return this.measurementType;
     };
 
-    RSSI.prototype.getRSSIValue = function () {
+    RSSI.prototype.getRSSIValue = function (){
         return this.RSSIValue;
     };
 
-    RSSI.prototype.getThresholdConfigDB = function () {
+    RSSI.prototype.getThresholdConfigDB = function (){
         return this.thresholdConfigurationValue;
     };
 
-    RSSI.prototype.toString = function () {
+    RSSI.prototype.toString = function (){
         return "RSSI " + this.RSSIValue +" "+RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue+" dBm";
     };
 

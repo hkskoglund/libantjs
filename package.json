@@ -17,14 +17,14 @@
     "USB",
     "library"
   ],
-  "author": "Henning Knut Skoglund",
+  "author": "Henning Knut Skoglund <hkskoglund@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/hkskoglund/libant/issues"
   },
   "homepage": "https://github.com/hkskoglund/libant",
   "dependencies": {
-    "amdefine": "^0.1.0",
-    "usb": "^1.0.3"
+    "amdefine": ">=0.1.0",
+    "usb": ">=1.0.3"
   }
 }

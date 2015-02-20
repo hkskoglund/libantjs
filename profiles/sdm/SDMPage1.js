@@ -1,13 +1,13 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
     'use strict';
 
     var GenericPage = require('../Page');
 
-    function SDMPage1(configuration, broadcast) {
+    function SDMPage1(configuration, broadcast){
 
 
         GenericPage.call(this, configuration, broadcast);
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
 
     };
 
-    SDMPage1.prototype.decode = function (broadcast) {
+    SDMPage1.prototype.decode = function (broadcast){
         var data = broadcast.data;
         //  dataView = new DataView(data.buffer);
 
@@ -105,26 +105,26 @@ define(function (require, exports, module) {
 
     };
 
-    SDMPage1.prototype.toString = function () {
+    SDMPage1.prototype.toString = function (){
 
 
         var msg = "P# " + this.number+' ',
             UNUSED = 0x00;
 
-        //var convertToMinPrKM = function (speed) {
+        //var convertToMinPrKM = function (speed)//{
         //    if (speed === 0)
         //        return 0;
         //    else
         //        return 1 / (speed * 0.06); // 0.06 = 60/1000
         //};
 
-        //var formatToMMSS = function (speed) {
+        //var formatToMMSS = function (speed)//{
         //    if (speed === 0)
         //        return "00:00";
 
         //    var minutes = Math.floor(speed);
         //    var seconds = parseInt(((speed - minutes) * 60).toFixed(), 10); // implicit rounding
-        //    if (seconds === 60) {
+        //    if (seconds === 60)//{
         //        seconds = 0;
         //        minutes += 1;
         //    }

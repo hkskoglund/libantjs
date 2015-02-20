@@ -1,8 +1,8 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -105,8 +105,8 @@ define(function (require,exports,module) {
         supportedPages = dataView.getUint32(data.byteOffset+TemperaturePage0.prototype.BYTE.SUPPORTED_PAGES,true);
         this.supportedPages.value = supportedPages;
 
-        for (var bitNr = 0; bitNr < 32; bitNr++) {
-            if (supportedPages & (1 << bitNr)) {
+        for (var bitNr = 0; bitNr < 32; bitNr++){
+            if (supportedPages & (1 << bitNr)){
                 this.supportedPages['page' + bitNr] = true;
             }
         }

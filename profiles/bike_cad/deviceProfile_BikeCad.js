@@ -1,15 +1,15 @@
 /* globals define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,module,exports) {
+define(function (require,module,exports){
 
     'use strict';
 
     var   DeviceProfileBikeShared = require('../bike_spdcad/deviceProfile_BikeShared'),
           BikePage0 = require('./bikePage0');
 
-    function DeviceProfile_BikeCad(configuration) {
+    function DeviceProfile_BikeCad(configuration){
 
         DeviceProfileBikeShared.call(this, configuration);
 
@@ -49,13 +49,13 @@ define(function (require,module,exports) {
         {
              page = this.getBackgroundPage(broadcast,pageNumber);
 
-            if (page) {
+            if (page){
                 BikePage0.prototype.readCadence.call(page,BikePage0.prototype);
                 BikePage0.prototype.calcCadence.call(page,BikePage0.prototype);
 
             } else
               {
-                  if (this.log && this.log.logging) {
+                  if (this.log && this.log.logging){
                     this.log.log('error','Failed to get background page for page number '+pageNumber,this);
                   }
               }

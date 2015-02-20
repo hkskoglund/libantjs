@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -45,17 +45,17 @@ define(function (require,exports,module) {
         // Byte 6
 
         this.fractionalBatteryVoltage = data[6] / 256; // Volt
-        if (this.descriptive.coarseVoltage !== 0x0F) {
+        if (this.descriptive.coarseVoltage !== 0x0F){
             this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
         }
     };
 
-    CumulativeOperatingTime.prototype.toString = function () {
+    CumulativeOperatingTime.prototype.toString = function (){
        var  msg = "P# " + this.number + " Cumulative operating time ";
 
         msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
 
-        if (this.descriptive.coarseVoltage !== 0x0F) { // Filter invalid voltage
+        if (this.descriptive.coarseVoltage !== 0x0F){ // Filter invalid voltage
             msg += " Battery (V) " + this.batteryVoltage.toFixed(1);
         }
 
@@ -73,7 +73,7 @@ define(function (require,exports,module) {
     {
         var batteryStatusString;
 
-        switch (this.batteryStatus) {
+        switch (this.batteryStatus){
             case 0x00: batteryStatusString = "Reserved"; break;
             case 0x01: batteryStatusString = "New"; break;
             case 0x02: batteryStatusString = "Good"; break;

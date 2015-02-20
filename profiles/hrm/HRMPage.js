@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineHRMPage(require,exports,module) {
+define(function _requireDefineHRMPage(require,exports,module){
 
     'use strict';
 
     var MainPage = require('../mainPage');
 
-    function HRMPage(configuration, broadcast, profile,pageNumber) {
+    function HRMPage(configuration, broadcast, profile,pageNumber){
 
         MainPage.call(this,configuration, broadcast, profile,pageNumber);
     }
@@ -34,7 +34,7 @@ define(function _requireDefineHRMPage(require,exports,module) {
     };
 
     // Set RR interval based on previous heart event time and heart beat count
-    HRMPage.prototype.calcRRInterval = function () {
+    HRMPage.prototype.calcRRInterval = function (){
 
 
         var previousPage = this.profile.getPreviousPageValidateRolloverTime(),
@@ -42,27 +42,27 @@ define(function _requireDefineHRMPage(require,exports,module) {
             heartBeatEventTimeDelta,
             previousHeartBeatEventTime;
 
-         if (!previousPage) {
+         if (!previousPage){
           return;
          }
 
             heartBeatCountDelta = this.heartBeatCount - previousPage.heartBeatCount;
 
-        if (heartBeatCountDelta < 0) {  // Toggle 255 -> 0 should give 1 beat difference
+        if (heartBeatCountDelta < 0){  // Toggle 255 -> 0 should give 1 beat difference
             heartBeatCountDelta += 256;
         }
 
          // Only calculate RR for one beat difference
-        if (heartBeatCountDelta === 1) {
+        if (heartBeatCountDelta === 1){
 
-            if (!this.previousHeartBeatEventTime) {// Page 0 doesnt have previousHeartBeatEventTime
+            if (!this.previousHeartBeatEventTime){// Page 0 doesnt have previousHeartBeatEventTime
               previousHeartBeatEventTime = previousPage.heartBeatEventTime;
             } else {
               previousHeartBeatEventTime = this.previousHeartBeatEventTime;
             }
             heartBeatEventTimeDelta = this.heartBeatEventTime - previousHeartBeatEventTime;
 
-            if (heartBeatEventTimeDelta < 0) { // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
+            if (heartBeatEventTimeDelta < 0){ // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
                 heartBeatEventTimeDelta += 65536;
             }
 
@@ -76,11 +76,11 @@ define(function _requireDefineHRMPage(require,exports,module) {
         this.calcRRInterval();
     };
 
-     HRMPage.prototype.toString = function () {
+     HRMPage.prototype.toString = function (){
 
         var msg =  "HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T - Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
 
-        if (this.RRInterval) {
+        if (this.RRInterval){
                 msg += " RR " + this.RRInterval.toFixed(1) + " ms";
         }
         return msg;

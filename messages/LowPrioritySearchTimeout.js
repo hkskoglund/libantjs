@@ -1,16 +1,16 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
 // Based on documentation from Dynastream Android SDK 4.0.0
 // Warning: Not guarateed to be compatible with Android SDK 4.0.0
 // ANT Message Protocol and Usage Spec p. 67
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
-    function LowPrioritySearchTimeout(timeout) {
-        if (typeof timeout === 'undefined') {
+    function LowPrioritySearchTimeout(timeout){
+        if (typeof timeout === 'undefined'){
           console.warn("No high priority timeout specified, setting it to default ",LowPrioritySearchTimeout.prototype.DEFAULT);
             this.timeout = LowPrioritySearchTimeout.prototype.DEFAULT;
         }

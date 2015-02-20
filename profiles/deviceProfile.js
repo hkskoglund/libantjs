@@ -1,26 +1,25 @@
 /* global define: true, clearInterval: true, setInterval: true, setTimeout: true  */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
   'use strict';
 
-  var
-          Channel = require('../channel'),
-           GenericPage = require('./Page'),
-           MainPage = require('./mainPage'),
-           BackgroundPage = require('./backgroundPage'),
-           HighPrioritySearchTimeout = require('../messages/HighPrioritySearchTimeout'),
-           LowPrioritySearchTimeout = require('../messages/LowPrioritySearchTimeout'),
-           setting= require('../settings'),
-           ManufacturerId= require('./manufacturerId'),
-           ProductId= require('./productId'),
-           CumulativeOperatingTime= require('./cumulativeOperatingTime'),
-           ManufacturerId0x50= require('./manufacturerId0x50'),
-           ProductId0x51= require('./productId0x51'),
-           CumulativeOperatingTime0x52= require('./cumulativeOperatingTime0x52');
+  var Channel = require('../channel'),
+     GenericPage = require('./Page'),
+     MainPage = require('./mainPage'),
+     BackgroundPage = require('./backgroundPage'),
+     HighPrioritySearchTimeout = require('../messages/HighPrioritySearchTimeout'),
+     LowPrioritySearchTimeout = require('../messages/LowPrioritySearchTimeout'),
+     setting= require('../settings'),
+     ManufacturerId= require('./manufacturerId'),
+     ProductId= require('./productId'),
+     CumulativeOperatingTime= require('./cumulativeOperatingTime'),
+     ManufacturerId0x50= require('./manufacturerId0x50'),
+     ProductId0x51= require('./productId0x51'),
+     CumulativeOperatingTime0x52= require('./cumulativeOperatingTime0x52');
 
-    function DeviceProfile(configuration) {
+    function DeviceProfile(configuration){
 
         Channel.call(this, configuration);
 
@@ -43,7 +42,7 @@ define(function (require, exports, module) {
 
         this.timer = {};
 
-        if (this.PAGE_TOGGLE_CAPABLE) {
+        if (this.PAGE_TOGGLE_CAPABLE){
         // For determining if 7 msb is toggeled of byte 0 in payload
              this.pageToggle = {
                  toggle : undefined,
@@ -51,7 +50,7 @@ define(function (require, exports, module) {
                  broadcast : {}
              };
         }
-        else if (this.log && this.log.logging) {
+        else if (this.log && this.log.logging){
             this.log.log('info','Device is not capable of page toggeling',this);
         }
         this.sensorId = undefined;
@@ -80,7 +79,7 @@ define(function (require, exports, module) {
 
        var  page;
 
-        switch (pageNumber) {
+        switch (pageNumber){
 
                 case 1:
 
@@ -156,7 +155,7 @@ define(function (require, exports, module) {
 
             // Init page toggle on the first broadcast
 
-            if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.PREINIT) {
+            if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.PREINIT){
 
                 this.pageToggle.toggle = pageToggleBit;
                 this.pageToggle.state = this.PAGE_TOGGLE_STATE.INIT;
@@ -183,14 +182,14 @@ define(function (require, exports, module) {
                 this.pageToggle.state = this.PAGE_TOGGLE_STATE.TOGGELING;
                  this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
-                if (this.log && this.log.logging) {
+                if (this.log && this.log.logging){
                      this.log.log('info',sensorId,'Page toggeling '+transitionMsg+' at B# '+this.broadcastCount,this.pageToggle.broadcast[this.pageToggle.state].data,'init B# '+this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count,this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
                 }
             }
 
             // Filter until a page toggeling master is found or not. A well behaved master should toggle page bit after four messages (about each seconds)
 
-            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT) {
+            if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT){
               return FILTER;
             }
             // If we're still in init state after 5 messages, it can be assumed that we have to deal with a non toggeling/legacy master
@@ -200,7 +199,7 @@ define(function (require, exports, module) {
                 this.pageToggle.state = this.PAGE_TOGGLE_STATE.NOT_TOGGELING;
                   this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
-                if (this.log && this.log.logging) {
+                if (this.log && this.log.logging){
                     this.log.log('info',sensorId,'No page toggeling after B# '+this.broadcastCount,this.pageToggle.broadcast[this.pageToggle.state].data,'Its a legacy device using page 0 format','init B# '+this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count,this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
                 }
             }
@@ -213,7 +212,7 @@ define(function (require, exports, module) {
 
         // Don't process broadcast with wrong device type
 
-        if (!this.verifyDeviceType(this.CHANNEL_ID.DEVICE_TYPE, broadcast)) {
+        if (!this.verifyDeviceType(this.CHANNEL_ID.DEVICE_TYPE, broadcast)){
             return FILTER;
         }
 
@@ -231,20 +230,20 @@ define(function (require, exports, module) {
 
         // 1. Filter out possible "noise" from sensors that come and go quickly
 
-        if (this.broadcastCount < this.MIN_BROADCAST_THRESHOLD) {
+        if (this.broadcastCount < this.MIN_BROADCAST_THRESHOLD){
            return FILTER;
         }
 
         // 2. Filter until page toggle state is determined for masters that a capable of it
 
-        if (this.PAGE_TOGGLE_CAPABLE && this.pageToggleFilter(broadcast)) {
+        if (this.PAGE_TOGGLE_CAPABLE && this.pageToggleFilter(broadcast)){
            return FILTER;
 
         }
 
         // 3. Filter duplicates
 
-        if (this.filterDuplicateBroadcast(broadcast)) {
+        if (this.filterDuplicateBroadcast(broadcast)){
            return FILTER;
         } else {
            return !FILTER;
@@ -282,9 +281,9 @@ define(function (require, exports, module) {
 
     };
 
-    DeviceProfile.prototype.stop = function () {
+    DeviceProfile.prototype.stop = function (){
 
-        if (this.timer.onPage !== undefined) {
+        if (this.timer.onPage !== undefined){
             clearInterval(this.timer.onPage);
         }
 
@@ -299,11 +298,11 @@ define(function (require, exports, module) {
     var latestPage,
         pageNumber;
 
-       for (pageNumber in this.page) {
+       for (pageNumber in this.page){
 
             if (pageNumber === undefined || pageNumber === null)
             {
-                if (this.log && this.log.logging) {
+                if (this.log && this.log.logging){
                     this.log.log('warn', 'Undefined or null page number for sensor id ' + this.sensorId);
                 }
             }
@@ -312,7 +311,7 @@ define(function (require, exports, module) {
 
             if (latestPage)
             {
-                if (typeof processCB === 'function') {// In case of HRM RR -> aggregated RR attached
+                if (typeof processCB === 'function'){// In case of HRM RR -> aggregated RR attached
                   processCB.call(this,latestPage);
                 }
 
@@ -326,18 +325,18 @@ define(function (require, exports, module) {
 
  };
 
-    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout,processHook) {
+    DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout,processHook){
 
         // In case requestPageUpdate is called more than one time
 
-        if (this.timer.onPage !== undefined) {
-            if (this.log && this.log.logging) { this.log.log('warn', 'requestPageUpdate should only be called one time');}
+        if (this.timer.onPage !== undefined){
+            if (this.log && this.log.logging){ this.log.log('warn', 'requestPageUpdate should only be called one time');}
             clearInterval(this.timer.onPage);
         }
 
         this.timer.onPage = setInterval(this.getLatestPage.bind(this,processHook),timeout);
 
-        if (this.log && this.log.logging) {
+        if (this.log && this.log.logging){
             this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
         }
 
@@ -353,14 +352,14 @@ define(function (require, exports, module) {
 
         // Initialy we have no previous page to base our calculations, so have to check for previous page
 
-        if (!previousPage) {
+        if (!previousPage){
           return;
         }
 
         // Don't attempt to calculate cadence and speed if time between pages is greater than rollover time
 
-        if (rollOverThreshold && (this.timestamp - previousPage.timestamp >= rollOverThreshold)) {
-            if (this.log.logging) {
+        if (rollOverThreshold && (this.timestamp - previousPage.timestamp >= rollOverThreshold)){
+            if (this.log.logging){
                 this.log.log('warn', 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, previousPage);
             }
             return;
@@ -391,13 +390,13 @@ define(function (require, exports, module) {
 
         // Init sensor id first time a broadcast is received
 
-        if (!this.sensorId) {
+        if (!this.sensorId){
           this.sensorId = broadcast.channelId.sensorId;
         }
 
         // Add filtering for duplicate broadcasts
 
-        if (this.filterAndCountBroadcast(broadcast)) {
+        if (this.filterAndCountBroadcast(broadcast)){
 
            if (this.broadcastCount < 10 && this.log && this.log.logging)  {// Debug page toggeling detection
               this.log.log('info','Filtering B#',this.broadcastCount,broadcast.channelId.sensorId,broadcast.data);
@@ -428,10 +427,10 @@ define(function (require, exports, module) {
     };
 
     // Keeps track of received pages that are passed through filtering
-    DeviceProfile.prototype.addPage = function (page) {
+    DeviceProfile.prototype.addPage = function (page){
 
-        if (!page) {
-         if (this.log && this.log.logging) {
+        if (!page){
+         if (this.log && this.log.logging){
             this.log.log('error', 'Attempt to add undefined or null page, skipping');
          }
             return;
@@ -452,7 +451,7 @@ define(function (require, exports, module) {
     DeviceProfile.prototype.isPageToggle = function ()
     {
 
-        if (this.PAGE_TOGGLE_CAPABLE) {
+        if (this.PAGE_TOGGLE_CAPABLE){
              return  this.pageToggle.state === this.PAGE_TOGGLE_STATE.TOGGELING;
         }
         else {
@@ -472,13 +471,13 @@ define(function (require, exports, module) {
         {
 
             // Strip off page toggle bit if neccessary
-            if (byteNr === 0 && isPageToggle) {
+            if (byteNr === 0 && isPageToggle){
                 currentByte = data[byteNr] & 0x7F;
             } else {
                currentByte = data[byteNr];
             }
             // Zero padding
-            if (currentByte < 0xF) {
+            if (currentByte < 0xF){
                 hashCode += '0';
             }
 
@@ -489,20 +488,20 @@ define(function (require, exports, module) {
     };
 
     // FILTER - Skip duplicate messages from same master
-    DeviceProfile.prototype.filterDuplicateBroadcast = function (broadcast) {
+    DeviceProfile.prototype.filterDuplicateBroadcast = function (broadcast){
 
         var hashCode = this.getHashCode(broadcast); // hash+8 hex code of broadcast payload
 
         // We have a previous broadcast with the same hashcode -> filter
 
-        if (this.hashBroadcast.indexOf(hashCode) !== -1) {
+        if (this.hashBroadcast.indexOf(hashCode) !== -1){
             return true;
         }
 
         this.hashBroadcast.push(hashCode);
 
         // 8 should allow for 2 seconds lookback at 4Hz (1 sec. with background and 1 sec main)
-        if (this.hashBroadcast.length > 8) {
+        if (this.hashBroadcast.length > 8){
             this.hashBroadcast.shift();
         }
 
@@ -510,12 +509,12 @@ define(function (require, exports, module) {
 
     };
 
-    DeviceProfile.prototype.verifyDeviceType = function (deviceType, broadcast) {
+    DeviceProfile.prototype.verifyDeviceType = function (deviceType, broadcast){
 
         var isEqualDeviceType = broadcast.channelId.deviceType === deviceType;
 
-        if (!isEqualDeviceType) {
-            if (this.log && this.log.logging) {
+        if (!isEqualDeviceType){
+            if (this.log && this.log.logging){
                 this.log.log('error', "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
             }
         }
@@ -524,9 +523,9 @@ define(function (require, exports, module) {
 
     };
 
-    DeviceProfile.prototype.channelResponse = function (channelResponse) {
+    DeviceProfile.prototype.channelResponse = function (channelResponse){
         // Issue IE11 - this passed as argument to log is undefined (most likely due to strict mode)
-        if (this.log && this.log.logging) { this.log.log('log', 'Channel response - DeviceProfile -', this, channelResponse, channelResponse.toString());
+        if (this.log && this.log.logging){ this.log.log('log', 'Channel response - DeviceProfile -', this, channelResponse, channelResponse.toString());
                                           }
     };
 

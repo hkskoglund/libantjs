@@ -1,14 +1,14 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function LibConfigMessage(libConfig) {
+    function LibConfigMessage(libConfig){
 
         Message.call(this,undefined,Message.prototype.MESSAGE.LIBCONFIG);
        this.encode(libConfig);
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
     };
 
 
-    LibConfigMessage.prototype.toString = function () {
+    LibConfigMessage.prototype.toString = function (){
         return Message.prototype.toString() + " lib config " + this.libConfig;
     };
 

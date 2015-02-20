@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineCalibrationMain(require,exports,module) {
+define(function _requireDefineCalibrationMain(require,exports,module){
 
     'use strict';
 
     var MainPage = require('../mainPage');
 
-    function CalibrationMain(configuration, broadcast, profile,pageNumber) {
+    function CalibrationMain(configuration, broadcast, profile,pageNumber){
 
         MainPage.call(this,configuration, broadcast, profile,pageNumber);
     }

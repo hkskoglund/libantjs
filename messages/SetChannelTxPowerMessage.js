@@ -1,8 +1,8 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
 
      };
 
-    SetChannelTxPowerMessage.prototype.toString = function () {
+    SetChannelTxPowerMessage.prototype.toString = function (){
         return Message.prototype.toString();
     };
 

@@ -1,14 +1,14 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function SetChannelRFFreqMessage(channel, RFFreq) {
+    function SetChannelRFFreqMessage(channel, RFFreq){
 
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_RFFREQ);
 
@@ -35,7 +35,7 @@ define(function (require, exports, module) {
     };
 
 
-    SetChannelRFFreqMessage.prototype.toString = function () {
+    SetChannelRFFreqMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channel + " RF freq. " + this.RFFreq;
     };
 

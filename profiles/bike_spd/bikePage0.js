@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineBikePage0(require,exports,module) {
+define(function _requireDefineBikePage0(require,exports,module){
 
     'use strict';
 
     var SPDCADSharedPage = require('../bike_spdcad/SPDCADShared');
 
-    function BikePage0(configuration, broadcast, profile,pageNumber) {
+    function BikePage0(configuration, broadcast, profile,pageNumber){
 
         SPDCADSharedPage.call(this,configuration, broadcast, profile,pageNumber);
 
@@ -34,7 +34,7 @@ define(function _requireDefineBikePage0(require,exports,module) {
           this.calcSpeed();
     };
 
-    BikePage0.prototype.toString = function () {
+    BikePage0.prototype.toString = function (){
 
         var calibrationFactor = 2.07, // Just used for a speed estimate
             speed,
@@ -42,7 +42,7 @@ define(function _requireDefineBikePage0(require,exports,module) {
 
         msg = "P# " + this.number;
 
-       if (this.unCalibratedSpeed !== undefined) {
+       if (this.unCalibratedSpeed !== undefined){
            speed = calibrationFactor * this.unCalibratedSpeed;
            msg += ' speed (m/s) ' + speed;
        }
@@ -52,6 +52,7 @@ define(function _requireDefineBikePage0(require,exports,module) {
         return msg;
     };
 
-    return BikePage0;
+    module.exports =  BikePage0;
+    return module.exports;
 
 });

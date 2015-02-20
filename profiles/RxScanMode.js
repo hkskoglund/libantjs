@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
@@ -20,12 +20,12 @@ define(function (require, exports, module) {
 
     for (var moduleNr=0;moduleNr<arguments.length;moduleNr++)
     {
-        if (arguments[moduleNr] === undefined) {
+        if (arguments[moduleNr] === undefined){
             console.error('RXScanMode: Undefined module at argument nr',moduleNr);
         }
     }
 
-    function RxScanMode(configuration) {
+    function RxScanMode(configuration){
 
         var devNum = '*',
             devType = '*',
@@ -33,7 +33,7 @@ define(function (require, exports, module) {
 
         DeviceProfile.call(this, configuration);
 
-        if (configuration.channelId) {
+        if (configuration.channelId){
             devNum = configuration.channelId.deviceNumber || '*';
             devType = configuration.channelId.deviceType || '*';
             transType = configuration.channelId.transmissionType || '*';
@@ -80,7 +80,7 @@ define(function (require, exports, module) {
         this.emit('page',page);
     };
 
-    RxScanMode.prototype.addProfile = function (profile,broadcast) {
+    RxScanMode.prototype.addProfile = function (profile,broadcast){
 
         var sensorId = broadcast.channelId.sensorId;
 
@@ -88,30 +88,30 @@ define(function (require, exports, module) {
 
         profile.addListener('page',this.onPage.bind(this)); // Forward
 
-        if (this.log.logging) {
+        if (this.log.logging){
             this.log.log('info', 'Added profile for sensorId '+sensorId+' to RX SCAN mode channel', profile);
         }
     };
 
     // Scan mode receives all broadcasts on channel 0
     // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
-    RxScanMode.prototype.broadCast = function (broadcast) {
+    RxScanMode.prototype.broadCast = function (broadcast){
 
         var currentProfile;
 
-        if (!broadcast) {
+        if (!broadcast){
             this.log.log('error', 'Undefined broadcast received');
             return;
         }
 
-        if (!broadcast.channelId) {
+        if (!broadcast.channelId){
             this.log.log('error', 'No channel id available for broadcast', broadcast);
             return;
         }
 
        currentProfile = this.profile[broadcast.channelId.sensorId];
 
-        if (currentProfile) {// Forward
+        if (currentProfile){// Forward
             currentProfile.broadCast(broadcast);
         }
         else {
@@ -157,7 +157,7 @@ define(function (require, exports, module) {
 
                    default:
 
-                        if (this.log && this.log.logging) {
+                        if (this.log && this.log.logging){
                           this.log.log('warn','No profile support for device type '+broadcast.channelId.deviceType);
                         }
                         break;

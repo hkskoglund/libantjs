@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function NotificationSerialError(data) {
+    function NotificationSerialError(data){
 
         Message.call(this, data);
 
@@ -34,7 +34,7 @@ define(function (require, exports, module) {
     };
 
 
-    NotificationSerialError.prototype.decode = function (data) {
+    NotificationSerialError.prototype.decode = function (data){
         var msg, code;
 
         var serialErrorMessage, errorCode,faultMessage;
@@ -42,15 +42,15 @@ define(function (require, exports, module) {
         serialErrorMessage = this.content;
         errorCode = serialErrorMessage[0];
 
-        if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE) {
+        if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE){
             msg = NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.MESSAGE;
             code = NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE;
         }
-        else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.CRC_INCORRECT.CODE) {
+        else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.CRC_INCORRECT.CODE){
             msg = NotificationSerialError.prototype.SERIAL_ERROR.CRC_INCORRECT.MESSAGE;
             code = NotificationSerialError.prototype.SERIAL_ERROR.CRC_INCORRECT.CODE;
         }
-        else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE) {
+        else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE){
             msg = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.MESSAGE;
             code = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE;
             faultMessage = serialErrorMessage.subarray(1);
@@ -61,7 +61,7 @@ define(function (require, exports, module) {
         return this.message;
     };
 
-    NotificationSerialError.prototype.toString = function () {
+    NotificationSerialError.prototype.toString = function (){
         return Message.prototype.toString() + " " + this.length + " " + this.message.text;
     };
 

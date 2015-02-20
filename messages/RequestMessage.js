@@ -1,8 +1,8 @@
 /* global define: true, Uint8Array: true, DataView: true, ArrayBuffer: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
   'use strict';
 
@@ -10,7 +10,7 @@ define(function (require, exports, module) {
 
   // p.89 "ANT Message Protocol and Usage, rev 5.0b"
   // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
-  function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
+  function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize){
 
       Message.call(this,undefined,Message.prototype.MESSAGE.REQUEST);
       this.encode(channel, requestedMessageId, NVMaddr, NVMsize);
@@ -31,7 +31,7 @@ define(function (require, exports, module) {
 
     // Non Volatile Memory
 
-    if (typeof NVMaddr !== "undefined" && typeof NVMsize !== "undefined") {
+    if (typeof NVMaddr !== "undefined" && typeof NVMsize !== "undefined"){
         var NVM_Buffer;
         this.NVMaddr = NVMaddr;
         this.NVMsize = NVMsize;
@@ -50,7 +50,7 @@ define(function (require, exports, module) {
 
   };
 
-  RequestMessage.prototype.toString = function () {
+  RequestMessage.prototype.toString = function (){
       var msg = Message.prototype.toString.call(this) + " C# " + this.channel + " ID 0x" + this.requestId.toString(16)+' '+Message.prototype.MESSAGE[this.requestId];
       if (this.NVMaddr)
           msg += " NVMaddr " + this.NVMaddr;

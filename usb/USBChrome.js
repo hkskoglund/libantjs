@@ -1,10 +1,10 @@
 /* global define: true, chrome: true, Uint8Array: true,  */
 
-define(['usb/USBDevice'],function (USBDevice) {
+define(['usb/USBDevice'],function (USBDevice){
 
     'use strict';
 
-    function USBChrome(options) {
+    function USBChrome(options){
 
         USBDevice.call(this, options);
 
@@ -34,15 +34,15 @@ define(['usb/USBDevice'],function (USBDevice) {
     USBChrome.prototype.LIBUSB_TRANSFER_OVERFLOW = 6;
 
 
-    USBChrome.prototype.getINendpointPacketSize = function () {
+    USBChrome.prototype.getINendpointPacketSize = function (){
         return this.inEndpoint.maximumPacketSize;
     };
 
-    USBChrome.prototype.transfer = function (chunk, callback) {
+    USBChrome.prototype.transfer = function (chunk, callback){
 
         var msg;
 
-        if (!this.outEndpoint) {
+        if (!this.outEndpoint){
 
             msg = 'Cannot write to out endpoint of device, its undefined, device not initialized properly';
             if (this.log && this.log.logging) this.log.log('error', msg, chunk);
@@ -50,8 +50,8 @@ define(['usb/USBDevice'],function (USBDevice) {
             return;
         }
 
-        var onTX = function (TXinformation) {
-            if (TXinformation.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
+        var onTX = function (TXinformation){
+            if (TXinformation.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED){
                 //console.log(Date.now(), "Tx", TXinfo);
                 callback();
             }
@@ -74,7 +74,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         chrome.usb.bulkTransfer(this.connectionHandle, TXinfo, onTX);
     };
 
-    USBChrome.prototype.listen = function () {
+    USBChrome.prototype.listen = function (){
 
         var transferErrorCount = 0,
             MAX_TRANSFER_ERROR_COUNT = 10,// Count LIBUSB result codes other than completed === 0
@@ -90,12 +90,12 @@ define(['usb/USBDevice'],function (USBDevice) {
             "length": inlengthMax // Can be increased limited by LIBUSB buffering mechanism
         };
 
-        var onRX = function _onRX(RXinfo) {
+        var onRX = function _onRX(RXinfo){
 
             var data,
                 error;
             //console.timeEnd('RX');
-            if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED) {
+            if (RXinfo.resultCode === USBChrome.prototype.LIBUSB_TRANSFER_COMPLETED){
 
                 transferErrorCount = 0;
 
@@ -117,7 +117,7 @@ define(['usb/USBDevice'],function (USBDevice) {
                         this.emit(USBDevice.prototype.EVENT.DATA, data); // Using events allows more listeners of usb data, e.g logging/debugging
                     //if (this.log && this.log.logging) console.timeEnd('messageFactory');
 
-                } catch (e) {
+                } catch (e){
                     if (this.log && this.log.logging)
                         this.log.log('error', 'Got onRX error', e, e.stack);
                     else
@@ -137,7 +137,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
             // Transfer may be cancelled by e.g releaseInterface -> don't attempt retries
 
-            if (RXinfo.resultCode !== USBChrome.prototype.LIBUSB_TRANSFER_CANCELLED) {
+            if (RXinfo.resultCode !== USBChrome.prototype.LIBUSB_TRANSFER_CANCELLED){
                 if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
                     retry();
                 else
@@ -152,7 +152,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         }.bind(this);
 
-        var retry = function _retryBulkTransfer() {
+        var retry = function _retryBulkTransfer(){
             //console.time('RX');
             // this.log.log('log',"retry", this.connectionHandle, RXinfo, onRX);
 
@@ -168,17 +168,17 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     };
 
-    USBChrome.prototype.exit = function (callback) {
+    USBChrome.prototype.exit = function (callback){
 
       this.removeAllListeners(USBDevice.prototype.EVENT.DATA);
 
-        if (this.connectionHandle === undefined || this.deviceInterface === undefined) {
+        if (this.connectionHandle === undefined || this.deviceInterface === undefined){
             callback(new Error('Wrong USB connection handle and/or device interface connectionHandle = ' + this.connectionHandle + ' deviceInterface = ' + this.deviceInterface));
         }
 
-        chrome.usb.releaseInterface(this.connectionHandle, this.deviceInterface.interfaceNumber, function _ChromeUSBRelaseInterface() {
+        chrome.usb.releaseInterface(this.connectionHandle, this.deviceInterface.interfaceNumber, function _ChromeUSBRelaseInterface(){
 
-            chrome.usb.closeDevice(this.connectionHandle, function _ChromeUSBCloseDevice() {
+            chrome.usb.closeDevice(this.connectionHandle, function _ChromeUSBCloseDevice(){
 
                 callback();
 
@@ -187,7 +187,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
     };
 
-    USBChrome.prototype.init = function (callback) {
+    USBChrome.prototype.init = function (callback){
 
         this.initCallback = callback; // Share between functions on prototype instead of passing as actual argument
 
@@ -199,7 +199,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     {
         // Problems with claiming interface in Ubuntu 13.10 - was caused by suunto module which can be blacklisted to avoid problems in /etc/modules.d/blacklist.conf
         // Trying workaround proposed by : https://code.google.com/p/chromium/issues/detail?id=222460
-        if (chrome.runtime.lastError) {
+        if (chrome.runtime.lastError){
             if (this.log && this.log.logging) this.log.log('error', 'Could not claim interface - be aware that a linux kernel driver must not be active on the usb port, e.g suunto/usb-serial-simple', chrome.runtime.lastError, 'connection handle',this.connectionHandle);
 
             this._tryClaimInterface(++this.connectionHandleIndex);
@@ -210,7 +210,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
             try {
                 this.initCallback();
-            } catch (e) {
+            } catch (e){
                 console.error(e, e.stack);
             }
         }
@@ -221,11 +221,11 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         // TEST interfaces = undefined; // Force fail
 
-        if (interfaces && interfaces.length > 0) {
+        if (interfaces && interfaces.length > 0){
             if (this.log && this.log.logging) this.log.log('log', "Interfaces", interfaces);
             this.deviceInterface = interfaces[0];
 
-            if (interfaces[0].endpoints && interfaces[0].endpoints.length > 1) {
+            if (interfaces[0].endpoints && interfaces[0].endpoints.length > 1){
 
                 this.inEndpoint = this.deviceInterface.endpoints[0];
                 this.outEndpoint = this.deviceInterface.endpoints[1];
@@ -244,24 +244,24 @@ define(['usb/USBDevice'],function (USBDevice) {
     };
 
     // Find devices will find and open a device, only one device will be claimed, all the rest should be closed
-    USBChrome.prototype.closeDevices = function (connectionHandles, exceptHandle, callback) {
+    USBChrome.prototype.closeDevices = function (connectionHandles, exceptHandle, callback){
         var index = 0,
             len = connectionHandles.length,
 
          closeNextOrCallback = function ()
         {
-            if (index < len-1) {
+            if (index < len-1){
                 index++;
                 close();
             } else if (typeof callback === 'function')
                 callback();
         },
 
-        close = function () {
-            if (connectionHandles[index] !== exceptHandle) {
+        close = function (){
+            if (connectionHandles[index] !== exceptHandle){
                 if (this.log && this.log.logging) this.log.log('log', 'Closing device', connectionHandles[index]);
 
-                chrome.usb.closeDevice(connectionHandles[index], function _onClosedDevice() {
+                chrome.usb.closeDevice(connectionHandles[index], function _onClosedDevice(){
                     if (this.log && this.log.logging) this.log.log('log', 'Closed device');
                     closeNextOrCallback();
 
@@ -283,11 +283,11 @@ define(['usb/USBDevice'],function (USBDevice) {
         this.connectionHandleIndex = index;
        this.connectionHandle = this.connectionHandles[index];
 
-       if (this.connectionHandle) {
+       if (this.connectionHandle){
 
            chrome.usb.listInterfaces(this.connectionHandle, this._onInterfacesFound.bind(this));
        } else {
-           this.closeDevices(this.connectionHandles, undefined, function () {
+           this.closeDevices(this.connectionHandles, undefined, function (){
                this._tryFindManifestDevice(++this.findDeviceIndex); // Try next device
            }.bind(this));
        }
@@ -315,7 +315,7 @@ define(['usb/USBDevice'],function (USBDevice) {
     USBChrome.prototype._onDevicesFound = function (connectionHandles)
     {
 
-        //if (this.options && typeof this.options.device === 'undefined') {
+        //if (this.options && typeof this.options.device === 'undefined')//{
         //    if (this.log && this.log.logging) this.log.log('warn', 'No number for device specified, will choose the first (device 0)');
         //}
         //else
@@ -324,7 +324,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         this.connectionHandles = connectionHandles;
 
-        if (connectionHandles && connectionHandles.length) {
+        if (connectionHandles && connectionHandles.length){
             if (this.log && this.log.logging)
                 this.log.log('log', "ANT devices found", connectionHandles);
 
@@ -339,7 +339,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             this._tryClaimInterface(0); // Start with the first handle
         }
 
-        if (!connectionHandles || connectionHandles.length === 0) {
+        if (!connectionHandles || connectionHandles.length === 0){
             this.log.log('warn', 'No ANT devices found satisfying findDevice criteria',this.findDevice);
             this._tryFindManifestDevice(++this.findDeviceIndex);
         }
@@ -366,7 +366,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             return;
         }
 
-        if (this.devicesInManifest[index]) {
+        if (this.devicesInManifest[index]){
 
             this.findDevice = this.devicesInManifest[index];
 
@@ -390,7 +390,7 @@ define(['usb/USBDevice'],function (USBDevice) {
         var defaultDevice,
             devNr;
 
-        if (error) {
+        if (error){
             this.initCallback(error);
             return;
         }
@@ -400,7 +400,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
         this.emit(USBDevice.prototype.EVENT.ENUMERATION_COMPLETE);
 
-        if (!this.options.deviceId) {
+        if (!this.options.deviceId){
 
             // Special case : No device is previously set by user, by convention choose the first enumerated device
             // Most ordinary users only have 1 ANT device
@@ -414,22 +414,22 @@ define(['usb/USBDevice'],function (USBDevice) {
                 // Find deviceId among the enumerated devices
                 if (this.log && this.log.logging) this.log.log('log', 'Looking for device id from options', this.options.deviceId, this.enumeratedManifestDevices.length);
 
-                for (devNr = 0; devNr < this.enumeratedManifestDevices.length; devNr++) {
-                    if (this.enumeratedManifestDevices[devNr].id === this.options.deviceId) {
+                for (devNr = 0; devNr < this.enumeratedManifestDevices.length; devNr++){
+                    if (this.enumeratedManifestDevices[devNr].id === this.options.deviceId){
                         defaultDevice = this.enumeratedManifestDevices[devNr];
                         this.defaultDevice = devNr;
                         break;
                     }
                 }
 
-                if (this.enumeratedManifestDevices.length > 0 && typeof this.defaultDevice === 'undefined') {
+                if (this.enumeratedManifestDevices.length > 0 && typeof this.defaultDevice === 'undefined'){
                     if (this.log && this.log.logging) this.log.log('warn', 'Did not find default device with id ' + this.options.deviceId + ', choosing the first enumerated device');
                     this.defaultDevice = 0;
                     defaultDevice = this.enumeratedManifestDevices[0];
 
                 }
 
-                if (defaultDevice) {
+                if (defaultDevice){
                     if (this.log && this.log.logging) this.log.log('log', 'Trying to open ANT device ', defaultDevice);
                     chrome.usb.findDevices({ "vendorId": defaultDevice.vendorId, "productId": defaultDevice.productId }, this._onDeviceFound.bind(this));
                 }
@@ -444,20 +444,20 @@ define(['usb/USBDevice'],function (USBDevice) {
     };
 
     // Enumerate the devices specified in manifest.json included in application package
-    USBChrome.prototype._enumerateDevicesInManifest = function (callback) {
+    USBChrome.prototype._enumerateDevicesInManifest = function (callback){
         var devNoManifest = 0,
             lenDevInManifest,
             //devicesInManifest,
             manifestDevice,
 
-             _gotDevices = function (devices) {
+             _gotDevices = function (devices){
                  var devNr;
 
                  if (this.log && this.log.logging) this.log.log('log', 'List of devices for ' + currentDevice.name, devices);
 
                  // Create a linear list of devices
 
-                 for (devNr = 0; devNr < devices.length; devNr++) {
+                 for (devNr = 0; devNr < devices.length; devNr++){
                      //// Add name and id  to default data structure by USB chrome
                      //devices[devNr].name = currentDevice.name;
                      //devices[devNr].deviceNr = devNr;
@@ -478,7 +478,7 @@ define(['usb/USBDevice'],function (USBDevice) {
 
                  devNoManifest++;
 
-                 if (devNoManifest < lenDevInManifest) {
+                 if (devNoManifest < lenDevInManifest){
                      // if (this.log && this.log.logging) this.log.log('log','devno length',devNoManifest,lenDevInManifest);
                      getDevices(); // Find more devices for given vendor id, product id
                  }
@@ -495,7 +495,7 @@ define(['usb/USBDevice'],function (USBDevice) {
             currentDevice,
 
 
-         getDevices = function () {
+         getDevices = function (){
 
              currentDevice = this.devicesInManifest[devNoManifest];
 
@@ -527,10 +527,10 @@ define(['usb/USBDevice'],function (USBDevice) {
     /*
     Gets the devices declared in the manifest file manifest.json
     */
-    USBChrome.prototype.getDevicesFromManifest = function () {
+    USBChrome.prototype.getDevicesFromManifest = function (){
         var permissions = chrome.runtime.getManifest().permissions;
-        for (var permissionNr = 0; permissionNr < permissions.length; permissionNr++) {
-            if (typeof permissions[permissionNr] === 'object' && permissions[permissionNr].usbDevices) {
+        for (var permissionNr = 0; permissionNr < permissions.length; permissionNr++){
+            if (typeof permissions[permissionNr] === 'object' && permissions[permissionNr].usbDevices){
                 return permissions[permissionNr].usbDevices;
 
             }

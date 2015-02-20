@@ -1,8 +1,8 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
     'use strict';
 
     var Message = require('./Message');
@@ -29,7 +29,7 @@ define(function (require, exports, module) {
 
     };
 
-    UnAssignChannelMessage.prototype.toString = function () {
+    UnAssignChannelMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channel;
     };
 

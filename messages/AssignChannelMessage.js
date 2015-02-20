@@ -1,15 +1,18 @@
 /* global define: true, Uint8Array */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function')
+{ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module)
+{
 
   'use strict';
 
   var Message = require('./Message'),
       Channel = require('../channel');
 
-  function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment) {
+  function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment)
+{
 
     Message.call(this,undefined,Message.prototype.MESSAGE.ASSIGN_CHANNEL);
     this.encode(channel,channelType,networkNumber,extendedAssignment);
@@ -39,7 +42,8 @@ define(function (require, exports, module) {
     this.setContent(msgBuffer.buffer);
   };
 
-  AssignChannelMessage.prototype.toString = function () {
+  AssignChannelMessage.prototype.toString = function ()
+{
       var msg = Message.prototype.toString() + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
       if (this.extendedAssignment)
           msg += " extended assignment " + this.extendedAssignment;

@@ -1,13 +1,13 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
   var Logger = require('./logger'),
       EventEmitter = require('./events');
 
-    function Channel(options) {
+    function Channel(options){
 
         EventEmitter.call(this,options);
 
@@ -44,7 +44,7 @@ define(function (require,exports,module) {
 //    {
 //        var param = this.parameters[name];
 //
-//        if (!param) {
+//        if (!param){
 //            this.log.log('error','No parameters for channel found for configuration '+name);
 //            return;
 //        }
@@ -56,11 +56,11 @@ define(function (require,exports,module) {
         this.parameters[name] = parameters;
     };
 
-    Channel.prototype.showConfiguration = function (name) {
+    Channel.prototype.showConfiguration = function (name){
         var msg = '';
         var parameters = this.parameters[name];
 
-        function format(number) {
+        function format(number){
             if (number === 0x00)
                 return "*";
             else
@@ -82,7 +82,7 @@ define(function (require,exports,module) {
             {
 
                 rate = '';
-                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++) {
+                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++){
                     rate += getInHz(messagePeriod[periodeNr]);
                     if (periodeNr < len -1)
                         rate += ',';
@@ -92,7 +92,7 @@ define(function (require,exports,module) {
                return rate;
         }
 
-        function formatSearchTimeout(searchTimeout) {
+        function formatSearchTimeout(searchTimeout){
 
             var friendlyFormat,
                 value = searchTimeout;
@@ -103,7 +103,7 @@ define(function (require,exports,module) {
             if (typeof searchTimeout !== 'number')
                 value = searchTimeout.getRawValue();
 
-                switch (value) {
+                switch (value){
                     case 0:
                         friendlyFormat = "Disabled";
                         break;
@@ -119,7 +119,7 @@ define(function (require,exports,module) {
 
         }
 
-        function formatExtendedAssignment(extendedAssignment) {
+        function formatExtendedAssignment(extendedAssignment){
             if (typeof extendedAssignment === "undefined")
                 return 'undefined';
 
@@ -150,7 +150,7 @@ define(function (require,exports,module) {
     };
     //
     //
-    ////Channel.prototype.setChannelNumer = function (channel) {
+    ////Channel.prototype.setChannelNumer = function (channel){
     ////    this.channelNumber = channel;
     ////}
     //
@@ -177,7 +177,7 @@ define(function (require,exports,module) {
 //    };
 
     // Check for a bidirectional master channel
-    Channel.prototype.isMaster = function (configurationName) {
+    Channel.prototype.isMaster = function (configurationName){
         var parameters = this.parameters[configurationName],
             channelType = parameters.channelType;
 

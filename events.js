@@ -2,9 +2,9 @@
 
 // Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineEventEmitter(require,exports,module) {
+define(function _requireDefineEventEmitter(require,exports,module){
 
     'use strict';
 
@@ -20,12 +20,12 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     }
 
-    function EventEmitter(configuration) {
+    function EventEmitter(configuration){
 
         this._events = {};
     }
 
-    EventEmitter.prototype.addListener = function (type, listener) {
+    EventEmitter.prototype.addListener = function (type, listener){
 
         checkListener(listener);
 
@@ -37,7 +37,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
         return this;
     };
 
-    EventEmitter.prototype.removeListener = function (type, listener) {
+    EventEmitter.prototype.removeListener = function (type, listener){
 
         var listeners,
             index;
@@ -58,7 +58,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     };
 
-    EventEmitter.prototype.removeAllListeners = function (type) {
+    EventEmitter.prototype.removeAllListeners = function (type){
 
         var listeners = this._events[type];
 
@@ -70,7 +70,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
         return this;
     };
 
-    EventEmitter.prototype.emit = function (type) {
+    EventEmitter.prototype.emit = function (type){
 
         var listeners = this._events[type],
             index,
@@ -86,7 +86,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
         for (argNr = 1, len = arguments.length; argNr < len; argNr++)
             args.push(arguments[argNr]);
 
-        for (index = 0, len = listeners.length; index < len; index++) {
+        for (index = 0, len = listeners.length; index < len; index++){
             listeners[index].apply(this, args);
 
         }
@@ -95,7 +95,7 @@ define(function _requireDefineEventEmitter(require,exports,module) {
 
     };
 
-    function checkListener(listener) {
+    function checkListener(listener){
 
         if (typeof listener !== 'function')
             throw new TypeError('The provided listener is not a function');

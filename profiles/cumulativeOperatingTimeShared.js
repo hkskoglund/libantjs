@@ -1,8 +1,8 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -25,7 +25,7 @@ define(function (require,exports,module) {
                 byte2,
                 byte3;
 
-          var toStringCumulativeOperatingTime = function (cumulativeOperatingTime) {
+          var toStringCumulativeOperatingTime = function (cumulativeOperatingTime){
 
             if (cumulativeOperatingTime < 3600)
                 return cumulativeOperatingTime.toFixed(1) + 's ';

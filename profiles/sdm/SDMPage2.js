@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
     'use strict';
 
     var GenericPage = require('../Page');
 
 
-    function SDMPage2(configuration, broadcast) {
+    function SDMPage2(configuration, broadcast){
 
         GenericPage.call(this, configuration, broadcast);
 
@@ -76,7 +76,7 @@ define(function (require, exports, module) {
     };
 
 
-    SDMPage2.prototype.decode = function (broadcast) {
+    SDMPage2.prototype.decode = function (broadcast){
 
         var data = broadcast.data;
         // dataView = new DataView(data.buffer);
@@ -115,7 +115,7 @@ define(function (require, exports, module) {
          this.status.UseState = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.UseState);
 
 
-        switch (this.status.SDMLocation) {
+        switch (this.status.SDMLocation){
             case 0x00: this.status.SDMLocationFriendly = "Laces"; break;
             case 0x01: this.status.SDMLocationFriendly = "Midsole"; break;
             case 0x02: this.status.SDMLocationFriendly = "Other"; break;
@@ -123,7 +123,7 @@ define(function (require, exports, module) {
             default: this.status.SDMLocationFriendly = "? " + this.status.SDMLocation; break;
         }
 
-        switch (this.status.BatteryStatus) {
+        switch (this.status.BatteryStatus){
             case 0x00: this.status.BatteryStatusFriendly = "New"; break;
             case 0x01: this.status.BatteryStatusFriendly = "Good"; break;
             case 0x02: this.status.BatteryStatusFriendly = "OK"; break;
@@ -131,7 +131,7 @@ define(function (require, exports, module) {
             default: this.status.BatteryStatusFriendly = "? " + this.status.BatteryStatus; break;
         }
 
-        switch (this.status.SDMHealth) {
+        switch (this.status.SDMHealth){
             case 0x00: this.status.SDMHealthFriendly = "OK"; break;
             case 0x01: this.status.SDMHealthFriendly = "Error"; break;
             case 0x02: this.status.SDMHealthFriendly = "Warning"; break;
@@ -139,7 +139,7 @@ define(function (require, exports, module) {
             default: this.status.SDMHealthFriendly = "? " + this.status.SDMHealth; break;
         }
 
-        switch (this.status.UseState) {
+        switch (this.status.UseState){
             case 0x00: this.status.UseStateFriendly = "IN-ACTIVE"; break;
             case 0x01: this.status.UseStateFriendly = "ACTIVE"; break;
             case 0x02: this.status.UseStateFriendly = "Reserved"; break;
@@ -150,7 +150,7 @@ define(function (require, exports, module) {
 
     };
 
-    SDMPage2.prototype.toString = function () {
+    SDMPage2.prototype.toString = function (){
 
         var msg = "P# " + this.number + " ",
             UNUSED = 0x00;

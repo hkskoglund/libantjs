@@ -1,18 +1,18 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineGenericPage(require,exports,module) {
+define(function _requireDefineGenericPage(require,exports,module){
 
     'use strict';
 
     var Logger = require('../logger');
 
-    function GenericPage(configuration, broadcast,profile,pageNumber) {
+    function GenericPage(configuration, broadcast,profile,pageNumber){
 
         this.log = configuration.logger || new Logger(configuration);
 
-        if (!broadcast || !broadcast.data) {
+        if (!broadcast || !broadcast.data){
            return;
         }
 
@@ -23,7 +23,7 @@ define(function _requireDefineGenericPage(require,exports,module) {
         if (this.timestamp === undefined)
           {
               this.timestamp = Date.now();
-              if (this.log && this.log.logging) {
+              if (this.log && this.log.logging){
                this.log.log('warn','No timestamp on broadcast, setting it to now',this.timestamp);
               }
           }
@@ -32,7 +32,7 @@ define(function _requireDefineGenericPage(require,exports,module) {
 
         if (this.number === undefined)
         {
-             if (this.log && this.log.logging) {
+             if (this.log && this.log.logging){
                this.log.log('warn','Cannot accept undefined page number');
              }
 
@@ -45,11 +45,11 @@ define(function _requireDefineGenericPage(require,exports,module) {
 
         // Background pages does not have these functions
 
-        if (typeof this.readCommonBytes === 'function') {
+        if (typeof this.readCommonBytes === 'function'){
            this.readCommonBytes(broadcast);
         }
 
-         if (typeof this.update === 'function') {
+         if (typeof this.update === 'function'){
             this.update(broadcast); // e.g bike speed and cadence calculations
          }
     }
@@ -62,16 +62,16 @@ define(function _requireDefineGenericPage(require,exports,module) {
     GenericPage.prototype.COMMON = {};
 
     // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
-    GenericPage.prototype.clone = function () {
+    GenericPage.prototype.clone = function (){
 
         var clone = Object.create(null), // Pure object
             ownEnumerableProperties = Object.keys(this),
             property;
 
-        for (var index in ownEnumerableProperties) {
+        for (var index in ownEnumerableProperties){
             property = ownEnumerableProperties[index];
 
-            switch (property) {
+            switch (property){
 
                 case 'broadcast': // return the most essential information for the ui
 

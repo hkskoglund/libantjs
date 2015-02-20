@@ -1,8 +1,8 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
@@ -26,7 +26,7 @@ define(function (require, exports, module) {
         this.serialNumberAsChannelId = dw.getUint16(0,true); // Lower 2-bytes
     };
 
-    DeviceSerialNumberMessage.prototype.toString = function () {
+    DeviceSerialNumberMessage.prototype.toString = function (){
         return Message.prototype.toString.call(this)+ " " + this.serialNumber+' (0x'+this.serialNumber.toString(16)+')'+" lower 2-bytes "+this.serialNumberAsChannelId +' (0x'+this.serialNumberAsChannelId.toString(16)+')';
     };
 

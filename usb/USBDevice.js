@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
@@ -10,7 +10,7 @@ define(function (require, exports, module) {
          EventEmitter = require('../events');
 
     // Abstract USB device
-    function USBDevice(options) {
+    function USBDevice(options){
 
        EventEmitter.call(this,options);
 
@@ -39,33 +39,33 @@ define(function (require, exports, module) {
 
     USBDevice.prototype.ANT_DEVICE_TIMEOUT = 12; // 11.11 ms to transfer 64 bytes (max. endpoint size) at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms
 
-    USBDevice.prototype.setBurstMode = function (value) {
+    USBDevice.prototype.setBurstMode = function (value){
         this.burstMode = value;
     };
 
-    USBDevice.prototype.init = function (callback) {
+    USBDevice.prototype.init = function (callback){
         throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
     };
 
-    USBDevice.prototype.exit = function (callback) {
+    USBDevice.prototype.exit = function (callback){
 
         throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
     };
 
     // Sets device timeout in ms.
-    USBDevice.prototype.setDeviceTimeout = function (timeout) {
+    USBDevice.prototype.setDeviceTimeout = function (timeout){
         throw new Error('Func. should be overridden in descendant objects');
     };
 
-    USBDevice.prototype.listen = function (successCallback) {
+    USBDevice.prototype.listen = function (successCallback){
         throw new Error('Func. should be overridden in descendant objects');
     };
 
-    USBDevice.prototype.transfer = function (chunk, successCallback) {
+    USBDevice.prototype.transfer = function (chunk, successCallback){
         throw new Error('Func. should be overridden in descendant objects');
     };
 
-    USBDevice.prototype.getDeviceWatcher = function () {
+    USBDevice.prototype.getDeviceWatcher = function (){
         //throw new Error('Func. should be overridden in descendants objects');
         return undefined;
     };

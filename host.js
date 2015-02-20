@@ -2,9 +2,9 @@
 
 // Convention : _ before a function name indicates that the function should not be used
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
   'use strict';
 
@@ -94,9 +94,9 @@ define(function (require, exports, module) {
     UsbLib = require(usbLibraryPath);
 
     // Host for USB ANT communication
-    function Host(options) {
+    function Host(options){
 
-        if (!options) {
+        if (!options){
           options = {};
         }
 
@@ -108,7 +108,7 @@ define(function (require, exports, module) {
 
         this._channel = {};
 
-        if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
+        if (this.log.logging){  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
 
         usb = new UsbLib({ log : options.log});
 
@@ -132,9 +132,9 @@ define(function (require, exports, module) {
     Host.prototype._onSendMessage = function (error)
     {
 
-         if (error) {
+         if (error){
             this.state = this.STATE.ERROR;
-            if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+            if (this.log.logging){  this.log.log('error', 'TX failed of ' + message.toString(),error); }
             this.responseCallback(error);
          }
 
@@ -142,14 +142,14 @@ define(function (require, exports, module) {
     };
 
     // Send a message to ANT
-    Host.prototype.sendMessage = function (message, callback) {
+    Host.prototype.sendMessage = function (message, callback){
 
-      if (this.state !== this.STATE.RTS) {
+      if (this.state !== this.STATE.RTS){
         callback(new Error('Unable to send message state is '+this.state));
         return;
       }
 
-      if (this.log.logging) { this.log.log('log', 'Sending message '+ message.toString()); }
+      if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
 
       this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
       this.responseCallback = callback;
@@ -209,7 +209,7 @@ define(function (require, exports, module) {
 
     // Spec. p. 21 sec. 5.3 Establishing a channel
     // Assign channel and set channel ID MUST be set before opening
-    Host.prototype.establishChannel = function (channelInfo, callback) {
+    Host.prototype.establishChannel = function (channelInfo, callback){
         var     channelNumber = channelInfo.channelNumber,
         networkNumber = channelInfo.networkNumber,
         configurationName = channelInfo.configurationName,
@@ -236,13 +236,13 @@ define(function (require, exports, module) {
 
         //console.log("Options", parameters);
 
-        if (typeof parameters.channelType === "undefined") {
+        if (typeof parameters.channelType === "undefined"){
             callback(new Error('No channel type specified'));
             return;
         }
 
         if (typeof parameters.channelType === "string")
-            switch (parameters.channelType.toLowerCase()) {
+            switch (parameters.channelType.toLowerCase()){
                 case 'slave':
                     parameters.channelType = Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL;
                     break;
@@ -272,18 +272,18 @@ define(function (require, exports, module) {
                     return;
 
             }
-        else if (typeof Channel.prototype.TYPE[parameters.channelType] === "undefined") {
+        else if (typeof Channel.prototype.TYPE[parameters.channelType] === "undefined"){
             callback(new Error('Unknown channel type specified ' + parameters.channelType));
             return;
         }
 
-        if (!parameters.channelId) {
+        if (!parameters.channelId){
             callback(new Error('No channel ID specified'));
             return;
         }
 
         // Slave - convert declarative syntax to channelId object
-        if (!(parameters.channelId instanceof ChannelId) && !isMasterChannel) { // Allow for channel Id. object literal with '*' as 0x00
+        if (!(parameters.channelId instanceof ChannelId) && !isMasterChannel){ // Allow for channel Id. object literal with '*' as 0x00
 
             if (typeof parameters.channelId.deviceNumber === "undefined" || parameters.channelId.deviceNumber === '*' || typeof parameters.channelId.deviceNumber !== 'number')
                 parameters.channelId.deviceNumber = 0x00;
@@ -298,19 +298,19 @@ define(function (require, exports, module) {
         }
 
         // Master - convert declarative syntax to channelId object
-        if (!(parameters.channelId instanceof ChannelId) && isMasterChannel) {
+        if (!(parameters.channelId instanceof ChannelId) && isMasterChannel){
 
-            if (typeof parameters.channelId.deviceNumber === "undefined") {
+            if (typeof parameters.channelId.deviceNumber === "undefined"){
                 callback(new Error('No device number specified in channel Id'));
                 return;
             }
 
-            if (typeof parameters.channelId.deviceType === "undefined") {
+            if (typeof parameters.channelId.deviceType === "undefined"){
                 callback(new Error('No device type specified in channel Id'));
                 return;
             }
 
-            if (typeof parameters.channelId.transmissionType === "undefined") {
+            if (typeof parameters.channelId.transmissionType === "undefined"){
                 callback(new Error('No transmission type specified in channel Id'));
                 return;
             }
@@ -326,7 +326,7 @@ define(function (require, exports, module) {
         }
 
         if (parameters.extendedAssignment && typeof parameters.extendedAssignment === 'string')
-            switch (parameters.extendedAssignment.toLowerCase()) {
+            switch (parameters.extendedAssignment.toLowerCase()){
                 case 'background scanning':
                     parameters.extendedAssignment = Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE;
                     break;
@@ -367,10 +367,10 @@ define(function (require, exports, module) {
         this._channel[channelNumber].channel = channel; // Associate channel with particular channel number on host
         this._channel[channelNumber].network = networkNumber;
 
-        this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg) {
-            if (!error) {
+        this.getChannelStatus(channelNumber, function _statusCB(error, statusMsg){
+            if (!error){
 
-                if (statusMsg.channelStatus.state !== ChannelStatusMessage.prototype.STATE.UN_ASSIGNED) {
+                if (statusMsg.channelStatus.state !== ChannelStatusMessage.prototype.STATE.UN_ASSIGNED){
                     msg = 'Channel ' + channelNumber + ' on network ' + networkNumber + 'is ' + statusMsg.channelStatus.stateMessage;
                     if (this.log.logging)
                         this.log.log('log', msg);
@@ -380,15 +380,14 @@ define(function (require, exports, module) {
 
                 // MUST have - assign channel + set channel ID
 
-                var assignChannelSetChannelId = function _setNetworkKeyCB() {
-                    this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response) {
+                var assignChannelSetChannelId = function _setNetworkKeyCB(){
+                    this.assignChannel(channelNumber, parameters.channelType, networkNumber, parameters.extendedAssignment, function _assignCB(error, response){
 
-                        if (!error) {
+                        if (!error){
                             if (this.log.logging)
                                 this.log.log('log', response.toString());
-                            //setTimeout(function () {
-                            this.setChannelId(channelNumber, parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType, function (error, response) {
-                                if (!error) {
+                            //setTimeout(function () {                            this.setChannelId(channelNumber, parameters.channelId.deviceNumber, parameters.channelId.deviceType, parameters.channelId.transmissionType, function (error, response){
+                                if (!error){
                                     //this.once("assignChannelSetChannelId");
 
                                     if (this.log.logging)
@@ -406,7 +405,7 @@ define(function (require, exports, module) {
                 }.bind(this);
 
 
-                var setChannelPeriod = function () {
+                var setChannelPeriod = function (){
                     var cPeriod;
                     if (Array.isArray(parameters.channelPeriod)) // i.e [8192, 65535 ]
                       cPeriod = channelPeriod || parameters.channelPeriod[0];
@@ -426,8 +425,8 @@ define(function (require, exports, module) {
                     }
                     else
 
-                        this.setChannelPeriod(channelNumber, cPeriod, function (error, response) {
-                            if (!error) {
+                        this.setChannelPeriod(channelNumber, cPeriod, function (error, response){
+                            if (!error){
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
                                 setChannelSearchTimeout();
@@ -440,10 +439,10 @@ define(function (require, exports, module) {
 
                 // Default 66 = 2466 MHz
 
-                var setChannelRFFreq =  function () {
+                var setChannelRFFreq =  function (){
                     if (parameters.RFfrequency)
-                        this.setChannelRFFreq(channelNumber, parameters.RFfrequency, function (error, response) {
-                            if (!error) {
+                        this.setChannelRFFreq(channelNumber, parameters.RFfrequency, function (error, response){
+                            if (!error){
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
                                 setChannelPeriod();
@@ -460,8 +459,8 @@ define(function (require, exports, module) {
 
                 if (parameters.networkKey)
 
-                    this.setNetworkKey(networkNumber, parameters.networkKey, function _setNetworkKeyCB(error, response) {
-                        if (!error) {
+                    this.setNetworkKey(networkNumber, parameters.networkKey, function _setNetworkKeyCB(error, response){
+                        if (!error){
                             if (this.log.logging)
                                 this.log.log('log', response.toString());
                             assignChannelSetChannelId();
@@ -476,11 +475,11 @@ define(function (require, exports, module) {
 
                 //    this.log.log("Channel "+channelNumber+" type "+ Channel.prototype.TYPE[parameters.channelType]);
 
-                var setChannelSearchTimeout = function () {
+                var setChannelSearchTimeout = function (){
                     // Default HP = 10 -> 25 seconds
                     if (!isMasterChannel && parameters.HPsearchTimeout)
-                        this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response) {
-                            if (!error) {
+                        this.setChannelSearchTimeout(channelNumber, parameters.HPsearchTimeout, function (error, response){
+                            if (!error){
                                 setLowPriorityChannelSearchTimeout();
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
@@ -492,11 +491,11 @@ define(function (require, exports, module) {
                         setLowPriorityChannelSearchTimeout();
                 }.bind(this);
 
-                var setLowPriorityChannelSearchTimeout = function () {
+                var setLowPriorityChannelSearchTimeout = function (){
                     // Default LP = 2 -> 5 seconds
                     if (!isMasterChannel && parameters.LPsearchTimeout)
-                        this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response) {
-                            if (!error) {
+                        this.setLowPriorityChannelSearchTimeout(channelNumber, parameters.LPsearchTimeout, function (error, response){
+                            if (!error){
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
                                 openChannel();
@@ -508,13 +507,13 @@ define(function (require, exports, module) {
                         openChannel();
                 }.bind(this);
 
-                var openChannel = function () {
+                var openChannel = function (){
 
                     // Attach etablished channel info (C#,N#,...)
                     channel.establish = channelInfo;
 
-                    var openResponseHandler = function (error, response) {
-                            if (!error) {
+                    var openResponseHandler = function (error, response){
+                            if (!error){
                                 if (this.log.logging)
                                     this.log.log('log', response.toString());
                                 callback(undefined,channel);
@@ -523,7 +522,7 @@ define(function (require, exports, module) {
                                 callback(error,channel);
                         }.bind(this);
 
-                    if (open) {
+                    if (open){
                         if (!parameters.RxScanMode)
                           this.openChannel(channelNumber, openResponseHandler);
                         else
@@ -546,7 +545,7 @@ define(function (require, exports, module) {
 
     Host.prototype._onUSBinit = function (onInit,error)
     {
-      if (error) {
+      if (error){
           this.state = this.state.ERROR;
           onInit(error);
         }
@@ -564,13 +563,13 @@ define(function (require, exports, module) {
 
     };
 
-    Host.prototype.init = function (iDevice,onInit) {
+    Host.prototype.init = function (iDevice,onInit){
 
           /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
 
             this.libConfig(libConfig.getFlagsByte(),
-                function _libConfig(error, channelResponse) {
-                    if (!error) {
+                function _libConfig(error, channelResponse){
+                    if (!error){
 
                         if (this.log.logging)
                             this.log.log('log', libConfig.toString());
@@ -585,7 +584,7 @@ define(function (require, exports, module) {
     };
 
     // Exit host
-    Host.prototype.exit = function (callback) {
+    Host.prototype.exit = function (callback){
 
        // TO DO? Close open channels? Exit channels/profiles?
 
@@ -609,11 +608,11 @@ define(function (require, exports, module) {
   };
 
   // param data - ArrayBuffer from USB
-  Host.prototype.messageFactory = function (data) {
+  Host.prototype.messageFactory = function (data){
 
   var message;
 
-    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
+    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC){
 
         if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
 
@@ -683,7 +682,7 @@ define(function (require, exports, module) {
           broadcast.decode(message);
 
        // Send broad to specific channel handler
-          if (typeof this._channel[broadcast.channel] !== "undefined") {
+          if (typeof this._channel[broadcast.channel] !== "undefined"){
 
               broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
               var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
@@ -716,9 +715,9 @@ define(function (require, exports, module) {
       //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
       //
           // Check for channel response callback
-         if (typeof this._channel[channelResponseMsg.channel] !== "undefined") {
+         if (typeof this._channel[channelResponseMsg.channel] !== "undefined"){
 
-             if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ) {
+             if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ){
                if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
              }
 
@@ -736,7 +735,7 @@ define(function (require, exports, module) {
 //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
 //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
 //
-//        //    if (ANTmsg.length >= 9) { // 1 byte for channel NR + 8 byte payload - standard message format
+//        //    if (ANTmsg.length >= 9)//{ // 1 byte for channel NR + 8 byte payload - standard message format
 //
 //        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
 //        //        if (ANTmsg.sequenceNr & 0x04) // last packet
@@ -756,7 +755,7 @@ define(function (require, exports, module) {
 //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
 //
 //        //            // Extended msg. only in the first packet
-//        //            if (ANTmsg.length > 9) {
+//        //            if (ANTmsg.length > 9)//{
 //        //                msgFlag = data[12];
 //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
 //        //                this.decode_extended_message(ANTmsg.channel, data);
@@ -848,7 +847,7 @@ define(function (require, exports, module) {
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
      {
-      this.sendMessage(new ResetSystemMessage(), function _wait500ms () { setTimeout(callback,500);});
+      this.sendMessage(new ResetSystemMessage(), function _wait500ms (){ setTimeout(callback,500);});
     };
 
     // Send request for channel ID
@@ -988,7 +987,7 @@ define(function (require, exports, module) {
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
-    Host.prototype.closeChannel = function (channelNumber, callback) {
+    Host.prototype.closeChannel = function (channelNumber, callback){
 
        // Wait for EVENT_CHANNEL_CLOSED ?
        // If channel status is tracking -> can get broadcast data packet before event channel closed packet
@@ -1009,7 +1008,7 @@ define(function (require, exports, module) {
     // p. 96 ANT Message protocol and usave rev. 5.0
     // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
     // 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-//    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback) {
+//    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback)//{
 //        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
 //            self = this,
 //            message = new Message(),
@@ -1025,7 +1024,7 @@ define(function (require, exports, module) {
 //
 //            timestamp: Date.now(),
 //
-//            retryCB : function _resendAckowledgedDataCB() {
+//            retryCB : function _resendAckowledgedDataCB()//{
 //
 //                if (resendMsg.timeoutID)  // If we already have a timeout running, reset
 //                    clearTimeout(resendMsg.timeoutID);
@@ -1033,18 +1032,18 @@ define(function (require, exports, module) {
 //                resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
 //                resendMsg.retry++;
 //
-//                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
+//                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY)//{
 //                    resendMsg.lastRetryTimestamp = Date.now();
 //                    // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF
 //                    self.sendOnly(ack_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-//                        function error(err) {
+//                        function error(err)//{
 //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
 //                            if (typeof errorCallback === "function")
 //                                errorCallback(err);
 //                            else
 //                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
 //                        },
-//                        function success() { self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
+//                        function success()//{ self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
 //                } else {
 //                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
 //                    if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
@@ -1060,7 +1059,7 @@ define(function (require, exports, module) {
 //
 //        //console.log(Date.now() + " SETTING TIMEOUT ");
 //
-//        //resendMsg.timeoutCB = function () {
+//        //resendMsg.timeoutCB = function ()//{
 //        //    //console.log(Date.now() + "TIMEOUT HANDLER FOR EVENT_TRANSFER_TX_COMPLETED/FAILED - NOT IMPLEMENTED");
 //        //    resendMsg.timeoutRetry++;
 //        //    if (resendMsg.timeoutRetry <= Host.prototype.TX_DEFAULT_RETRY)
@@ -1074,7 +1073,7 @@ define(function (require, exports, module) {
 //    };
 
 //    // Send an individual packet as part of a bulk transfer
-//    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback) {
+//    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback)//{
 //
 //        var buf,
 //            burst_msg,
@@ -1095,7 +1094,7 @@ define(function (require, exports, module) {
 //
 //    // p. 98 in spec.
 //    // Sends bulk data
-//    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName) {
+//    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName)//{
 //        var numberOfPackets = Math.ceil(pucData.length / 8),
 //            packetNr,
 //            lastPacket = numberOfPackets - 1,
@@ -1128,21 +1127,21 @@ define(function (require, exports, module) {
 //
 //        this.burstQueue[ucChannel].push(burstMsg);
 //
-//        var error = function (err) {
+//        var error = function (err)//{
 //            self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
 //        };
 //
-//        var success = function () {
+//        var success = function ()//{
 //            //console.log(Date.now()+ " Sent burst packet to ANT engine for transmission");
 //        };
 //
-//        function sendBurst() {
+//        function sendBurst()//{
 //
-//            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY) {
+//            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY)//{
 //                burstMsg.retry++;
 //                burstMsg.lastRetryTimestamp = Date.now();
 //
-//                for (packetNr = 0; packetNr < numberOfPackets; packetNr++) {
+//                for (packetNr = 0; packetNr < numberOfPackets; packetNr++)//{
 //
 //                    sequenceNr = packetNr % 4; // 3-upper bits Rolling from 0-3; 000 001 010 011 000 ....
 //
@@ -1168,7 +1167,7 @@ define(function (require, exports, module) {
 //            }
 //        }
 //
-//        burstMsg.retryCB = function retry() { sendBurst(); };
+//        burstMsg.retryCB = function retry()//{ sendBurst(); };
 //
 //        sendBurst();
 //    };

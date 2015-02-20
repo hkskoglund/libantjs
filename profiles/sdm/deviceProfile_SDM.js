@@ -1,7 +1,7 @@
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
     'use strict';
 
     var DeviceProfile = require('../deviceProfile'),
@@ -13,7 +13,7 @@ define(function (require, exports, module) {
         GenericPage = require('../Page');
 
 
-    function DeviceProfile_SDM(configuration) {
+    function DeviceProfile_SDM(configuration){
 
         DeviceProfile.call(this, configuration);
 
@@ -66,7 +66,7 @@ define(function (require, exports, module) {
 
     DeviceProfile_SDM.prototype.ALTERNATIVE_CHANNEL_PERIOD = 16268;  // 2 Hz
 
-    DeviceProfile_SDM.prototype.broadCast = function (broadcast) {
+    DeviceProfile_SDM.prototype.broadCast = function (broadcast){
         //    var  data = broadcast.data,
         //         dataView = new DataView(data.buffer);
 
@@ -85,14 +85,14 @@ define(function (require, exports, module) {
         this.countBroadcast(sensorId);
 
         // Don't process duplicate broadcast
-        if (this.isDuplicateMessage(broadcast)) {
+        if (this.isDuplicateMessage(broadcast)){
 
 
             return;
 
         }
 
-        switch (pageNumber) {
+        switch (pageNumber){
 
 
             case 1:
@@ -129,7 +129,7 @@ define(function (require, exports, module) {
 
         }
 
-        if (page) {
+        if (page){
 
             page.timestamp = Date.now();
 

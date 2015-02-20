@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -19,7 +19,7 @@ define(function (require,exports,module) {
     CumulativeOperatingTime.prototype = Object.create(CumulativeOperatingTimeShared.prototype);
     CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
 
-    CumulativeOperatingTime.prototype.toString = function () {
+    CumulativeOperatingTime.prototype.toString = function (){
 
           var msg = "P# " + this.number +" Cumulative operating time  " + this.cumulativeOperatingTimeString;
 

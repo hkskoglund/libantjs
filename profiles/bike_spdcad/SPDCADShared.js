@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
     var MainPage = require('../mainPage');
 
-    function SPDCADSharedPage(configuration, broadcast,profile,pageNumber) {
+    function SPDCADSharedPage(configuration, broadcast,profile,pageNumber){
 
         MainPage.call(this, configuration, broadcast,profile,pageNumber);
 
@@ -58,7 +58,7 @@ define(function (require,exports,module) {
 
         var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
-        if (!previousPage) { // Cannot calculate if no previous page is available
+        if (!previousPage){ // Cannot calculate if no previous page is available
             return;
         }
 
@@ -70,7 +70,7 @@ define(function (require,exports,module) {
 
  bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < previousPage.bikeSpeedEventTime);
 
-        if (bikeSpeedEventTimeRollover) {
+        if (bikeSpeedEventTimeRollover){
             bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
         } else {
             bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime;
@@ -80,8 +80,8 @@ define(function (require,exports,module) {
         // The speed equation does not multiply with the wheel circumfence calibration factor (in meters)
         // Higher-lever code, e.g viewmodel should take this into account
 
-        if (bikeSpeedEventTimeDifference) {
-            if (cumulativeSpeedRevolutionCountRollover) {
+        if (bikeSpeedEventTimeDifference){
+            if (cumulativeSpeedRevolutionCountRollover){
                 this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - previousPage.cumulativeSpeedRevolutionCount;
                 this.unCalibratedSpeed = 1024 * (0xFFFF - this.relativeCumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
             }
@@ -98,7 +98,7 @@ define(function (require,exports,module) {
 
         if (this.unCalibratedSpeed > 512)
         {
-            if (this.log && this.log.logging) {
+            if (this.log && this.log.logging){
                 this.log.log('warn', 'Very high uncalibrated speed filtered', this);
             }
             this.unCalibratedSpeed = undefined;
@@ -110,7 +110,7 @@ define(function (require,exports,module) {
 
         var previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
-        if (!previousPage) { // Cannot calculate if no previous page is available
+        if (!previousPage){ // Cannot calculate if no previous page is available
             return;
         }
 
@@ -123,15 +123,15 @@ define(function (require,exports,module) {
 
         bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
 
-        if (bikeCadenceEventTimeRollover) {
+        if (bikeCadenceEventTimeRollover){
             bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
         } else {
             bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
         }
         // CADENCE - RPM
 
-        if (bikeCadenceEventTimeDifference) {
-            if (cumulativeCadenceRevolutionCountRollover) {
+        if (bikeCadenceEventTimeDifference){
+            if (cumulativeCadenceRevolutionCountRollover){
                 this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
             } else {
                 this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
@@ -142,8 +142,8 @@ define(function (require,exports,module) {
         // This issue has been noticed running the SimulANT+ application Version : AYD 1.5.0.0
         // Its only the first few packets that provokes this for unCalibratedSpeed
 
-        if (this.cadence > 512) {
-            if (this.log && this.log.logging) {
+        if (this.cadence > 512){
+            if (this.log && this.log.logging){
                 this.log.log('warn', 'Very high cadence filtered', this);
             }
             this.cadence = undefined;

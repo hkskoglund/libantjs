@@ -1,14 +1,14 @@
 /* global define: true, DataView: true, ArrayBuffer: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
+    function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType){
 
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_ID);
 
@@ -45,7 +45,7 @@ define(function (require, exports, module) {
     };
 
 
-    SetChannelIDMessage.prototype.toString = function () {
+    SetChannelIDMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
     };
 

@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define( function _requireDefineSPDCADPage0(require,exports,module) {
+define( function _requireDefineSPDCADPage0(require,exports,module){
 
     'use strict';
 
     var SPDCADSharedPage = require('../bike_spdcad/SPDCADShared');
 
-    function SPDCADPage0(configuration, broadcast,profile,pageNumber) {
+    function SPDCADPage0(configuration, broadcast,profile,pageNumber){
 
         SPDCADSharedPage.call(this, configuration, broadcast,profile,pageNumber,64000);
 
@@ -32,14 +32,14 @@ define( function _requireDefineSPDCADPage0(require,exports,module) {
         this.readSpeed();
     };
 
-    SPDCADPage0.prototype.update = function () {
+    SPDCADPage0.prototype.update = function (){
 
        this.calcSpeed();
        this.calcCadence();
 
     };
 
-    SPDCADPage0.prototype.toString = function () {
+    SPDCADPage0.prototype.toString = function (){
 
         var calibrationFactor = 2.07, // Just used for a speed estimate
             speed,
@@ -47,13 +47,13 @@ define( function _requireDefineSPDCADPage0(require,exports,module) {
 
         msg = "P# " + this.number + " cadence (rpm) ";
 
-        if (this.cadence !== undefined) {
+        if (this.cadence !== undefined){
             msg += this.cadence;
         }
 
         msg +=  " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;
 
-       if (this.unCalibratedSpeed !== undefined) {
+       if (this.unCalibratedSpeed !== undefined){
            speed = calibrationFactor * this.unCalibratedSpeed;
            msg += ' speed (m/s) ' + speed;
        }

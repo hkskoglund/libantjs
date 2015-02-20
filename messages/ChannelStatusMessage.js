@@ -1,15 +1,15 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message'),
         Channel = require('../channel');
 
-    function ChannelStatusMessage(data) {
+    function ChannelStatusMessage(data){
 
         Message.call(this,data);
 
@@ -26,7 +26,7 @@ define(function (require, exports, module) {
         TRACKING: 0x03
     };
 
-    ChannelStatusMessage.prototype.decode = function (data) {
+    ChannelStatusMessage.prototype.decode = function (data){
         var status = this.content[1];
 
         this.channelNumber = this.content[0];
@@ -40,7 +40,7 @@ define(function (require, exports, module) {
 
         // Tip from http://www.i-programmer.info/programming/javascript/2550-javascript-bit-manipulation.html
 
-        switch (this.channelStatus.state) {
+        switch (this.channelStatus.state){
             case ChannelStatusMessage.prototype.STATE.UN_ASSIGNED : this.channelStatus.stateMessage = "UN-ASSIGNED"; break;
             case ChannelStatusMessage.prototype.STATE.ASSIGNED: this.channelStatus.stateMessage = "ASSIGNED"; break;
             case ChannelStatusMessage.prototype.STATE.SEARCHING: this.channelStatus.stateMessage = "SEARCHING"; break;
@@ -50,7 +50,7 @@ define(function (require, exports, module) {
 
     };
 
-    ChannelStatusMessage.prototype.toString = function () {
+    ChannelStatusMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
             this.channelStatus.stateMessage;
     };

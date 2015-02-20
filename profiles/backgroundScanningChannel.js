@@ -12,7 +12,7 @@ var Network = require('../network.js');
 var util = require('util');
 
 
-function BackgroundScanningChannel(configuration) {
+function BackgroundScanningChannel(configuration){
     DeviceProfile.call(this); 
     this._configuration = configuration;
 }
@@ -23,7 +23,7 @@ function BackgroundScanningChannel(configuration) {
 
 util.inherits(BackgroundScanningChannel, DeviceProfile);
 
-BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (config) {
+BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (config){
     // networkNr, channelNr, deviceNr, deviceType, transmissionType, lowPrioritySearchTimeout
     // Setup channel parameters for background scanning
     //console.log("Low priority search timeout", lowPrioritySearchTimeout);
@@ -37,7 +37,7 @@ BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (con
     //this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
     this.channel.setLowPrioritySearchTimeout(config.searchTimeoutLP);
    
-    if (config.searchTimeoutHP !== 0x00) {
+    if (config.searchTimeoutHP !== 0x00){
         console.log(Date.now(), "High priority search timeout is not disabled = "+config.searchTimeoutHP.toString(16)+" , forced disable = 0x00 for background scanning");
         config.searchTimeoutHP = 0x00;
     }
@@ -56,7 +56,7 @@ BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function (con
     return this.channel;
 };
 
-BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
+BackgroundScanningChannel.prototype.broadCastDataParser = function (data){
     //console.log(Date.now() + " Background scanning channel BROADCAST : ", data, this.channel.channelID);
     //return;
     //channelID:
@@ -70,7 +70,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
         self = this,
         channelID = this.channel.channelID;
 
-    var openChannel = function (channelNr) {
+    var openChannel = function (channelNr){
         // Math.round(25 / 2.5)
         var searchTimeoutLP = 0x00,
             searchTimeoutHP = 0x00; // Device is newly found, seems reasonable with a short timeout
@@ -81,12 +81,12 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
 
         self.ANT.setChannelConfiguration(channelNr, deviceProfile.getSlaveChannelConfiguration(Network.prototype.ANT,
                 channelNr, channelID.deviceNumber, channelID.transmissionType, searchTimeoutHP, searchTimeoutLP));
-        self.ANT.activateChannelConfiguration(channelNr, function error(err) { console.log(Date.now(), "Could not activate channel configuration", err); },
-            function successCB(data) {
-                //self.nodeInstance.ANT.close(0, function error(err) { console.log(Date.now(), "Failed to close background search channel"); },
-                // function successCB() {
-                self.ANT.open(channelNr, function error(err) { console.log(Date.now(), "Could not open channel", self.channel.channelID, err); },
-                        function success(data) {
+        self.ANT.activateChannelConfiguration(channelNr, function error(err){ console.log(Date.now(), "Could not activate channel configuration", err); },
+            function successCB(data){
+                //self.nodeInstance.ANT.close(0, function error(err){ console.log(Date.now(), "Failed to close background search channel"); },
+                // function successCB(){
+                self.ANT.open(channelNr, function error(err){ console.log(Date.now(), "Could not open channel", self.channel.channelID, err); },
+                        function success(data){
                             //console.log(Date.now(), "Channel open for profile " + deviceProfile.NAME);
                         }
                         , true);
@@ -94,7 +94,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
             });
     }
 
-    var configuredChannel = function (channelNr, deviceType) {
+    var configuredChannel = function (channelNr, deviceType){
         // Only open 1 channel to a specific device type - first come, first served
         //console.log(self.nodeInstance.ANT.channelConfiguration[channelNr]);
         return (typeof self.ANT.channelConfiguration !== "undefined" &&
@@ -102,7 +102,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
             self.ANT.channelConfiguration[channelNr].channelID.deviceType === deviceType);
     }
 
-    switch (channelID.deviceTypeID) {
+    switch (channelID.deviceTypeID){
 
         case DeviceProfile_HRM.prototype.DEVICE_TYPE:
 
@@ -118,7 +118,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
             else {
                 deviceProfile = new DeviceProfile_HRM(this.getConfiguration());
                 openChannel(1);
-                //setTimeout(function () {
+                //setTimeout(function (){
                 //    console.log(Date.now(), "Calling broadcast data paser for testing of registering of a new HRM device");
                 //    self.broadCastDataParser(data);
                 //}, 1000);
@@ -157,7 +157,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function (data) {
 
 };
 
-BackgroundScanningChannel.prototype.channelResponseEvent = function (data) {
+BackgroundScanningChannel.prototype.channelResponseEvent = function (data){
     //console.log(Date.now() + " Background scanning channel RESPONSE/EVENT : ", data);
 };
 

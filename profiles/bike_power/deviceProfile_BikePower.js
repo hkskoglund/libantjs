@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
   'use strict';
 
   var
@@ -13,7 +13,7 @@ define(function (require,exports,module) {
   CalibrationMainPage = require('../bike_power/calibrationMain');
 
 
-    function DeviceProfile_BikePower(configuration) {
+    function DeviceProfile_BikePower(configuration){
 
         DeviceProfile.call(this, configuration);
 
@@ -57,7 +57,7 @@ define(function (require,exports,module) {
          var page,
              pageNumber = this.getPageNumber(broadcast);
 
-          switch (pageNumber) {
+          switch (pageNumber){
 
 
              case 0x01 :
@@ -93,7 +93,7 @@ define(function (require,exports,module) {
 
             default:
 
-                  if (this.log && this.log.logging) {
+                  if (this.log && this.log.logging){
                      this.log.log('error','Unable to handle page number',pageNumber,pageNumber.toString(16),broadcast,this);
                   }
 

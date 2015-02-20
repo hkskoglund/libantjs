@@ -1,14 +1,14 @@
 /* global define: true, Uint8Array */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function SetNetworkKeyMessage(channel, key) {
+    function SetNetworkKeyMessage(channel, key){
 
         Message.call(this,undefined,Message.prototype.MESSAGE.SET_NETWORK_KEY);
         this.encode(channel,key);
@@ -19,7 +19,7 @@ define(function (require, exports, module) {
 
     SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
 
-    SetNetworkKeyMessage.prototype.encode = function (channel, key) {
+    SetNetworkKeyMessage.prototype.encode = function (channel, key){
       var msgBuffer = new Uint8Array(9);
 
       msgBuffer[0] = channel;
@@ -32,7 +32,7 @@ define(function (require, exports, module) {
 
     };
 
-    SetNetworkKeyMessage.prototype.toString = function () {
+    SetNetworkKeyMessage.prototype.toString = function (){
         return Message.prototype.toString() + " C# " + this.channel + " key " + this.key;
     };
 

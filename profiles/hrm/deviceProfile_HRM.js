@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -14,7 +14,7 @@ var
 
     HRMPage = require('./HRMPage');
     
-    function DeviceProfile_HRM(configuration) {
+    function DeviceProfile_HRM(configuration){
 
         DeviceProfile.call(this, configuration);
 
@@ -79,7 +79,7 @@ var
          var page,
              pageNumber = this.getPageNumber(broadcast);
 
-          switch (pageNumber) {
+          switch (pageNumber){
 
             // MAIN
 
@@ -125,7 +125,7 @@ var
 
          // Byte 0 - Page number
 
-       if (this.isPageToggle(broadcast)) {
+       if (this.isPageToggle(broadcast)){
 
         pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
 
@@ -137,11 +137,11 @@ var
         return pageNumber;
     };
 
-    DeviceProfile_HRM.prototype.addPage = function (page) {
+    DeviceProfile_HRM.prototype.addPage = function (page){
 
       DeviceProfile.prototype.addPage.call(this,page);
 
-      if (page.RRInterval) {
+      if (page.RRInterval){
         this.aggregatedRR.push(page.RRInterval);
       }
     };

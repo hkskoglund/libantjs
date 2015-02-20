@@ -1,8 +1,8 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -49,7 +49,7 @@ define(function (require,exports,module) {
 
     };
 
-    ManufacturerId.prototype.toString = function () {
+    ManufacturerId.prototype.toString = function (){
       var  msg = " P# " + this.number +" Manufacturer " + this.manufacturerString+' '+ this.manufacturerID + " serial num. : " + this.serialNumber;
 
      return msg;

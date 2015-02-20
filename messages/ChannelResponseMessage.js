@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('./Message');
 
-    function ChannelResponseMessage(data) {
+    function ChannelResponseMessage(data){
 
         Message.call(this,data);
     }
@@ -124,32 +124,32 @@ define(function (require, exports, module) {
         0x39:  "ENCRYPT_NEGOTIATION_FAIL" ,
     };
 
-    ChannelResponseMessage.prototype.getResponseOrEventMessage = function (messageId) {
+    ChannelResponseMessage.prototype.getResponseOrEventMessage = function (messageId){
         if (typeof messageId === "undefined")
             return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[this.content[2]];
         else
             return ChannelResponseMessage.prototype.RESPONSE_EVENT_CODES[messageId];
     };
 
-    ChannelResponseMessage.prototype.getChannel = function () {
+    ChannelResponseMessage.prototype.getChannel = function (){
         return this.content[0];
     };
 
     // Gets the initiating request message id
-    ChannelResponseMessage.prototype.getRequestMessageId = function () {
+    ChannelResponseMessage.prototype.getRequestMessageId = function (){
         return this.content[1];
     };
 
-    ChannelResponseMessage.prototype.getMessageCode = function () {
+    ChannelResponseMessage.prototype.getMessageCode = function (){
         return this.content[2];
     };
 
-    ChannelResponseMessage.prototype.isRFEvent = function () {
+    ChannelResponseMessage.prototype.isRFEvent = function (){
         return (this.content[1] === 1);
     };
 
 
-    ChannelResponseMessage.prototype.decode = function (data) {
+    ChannelResponseMessage.prototype.decode = function (data){
         var msg;
 
         if (data)
@@ -170,7 +170,7 @@ define(function (require, exports, module) {
 
     };
 
-    ChannelResponseMessage.prototype.toString = function () {
+    ChannelResponseMessage.prototype.toString = function (){
         return Message.prototype.toString.call(this)+  " "+this.message;
     };
 

@@ -1,16 +1,16 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
     // Function names based on Dynastram Android SDK v 4.00 documentation
 
-    function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
+    function ChannelId(deviceNumber, deviceType, transmissionType, pair){
 
         // Allow for new ChannelId(), when parsing broadcast data
-        if (arguments.length === 0) {
+        if (arguments.length === 0){
             return;
         }
 
@@ -32,10 +32,10 @@ define(function (require, exports, module) {
 
     }
 
-    ChannelId.prototype._check20BitDeviceNumber = function () {
+    ChannelId.prototype._check20BitDeviceNumber = function (){
             var transferTypeMSN;
 
-                           if (this.has20BitDeviceNumber()) {
+                           if (this.has20BitDeviceNumber()){
                              transferTypeMSN  = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
                                 this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
                             }
@@ -51,24 +51,24 @@ define(function (require, exports, module) {
 
     };
 
-    ChannelId.prototype.getDeviceNumber = function () {
+    ChannelId.prototype.getDeviceNumber = function (){
         return this.deviceNumber;
     };
 
-    ChannelId.prototype.getDeviceType = function () {
+    ChannelId.prototype.getDeviceType = function (){
         return this.deviceType;
     };
 
-    ChannelId.prototype.getTransmissionType = function () {
+    ChannelId.prototype.getTransmissionType = function (){
         return this.transmissionType;
     };
 
-    ChannelId.prototype.getPair = function () {
+    ChannelId.prototype.getPair = function (){
         return this.pair;
     };
 
     // Parse channel ID if enabled via LIBConfig
-    ChannelId.prototype.decode = function (extendedData) {
+    ChannelId.prototype.decode = function (extendedData){
 
         //var extendedDataUint8 = new Uint8Array(extendedData);
         // | DN # af 41 | DT # 78 |T# 01
@@ -119,7 +119,7 @@ define(function (require, exports, module) {
 
 
     // Get the 2 least significatiant bit (LSB) of transmission type that determines whether the channel is independent or using 1/2-byte shared address
-    ChannelId.prototype.getSharedAddressType = function () {
+    ChannelId.prototype.getSharedAddressType = function (){
         return this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS;
     };
 
@@ -129,7 +129,7 @@ define(function (require, exports, module) {
         ADDRESS_2BYTE: 0x03
     };
 
-    ChannelId.prototype.has20BitDeviceNumber = function () {
+    ChannelId.prototype.has20BitDeviceNumber = function (){
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
     };
 
@@ -138,17 +138,17 @@ define(function (require, exports, module) {
         // "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"
         // Optional bit for non-ANT+ managed networks: table 5-2
 
-    ChannelId.prototype.hasGlobalDataPages = function () {
+    ChannelId.prototype.hasGlobalDataPages = function (){
         return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
     };
 
-    ChannelId.prototype.toString = function () {
+    ChannelId.prototype.toString = function (){
 
-         var formatTransmissionType = function() {
+         var formatTransmissionType = function(){
             var msg = "";
 
             // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
-            switch (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS) {
+            switch (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS){
                // case 0x00: msg += "Reserved"; break;
                 case 0x01: msg += "Independent"; break; // Only one master and one slave participating
                 case 0x02: msg += "Shared 1 byte address (if supported)"; break;
@@ -157,13 +157,13 @@ define(function (require, exports, module) {
             }
 
             // Bit 2
-            if (this.hasGlobalDataPages()) {
+            if (this.hasGlobalDataPages()){
                // case 0: msg += " | ANT+ Global data pages not used"; break;
                  msg += " | Global datapages";
                // default: msg += " | ?"; break;
             }
 
-            if (this.has20BitDeviceNumber()) {
+            if (this.has20BitDeviceNumber()){
                 msg += " | 20-bit D# = 0x"+this.deviceNumber20BIT.toString(16);
             }
 

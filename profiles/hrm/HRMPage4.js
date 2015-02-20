@@ -1,14 +1,14 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
     var HRMPage = require('./HRMPage');
 
-    function HRMPage4(configuration, broadcast, profile,pageNumber) {
+    function HRMPage4(configuration, broadcast, profile,pageNumber){
 
        HRMPage.call(this,configuration, broadcast, profile,pageNumber);
 

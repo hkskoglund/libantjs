@@ -1,8 +1,8 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require,exports,module) {
+define(function (require,exports,module){
 
     'use strict';
 
@@ -136,7 +136,7 @@ define(function (require,exports,module) {
 
         var value24High = (value24HighMSB << 4) | hour24HighLSN;
 
-        if (value24High !== 0x800) {
+        if (value24High !== 0x800){
              if (signHour24HighMSB === -1)
               value24High = (-value24High) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
 

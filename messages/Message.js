@@ -1,9 +1,9 @@
 /* global define: true, ArrayBuffer: true, Uint8Array: true */
 
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function (require, exports, module) {
+define(function (require, exports, module){
 
     'use strict';
 
@@ -17,7 +17,7 @@ define(function (require, exports, module) {
         RSSI = require('./RSSI'),
         RXTimestamp = require('./RXTimestamp');
 
-    function Message(data,id) {
+    function Message(data,id){
 
         this.timestamp = Date.now();
 
@@ -27,7 +27,7 @@ define(function (require, exports, module) {
         this.RXTimestamp = undefined;
         this.RSSI = undefined;
 
-        if (data) {
+        if (data){
             Message.prototype.decode.call(this,data);
             this.decode(data);
           }
@@ -73,14 +73,14 @@ define(function (require, exports, module) {
         // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
         if ((this.id === Message.prototype.MESSAGE.BROADCAST_DATA ||
              this.id === Message.prototype.MESSAGE.BURST_TRANSFER_DATA) &&
-             this.content.length > 9) {
+             this.content.length > 9){
 
             this.flagsByte = this.content[9];
             //this.extendedData = new Uint8Array(this.content.buffer.slice(10));
             this.extendedData = this.content.subarray(10); // Subarray creates a view to underlying arraybuffer
             // Check for channel ID
             // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
-            if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) {
+            if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED){
                 if (!this.channelId)
                     this.channelId = new ChannelId();
                 //this.channelId.decode(this.extendedData.buffer.slice(0, 4));
@@ -89,31 +89,31 @@ define(function (require, exports, module) {
                 // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
                 //            sharedAddress = this.channelId.getSharedAddressType();
                 //
-                //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) {
+                //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE)//{
                 //                this.sharedAddress = this.content[0]; // 1 byte is the shared address 0 = broadcast to all slaves
                 //                this.data = this.content.subarray(2, 9);
                 //
-                //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) {
+                //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE)//{
                 //                this.sharedAddress = (new DataView(this.content,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
                 //                this.data = this.content.subarray(3, 9);
                 //            }
             }
 
-            if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED) {
+            if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED){
                 if (!this.RXTimestamp)
                     this.RXTimestamp = new RXTimestamp();
                 // this.RXTimestamp.decode(this.extendedData.buffer.slice(-2));
                 this.RXTimestamp.decode(this.extendedData.subarray(-2));
             }
 
-            if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)){
                 //this.RSSI.decode(this.extendedData.buffer.slice(0, 2));
                 if (!this.RSSI)
                     this.RSSI = new RSSI();
                 this.RSSI.decode(this.extendedData.subarray(0, 2));
             }
 
-            if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)) {
+            if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)){
                 //this.RSSI.decode(this.extendedData.buffer.slice(4, 7));
                 if (!this.RSSI)
                     this.RSSI = new RSSI();
@@ -122,11 +122,11 @@ define(function (require, exports, module) {
         }
     };
 
-    Message.prototype.isSYNCOK = function () {
+    Message.prototype.isSYNCOK = function (){
         return (this.SYNC === Message.prototype.SYNC);
     };
 
-    Message.prototype.toString = function (log) {
+    Message.prototype.toString = function (log){
 
       var msg = Message.prototype.MESSAGE[this.id];
 
@@ -152,11 +152,11 @@ define(function (require, exports, module) {
 
       };
 
-    Message.prototype.getContent = function () {
+    Message.prototype.getContent = function (){
         return this.content;
     };
 
-    Message.prototype.setContent = function (content) {
+    Message.prototype.setContent = function (content){
         this.content = content;
     };
     /*
@@ -168,7 +168,7 @@ define(function (require, exports, module) {
      CRC = XOR of all bytes in message
      Sending of LSB first = little endian NB!
     */
-    Message.prototype.getRawMessage = function () {
+    Message.prototype.getRawMessage = function (){
         var
     //     headerBuffer = new Buffer(3),
     //     messageBuffer,
@@ -233,7 +233,7 @@ define(function (require, exports, module) {
 
         //var checksum = messageBuffer.readUInt8(0);
         ////console.log("Start checksum", checksum);
-        //for (byteNr = 1; byteNr < messageBuffer.length; byteNr++) {
+        //for (byteNr = 1; byteNr < messageBuffer.length; byteNr++)//{
         //    checksum = checksum ^ messageBuffer.readUInt8(byteNr);
         //    //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
         //}
@@ -254,7 +254,7 @@ define(function (require, exports, module) {
 
         // Add trailing zeroes - seems to work ok without trailing zeros, but recommended, will delay ANT chip setting RTS for 50 microsec. after message is received
 
-    //    if (content_len < 8) {
+    //    if (content_len < 8)//{
     //        trailingZeroBuffer = this.getPadZeroBuffer(8 - content_len - 1);
     //        //trailingZeroBuffer = new Buffer(8 - content_len - 1); // CRC included in payload
     //        //for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
@@ -277,7 +277,7 @@ define(function (require, exports, module) {
     };
 
     // CheckSUM = XOR of all bytes in message
-    Message.prototype.getCRC = function (messageBuffer) {
+    Message.prototype.getCRC = function (messageBuffer){
         //console.log("GET CRC",messageBuffer);
         var checksum = messageBuffer[0], // Should be SYNC 0xA4
             len = messageBuffer[1] + Message.prototype.HEADER_LENGTH, // Should be messageBuffer.length - 1
@@ -285,7 +285,7 @@ define(function (require, exports, module) {
         // console.trace();
        // console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len,"messageBuffer.length",messageBuffer.length);
 
-        for (byteNr = 1; byteNr < len; byteNr++) {
+        for (byteNr = 1; byteNr < len; byteNr++){
             checksum = checksum ^ messageBuffer[byteNr];
          //   console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer[byteNr]);
         }

@@ -1,14 +1,14 @@
 /* global define: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
+if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
-define(function _requireDefineBikePage0(require,exports,module) {
+define(function _requireDefineBikePage0(require,exports,module){
 
     'use strict';
 
     var SPDCADSharedPage = require('../bike_spdcad/SPDCADShared');
 
-    function BikePage0(configuration, broadcast, profile,pageNumber) {
+    function BikePage0(configuration, broadcast, profile,pageNumber){
 
         SPDCADSharedPage.call(this,configuration, broadcast, profile,pageNumber);
 
@@ -35,13 +35,13 @@ define(function _requireDefineBikePage0(require,exports,module) {
           this.calcCadence();
     };
 
-    BikePage0.prototype.toString = function () {
+    BikePage0.prototype.toString = function (){
 
        var  msg;
 
         msg = "P# " + this.number + " cadence (rpm) ";
 
-        if (this.cadence !== undefined) {
+        if (this.cadence !== undefined){
             msg += this.cadence;
         }
 
