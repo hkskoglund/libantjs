@@ -44,7 +44,7 @@ define(function (require,exports,module){
 //    {
 //        var param = this.parameters[name];
 //
-//        if (!param){
+//        if (!param)//{
 //            this.log.log('error','No parameters for channel found for configuration '+name);
 //            return;
 //        }
@@ -150,10 +150,11 @@ define(function (require,exports,module){
     };
     //
     //
-    ////Channel.prototype.setChannelNumer = function (channel){
+    ////Channel.prototype.setChannelNumer = function (channel)//{
     ////    this.channelNumber = channel;
     ////}
     //
+    
     Channel.prototype.EXTENDED_ASSIGNMENT = {
         0x01: "Background Scanning",
         0x04: "Frequency Agility",
@@ -231,7 +232,6 @@ define(function (require,exports,module){
     };
 
     module.export = Channel;
-
     return module.export;
 
 });
