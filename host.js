@@ -73,9 +73,7 @@ define(function (require, exports, module) {
 
     UsbLib,
     usb,
-    usbLibraryPath,
-
-    _Message = new Message(); // For CRC verification
+    usbLibraryPath;
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -613,10 +611,7 @@ define(function (require, exports, module) {
   // param data - ArrayBuffer from USB
   Host.prototype.messageFactory = function (data) {
 
-  var message,
-      iCRC,
-      receivedCRC,
-      CRC;
+  var message;
 
     if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
 
@@ -632,18 +627,7 @@ define(function (require, exports, module) {
 
     // Verify CRC
 
-    iCRC = message[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH;
-    receivedCRC = message[iCRC];
-
-    if (typeof receivedCRC === 'undefined')
-    {
-        if (this.log.logging) this.log.log('Unable to get CRC of ANT message', message);
-        return;
-    }
-
-    CRC = _Message.getCRC(message);
-
-    if (receivedCRC !== CRC)
+    if (message[message[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH] !== Message.prototype.getCRC(message))
     {
         if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
         return;

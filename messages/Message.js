@@ -299,7 +299,7 @@ define(function (require, exports, module) {
     // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
     Message.prototype.MESSAGE = {
 
-        // Control messages
+            // Control messages
 
             0x4A: "Reset system",
             RESET_SYSTEM:  0x4A,
@@ -314,16 +314,17 @@ define(function (require, exports, module) {
             OPEN_RX_SCAN_MODE : 0x5B,
 
             0xc5: "Sleep message",
-            sleep_message: { id: 0xc5, friendly: "Sleep message" },
+            SLEEP_MESSAGE : 0xc5,
 
-        // Notification messages
+            // Notification messages
+
             0x6F: "Notification: Start up",
             NOTIFICATION_STARTUP: 0x6F,
 
             0xAE: "Notification: Serial error",
             NOTIFICATION_SERIAL_ERROR: 0xAE,
 
-        // Requested messages with REQUEST 0x4D
+            // Requested messages with REQUEST 0x4D
 
             0x3E : "ANT Version",
             ANT_VERSION:  0x3E,
@@ -345,8 +346,7 @@ define(function (require, exports, module) {
             0x52: "Channel Status",
             CHANNEL_STATUS: 0x52,
 
-        // Config messages
-        // All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
+            // Config messages. All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
 
             0x41: "UnAssign Channel",
             UNASSIGN_CHANNEL: 0x41,
@@ -386,18 +386,18 @@ define(function (require, exports, module) {
             //set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
 
             0x75: "Channel Search Priority",
-            set_channel_search_priority: { id: 0x75, friendly: "Set channel search priority" },
+            SET_CHANNEL_SEARCH_PRIORITY:  0x75,
 
             0x6E: "Lib Config",
             LIBCONFIG:  0x6E,
 
             0x66: "Enable Extended Messages",
-            RXEXTMESGSENABLE: { id: 0x66, friendly: "Enable Extended Messages" },
+            RXEXTMESGSENABLE: 0x66,
 
             0x71: "Set Proximity Search",
             SET_PROXIMITY_SEARCH : 0x71,
 
-        // Data message
+            // Data messages
 
             0x4E: "Broadcast Data",
             BROADCAST_DATA:  0x4e,
