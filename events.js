@@ -27,7 +27,7 @@ define(function _requireDefineEventEmitter(require,exports,module){
 
     EventEmitter.prototype.addListener = function (type, listener){
 
-        checkListener(listener);
+        isFunction(listener);
 
         if (!this._events[type])
             this._events[type] = [];
@@ -42,7 +42,7 @@ define(function _requireDefineEventEmitter(require,exports,module){
         var listeners,
             index;
 
-        checkListener(listener);
+        isFunction(listener);
 
         listeners = this._events[type];
 
@@ -95,7 +95,28 @@ define(function _requireDefineEventEmitter(require,exports,module){
 
     };
 
-    function checkListener(listener){
+    EventEmitter.prototype.once = function (type, listener)
+    {
+
+        var fired = false,
+
+           runOnce = function _runOnce()
+                      {
+                        this.removeListener(type, g);
+
+                        if (!fired)
+                        {
+                          fired = true;
+                          listener.apply(this, arguments);
+                        }
+                      }.bind(this);
+
+        this.on(type, runOnce);
+
+        return this;
+    };
+
+    function isFunction(listener){
 
         if (typeof listener !== 'function')
             throw new TypeError('The provided listener is not a function');

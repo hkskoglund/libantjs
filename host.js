@@ -10,6 +10,8 @@ define(function (require, exports, module){
 
    var
 
+    EventEmitter = require('./events'),
+
     // Data
 
     BroadcastDataMessage = require('./messages/BroadcastDataMessage'),
@@ -113,13 +115,13 @@ define(function (require, exports, module){
         usb = new UsbLib({ log : options.log});
 
         this.state = this.STATE.INIT;
-        this.responseCallback  = undefined; // Function to call when receiving a response from ANT chip
+
     }
 
-    //Host.prototype = Object.create(events.EventEmitter.prototype, { constructor : { value : Host,
-    //                                                                        enumerable : false,
-    //                                                                        writeable : true,
-    //                                                                        configurable : true } });
+    Host.prototype = Object.create(EventEmitter.prototype, { constructor : { value : Host,
+                                                                            enumerable : false,
+                                                                            writeable : true,
+                                                                            configurable : true } });
 
     //Use state-machine for keeping track of messaging state
     Host.prototype.STATE = {
@@ -129,32 +131,45 @@ define(function (require, exports, module){
       ERROR : 0x03 // Something went wrong
     };
 
-    Host.prototype._onSendMessage = function (error)
-    {
+    // Send a control/channel configuration message to ANT
+    Host.prototype.sendMessage = function (message, callback)    {
+      var onMessageReceived = function _onMessageReceived(error,message)
+                              {
+                                if (error)
+                                  this.state = this.STATE.ERROR;
+                                else
+                                  this.state = this.STATE.RTS;
 
-         if (error){
-            this.state = this.STATE.ERROR;
-            if (this.log.logging){  this.log.log('error', 'TX failed of ' + message.toString(),error); }
-            this.responseCallback(error);
-         }
+                                if (this.log.logging)  this.log.log('log', message.toString());
 
-         // on success, responseCallback is called during  parsing of response in messageFactory
-    };
+                                callback(error,message);
 
-    // Send a message to ANT
-    Host.prototype.sendMessage = function (message, callback){
+                              }.bind(this),
 
-      if (this.state !== this.STATE.RTS){
-        callback(new Error('Unable to send message state is '+this.state));
+        onSentMessage = function _onSentMessage(error)
+                        {
+                          if (error)
+                          {
+                             this.state = this.STATE.ERROR;
+                             if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
+                             callback(error);
+                          }
+
+                          // on success -> onMessageReceived should be called when 'RECEIVED_MESSAGE' is emitted in the messageFactory
+
+                        }.bind(this);
+
+      if (this.state !== this.STATE.RTS)      {
+        callback(new Error('Unable to send message right now state is '+this.state));
         return;
       }
 
-      if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
-
+      if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
       this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
-      this.responseCallback = callback;
 
-      usb.transfer(message.getRawMessage(),this._onSendMessage.bind(this));
+      this.once(this.EVENT.RECEIVED_MESSAGE,onMessageReceived);
+
+      usb.transfer(message.getRawMessage(),onSentMessage);
 
     };
 
@@ -164,15 +179,15 @@ define(function (require, exports, module){
     //    LOG_MESSAGE: 'logMessage',
     //    ERROR : 'error',
 
-        //SET_CHANNEL_ID: 'setChannelId',
-
         // Data
         BROADCAST: 'broadcast',
         BURST: 'burst',
 
         //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
-        PAGE : 'page' // Page from ANT+ sensor / device profile
+        PAGE : 'page', // Page from ANT+ sensor / device profile
+
+        RECEIVED_MESSAGE : 'received_message'
 
     };
 
@@ -592,20 +607,6 @@ define(function (require, exports, module){
 
     };
 
-  // Sets appropiate state based on error after a message is created in the message factory
-  Host.prototype._runResponseCallback = function (error,message)
-  {
-      if (error)
-        this.state = this.STATE.ERROR;
-      else
-        this.state = this.STATE.RTS;
-
-      if (this.log.logging)
-            this.log.log('log', message.toString());
-
-      this.responseCallback(error,message);
-
-  };
 
   // param data - ArrayBuffer from USB
   Host.prototype.messageFactory = function (data){
@@ -641,13 +642,13 @@ define(function (require, exports, module){
 
       case Message.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
-          this._runResponseCallback(undefined,new NotificationStartup(message));
+          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new NotificationStartup(message));
 
           break;
 
       case Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-          this._runResponseCallback(new Error('Notification: Serial error'),new NotificationSerialError(message));
+          this.emit(this.EVENT.RECEIVED_MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
 
           break;
 
@@ -655,19 +656,19 @@ define(function (require, exports, module){
 
       case Message.prototype.MESSAGE.CAPABILITIES:
 
-          this._runResponseCallback(undefined,new CapabilitiesMessage(message));
+          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new CapabilitiesMessage(message));
 
           break;
 
       case Message.prototype.MESSAGE.ANT_VERSION:
 
-          this._runResponseCallback(undefined,new VersionMessage(message));
+          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new VersionMessage(message));
 
           break;
 
       case Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
 
-          this._runResponseCallback(undefined,new DeviceSerialNumberMessage(message));
+          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new DeviceSerialNumberMessage(message));
 
           break;
 
@@ -847,8 +848,7 @@ define(function (require, exports, module){
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
      {
-      this.sendMessage(new ResetSystemMessage(), function _wait500ms (){ setTimeout(callback,500);});
-    };
+      this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset () { setTimeout(callback,500);});    };
 
     // Send request for channel ID
     Host.prototype.getChannelId = function (channel, callback)
