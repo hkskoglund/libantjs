@@ -114,8 +114,6 @@ define(function (require, exports, module){
 
         usb = new UsbLib({ log : options.log});
 
-        this.state = this.STATE.INIT;
-
     }
 
     Host.prototype = Object.create(EventEmitter.prototype, { constructor : { value : Host,
@@ -123,22 +121,18 @@ define(function (require, exports, module){
                                                                             writeable : true,
                                                                             configurable : true } });
 
-    //Use state-machine for keeping track of messaging state
+    /* Use state-machine for keeping track of messaging state
     Host.prototype.STATE = {
       INIT : 0x00,
       RTS : 0x01, // Ready to send next message to ANT
       WAIT : 0x02, // Waiting for response from ANT
       ERROR : 0x03 // Something went wrong
-    };
+    }; */
 
     // Send a control/channel configuration message to ANT
     Host.prototype.sendMessage = function (message, callback)    {
       var onMessageReceived = function _onMessageReceived(error,message)
                               {
-                                if (error)
-                                  this.state = this.STATE.ERROR;
-                                else
-                                  this.state = this.STATE.RTS;
 
                                 if (this.log.logging)  this.log.log('log', message.toString());
 
@@ -150,7 +144,6 @@ define(function (require, exports, module){
                         {
                           if (error)
                           {
-                             this.state = this.STATE.ERROR;
                              if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
                              callback(error);
                           }
@@ -159,14 +152,14 @@ define(function (require, exports, module){
 
                         }.bind(this);
 
-      if (this.state !== this.STATE.RTS)      {
-        callback(new Error('Unable to send message right now state is '+this.state));
+
+     if (this.listeners(this.EVENT.RECEIVED_MESSAGE).length)
+      {
+        callback(new Error('Still awating response to control/configuration message'));
         return;
       }
 
       if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
-      this.state = this.state.WAIT; // Don't allow more messages while we wait for the response
-
       this.once(this.EVENT.RECEIVED_MESSAGE,onMessageReceived);
 
       usb.transfer(message.getRawMessage(),onSentMessage);
@@ -560,8 +553,7 @@ define(function (require, exports, module){
 
     Host.prototype._onUSBinit = function (onInit,error)
     {
-      if (error){
-          this.state = this.state.ERROR;
+      if (error)      {
           onInit(error);
         }
         else {
@@ -569,8 +561,6 @@ define(function (require, exports, module){
             usb.addListener(USBDevice.prototype.EVENT.DATA, this.messageFactory.bind(this));
 
             usb.listen();
-
-            this.state = this.STATE.RTS;
 
             this.resetSystem(onInit);
 

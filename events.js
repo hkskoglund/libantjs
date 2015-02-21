@@ -116,6 +116,18 @@ define(function _requireDefineEventEmitter(require,exports,module){
         return this;
     };
 
+    EventEmitter.prototype.listeners = function listeners(type)
+    {
+      var ret;
+      if (!this._events || !this._events[type])
+        ret = [];
+      else if (typeof this._events[type] === 'function')
+        ret = [this._events[type]];
+      else
+        ret = this._events[type].slice();
+      return ret;
+   };
+
     function isFunction(listener){
 
         if (typeof listener !== 'function')
