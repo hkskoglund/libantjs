@@ -433,7 +433,7 @@ define(function (require, exports, module){
     USBNode.prototype.listen = function ()
        {
 
-          var endpointPacketSize = 512;
+          var endpointPacketSize = 8*this.inEndpoint.descriptor.wMaxPacketSize;
 
         //this.setInEndpointTimeout(1000);
 
