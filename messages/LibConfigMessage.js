@@ -32,7 +32,7 @@ define(function (require, exports, module){
 
 
     LibConfigMessage.prototype.toString = function (){
-        return Message.prototype.toString() + " lib config " + this.libConfig;
+        return Message.prototype.toString.call(this) + " lib config " + this.libConfig;
     };
 
     module.exports = LibConfigMessage;

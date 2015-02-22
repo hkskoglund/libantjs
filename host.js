@@ -39,7 +39,6 @@ define(function (require, exports, module){
         CapabilitiesMessage = require('./messages/CapabilitiesMessage'),
         VersionMessage = require('./messages/VersionMessage'),
         DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage'),
-        EventBufferConfigurationMessage = require('./messages/EventBufferConfigurationMessage'),
 
     // Configuration
 
@@ -665,9 +664,9 @@ define(function (require, exports, module){
 
           break;
 
-      case Message.prototype.MESSAGE.EVENT_BUFFER_CONFIG:
+      case Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION:
 
-        this.emit(this.EVENT.MESSAGE,undefined,new EventBufferConfigMessage(message));
+        this.emit(this.EVENT.MESSAGE,undefined,new ConfigureEventBufferMessage(message));
 
         break;
 

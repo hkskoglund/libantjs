@@ -51,7 +51,7 @@ define(function (require, exports, module){
     };
 
     ChannelStatusMessage.prototype.toString = function (){
-        return Message.prototype.toString() + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
+        return Message.prototype.toString.call(this) + " C# " + this.channelNumber + " N# " + this.channelStatus.networkNumber + " " + Channel.prototype.TYPE[this.channelStatus.channelType] + " " +
             this.channelStatus.stateMessage;
     };
 

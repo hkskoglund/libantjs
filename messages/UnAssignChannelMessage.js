@@ -30,7 +30,7 @@ define(function (require, exports, module){
     };
 
     UnAssignChannelMessage.prototype.toString = function (){
-        return Message.prototype.toString() + " C# " + this.channel;
+        return Message.prototype.toString.call(this) + " C# " + this.channel;
     };
 
     module.exports = UnAssignChannelMessage;

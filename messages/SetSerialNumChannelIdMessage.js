@@ -39,7 +39,7 @@ define(function (require, exports, module){
     };
 
     SetSerialNumChannelIdMessage.prototype.toString = function (){
-        return Message.prototype.toString() + " C# " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
+        return Message.prototype.toString.call(this) + " C# " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
     };
 
     module.exports = SetSerialNumChannelIdMessage;

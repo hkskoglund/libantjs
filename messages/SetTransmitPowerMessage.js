@@ -30,7 +30,7 @@ define(function (require, exports, module){
     };
 
     SetTransmitPowerMessage.prototype.toString = function (){
-        return Message.prototype.toString();
+        return Message.prototype.toString.call(this);
     };
 
     module.exports = SetTransmitPowerMessage;

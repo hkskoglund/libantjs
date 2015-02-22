@@ -38,7 +38,7 @@ define(function (require, exports, module){
     };
 
     SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString();
+        return Message.prototype.toString.call(this);
     };
 
     module.exports = SetLowPrioriyChannelSearchTimeoutMessage;

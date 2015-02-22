@@ -33,7 +33,7 @@ define(function (require, exports, module){
     };
 
     SetNetworkKeyMessage.prototype.toString = function (){
-        return Message.prototype.toString() + " C# " + this.channel + " key " + this.key;
+        return Message.prototype.toString.call(this) + " C# " + this.channel + " key " + this.key;
     };
 
     module.exports = SetNetworkKeyMessage;

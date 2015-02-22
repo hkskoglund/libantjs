@@ -27,7 +27,7 @@ define(function (require, exports, module){
     };
 
     OpenChannelMessage.prototype.toString = function (){
-        return Message.prototype.toString();
+        return Message.prototype.toString.call(this);
     };
 
     module.exports = OpenChannelMessage;

@@ -62,7 +62,7 @@ define(function (require, exports, module){
     };
 
     NotificationSerialError.prototype.toString = function (){
-        return Message.prototype.toString() + " " + this.length + " " + this.message.text;
+        return Message.prototype.toString.call(this) + " " + this.length + " " + this.message.text;
     };
 
     module.exports = NotificationSerialError;

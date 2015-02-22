@@ -26,7 +26,7 @@ define(function (require, exports, module){
     };
 
     CloseChannelMessage.prototype.toString = function (){
-        return Message.prototype.toString();
+        return Message.prototype.toString.call(this);
     };
 
     module.exports = CloseChannelMessage;

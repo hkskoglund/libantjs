@@ -41,7 +41,7 @@ define(function (require, exports, module)
 
     BroadcastDataMessage.prototype.toString = function ()
 {
-        var msg = Message.prototype.toString() + " C# " + this.channel;
+        var msg = Message.prototype.toString.call(this) + " C# " + this.channel;
 
         if (this.extendedData)
 {

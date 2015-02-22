@@ -8,22 +8,29 @@ define(function (require, exports, module){
 
   var Message = require('./Message');
 
-  function ConfigureEventBufferMessage(config,size,time)  {
+  function ConfigureEventBufferMessage(configOrData,size,time)  {
 
-      Message.call(this,undefined,Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION);
-      this.encode(config,size,time);
+      if (configOrData instanceof Uint8Array) // When receiving data
+      {
+        Message.call(this,configOrData,Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION);
+      } else
+      {
+        Message.call(this,undefined,Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION);
+        this.encode(configOrData,size,time);
+
+      }
 
   }
+
+  ConfigureEventBufferMessage.prototype = Object.create(Message.prototype);
+
+  ConfigureEventBufferMessage.prototype.constructor = ConfigureEventBufferMessage;
 
   ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS = 0x00; // EVENT_TX,EVENT_RX_FAIL,EVENT_CHANNEL_COLLISION
   ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS = 0x01;
   ConfigureEventBufferMessage.prototype.TIME_DISABLE = 0x00;
   ConfigureEventBufferMessage.prototype.TIME_MAX = 0xFFFF; // Unit : 10ms
   ConfigureEventBufferMessage.prototype.TIME_UNIT = 10;
-
-  ConfigureEventBufferMessage.prototype = Object.create(Message.prototype);
-
-  ConfigureEventBufferMessage.prototype.constructor = ConfigureEventBufferMessage;
 
   ConfigureEventBufferMessage.prototype.encode = function (config,size,time)  {
     var msgBuffer = new DataView(new ArrayBuffer(5));
@@ -40,22 +47,32 @@ define(function (require, exports, module){
 
   };
 
+  ConfigureEventBufferMessage.prototype.decode = function ()
+  {
+    var dw = new DataView(this.content.buffer);
+
+    this.config = dw.getUint8(this.content.byteOffset);
+    this.size = dw.getUint16(this.content.byteOffset+1,true);
+    this.time = dw.getUint16(this.content.byteOffset+3,true);
+
+  };
+
   ConfigureEventBufferMessage.prototype.toString = function ()  {
-      var msg = '';
+      var msg = ' | ';
 
       if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS)
       {
-        msg += 'buffer low priority events';
+        msg += 'buffer low priority events ';
       } else if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS)
       {
-        msg += 'buffer all events';
+        msg += 'buffer all events | ';
       } else
         msg += 'buffer unknown priority '+this.config;
 
-      msg += ' size '+this.size+' bytes before flush';
-      msg += ' time '+this.time*ConfigureEventBufferMessage.prototype.TIME_UNIT+' ms';
+      msg += ' | size '+this.size+' bytes before flush';
+      msg += ' | time '+this.time*ConfigureEventBufferMessage.prototype.TIME_UNIT+' ms';
 
-      return Message.prototype.toString() ;
+      return Message.prototype.toString.call(this) + msg;
   };
 
   module.exports = ConfigureEventBufferMessage;
