@@ -136,13 +136,7 @@ define(function (require, exports, module){
 
                                 if (this.log.logging)  this.log.log('log', message.toString());
 
-                                if (message instanceof NotificationStartup)
-                                {
-                                  setTimeout(function _wait500msAfterReset() { callback(error,message);},500);
-                                } else
-                                {
-                                  callback(error,message);
-                                }
+                                callback(error,message);
 
                               }.bind(this),
 
@@ -166,7 +160,6 @@ define(function (require, exports, module){
       }
 
       if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
-
       this.once(this.EVENT.MESSAGE,onMessageReceived);
 
       usb.transfer(message.getRawMessage(),onSentMessage);
@@ -846,7 +839,7 @@ define(function (require, exports, module){
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
      {
-      this.sendMessage(new ResetSystemMessage(), callback);    };
+      this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset () { setTimeout(callback,500);});    };
 
     // Send request for channel ID
     Host.prototype.getChannelId = function (channel, callback)
