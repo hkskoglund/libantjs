@@ -20,6 +20,7 @@ define(function (require, exports, module){
     function Message(data,id){
 
         this.timestamp = Date.now();
+        this.data = data;
 
         // Extended data - channelID, RX timestamp and RSSI
 
@@ -57,11 +58,9 @@ define(function (require, exports, module){
     Message.prototype.decode = function (data)
     {
 
-        this.USBBuffer = data;
-
-        this.SYNC = data[0];
-        this.length = data[1];
-        this.id = data[2];
+        this.SYNC = data[Message.prototype.iSYNC];
+        this.length = data[Message.prototype.iLENGTH];
+        this.id = data[Message.prototype.iID];
 
         //this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
         this.content = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
@@ -120,10 +119,6 @@ define(function (require, exports, module){
                 this.RSSI.decode(this.extendedData.subarray(4, 7));
             }
         }
-    };
-
-    Message.prototype.isSYNCOK = function (){
-        return (this.SYNC === Message.prototype.SYNC);
     };
 
     Message.prototype.toString = function (log){

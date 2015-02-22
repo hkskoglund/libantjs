@@ -136,7 +136,13 @@ define(function (require, exports, module){
 
                                 if (this.log.logging)  this.log.log('log', message.toString());
 
-                                callback(error,message);
+                                if (message instanceof NotificationStartup)
+                                {
+                                  setTimeout(function _wait500msAfterReset() { callback(error,message);},500);
+                                } else
+                                {
+                                  callback(error,message);
+                                }
 
                               }.bind(this),
 
@@ -148,19 +154,20 @@ define(function (require, exports, module){
                              callback(error);
                           }
 
-                          // on success -> onMessageReceived should be called when 'RECEIVED_MESSAGE' is emitted in the messageFactory
+                          // on success -> onMessageReceived should be called when 'MESSAGE' is emitted in the messageFactory
 
                         }.bind(this);
 
 
-     if (this.listeners(this.EVENT.RECEIVED_MESSAGE).length)
+     if (this.listeners(this.EVENT.MESSAGE).length)
       {
         callback(new Error('Still awating response to control/configuration message'));
         return;
       }
 
       if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
-      this.once(this.EVENT.RECEIVED_MESSAGE,onMessageReceived);
+
+      this.once(this.EVENT.MESSAGE,onMessageReceived);
 
       usb.transfer(message.getRawMessage(),onSentMessage);
 
@@ -169,32 +176,33 @@ define(function (require, exports, module){
     // for event emitter
     Host.prototype.EVENT = {
 
-    //    LOG_MESSAGE: 'logMessage',
     //    ERROR : 'error',
 
+        // Configuration/notification
+
+        MESSAGE : 'message', // sendMessage register a once-time event handler for 'message' which is emitted when message is received in the messageFactory
+
         // Data
+
         BROADCAST: 'broadcast',
         BURST: 'burst',
 
         //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
-        PAGE : 'page', // Page from ANT+ sensor / device profile
-
-        RECEIVED_MESSAGE : 'received_message'
-
     };
 
-    Host.prototype.establishRXScanModeChannel = function (onPage)
+    Host.prototype.establishRXScanModeChannel = function (options,onPage)
     {
-
-      var channel = new RxScanModeProfile({
+      /* options {
           log: true,
           channelId: {
               deviceNumber: 0,
               deviceType: 0,
               transmissionType: 0
           }
-      });
+      } */
+
+      var channel = new RxScanModeProfile(options);
 
       channel.addListener('page', onPage);
 
@@ -632,13 +640,13 @@ define(function (require, exports, module){
 
       case Message.prototype.MESSAGE.NOTIFICATION_STARTUP:
 
-          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new NotificationStartup(message));
+          this.emit(this.EVENT.MESSAGE,undefined,new NotificationStartup(message));
 
           break;
 
       case Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
 
-          this.emit(this.EVENT.RECEIVED_MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
+          this.emit(this.EVENT.MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
 
           break;
 
@@ -646,19 +654,19 @@ define(function (require, exports, module){
 
       case Message.prototype.MESSAGE.CAPABILITIES:
 
-          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new CapabilitiesMessage(message));
+          this.emit(this.EVENT.MESSAGE,undefined,new CapabilitiesMessage(message));
 
           break;
 
       case Message.prototype.MESSAGE.ANT_VERSION:
 
-          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new VersionMessage(message));
+          this.emit(this.EVENT.MESSAGE,undefined,new VersionMessage(message));
 
           break;
 
       case Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
 
-          this.emit(this.EVENT.RECEIVED_MESSAGE,undefined,new DeviceSerialNumberMessage(message));
+          this.emit(this.EVENT.MESSAGE,undefined,new DeviceSerialNumberMessage(message));
 
           break;
 
@@ -838,7 +846,7 @@ define(function (require, exports, module){
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
      {
-      this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset () { setTimeout(callback,500);});    };
+      this.sendMessage(new ResetSystemMessage(), callback);    };
 
     // Send request for channel ID
     Host.prototype.getChannelId = function (channel, callback)

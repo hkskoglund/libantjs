@@ -27,16 +27,16 @@ define(function (require, exports, module){
 
     function RxScanMode(configuration){
 
-        var devNum = '*',
-            devType = '*',
-            transType = '*';
+        var devNum = 0,
+            devType = 0,
+            transType = 0;
 
         DeviceProfile.call(this, configuration);
 
-        if (configuration.channelId){
-            devNum = configuration.channelId.deviceNumber || '*';
-            devType = configuration.channelId.deviceType || '*';
-            transType = configuration.channelId.transmissionType || '*';
+        if (configuration && configuration.channelId){
+            devNum = configuration.channelId.deviceNumber || 0;
+            devType = configuration.channelId.deviceType || 0;
+            transType = configuration.channelId.transmissionType || 0;
         }
 
         this.addConfiguration("slave", {
@@ -174,7 +174,6 @@ define(function (require, exports, module){
     };
 
     module.exports = RxScanMode;
-
     return module.exports;
 
 });
