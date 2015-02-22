@@ -39,6 +39,7 @@ define(function (require, exports, module){
         CapabilitiesMessage = require('./messages/CapabilitiesMessage'),
         VersionMessage = require('./messages/VersionMessage'),
         DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage'),
+        EventBufferConfigurationMessage = require('./messages/EventBufferConfigurationMessage'),
 
     // Configuration
 
@@ -54,6 +55,7 @@ define(function (require, exports, module){
     SetChannelTxPowerMessage = require('./messages/SetChannelTxPowerMessage'),
     SetProximitySearchMessage = require('./messages/SetProximitySearchMessage'),
     SetSerialNumChannelIdMessage = require('./messages/SetSerialNumChannelIdMessage'),
+    ConfigureEventBufferMessage = require('./messages/ConfigureEventBufferMessage'),
 
     // Extended messaging information (channel ID, RSSI and RX timestamp)
 
@@ -663,6 +665,12 @@ define(function (require, exports, module){
 
           break;
 
+      case Message.prototype.MESSAGE.EVENT_BUFFER_CONFIG:
+
+        this.emit(this.EVENT.MESSAGE,undefined,new EventBufferConfigMessage(message));
+
+        break;
+
       // Data
 
       case Message.prototype.MESSAGE.BROADCAST_DATA:
@@ -690,6 +698,8 @@ define(function (require, exports, module){
       case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
 
           var channelResponseMsg = new ChannelResponseMessage(message);
+          console.log('response',channelResponseMsg);
+          this.emit(this.EVENT.MESSAGE,undefined,channelResponseMsg);
           //var channelResponseMsg = this.channelResponseMessage;
           //channelResponseMsg.decode(message);
 
@@ -697,17 +707,17 @@ define(function (require, exports, module){
       //            //data[5] = 0xF;
       //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
       //            channelResponseMsg.decode();
-          if (channelResponseMsg.initiatingId)
+        //  if (channelResponseMsg.initiatingId)
            // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
 
           // Handle channel response for channel configuration commands
-          if (!channelResponseMsg.isRFEvent())
-              this.responseCallback(undefined,channelResponseMsg);
+        //  if (!channelResponseMsg.isRFEvent())
+      //        this.responseCallback(undefined,channelResponseMsg);
       //            else
       //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
       //
           // Check for channel response callback
-         if (typeof this._channel[channelResponseMsg.channel] !== "undefined"){
+    /*     if (typeof this._channel[channelResponseMsg.channel] !== "undefined"){
 
              if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ){
                if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
@@ -718,7 +728,7 @@ define(function (require, exports, module){
               }
 
          } else if (this.log.logging)
-              this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());
+              this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());*/
 
           break;
 //
@@ -862,7 +872,19 @@ define(function (require, exports, module){
     // Send a request for device serial number
     Host.prototype.getSerialNumber = function (callback)
     {
-          this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER),  callback);
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER),  callback);
+    };
+
+    // Configure event buffer
+    Host.prototype.configureEventBuffer = function (config,size,time,callback)
+    {
+       this.sendMessage(new ConfigureEventBufferMessage(config,size,time), callback);
+    };
+
+    // Send a request for event buffer configuration
+    Host.prototype.getEventBufferConfiguration = function (callback)
+    {
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION),  callback);
     };
 
     // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)

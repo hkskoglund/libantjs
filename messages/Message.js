@@ -332,6 +332,9 @@ define(function (require, exports, module){
             0x61: "Device Serial Number",
             DEVICE_SERIAL_NUMBER:  0x61,
 
+            0x74: "Event Buffer Configuration",
+            EVENT_BUFFER_CONFIGURATION : 0x74,
+
             // Request/response
 
             0x4D: "Request",
