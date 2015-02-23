@@ -129,8 +129,13 @@ define(function (require, exports, module){
 
     // Send a control/channel configuration message to ANT
     Host.prototype.sendMessage = function (message, callback)    {
-      var onMessageReceived = function _onMessageReceived(error,message)
+      var messageReceived = false,
+          timeout = 500,
+          timeoutNoMessageReceivedID,
+
+       onMessageReceived = function _onMessageReceived(error,message)
                               {
+                                clearTimeout(timeoutNoMessageReceivedID);
 
                                 if (this.log.logging)  this.log.log('log', message.toString());
 
@@ -148,8 +153,13 @@ define(function (require, exports, module){
 
                           // on success -> onMessageReceived should be called when 'MESSAGE' is emitted in the messageFactory
 
-                        }.bind(this);
+                        }.bind(this),
 
+        onNoMessageReceived = function _onNoMessageReceived()
+        {
+          if (this.log.logging)  this.log.log('warn', 'Has not received a response in '+timeout+' ms');
+          // Retry send?
+        }.bind(this);
 
      if (this.listeners(this.EVENT.MESSAGE).length)
       {
@@ -159,6 +169,8 @@ define(function (require, exports, module){
 
       if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
       this.once(this.EVENT.MESSAGE,onMessageReceived);
+
+      timeoutNoMessageReceivedID = setTimeout(onNoMessageReceived,timeout);
 
       usb.transfer(message.getRawMessage(),onSentMessage);
 

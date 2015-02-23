@@ -15,7 +15,6 @@ define(function (require,exports,module){
       ProductId = require('../productId'),
       GenericPage = require('../Page');
 
-
       function DeviceProfile_BikeShared(configuration)  {
 
           DeviceProfile.call(this, configuration);
