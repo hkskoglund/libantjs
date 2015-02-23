@@ -5,7 +5,7 @@ if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 define(function (require, exports, module){
   'use strict';
 
-  var Channel = require('../channel'),
+  var Channel = require('../channel/channel'),
      GenericPage = require('./Page'),
      MainPage = require('./mainPage'),
      BackgroundPage = require('./backgroundPage'),

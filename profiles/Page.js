@@ -6,7 +6,7 @@ define(function _requireDefineGenericPage(require,exports,module){
 
     'use strict';
 
-    var Logger = require('../logger');
+    var Logger = require('../util/logger');
 
     function GenericPage(configuration, broadcast,profile,pageNumber){
 

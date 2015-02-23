@@ -7,7 +7,7 @@ define(function (require, exports, module){
     'use strict';
 
     var Message = require('../Message'),
-        Channel = require('../../channel');
+        Channel = require('../../channel/channel');
 
     function ChannelStatusMessage(data){
 

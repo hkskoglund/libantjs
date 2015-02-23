@@ -4,8 +4,8 @@ if (typeof define !== 'function'){ var define = require('amdefine')(module); }
 
 define(function (require,exports,module){
 
-  var Logger = require('./logger'),
-      EventEmitter = require('./events');
+  var Logger = require('./util/logger'),
+      EventEmitter = require('./util/events');
 
     function Channel(options){
 

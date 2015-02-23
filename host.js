@@ -10,15 +10,15 @@ define(function (require, exports, module){
 
    var
 
-    EventEmitter = require('./events'),
+    EventEmitter = require('./util/events'),
 
     // Data
 
     BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
 
-    Logger = require('./logger'),
+    Logger = require('./util/logger'),
     USBDevice = require('./usb/USBDevice'),
-    Channel = require('./channel'),
+    Channel = require('./channel/channel'),
     Message = require('./messages/Message'),
 
     // Control ANT

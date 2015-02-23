@@ -6,8 +6,8 @@ define(function (require, exports, module){
 
     'use strict';
 
-    var Logger = require('../logger'),
-         EventEmitter = require('../events');
+    var Logger = require('../util/logger'),
+         EventEmitter = require('../util/events');
 
     // Abstract USB device
     function USBDevice(options){
