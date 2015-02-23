@@ -119,16 +119,6 @@ define(function (require,exports,module){
 
         }
 
-        function formatExtendedAssignment(extendedAssignment){
-            if (typeof extendedAssignment === "undefined")
-                return 'undefined';
-
-            if (typeof extendedAssignment === "string") // Parsing/validation is done when host establish channel
-                return extendedAssignment;
-
-            if (typeof extendedAssignment === "number")
-                return Channel.prototype.EXTENDED_ASSIGNMENT[extendedAssignment];
-        }
 
         msg =  name +" ";
         if (parameters.description)
@@ -148,23 +138,8 @@ define(function (require,exports,module){
 
         return msg;
     };
-    //
-    //
-    ////Channel.prototype.setChannelNumer = function (channel)//{
-    ////    this.channelNumber = channel;
-    ////}
-    //
-    
-    Channel.prototype.EXTENDED_ASSIGNMENT = {
-        0x01: "Background Scanning",
-        0x04: "Frequency Agility",
-        0x10: "Fast Channel Initiation",
-        0x20: "Asynchronous Transmission",
-        BACKGROUND_SCANNING_ENABLE: 0x01,
-        FREQUENCY_AGILITY_ENABLE: 0x04,
-        FAST_CHANNEL_INITIATION_ENABLE: 0x10,
-        ASYNCHRONOUS_TRANSMISSION_ENABLE: 0x20
-    };
+
+
 
 //    Channel.prototype.EVENT = {
 //
@@ -193,30 +168,7 @@ define(function (require,exports,module){
 
     };
 
-    Channel.prototype.TYPE = {
 
-        // Bidirectional
-        0x00: "Bidirectional SLAVE",
-        BIDIRECTIONAL_SLAVE_CHANNEL: 0x00, // slave
-
-        0x10: "Bidirectional MASTER",
-        BIDIRECTIONAL_MASTER_CHANNEL: 0x10, // master
-
-        // Unidirectional
-        0x50: "MASTER Transmit Only(legacy)",
-        MASTER_TRANSMIT_ONLY_CHANNEL: 0x50,
-
-        0x40: "SLAVE Receive Only (diagnostic)",
-        SLAVE_RECEIVE_ONLY_CHANNEL: 0x40,
-
-        // Shared channels
-
-        0x20: "Shared bidirectional SLAVE",
-        SHARED_BIDIRECTIONAL_SLAVE_CHANNEL: 0x20,
-
-        0x30: "Shared bidirectional MASTER",
-        SHARED_BIDIRECTIONAL_MASTER_CHANNEL: 0x30
-    };
 
     // Default
     Channel.prototype.channelResponse = function (channelResponse)

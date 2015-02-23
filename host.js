@@ -230,15 +230,15 @@ define(function (require, exports, module){
 
       }
 
-      this.establishChannel({
-          channelNumber: 0,
+    /*  this.establishChannel({
+          channel: 0,
           networkNumber: 0,
           // channelPeriod will be ignored for RxScanMode channel
           //channelPeriod: TEMPprofile.prototype.CHANNEL_PERIOD_ALTERNATIVE, // 0.5 Hz - every 2 seconds
           configurationName: 'slave only',
           channel: channel,
           open: true
-      }, onChannelEstablished);
+      }, onChannelEstablished); */
     };
 
     // Spec. p. 21 sec. 5.3 Establishing a channel
