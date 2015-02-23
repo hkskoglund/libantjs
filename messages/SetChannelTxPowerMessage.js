@@ -27,12 +27,15 @@ define(function (require, exports, module){
       msgBuffer[0] = channel;
       msgBuffer[1] = transmitPower; // Range 0..4
 
+      this.channel = channel;
+      this.transmitPower = transmitPower;
+
       this.setContent(msgBuffer.buffer);
 
      };
 
     SetChannelTxPowerMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this);
+        return Message.prototype.toString.call(this)+' C# '+this.channel+' transmit power '+this.transmitPower;
     };
 
     module.exports = SetChannelTxPowerMessage;

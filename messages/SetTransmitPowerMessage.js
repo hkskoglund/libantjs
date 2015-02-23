@@ -22,15 +22,17 @@ define(function (require, exports, module){
     SetTransmitPowerMessage.prototype.encode = function (transmitPower){
       var msgBuffer = new Uint8Array(2);
 
-      msgBuffer[0] = 0x00; // Filler
+      msgBuffer[0] = Message.prototype.FILLER_BYTE;
       msgBuffer[1] = transmitPower; // Range 0..4
+
+     this.transmitPower = transmitPower;
 
      this.setContent(msgBuffer.buffer);
 
     };
 
     SetTransmitPowerMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this);
+        return Message.prototype.toString.call(this)+' transmit power '+this.transmitPower;
     };
 
     module.exports = SetTransmitPowerMessage;

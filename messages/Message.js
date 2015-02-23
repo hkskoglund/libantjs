@@ -358,23 +358,8 @@ define(function (require, exports, module){
             SET_CHANNEL_ID: 0x51,
             CHANNEL_ID: 0x51,
 
-            0x65: "Set Serial Num Channel ID",
-            SET_SERIAL_NUM_CHANNEL_ID : 0x65,
-
-            0x46: "Set network key",
-            SET_NETWORK_KEY: 0x46,
-
-            0x47: "Set transmit power",
-            SET_TRANSMIT_POWER: 0x47,
-
-            0x60: "Set Channel Tx Power",
-            SET_CHANNEL_TX_POWER : 0x60,
-
             0x43: "Set channel period (Tch)",
             SET_CHANNEL_PERIOD:  0x43,
-
-            0x63: "Low priority (LP) search timeout",
-            SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT:  0x63,
 
             0x44: "High priority (HP) search timeout",
             SET_CHANNEL_SEARCH_TIMEOUT:  0x44,
@@ -382,20 +367,35 @@ define(function (require, exports, module){
             0x45: "Channel RF frequency",
             SET_CHANNEL_RFFREQ:  0x45,
 
-            //0x49: "Search waveform",
-            //set_search_waveform: { id: 0x49, friendly: "Set search waveform" },
+            0x46: "Set network key",
+            SET_NETWORK_KEY: 0x46,
 
-            0x75: "Channel Search Priority",
-            SET_CHANNEL_SEARCH_PRIORITY:  0x75,
+            0x47: "Set transmit power",
+            SET_TRANSMIT_POWER: 0x47,
 
-            0x6E: "Lib Config",
-            LIBCONFIG:  0x6E,
+            0x49: "Search waveform",
+            SET_SEARCH_WAVEFORM: 0x49,
+
+            0x60: "Set Channel Tx Power",
+            SET_CHANNEL_TX_POWER : 0x60,
+
+            0x63: "Low priority (LP) search timeout",
+            SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT:  0x63,
+
+            0x65: "Set Serial Num Channel ID",
+            SET_SERIAL_NUM_CHANNEL_ID : 0x65,
 
             0x66: "Enable Extended Messages",
             RXEXTMESGSENABLE: 0x66,
 
+            0x6E: "Lib Config",
+            LIBCONFIG:  0x6E,
+
             0x71: "Set Proximity Search",
             SET_PROXIMITY_SEARCH : 0x71,
+
+            0x75: "Channel Search Priority",
+            SET_CHANNEL_SEARCH_PRIORITY:  0x75,
 
             // Data messages
 

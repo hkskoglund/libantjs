@@ -969,6 +969,12 @@ define(function (require, exports, module){
         this.sendMessage(new SetNetworkKeyMessage(netNumber, key), callback);
     };
 
+    // Set search waveform individual channel
+    Host.prototype.setSearchWaveform = function (channel,searchWaveform, callback)
+     {
+       this.sendMessage(new SetSearchWaveform(channel, searchWaveform), callback);
+    };
+
     // Set transmit power for all channels
     Host.prototype.setTransmitPower = function (transmitPower, callback)
     {
