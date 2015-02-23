@@ -14,7 +14,7 @@ define(function (require, exports, module){
 
     // Data
 
-    BroadcastDataMessage = require('./messages/BroadcastDataMessage'),
+    BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
 
     Logger = require('./logger'),
     USBDevice = require('./usb/USBDevice'),
@@ -22,49 +22,46 @@ define(function (require, exports, module){
     Message = require('./messages/Message'),
 
     // Control ANT
-    ResetSystemMessage = require('./messages/ResetSystemMessage'),
-    OpenChannelMessage = require('./messages/OpenChannelMessage'),
-    OpenRxScanModeMessage = require('./messages/OpenRxScanModeMessage'),
-    CloseChannelMessage = require('./messages/CloseChannelMessage'),
+    ResetSystemMessage = require('./messages/control/ResetSystemMessage'),
+    OpenChannelMessage = require('./messages/control/OpenChannelMessage'),
+    OpenRxScanModeMessage = require('./messages/control/OpenRxScanModeMessage'),
+    CloseChannelMessage = require('./messages/control/CloseChannelMessage'),
+    RequestMessage = require('./messages/control/RequestMessage'),
 
     // Notifications
 
-    NotificationStartup = require('./messages/NotificationStartup'),
-    NotificationSerialError = require('./messages/NotificationSerialError'),
+    NotificationStartup = require('./messages/notification/NotificationStartup'),
+    NotificationSerialError = require('./messages/notification/NotificationSerialError'),
 
-    // Request -response
+   // Requested response
 
-    RequestMessage = require('./messages/RequestMessage'),
-
-        CapabilitiesMessage = require('./messages/CapabilitiesMessage'),
-        VersionMessage = require('./messages/VersionMessage'),
-        DeviceSerialNumberMessage = require('./messages/DeviceSerialNumberMessage'),
+    CapabilitiesMessage = require('./messages/requested/CapabilitiesMessage'),
+    VersionMessage = require('./messages/requested/VersionMessage'),
+    DeviceSerialNumberMessage = require('./messages/requested/DeviceSerialNumberMessage'),
+    ChannelStatusMessage = require('./messages/requested/ChannelStatusMessage'),
 
     // Configuration
 
-    AssignChannelMessage = require('./messages/AssignChannelMessage'),
-    UnAssignChannelMessage = require('./messages/UnAssignChannelMessage'),
-    SetChannelIDMessage = require('./messages/SetChannelIDMessage'),
-    SetChannelPeriodMessage = require('./messages/SetChannelPeriodMessage'),
-    SetChannelSearchTimeoutMessage = require('./messages/SetChannelSearchTimeoutMessage'),
-    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/SetLowPriorityChannelSearchTimeoutMessage'),
-    SetChannelRFFreqMessage = require('./messages/SetChannelRFFreqMessage'),
-    SetNetworkKeyMessage = require('./messages/SetNetworkKeyMessage'),
-    SetTransmitPowerMessage = require('./messages/SetTransmitPowerMessage'),
-    SetChannelTxPowerMessage = require('./messages/SetChannelTxPowerMessage'),
-    SetProximitySearchMessage = require('./messages/SetProximitySearchMessage'),
-    SetSerialNumChannelIdMessage = require('./messages/SetSerialNumChannelIdMessage'),
-    ConfigureEventBufferMessage = require('./messages/ConfigureEventBufferMessage'),
+    UnAssignChannelMessage = require('./messages/configuration/UnAssignChannelMessage'),
+    AssignChannelMessage = require('./messages/configuration/AssignChannelMessage'),
+    SetChannelIDMessage = require('./messages/configuration/SetChannelIDMessage'),
+    SetChannelPeriodMessage = require('./messages/configuration/SetChannelPeriodMessage'),
+    SetChannelSearchTimeoutMessage = require('./messages/configuration/SetChannelSearchTimeoutMessage'),
+    SetLowPriorityChannelSearchTimeoutMessage = require('./messages/configuration/SetLowPriorityChannelSearchTimeoutMessage'),
+    SetChannelRFFreqMessage = require('./messages/configuration/SetChannelRFFreqMessage'),
+    SetNetworkKeyMessage = require('./messages/configuration/SetNetworkKeyMessage'),
+    SetTransmitPowerMessage = require('./messages/configuration/SetTransmitPowerMessage'),
+    SetChannelTxPowerMessage = require('./messages/configuration/SetChannelTxPowerMessage'),
+    SetSearchWaveformMessage = require('./messages/configuration/SetSearchWaveformMessage'),
+    SetProximitySearchMessage = require('./messages/configuration/SetProximitySearchMessage'),
+    SetSerialNumChannelIdMessage = require('./messages/configuration/SetSerialNumChannelIdMessage'),
+    ConfigureEventBufferMessage = require('./messages/configuration/ConfigureEventBufferMessage'),
+    LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
+    LibConfig = require('./messages/configuration/libConfig'),
 
-    // Extended messaging information (channel ID, RSSI and RX timestamp)
+    ChannelResponseMessage = require('./messages/channelResponse/ChannelResponseMessage'),
 
-    LibConfigMessage = require('./messages/LibConfigMessage'),
-    LibConfig = require('./messages/libConfig'),
-
-    ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
-    ChannelStatusMessage = require('./messages/ChannelStatusMessage'),
-
-    ChannelId = require('./messages/channelId'),
+    ChannelId = require('./messages/configuration/extended/channelId'),
 
     // Profiles
 
@@ -875,7 +872,7 @@ define(function (require, exports, module){
     };
 
     // Configure event buffer
-    Host.prototype.configureEventBuffer = function (config,size,time,callback)
+    Host.prototype.configEventBuffer = function (config,size,time,callback)
     {
        this.sendMessage(new ConfigureEventBufferMessage(config,size,time), callback);
     };
@@ -972,7 +969,7 @@ define(function (require, exports, module){
     // Set search waveform individual channel
     Host.prototype.setSearchWaveform = function (channel,searchWaveform, callback)
      {
-       this.sendMessage(new SetSearchWaveform(channel, searchWaveform), callback);
+       this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), callback);
     };
 
     // Set transmit power for all channels

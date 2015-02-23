@@ -9,8 +9,8 @@ define(function (require, exports, module){
      GenericPage = require('./Page'),
      MainPage = require('./mainPage'),
      BackgroundPage = require('./backgroundPage'),
-     HighPrioritySearchTimeout = require('../messages/HighPrioritySearchTimeout'),
-     LowPrioritySearchTimeout = require('../messages/LowPrioritySearchTimeout'),
+     HighPrioritySearchTimeout = require('../messages/configuration/HighPrioritySearchTimeout'),
+     LowPrioritySearchTimeout = require('../messages/configuration/LowPrioritySearchTimeout'),
      setting= require('../settings'),
      ManufacturerId= require('./manufacturerId'),
      ProductId= require('./productId'),

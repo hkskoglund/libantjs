@@ -6,8 +6,8 @@ define(function (require, exports, module){
 
     var DeviceProfile = require('../deviceProfile'),
         setting = require('../../settings'),
-        HighPrioritySearchTimeout = require('../../messages/HighPrioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('../../messages/LowPrioritySearchTimeout'),
+        HighPrioritySearchTimeout = require('../../messages/configuration/HighPrioritySearchTimeout'),
+        LowPrioritySearchTimeout = require('../../messages/configuration/LowPrioritySearchTimeout'),
         SDMPage1 = require('./SDMPage1'),
         SDMPage2 = require('./SDMPage2'),
         GenericPage = require('../Page');

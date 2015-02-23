@@ -9,13 +9,13 @@ define(function (require, exports, module){
 
     // Standard message :  bSYNC bLENGTH bID bCHANNELNUMBER CONTENT (8 bytes) bCRC (total length meta+content = 5+8 = 13 bytes)
 
-    var LibConfig = require('./libConfig'),
+    var LibConfig = require('./configuration/libConfig'),
 
         // Extended data if requested by libconfig
 
-        ChannelId = require('./channelId'),
-        RSSI = require('./RSSI'),
-        RXTimestamp = require('./RXTimestamp');
+        ChannelId = require('./configuration/extended/channelId'),
+        RSSI = require('./configuration/extended/RSSI'),
+        RXTimestamp = require('./configuration/extended/RXTimestamp');
 
     function Message(data,id){
 
