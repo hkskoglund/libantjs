@@ -131,11 +131,14 @@ define(function (require, exports, module){
     Host.prototype.sendMessage = function (message, callback)    {
       var messageReceived = false,
           timeout = 500,
-          timeoutNoMessageReceivedID,
+          intervalNoMessageReceivedID,
+          retry=0, MAX_TRIES = 3,
+          rawMessage = message.getRawMessage(),
+          errMsg,
 
        onMessageReceived = function _onMessageReceived(error,message)
                               {
-                                clearTimeout(timeoutNoMessageReceivedID);
+                                clearInterval(intervalNoMessageReceivedID);
 
                                 if (this.log.logging)  this.log.log('log', message.toString());
 
@@ -147,6 +150,7 @@ define(function (require, exports, module){
                         {
                           if (error)
                           {
+                            clearInterval(intervalNoMessageReceivedID);
                              if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
                              callback(error);
                           }
@@ -157,8 +161,19 @@ define(function (require, exports, module){
 
         onNoMessageReceived = function _onNoMessageReceived()
         {
-          if (this.log.logging)  this.log.log('warn', 'Has not received a response in '+timeout+' ms');
-          // Retry send?
+          retry++;
+          if (this.log.logging)  this.log.log('warn', 'Has not received a response in '+timeout+' ms. Retry '+retry);
+          if (retry < MAX_TRIES)
+          {
+            usb.transfer(rawMessage,onSentMessage);
+          }
+          else
+            {
+              clearInterval(intervalNoMessageReceivedID);
+              errMsg = 'Received no response after sending message '+retry+' times';
+              if (this.log.logging)  this.log.log('error', errMsg);
+              callback(new Error(errMsg));
+            }
         }.bind(this);
 
      if (this.listeners(this.EVENT.MESSAGE).length)
@@ -170,9 +185,9 @@ define(function (require, exports, module){
       if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
       this.once(this.EVENT.MESSAGE,onMessageReceived);
 
-      timeoutNoMessageReceivedID = setTimeout(onNoMessageReceived,timeout);
+      intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
 
-      usb.transfer(message.getRawMessage(),onSentMessage);
+      usb.transfer(rawMessage,onSentMessage);
 
     };
 
