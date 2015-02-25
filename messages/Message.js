@@ -153,48 +153,29 @@ define(function (require, exports, module){
     Message.prototype.setContent = function (content){
         this.content = content;
     };
+
     /*
     This function create a raw message
-     Message format
-     SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
-
      SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
      CRC = XOR of all bytes in message
      Sending of LSB first = little endian NB!
     */
     Message.prototype.getRawMessage = function (){
-        var
+        var standardMessage = new Uint8Array(13);   //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
 
-         content,
-         content_len,
-         standardMessage = new Uint8Array(13);
-
-        // TEST 3 - provoke "ANT Message too large"
-        //content = new Buffer(200);
-        content = this.content;
-
-        if (content)
-            content_len = content.byteLength;
+        if (this.content)
+            this.length = this.content.byteLength;
         else {
-            content_len = 0;
+            this.length = 0;
         }
 
         standardMessage[0] = Message.prototype.SYNC;
-        standardMessage[1] = content_len;
+        standardMessage[1] = this.length;
         standardMessage[2] = this.id;
+        standardMessage.set(new Uint8Array(this.content),3);
 
-        var contentArr = new Uint8Array(this.content);
+        standardMessage[this.length+3] = this.getCRC(standardMessage.subarray(0,this.length+3));
 
-        standardMessage.set(contentArr,3);
-
-
-        this.checksum = this.getCRC(standardMessage.subarray(0,content_len+3));
-
-        standardMessage[content_len+3] = this.checksum;
-
-        this.length = content_len;
-
-        this.buffer = standardMessage.buffer; // Arraybuffer
         this.standardMessage = standardMessage;
 
         return this.standardMessage;
