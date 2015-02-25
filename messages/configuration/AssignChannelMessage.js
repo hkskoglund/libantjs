@@ -42,7 +42,7 @@ define(function (require, exports, module)
 
   AssignChannelMessage.prototype.toString = function ()
 {
-      var msg = Message.prototype.toString.call(this) + " C# " + this.channel + " N# " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
+      var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.networkNumber + " " + Channel.prototype.TYPE[this.channelType];
       if (this.extendedAssignment)
           msg += " extended assignment " + this.extendedAssignment;
       return msg;

@@ -51,7 +51,7 @@ define(function (require, exports, module){
   };
 
   RequestMessage.prototype.toString = function (){
-      var msg = Message.prototype.toString.call(this) + " C# " + this.channel + " ID 0x" + this.requestId.toString(16)+' '+Message.prototype.MESSAGE[this.requestId];
+      var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " ID 0x" + this.requestId.toString(16)+' '+Message.prototype.MESSAGE[this.requestId];
       if (this.NVMaddr)
           msg += " NVMaddr " + this.NVMaddr;
       if (this.NVMsize)

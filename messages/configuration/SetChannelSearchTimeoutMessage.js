@@ -38,7 +38,7 @@ define(function (require, exports, module){
     };
 
     SetChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+ "C# "+this.channel+" HP search timeout" +this.HPsearchTimeout;
+        return Message.prototype.toString.call(this)+ "Ch "+this.channel+" HP search timeout" +this.HPsearchTimeout;
     };
 
     module.exports = SetChannelSearchTimeoutMessage;

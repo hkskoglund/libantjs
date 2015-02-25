@@ -34,7 +34,7 @@ define(function (require, exports, module){
     };
 
     SetProximitySearchMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + " C# " + this.channel + " search threshold " + this.searchThreshold;
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + " search threshold " + this.searchThreshold;
     };
 
     module.exports = SetProximitySearchMessage;

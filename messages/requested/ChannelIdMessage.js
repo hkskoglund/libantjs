@@ -27,7 +27,7 @@ define(function (require, exports, module){
   };
 
   ChannelIdMessage.prototype.toString = function ()  {
-      return Message.prototype.toString.call(this)+ " C# " + this.channelNumber + " " + this.channelId.toString();
+      return Message.prototype.toString.call(this)+ " Ch " + this.channelNumber + " " + this.channelId.toString();
   };
 
     module.exports = ChannelIdMessage;

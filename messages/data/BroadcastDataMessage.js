@@ -34,14 +34,14 @@ define(function (require, exports, module)
         //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
         this.data = this.content.subarray(1,9);
         // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
-        // 'Broadcast Data ID 0x4e C# 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
+        // 'Broadcast Data ID 0x4e Ch 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
 
     };
 
 
     BroadcastDataMessage.prototype.toString = function ()
 {
-        var msg = Message.prototype.toString.call(this) + " C# " + this.channel;
+        var msg = Message.prototype.toString.call(this) + " Ch " + this.channel;
 
         if (this.extendedData)
 {

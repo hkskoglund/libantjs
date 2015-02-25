@@ -73,7 +73,7 @@ define(function (require, exports, module){
    ChannelResponse.prototype.toString = function ()
    {
 
-     return'C# '+this.channel+'Response for '+Message.prototype.MESSAGE[this.initiatingId]+' '+ChannelResponse.prototype.MESSAGE[this.code];
+     return'Ch '+this.channel+'Response for '+Message.prototype.MESSAGE[this.initiatingId]+' '+ChannelResponse.prototype.MESSAGE[this.code];
 
    };
 

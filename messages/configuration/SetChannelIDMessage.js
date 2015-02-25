@@ -46,7 +46,7 @@ define(function (require, exports, module){
 
 
     SetChannelIDMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + " C# " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
     };
 
     module.exports = SetChannelIDMessage;

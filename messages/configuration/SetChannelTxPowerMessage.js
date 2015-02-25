@@ -35,7 +35,7 @@ define(function (require, exports, module){
      };
 
     SetChannelTxPowerMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+' C# '+this.channel+' transmit power '+this.transmitPower;
+        return Message.prototype.toString.call(this)+' Ch '+this.channel+' transmit power '+this.transmitPower;
     };
 
     module.exports = SetChannelTxPowerMessage;

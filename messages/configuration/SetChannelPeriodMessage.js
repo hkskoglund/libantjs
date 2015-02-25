@@ -33,7 +33,7 @@ define(function (require, exports, module){
   };
 
   SetChannelPeriodMessage.prototype.toString = function (){
-      return Message.prototype.toString.call(this) + " C# " + this.channel + " message period " + this.messagePeriod;
+      return Message.prototype.toString.call(this) + " Ch " + this.channel + " message period " + this.messagePeriod;
   };
 
   module.exports = SetChannelPeriodMessage;

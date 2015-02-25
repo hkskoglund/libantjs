@@ -38,7 +38,7 @@ define(function (require, exports, module){
     };
 
     SetSearchWaveform.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + ' C# ' + this.channel + ' search waveform ' + this.searchWaveform;
+        return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' search waveform ' + this.searchWaveform;
     };
 
     module.exports = SetSearchWaveform;

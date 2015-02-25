@@ -388,18 +388,18 @@ define(function (require, exports, module){
         if (parameters.RxScanMode && channelNumber !== 0)
         {
             if (this.log.logging)
-                this.log.log('log', 'C# ', channelNumber, ' not allowed for continous Rx scan mode. Setting it to 0');
+                this.log.log('log', 'Ch ', channelNumber, ' not allowed for continous Rx scan mode. Setting it to 0');
             channelInfo.channelNumber = 0;
             channelNumber = 0;
         }
 
         if (this.log.logging)
-            this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' C# ' + channelNumber + ' N# ' + networkNumber);
+            this.log.log('log', 'Establishing ' + channel.showConfiguration(configurationName) + ' Ch ' + channelNumber + ' Net ' + networkNumber);
 
         if (this._channel[channelNumber] === undefined)
             this._channel[channelNumber] = {};
         else if (this.log.logging)
-           this.log.log('warn','Overwriting previous channel information for channel C# '+channelNumber,this._channel[channelNumber]);
+           this.log.log('warn','Overwriting previous channel information for channel Ch '+channelNumber,this._channel[channelNumber]);
 
         this._channel[channelNumber].channel = channel; // Associate channel with particular channel number on host
         this._channel[channelNumber].network = networkNumber;
@@ -546,7 +546,7 @@ define(function (require, exports, module){
 
                 var openChannel = function (){
 
-                    // Attach etablished channel info (C#,N#,...)
+                    // Attach etablished channel info (Ch,Net,...)
                     channel.establish = channelInfo;
 
                     var openResponseHandler = function (error, response){

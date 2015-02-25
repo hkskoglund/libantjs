@@ -40,7 +40,7 @@ define(function (require, exports, module){
     };
 
     SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+' C# '+this.channel+' low priority search timeout '+this.LPsearchTimeout;
+        return Message.prototype.toString.call(this)+' Ch '+this.channel+' low priority search timeout '+this.LPsearchTimeout;
     };
 
     module.exports = SetLowPrioriyChannelSearchTimeoutMessage;

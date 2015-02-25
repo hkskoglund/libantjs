@@ -36,7 +36,7 @@ define(function (require, exports, module){
 
 
     SetChannelRFFreqMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + " C# " + this.channel + " RF freq. " + this.RFFreq;
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + " RF freq. " + this.RFFreq;
     };
 
     module.exports = SetChannelRFFreqMessage;

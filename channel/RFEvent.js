@@ -55,7 +55,7 @@ define(function (require, exports, module){
     RFEvent.prototype.toString = function ()
     {
 
-      return 'C# '+this.channel+' RF event '+RFEvent.prototype.MESSAGE[this.code];
+      return 'Ch '+this.channel+' RF event '+RFEvent.prototype.MESSAGE[this.code];
 
     };
 
