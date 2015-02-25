@@ -62,9 +62,8 @@ define(function (require, exports, module){
         this.length = data[Message.prototype.iLENGTH];
         this.id = data[Message.prototype.iID];
 
-        //this.content = new Uint8Array(data.buffer.slice(3, 3 + this.length)); // Easier to debug Uint8Array than ArrayBuffer
         this.content = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
-        //console.log("CONTENT", this.content);
+
         this.CRC = data[Message.prototype.HEADER_LENGTH + this.length];
 
         // Extended message
@@ -165,105 +164,36 @@ define(function (require, exports, module){
     */
     Message.prototype.getRawMessage = function (){
         var
-    //     headerBuffer = new Buffer(3),
-    //     messageBuffer,
-    //     trailingZeroBuffer,
+
          content,
          content_len,
-    //     byteNr,
-            standardMessage = new Uint8Array(13);
-
-
-      //  console.log("args", arguments);
+         standardMessage = new Uint8Array(13);
 
         // TEST 3 - provoke "ANT Message too large"
         //content = new Buffer(200);
         content = this.content;
-        //console.log("typeof content",typeof this.content);
+
         if (content)
             content_len = content.byteLength;
         else {
-           // this.emit(ANT.prototype.EVENT.LOG_MESSAGE, "Content length is 0");
             content_len = 0;
         }
-
-        if (typeof content_len === "undefined")
-            console.log("Message: content length is undefined, check .byteLength property");
-
-        //console.log("Message id. ", message.id, " Content is ", content);
-
-        //contentBuffer = new Buffer(content_len);
-        //if (content_len > 8)
-        //    console.warn("Content length of message is ", content_len);
-
-        // Header
-        // SYNC = 0; // -> Provoke Serial Error Message, error 0 - SYNC incorrect, should be 0xA4
-
-
-        // TEST 1 error number 0 serial error - not SYNC
-        //headerBuffer.writeUInt8(1, 0);
-
-    //    headerBuffer.writeUInt8(Message.prototype.SYNC, 0);
-    //    headerBuffer.writeUInt8(content_len, 1);
-    //    headerBuffer.writeUInt8(this.id, 2);
 
         standardMessage[0] = Message.prototype.SYNC;
         standardMessage[1] = content_len;
         standardMessage[2] = this.id;
 
         var contentArr = new Uint8Array(this.content);
-        //console.log("Setting content of message to ",contentArr, this.content);
+
         standardMessage.set(contentArr,3);
 
 
-
-        //// Content
-        //for (var byteNr = 0; byteNr < content_len; byteNr++)
-        //    contentBuffer.writeUInt8(content.readUInt8(byteNr), byteNr);
-
-        //this.buffer = Buffer.concat([headerBuffer, content], 3 + content_len);
-
-        // Checksum
-        //console.log("Message buffer:", messageBuffer, "Message buffer length", messageBuffer.length, " content length: ", content_len, "content buffer: ", contentBuffer);
-
-        //var checksum = messageBuffer.readUInt8(0);
-        ////console.log("Start checksum", checksum);
-        //for (byteNr = 1; byteNr < messageBuffer.length; byteNr++)//{
-        //    checksum = checksum ^ messageBuffer.readUInt8(byteNr);
-        //    //console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer.readUInt8(byteNr));
-        //}
-
-
-        // TEST -> Provoke Serial Error Message, error 2 - checksum of ANT msg. incorrect
-        //var checksum = 0xFF;
-        //this.checksum = this.getCRC(this.buffer);
-        //console.log("SLICE",standardMessage.slice(0,content_len+3),content_len);
         this.checksum = this.getCRC(standardMessage.subarray(0,content_len+3));
-        //console.log("CHECKSUM",this.checksum);
+
         standardMessage[content_len+3] = this.checksum;
 
-        //this.buffer = Buffer.concat([this.buffer, new Buffer([this.checksum])], 4 + content_len);
-
-        //console.log("Checksum  : " + checksum);
-        //console.log("Raw message length : " + msg.length+", content length: "+content_len);
-
-        // Add trailing zeroes - seems to work ok without trailing zeros, but recommended, will delay ANT chip setting RTS for 50 microsec. after message is received
-
-    //    if (content_len < 8)//{
-    //        trailingZeroBuffer = this.getPadZeroBuffer(8 - content_len - 1);
-    //        //trailingZeroBuffer = new Buffer(8 - content_len - 1); // CRC included in payload
-    //        //for (byteNr = 0; byteNr < 8 - content_len - 1; byteNr++)
-    //        //    trailingZeroBuffer.writeUInt8(0, byteNr);
-    //
-    //        this.buffer = Buffer.concat([this.buffer, trailingZeroBuffer]);
-    //    }
-
-
-        //this.SYNC = Message.prototype.SYNC;
         this.length = content_len;
-    //
-    //    console.trace();
-    //    console.log("Standard msg",standardMessage);
+
         this.buffer = standardMessage.buffer; // Arraybuffer
         this.standardMessage = standardMessage;
 
@@ -273,16 +203,14 @@ define(function (require, exports, module){
 
     // CheckSUM = XOR of all bytes in message
     Message.prototype.getCRC = function (messageBuffer){
-        //console.log("GET CRC",messageBuffer);
+
         var checksum = messageBuffer[0], // Should be SYNC 0xA4
             len = messageBuffer[1] + Message.prototype.HEADER_LENGTH, // Should be messageBuffer.length - 1
             byteNr;
-        // console.trace();
-       // console.log("Start checksum", checksum.toString(16), "RAW",messageBuffer,"length",len,"messageBuffer.length",messageBuffer.length);
 
-        for (byteNr = 1; byteNr < len; byteNr++){
+        for (byteNr = 1; byteNr < len; byteNr++)        {
             checksum = checksum ^ messageBuffer[byteNr];
-         //   console.log("Checksum", checksum, "byte nr", byteNr, "value:", messageBuffer[byteNr]);
+
         }
 
         return checksum;
