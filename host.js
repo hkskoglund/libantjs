@@ -57,7 +57,7 @@ define(function (require, exports, module){
     SetSerialNumChannelIdMessage = require('./messages/configuration/SetSerialNumChannelIdMessage'),
     ConfigureEventBufferMessage = require('./messages/configuration/ConfigureEventBufferMessage'),
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
-    LibConfig = require('./messages/configuration/libConfig'),
+    LibConfig = require('./messages/configuration/util/libConfig'),
 
     ChannelResponseMessage = require('./messages/channelResponse/ChannelResponseMessage'),
 
@@ -73,7 +73,8 @@ define(function (require, exports, module){
 
     UsbLib,
     usb,
-    usbLibraryPath;
+    usbLibraryPath,
+    MAX_CHAN = 8;
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -106,7 +107,7 @@ define(function (require, exports, module){
 
         this.log = new Logger(options);
 
-        this._channel = {};
+        this.channel = new Array(MAX_CHAN);
 
         if (this.log.logging){  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
 
@@ -610,6 +611,12 @@ define(function (require, exports, module){
                         _doLibConfigCB(error);
                 }.bind(this)); */
 
+        var number;
+        for (number=0;number<MAX_CHAN;number++)
+        {
+          this.channel[number] = new Channel(this.options,number);
+        }
+
         usb.init(iDevice,this._onUSBinit.bind(this,onInit));
 
     };
@@ -723,36 +730,7 @@ define(function (require, exports, module){
           var channelResponseMsg = new ChannelResponseMessage(message);
           console.log('response',channelResponseMsg);
           this.emit(this.EVENT.MESSAGE,undefined,channelResponseMsg);
-          //var channelResponseMsg = this.channelResponseMessage;
-          //channelResponseMsg.decode(message);
-
-      //            //TEST provoking EVENT_CHANNEL_ACTIVE
-      //            //data[5] = 0xF;
-      //            channelResponseMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-      //            channelResponseMsg.decode();
-        //  if (channelResponseMsg.initiatingId)
-           // this.log.timeEnd(Message.prototype.MESSAGE[channelResponseMsg.initiatingId]);
-
-          // Handle channel response for channel configuration commands
-        //  if (!channelResponseMsg.isRFEvent())
-      //        this.responseCallback(undefined,channelResponseMsg);
-      //            else
-      //                this.log.log('log',channelResponseMsg.toString(),channelResponseMsg,this._channel);
-      //
-          // Check for channel response callback
-    /*     if (typeof this._channel[channelResponseMsg.channel] !== "undefined"){
-
-             if (typeof this._channel[channelResponseMsg.channel].channel.channelResponse !== 'function' ){
-               if (this.log.logging)  this.log.log('warn', "No channelResponse function available : on C# " + channelResponseMsg.channel);
-             }
-
-              else {
-                this._channel[channelResponseMsg.channel].channel.channelResponse(channelResponseMsg);
-              }
-
-         } else if (this.log.logging)
-              this.log.log('log','No channel on host is associated with ' + channelResponseMsg.toString());*/
-
+          
           break;
 //
 //        //case Message.prototype.MESSAGE.burst_transfer_data.id:
@@ -932,13 +910,12 @@ define(function (require, exports, module){
     /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
      Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
      also sets defaults values for RF, period, tx power, search timeout p.22 */
-    Host.prototype.assignChannel = function (channelNumber, channelType, networkNumber, extend, callback)
+    Host.prototype.assignChannel = function (number, channelType, networkNumber, extendedAssignment, callback)
     {
-        var cb,
-        configurationMsg = new AssignChannelMessage(channelNumber, channelType, networkNumber, extend);
+        var configurationMsg = new AssignChannelMessage(number, channelType, networkNumber, extendedAssignment);
 
-        if (typeof extend === "function")
-            cb = extend; // If no extended assignment use parameter as callback
+        if (typeof extendedAssignment === "function")
+            cb = extendedAssignment; // If no extended assignment use argument as callback
         else {
             cb = callback;
         }

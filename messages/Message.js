@@ -9,7 +9,7 @@ define(function (require, exports, module){
 
     // Standard message :  bSYNC bLENGTH bID bCHANNELNUMBER CONTENT (8 bytes) bCRC (total length meta+content = 5+8 = 13 bytes)
 
-    var LibConfig = require('./configuration/libConfig'),
+    var LibConfig = require('./configuration/util/libConfig'),
 
         // Extended data if requested by libconfig
 
@@ -121,11 +121,11 @@ define(function (require, exports, module){
         }
     };
 
-    Message.prototype.toString = function (log){
+    Message.prototype.toString = function (verbose){
 
       var msg = Message.prototype.MESSAGE[this.id];
 
-      if (!log)
+      if (!verbose)
         return msg;
 
       if (this.SYNC)

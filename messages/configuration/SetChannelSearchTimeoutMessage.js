@@ -7,7 +7,7 @@ define(function (require, exports, module){
     'use strict';
 
     var Message = require('../Message'),
-        HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout');
+        HighPrioritySearchTimeout = require('./util/HighPrioritySearchTimeout');
 
     function SetChannelSearchTimeoutMessage(channel, searchTimeout)
     {

@@ -1,13 +1,16 @@
 /* global define: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
-
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require,exports,module){
 
-  var Logger = require('./util/logger'),
-      EventEmitter = require('./util/events');
+  'use strict';
 
-    function Channel(options){
+  var Logger = require('../util/logger'),
+      EventEmitter = require('../util/events'),
+      Network = require('./network'),
+      ChannelState = require('.channelState');
+
+    function Channel(options,host,number)    {
 
         EventEmitter.call(this,options);
 
@@ -20,47 +23,73 @@ define(function (require,exports,module){
 
         this.log = options.logger || new Logger(options);
 
-        this.parameters = {};
+        this.host = host;
 
+        this.configuration = {
+
+          channel : number,
+          network : new Network(Network.prototype.PUBLIC,undefined),
+          type : undefined,
+          id : undefined,
+          frequency : undefined,
+          period : undefined,
+          lowPrioritySearchTimeout : undefined,
+          highPrioritySearchTimeout : undefined
+
+        }; // Contains channel configuration parameters
+
+    /*    this.addConfiguration("slave", {
+            description: "Slave configuration for ANT+ "+this.constructor.name,
+            networkKey: setting.networkKey["ANT+"],
+            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
+            channelType: "slave",
+            channelId: { deviceNumber: '*', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
+            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
+            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
+            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
+
+            channelPeriod: this.CHANNEL_PERIOD.DEFAULT
+
+        }); */
     }
 
     Channel.prototype = Object.create(EventEmitter.prototype);
     Channel.prototype.constructor = Channel;
 
-    Channel.prototype.getConfigurations = function ()
+    Channel.prototype.setNetwork = function (network)
     {
-        var conf = [];
-
-        for (var prop in this.parameters)
-            if (this.parameters.hasOwnProperty(prop))
-                conf.push(prop);
-
-        return conf;
-
-
+      this.configuration.network = network;
     };
 
-//    Channel.prototype.setChannelId = function (name,deviceNumber,deviceType,transmissionType)
-//    {
-//        var param = this.parameters[name];
-//
-//        if (!param)//{
-//            this.log.log('error','No parameters for channel found for configuration '+name);
-//            return;
-//        }
-//
-//    }
-
-    Channel.prototype.addConfiguration = function (name, parameters)
+    Channel.prototype.unassign = function (callback)
     {
-        this.parameters[name] = parameters;
+      this.configuration.channelType = undefined;
+      this.configuration.extendedAssignment = undefined;
+    //  this.configuration.network = undefined; // Must use setNetwork to specify new network before attempting assign
+
+      host.unAssignChannel(this.configuration.number,callback);
     };
 
-    Channel.prototype.showConfiguration = function (name){
+    Channel.prototype.assign = function (channelType,extendedAssignment,callback)
+    {
+     this.configuration.type = channelType;
+     this.configuration.extendedAssignment = extendedAssignment;
+
+      this.host.assignChannel(this.configuration.number,channelType,this.configuration.network.number,extendedAssignment,callback);
+    };
+
+    Channel.prototype.setChannelId = function (channelId,callback)
+    {
+      this.configuration.channelId = channelId;
+
+      host.setChannelId(this.configuration.number,channelId.deviceNumber,channelId.deviceType,channelId.transmissionType,callback);
+    };
+
+    Channel.prototype.showConfiguration = function (name)    {
         var msg = '';
         var parameters = this.parameters[name];
 
-        function format(number){
+        function format(number)        {
             if (number === 0x00)
                 return "*";
             else
@@ -82,7 +111,7 @@ define(function (require,exports,module){
             {
 
                 rate = '';
-                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++){
+                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++)                {
                     rate += getInHz(messagePeriod[periodeNr]);
                     if (periodeNr < len -1)
                         rate += ',';
@@ -92,7 +121,7 @@ define(function (require,exports,module){
                return rate;
         }
 
-        function formatSearchTimeout(searchTimeout){
+        function formatSearchTimeout(searchTimeout)        {
 
             var friendlyFormat,
                 value = searchTimeout;
@@ -103,7 +132,7 @@ define(function (require,exports,module){
             if (typeof searchTimeout !== 'number')
                 value = searchTimeout.getRawValue();
 
-                switch (value){
+                switch (value)                {
                     case 0:
                         friendlyFormat = "Disabled";
                         break;
