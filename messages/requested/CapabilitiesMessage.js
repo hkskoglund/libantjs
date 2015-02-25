@@ -136,7 +136,7 @@ define(function (require, exports, module){
 
           msg += (this.advancedOptions2.EXT_ASSIGN_ENABLED ? '+' : '-')+"Extended assign | ";
 
-          msg += (this.advancedOptions2._FS_ANTFS_ENABLED ? '+' : '-')+ "ANT-FS | ";
+          msg += (this.advancedOptions2.FS_ANTFS_ENABLED ? '+' : '-')+ "ANT-FS | ";
 
         }
 
