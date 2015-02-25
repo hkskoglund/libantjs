@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetSearchWaveform(channel, searchWaveform){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_SEARCH_WAVEFORM);
+        Message.call(this,undefined,Message.prototype.SET_SEARCH_WAVEFORM);
 
         this.encode(channel, searchWaveform);
 

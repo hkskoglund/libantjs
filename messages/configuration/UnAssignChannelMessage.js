@@ -10,7 +10,7 @@ define(function (require, exports, module){
     function UnAssignChannelMessage(channel)
     {
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.UNASSIGN_CHANNEL);
+        Message.call(this,undefined,Message.prototype.UNASSIGN_CHANNEL);
         this.encode(channel);
 
     }

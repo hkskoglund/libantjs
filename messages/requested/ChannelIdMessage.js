@@ -12,7 +12,7 @@ define(function (require, exports, module){
 
   function ChannelIdMessage(){
 
-      Message.call(this,undefined,Message.prototype.MESSAGE.CHANNEL_ID);
+      Message.call(this,undefined,Message.prototype.CHANNEL_ID);
 
   }
 

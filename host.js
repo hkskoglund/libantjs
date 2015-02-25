@@ -183,7 +183,9 @@ define(function (require, exports, module){
         return;
       }
 
-      if (this.log.logging){ this.log.log('log', 'Sending message '+ message.toString()); }
+      if (message.toString() === undefined) console.error('!!!!!',message);
+
+      if (this.log.logging){ this.log.log('log', 'Sending '+ message.toString()); }
       this.once(this.EVENT.MESSAGE,onMessageReceived);
 
       intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
@@ -815,7 +817,7 @@ define(function (require, exports, module){
 
             break;
 //
-//        case Message.prototype.MESSAGE.CHANNEL_ID:
+//        case Message.prototype.CHANNEL_ID:
 //
 //            var channelIdMsg = new ChannelIdMessage();
 //            channelIdMsg.setContent(data.slice(3, 3 + ANTmsg.length));

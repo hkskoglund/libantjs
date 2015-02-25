@@ -92,13 +92,14 @@ define(function (require, exports, module){
       0x39: "ENCRYPT_NEGOTIATION_FAIL",
     };
 
-   ChannelResponse.isRFEvent = function ()
+   ChannelResponse.prototype.isRFEvent = function ()
    {
      return this.code === ChannelResponse.prototype.RFEvent;
    };
 
    ChannelResponse.prototype.toString = function ()
    {
+     
      var msg = 'C# '+this.channel;
 
      if (this.isRFEvent())

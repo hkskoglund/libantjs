@@ -11,7 +11,7 @@ define(function (require, exports, module){
     function OpenRxScanModeMessage()
     {
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_RX_SCAN_MODE);
+        Message.call(this,undefined,Message.prototype.OPEN_RX_SCAN_MODE);
         this.encode();
 
     }

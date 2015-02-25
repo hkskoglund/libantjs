@@ -364,7 +364,7 @@ define(function (require, exports, module){
 
             0x4D: "Request",
 
-            0x40: "Channel response/RF event",
+            0x40: "Response/RF event",
 
             0x52: "Channel Status",
 

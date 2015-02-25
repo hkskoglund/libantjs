@@ -5,7 +5,7 @@ if (typeof define !== 'function')
 
 define(function (require, exports, module)
 {
-  
+
     'use strict';
 
     var Message = require('../Message');
@@ -13,7 +13,7 @@ define(function (require, exports, module)
     function ResetSystemMessage()
 {
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.RESET_SYSTEM);
+        Message.call(this,undefined,Message.prototype.RESET_SYSTEM);
 
         this.encode();
     }
