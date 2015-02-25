@@ -70,8 +70,8 @@ define(function (require, exports, module){
         // Extended message
 
         // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
-        if ((this.id === Message.prototype.MESSAGE.BROADCAST_DATA ||
-             this.id === Message.prototype.MESSAGE.BURST_TRANSFER_DATA) &&
+        if ((this.id === Message.prototype.BROADCAST_DATA ||
+             this.id === Message.prototype.BURST_TRANSFER_DATA) &&
              this.content.length > 9){
 
             this.flagsByte = this.content[9];
@@ -294,122 +294,123 @@ define(function (require, exports, module){
     };
 
     // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
+
+    Message.prototype.RESET_SYSTEM = 0x4A;
+    Message.prototype.OPEN_CHANNEL =  0x4B;
+    Message.prototype.CLOSE_CHANNEL =  0x4C;
+    Message.prototype.OPEN_RX_SCAN_MODE = 0x5B;
+    Message.prototype.SLEEP_MESSAGE = 0xC5;
+    Message.prototype.NOTIFICATION_STARTUP = 0x6F;
+    Message.prototype.NOTIFICATION_SERIAL_ERROR = 0xAE;
+    Message.prototype.ANT_VERSION =  0x3E;
+    Message.prototype.CAPABILITIES =  0x54;
+    Message.prototype.DEVICE_SERIAL_NUMBER =  0x61;
+    Message.prototype.EVENT_BUFFER_CONFIGURATION = 0x74;
+    Message.prototype.REQUEST = 0x4D;
+    Message.prototype.CHANNEL_RESPONSE =  0x40;
+    Message.prototype.CHANNEL_STATUS = 0x52;
+    Message.prototype.UNASSIGN_CHANNEL = 0x41;
+    Message.prototype.ASSIGN_CHANNEL = 0x42;
+    Message.prototype.SET_CHANNEL_ID = 0x51;
+    Message.prototype.SET_CHANNEL_PERIOD =  0x43;
+    Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT =  0x44;
+    Message.prototype.SET_CHANNEL_RFFREQ =  0x45;
+    Message.prototype.SET_NETWORK_KEY = 0x46;
+    Message.prototype.SET_TRANSMIT_POWER = 0x47;
+    Message.prototype.SET_SEARCH_WAVEFORM = 0x49;
+    Message.prototype.SET_CHANNEL_TX_POWER = 0x60;
+    Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT =  0x63;
+    Message.prototype.SET_SERIAL_NUM_CHANNEL_ID = 0x65;
+    Message.prototype.RXEXTMESGSENABLE = 0x66;
+    Message.prototype.LIBCONFIG =  0x6E;
+    Message.prototype.SET_PROXIMITY_SEARCH = 0x71;
+    Message.prototype.SET_CHANNEL_SEARCH_PRIORITY =  0x75;
+    Message.prototype.BROADCAST_DATA =  0x4E;
+    Message.prototype.ACKNOWLEDGED_DATA =  0x4F;
+    Message.prototype.BURST_TRANSFER_DATA = 0x50;
+    Message.prototype.ADVANCED_BURST_TRANSFER_DATA =  0x72;
+
     Message.prototype.MESSAGE = {
 
             // Control messages
 
             0x4A: "Reset system",
-            RESET_SYSTEM:  0x4A,
 
             0x4B: "Open channel",
-            OPEN_CHANNEL:  0x4B,
 
             0x4C: "Close channel",
-            CLOSE_CHANNEL:  0x4C,
 
             0x5B: "Open RX scan mode",
-            OPEN_RX_SCAN_MODE : 0x5B,
 
-            0xc5: "Sleep message",
-            SLEEP_MESSAGE : 0xc5,
+            0xC5: "Sleep message",
 
             // Notification messages
 
             0x6F: "Notification: Start up",
-            NOTIFICATION_STARTUP: 0x6F,
 
             0xAE: "Notification: Serial error",
-            NOTIFICATION_SERIAL_ERROR: 0xAE,
 
             // Requested messages with REQUEST 0x4D
 
             0x3E : "ANT Version",
-            ANT_VERSION:  0x3E,
 
             0x54: "Capabilities",
-            CAPABILITIES:  0x54,
 
             0x61: "Device Serial Number",
-            DEVICE_SERIAL_NUMBER:  0x61,
 
             0x74: "Event Buffer Configuration",
-            EVENT_BUFFER_CONFIGURATION : 0x74,
 
             // Request/response
 
             0x4D: "Request",
-            REQUEST: 0x4D,
 
             0x40: "Channel response/RF event",
-            CHANNEL_RESPONSE:  0x40,
 
             0x52: "Channel Status",
-            CHANNEL_STATUS: 0x52,
 
             // Config messages. All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
 
             0x41: "UnAssign Channel",
-            UNASSIGN_CHANNEL: 0x41,
 
             0x42 : "Assign Channel",
-            ASSIGN_CHANNEL: 0x42,
 
             0x51: "Set Channel ID",
-            SET_CHANNEL_ID: 0x51,
-            CHANNEL_ID: 0x51,
 
             0x43: "Set channel period (Tch)",
-            SET_CHANNEL_PERIOD:  0x43,
 
             0x44: "High priority (HP) search timeout",
-            SET_CHANNEL_SEARCH_TIMEOUT:  0x44,
 
             0x45: "Channel RF frequency",
-            SET_CHANNEL_RFFREQ:  0x45,
 
             0x46: "Set network key",
-            SET_NETWORK_KEY: 0x46,
 
             0x47: "Set transmit power",
-            SET_TRANSMIT_POWER: 0x47,
 
             0x49: "Search waveform",
-            SET_SEARCH_WAVEFORM: 0x49,
 
             0x60: "Set Channel Tx Power",
-            SET_CHANNEL_TX_POWER : 0x60,
 
             0x63: "Low priority (LP) search timeout",
-            SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT:  0x63,
 
             0x65: "Set Serial Num Channel ID",
-            SET_SERIAL_NUM_CHANNEL_ID : 0x65,
 
             0x66: "Enable Extended Messages",
-            RXEXTMESGSENABLE: 0x66,
 
             0x6E: "Lib Config",
-            LIBCONFIG:  0x6E,
 
             0x71: "Set Proximity Search",
-            SET_PROXIMITY_SEARCH : 0x71,
 
             0x75: "Channel Search Priority",
-            SET_CHANNEL_SEARCH_PRIORITY:  0x75,
 
             // Data messages
 
             0x4E: "Broadcast Data",
-            BROADCAST_DATA:  0x4e,
 
             0x4F: "Acknowledged Data",
-            ACKNOWLEDGED_DATA:  0x4F,
 
             0x50: "Burst Transfer Data",
-            BURST_TRANSFER_DATA: 0x50,
 
             0x72: "Advanced Burst Transfer Data",
-            ADVANCED_BURST_TRANSFER_DATA:  0x72
 
     };
 

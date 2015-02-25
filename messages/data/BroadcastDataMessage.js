@@ -13,7 +13,7 @@ define(function (require, exports, module)
     function BroadcastDataMessage(data)
 {
 
-        Message.call(this,data,Message.prototype.MESSAGE.BROADCAST_DATA);
+        Message.call(this,data,Message.prototype.BROADCAST_DATA);
 
     }
 

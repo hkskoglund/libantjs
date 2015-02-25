@@ -663,13 +663,13 @@ define(function (require, exports, module){
 
       // Notifications
 
-      case Message.prototype.MESSAGE.NOTIFICATION_STARTUP:
+      case Message.prototype.NOTIFICATION_STARTUP:
 
           this.emit(this.EVENT.MESSAGE,undefined,new NotificationStartup(message));
 
           break;
 
-      case Message.prototype.MESSAGE.NOTIFICATION_SERIAL_ERROR:
+      case Message.prototype.NOTIFICATION_SERIAL_ERROR:
 
           this.emit(this.EVENT.MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
 
@@ -677,25 +677,25 @@ define(function (require, exports, module){
 
       // Device info.
 
-      case Message.prototype.MESSAGE.CAPABILITIES:
+      case Message.prototype.CAPABILITIES:
 
           this.emit(this.EVENT.MESSAGE,undefined,new CapabilitiesMessage(message));
 
           break;
 
-      case Message.prototype.MESSAGE.ANT_VERSION:
+      case Message.prototype.ANT_VERSION:
 
           this.emit(this.EVENT.MESSAGE,undefined,new VersionMessage(message));
 
           break;
 
-      case Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER:
+      case Message.prototype.DEVICE_SERIAL_NUMBER:
 
           this.emit(this.EVENT.MESSAGE,undefined,new DeviceSerialNumberMessage(message));
 
           break;
 
-      case Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION:
+      case Message.prototype.EVENT_BUFFER_CONFIGURATION:
 
         this.emit(this.EVENT.MESSAGE,undefined,new ConfigureEventBufferMessage(message));
 
@@ -703,7 +703,7 @@ define(function (require, exports, module){
 
       // Data
 
-      case Message.prototype.MESSAGE.BROADCAST_DATA:
+      case Message.prototype.BROADCAST_DATA:
 
       // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 
@@ -725,15 +725,15 @@ define(function (require, exports, module){
 
       // Channel event or responses
 
-      case Message.prototype.MESSAGE.CHANNEL_RESPONSE:
+      case Message.prototype.CHANNEL_RESPONSE:
 
           var channelResponseMsg = new ChannelResponseMessage(message);
           console.log('response',channelResponseMsg);
           this.emit(this.EVENT.MESSAGE,undefined,channelResponseMsg);
-          
+
           break;
 //
-//        //case Message.prototype.MESSAGE.burst_transfer_data.id:
+//        //case Message.prototype.burst_transfer_data.id:
 //
 //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
 //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
@@ -803,7 +803,7 @@ define(function (require, exports, module){
 //
 //            // Channel specific
 //
-        case Message.prototype.MESSAGE.CHANNEL_STATUS:
+        case Message.prototype.CHANNEL_STATUS:
 
             var channelStatusMsg = new ChannelStatusMessage(message);
            // this.log.timeEnd(Message.prototype.MESSAGE[channelStatusMsg.id]);
@@ -855,25 +855,25 @@ define(function (require, exports, module){
     // Send request for channel ID
     Host.prototype.getChannelId = function (channel, callback)
     {
-        this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_ID), callback);
+        this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_ID), callback);
     };
 
     // Send a request for ANT version
     Host.prototype.getVersion = function (callback)
     {
-        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.ANT_VERSION),callback);
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.ANT_VERSION),callback);
     };
 
     // Send a request for device capabilities
     Host.prototype.getCapabilities = function (callback)
      {
-        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.CAPABILITIES), callback);
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), callback);
     };
 
     // Send a request for device serial number
     Host.prototype.getSerialNumber = function (callback)
     {
-        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.DEVICE_SERIAL_NUMBER),  callback);
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.DEVICE_SERIAL_NUMBER),  callback);
     };
 
     // Configure event buffer
@@ -885,13 +885,13 @@ define(function (require, exports, module){
     // Send a request for event buffer configuration
     Host.prototype.getEventBufferConfiguration = function (callback)
     {
-        this.sendMessage(new RequestMessage(undefined, Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION),  callback);
+        this.sendMessage(new RequestMessage(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION),  callback);
     };
 
     // Send request for channel status, determine state (un-assigned, assigned, searching or tracking)
     Host.prototype.getChannelStatus = function (channel, callback)
     {
-         this.sendMessage(new RequestMessage(channel, Message.prototype.MESSAGE.CHANNEL_STATUS), callback);
+         this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_STATUS), callback);
     };
 
     // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
@@ -1031,7 +1031,7 @@ define(function (require, exports, module){
 //        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
 //            self = this,
 //            message = new Message(),
-//            ack_msg = message.create_message(Message.prototype.MESSAGE.acknowledged_data, buf),
+//            ack_msg = message.create_message(Message.prototype.acknowledged_data, buf),
 //            resendMsg;
 //
 //        // Add to retry queue -> will only be of length === 1
@@ -1101,7 +1101,7 @@ define(function (require, exports, module){
 //
 //        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
 //
-//        burst_msg = message.create_message(Message.prototype.MESSAGE.burst_transfer_data, buf);
+//        burst_msg = message.create_message(Message.prototype.burst_transfer_data, buf);
 //
 //        // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
 //        // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts

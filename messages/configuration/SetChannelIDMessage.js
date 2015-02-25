@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_ID);
+        Message.call(this,undefined,Message.prototype.SET_CHANNEL_ID);
 
         this.encode(channel, deviceNum, deviceType, transmissionType);
     }

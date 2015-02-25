@@ -12,10 +12,10 @@ define(function (require, exports, module){
 
       if (configOrData instanceof Uint8Array) // When receiving data
       {
-        Message.call(this,configOrData,Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION);
+        Message.call(this,configOrData,Message.prototype.EVENT_BUFFER_CONFIGURATION);
       } else
       {
-        Message.call(this,undefined,Message.prototype.MESSAGE.EVENT_BUFFER_CONFIGURATION);
+        Message.call(this,undefined,Message.prototype.EVENT_BUFFER_CONFIGURATION);
         this.encode(configOrData,size,time);
 
       }

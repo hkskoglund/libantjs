@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function LibConfigMessage(libConfig){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.LIBCONFIG);
+        Message.call(this,undefined,Message.prototype.LIBCONFIG);
        this.encode(libConfig);
     }
 

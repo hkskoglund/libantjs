@@ -14,7 +14,7 @@ define(function (require, exports, module)
   function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment)
 {
 
-    Message.call(this,undefined,Message.prototype.MESSAGE.ASSIGN_CHANNEL);
+    Message.call(this,undefined,Message.prototype.ASSIGN_CHANNEL);
     this.encode(channel,channelType,networkNumber,extendedAssignment);
   }
 

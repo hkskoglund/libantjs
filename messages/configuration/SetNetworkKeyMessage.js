@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetNetworkKeyMessage(channel, key){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_NETWORK_KEY);
+        Message.call(this,undefined,Message.prototype.SET_NETWORK_KEY);
         this.encode(channel,key);
 
     }

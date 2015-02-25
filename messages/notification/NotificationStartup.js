@@ -9,7 +9,7 @@ define(function (require, exports, module){
     // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
     function NotificationStartup(data){
 
-            Message.call(this,data,Message.prototype.MESSAGE.NOTIFICATION_STARTUP);
+            Message.call(this,data,Message.prototype.NOTIFICATION_STARTUP);
     }
 
     NotificationStartup.prototype = Object.create(Message.prototype);
@@ -78,14 +78,14 @@ define(function (require, exports, module){
             //code = NotificationStartup.prototype.SUSPEND_RESET.CODE;
         }
 
-        this.message = { 'text': msg };
+        this.message = msg;
 
         return this.message;
 
     };
 
     NotificationStartup.prototype.toString = function (){
-        return Message.prototype.toString.call(this) +' '+this.message.text;
+        return Message.prototype.toString.call(this) +' '+this.message;
     };
 
     module.exports = NotificationStartup;

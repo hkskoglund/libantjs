@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function OpenChannelMessage(channel){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.OPEN_CHANNEL);
+        Message.call(this,undefined,Message.prototype.OPEN_CHANNEL);
         this.encode(channel);
     }
 

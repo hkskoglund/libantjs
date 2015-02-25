@@ -12,21 +12,25 @@ define(function (require, exports, module){
 
   }
 
-  ChannelState.prototype.STATE = {
-    UNASSIGNED : 0x00,
-    0x00 : 'Unassigned',
-    ASSIGNED : 0x01,
-    0x01 : 'Assigned',
-    SEARCHING : 0x02,
-    0x02 : 'Searching',
-    TRACKING : 0x03,
-    0x03 : 'Tracking'
-  };
+  ChannelState.prototype.UNASSIGNED = 0x00;
+
+  ChannelState.prototype.ASSIGNED = 0x01;
+
+  ChannelState.prototype.SEARCHING = 0x02;
+
+  ChannelState.prototype.TRACKING = 0x03;
 
   ChannelState.prototype.toString = function ()
   {
 
-    return ChannelState.prototype.STATE[this.state];
+    var states = {
+      0x00 : 'Unassigned',
+      0x01 : 'Assigned',
+      0x02 : 'Searching',
+      0x03 : 'Tracking'
+    };
+
+    return states[this.state];
   };
 
     module.exports = ChannelState;

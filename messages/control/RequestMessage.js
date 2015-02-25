@@ -12,7 +12,7 @@ define(function (require, exports, module){
   // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
   function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize){
 
-      Message.call(this,undefined,Message.prototype.MESSAGE.REQUEST);
+      Message.call(this,undefined,Message.prototype.REQUEST);
       this.encode(channel, requestedMessageId, NVMaddr, NVMsize);
 
   }

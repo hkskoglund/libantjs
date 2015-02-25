@@ -11,7 +11,7 @@ define(function (require, exports, module){
 
     function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT);
+        Message.call(this,undefined,Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT);
         this.encode(channel, searchTimeout);
 
     }

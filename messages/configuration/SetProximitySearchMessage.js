@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetProximitySearchMessage(channel, searchThreshold){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_PROXIMITY_SEARCH);
+        Message.call(this,undefined,Message.prototype.SET_PROXIMITY_SEARCH);
         this.encode(channel, searchThreshold);
 
     }

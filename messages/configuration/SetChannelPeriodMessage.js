@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
   function SetChannelPeriodMessage(channel, messagePeriod){
 
-      Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_PERIOD);
+      Message.call(this,undefined,Message.prototype.SET_CHANNEL_PERIOD);
       this.encode(channel, messagePeriod);
 
   }

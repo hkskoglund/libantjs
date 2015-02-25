@@ -12,7 +12,7 @@ define(function (require, exports, module){
     function SetChannelSearchTimeoutMessage(channel, searchTimeout)
     {
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_SEARCH_TIMEOUT);
+        Message.call(this,undefined,Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
         this.encode(channel, searchTimeout);
     }
 

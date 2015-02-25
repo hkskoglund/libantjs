@@ -8,7 +8,7 @@ define(function (require, exports, module){
 
     function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_SERIAL_NUM_CHANNEL_ID);
+        Message.call(this,undefined,Message.prototype.SET_SERIAL_NUM_CHANNEL_ID);
         this.encode(channel, deviceType, transmissionType);
 
     }

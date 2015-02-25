@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetTransmitPowerMessage(transmitPower){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_TRANSMIT_POWER);
+        Message.call(this,undefined,Message.prototype.SET_TRANSMIT_POWER);
         this.encode(transmitPower);
 
     }

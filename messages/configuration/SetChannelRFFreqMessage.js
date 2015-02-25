@@ -10,7 +10,7 @@ define(function (require, exports, module){
 
     function SetChannelRFFreqMessage(channel, RFFreq){
 
-        Message.call(this,undefined,Message.prototype.MESSAGE.SET_CHANNEL_RFFREQ);
+        Message.call(this,undefined,Message.prototype.SET_CHANNEL_RFFREQ);
 
         this.encode(channel, RFFreq);
 
