@@ -39,7 +39,7 @@ define(function (require, exports, module){
     ChannelResponse.prototype.ENCRYPT_NEGOTIATION_SUCCESS = 0x38;
     ChannelResponse.prototype.ENCRYPT_NEGOTIATION_FAIL = 0x39;
 
-    RFEvent.prototype.MESSAGE = {
+    ChannelResponse.prototype.MESSAGE = {
 
       0x01 : "RESPONSE_NO_ERROR",
 

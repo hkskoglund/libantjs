@@ -64,7 +64,7 @@ define(function (require, exports, module){
         this.SCRIPT_ENABLED = this.advancedOptions & (1 << 6);
         this.SEARCH_LIST_ENABLED = this.advancedOptions & (1 << 7);
 
-        if (advancedOptions2 !== undefined)
+        if (this.advancedOptions2 !== undefined)
         {
             this.LED_ENABLED = this.advancedOptions2 & 0x01;
             this.EXT_MESSAGE_ENABLED = this.advancedOptions2 & 0x02;
@@ -76,7 +76,7 @@ define(function (require, exports, module){
 
         // ANT USB 2 does not have advanced options 3, so it will be undefined
 
-        if (advancedOptions3 !== undefined)
+        if (this.advancedOptions3 !== undefined)
         {
             this.ADVANCED_BURST_ENABLED = this.advancedOptions3 & 0x01;
             this.EVENT_BUFFERING_ENABLED = this.advancedOptions3 & 0x02;
@@ -87,7 +87,7 @@ define(function (require, exports, module){
             this.ENCRYPTED_CHANNEL_ENABLED = this.advancedOptions3 & (1 << 7);
         }
 
-        if (advancedOptions4 !== undefined)
+        if (this.advancedOptions4 !== undefined)
         {
                 this.RFACTIVE_NOTIFICATION_ENABLED = this.advancedOptions4 & 0x01; // Bit 0
                 // Bit 1-7 reserved
