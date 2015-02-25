@@ -703,6 +703,14 @@ define(function (require, exports, module){
 
         break;
 
+      // Channel info.
+
+      case Message.prototype.CHANNEL_STATUS:
+
+         this.emit(this.EVENT.MESSAGE,undefined,new ChannelStatusMessage(message));
+
+          break;
+
       // Data
 
       case Message.prototype.BROADCAST_DATA:
@@ -805,17 +813,7 @@ define(function (require, exports, module){
 //
 //            // Channel specific
 //
-        case Message.prototype.CHANNEL_STATUS:
 
-            var channelStatusMsg = new ChannelStatusMessage(message);
-           // this.log.timeEnd(Message.prototype.MESSAGE[channelStatusMsg.id]);
-//            channelStatusMsg.setContent(data.subarray(3, 3 + ANTmsg.length));
-//            channelStatusMsg.decode();
-            //console.log("status", channelStatusMsg);
-
-           this.responseCallback(undefined,channelStatusMsg);
-
-            break;
 //
 //        case Message.prototype.CHANNEL_ID:
 //
