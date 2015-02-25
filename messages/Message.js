@@ -50,11 +50,6 @@ define(function (require, exports, module){
     Message.prototype.iLENGTH = 1;
     Message.prototype.iID = 2;
 
-    Message.prototype.getName = function ()
-    {
-       return MESSAGE.prototype.MESSAGE[this.id];
-    };
-
     Message.prototype.decode = function (data)
     {
 
