@@ -615,7 +615,7 @@ define(function (require, exports, module){
         var number;
         for (number=0;number<MAX_CHAN;number++)
         {
-          this.channel[number] = new Channel(this.options,this,{ channel : number});
+          this.channel[number] = new Channel(this.options,this,number);
         }
 
         usb.init(iDevice,this._onUSBinit.bind(this,onInit));

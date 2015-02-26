@@ -37,7 +37,7 @@ define(function (require, exports, module){
     };
 
     ChannelStatusMessage.prototype.toString = function ()    {
-        return Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.network.toString() + " " + this.type.toString() + " " +
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + ' '+ this.network.toString() + " " + this.type.toString() + " " +
         this.state.toString();
     };
 

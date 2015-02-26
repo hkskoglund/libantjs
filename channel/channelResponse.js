@@ -41,7 +41,7 @@ define(function (require, exports, module){
 
     ChannelResponse.prototype.MESSAGE = {
 
-      0x01 : "RESPONSE_NO_ERROR",
+      0x00 : "RESPONSE_NO_ERROR",
 
       0x15: "CHANNEL_IN_WRONG_STATE",
       0x16: "CHANNEL_NOT_OPENED",
@@ -73,7 +73,7 @@ define(function (require, exports, module){
    ChannelResponse.prototype.toString = function ()
    {
 
-     return'Ch '+this.channel+'Response for '+Message.prototype.MESSAGE[this.initiatingId]+' '+ChannelResponse.prototype.MESSAGE[this.code];
+     return'Ch '+this.channel+' Response for '+Message.prototype.MESSAGE[this.initiatingId]+' '+ChannelResponse.prototype.MESSAGE[this.code];
 
    };
 
