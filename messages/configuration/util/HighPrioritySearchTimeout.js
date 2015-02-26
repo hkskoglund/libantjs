@@ -56,7 +56,7 @@ define(function (require, exports, module){
 
     HighPrioritySearchTimeout.prototype.toString = function ()
     {
-       return this.getRawValue()+" "+this.convertToMilliseconds()+ ' ms.';
+       return 'High priority search timeout: '+ this.getRawValue()+" = "+this.convertToMilliseconds()+ ' ms.';
     };
 
     module.exports = HighPrioritySearchTimeout;

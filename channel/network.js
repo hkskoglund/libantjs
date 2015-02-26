@@ -23,7 +23,7 @@ define(function (require,exports,module){
       msg += this.key.toString();
 
     return msg;
-  }
+  };
 
   module.export = Network;
   return module.export;

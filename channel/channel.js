@@ -8,13 +8,14 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
   var Logger = require('../util/logger'),
       EventEmitter = require('../util/events'),
       Network = require('./network'),
-      ChannelState = require('./channelState');
+      ChannelId = require('../messages/configuration/extended/channelId'),
+      ChannelState = require('./channelState'),
+      LowPrioritySearchTimeout = require('../messages/configuration/util/LowPrioritySearchTimeout'),
+      HighPrioritySearchTimeout = require('../messages/configuration/util/HighPrioritySearchTimeout');
 
-    function Channel(options,host,number)    {
+    function Channel(options,host,configuration)    {
 
         EventEmitter.call(this,options);
-
-        this.options = options;
 
         if (!options)
             options = {};
@@ -23,20 +24,9 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         this.log = options.logger || new Logger(options);
 
-        this.host = host;
+        this.host = options.host;
 
-        this.configuration = {
-
-          channel : number,
-          network : new Network(Network.prototype.PUBLIC,undefined),
-          type : undefined,
-          id : undefined,
-          frequency : undefined,
-          period : undefined,
-          lowPrioritySearchTimeout : undefined,
-          highPrioritySearchTimeout : undefined
-
-        }; // Contains channel configuration parameters
+        this._setConfiguration(configuration);
 
     /*    this.addConfiguration("slave", {
             description: "Slave configuration for ANT+ "+this.constructor.name,
@@ -55,6 +45,40 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Channel.prototype = Object.create(EventEmitter.prototype);
     Channel.prototype.constructor = Channel;
+
+    Channel.prototype._setConfiguration = function(configuration)
+    {
+      var parameters = {
+        channel : undefined,
+        net : undefined,
+        key : undefined,
+        deviceNumber : undefined,
+        deviceType : undefined,
+        transmissionType : undefined,
+        frequency : undefined,
+        period : undefined,
+        lowPrioritySearchTimeout : undefined,
+        highPrioritySearchTimeout : undefined
+      };
+
+      if (!configuration)
+        configuration = {};
+
+      Object.keys(parameters).forEach(function (value,index,arr){ this[value] = configuration[value]; },this);
+
+      // Special handling
+
+      if (this.lowPrioritySearchTimeout)
+        this.lowPrioritySearchTimeout = new LowPrioritySearchTimeout(this.lowPrioritySearchTimeout);
+
+      if (this.highPrioritySearchTimeout)
+        this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(this.highPrioritySearchTimeout);
+
+      this.id = new ChannelId(this.deviceNumber,this.deviceType,this.transmissionType);
+
+      this.network = new Network(this.net,this.key);
+
+    };
 
     Channel.prototype.setNetwork = function (network)
     {

@@ -68,7 +68,7 @@ define(function (require, exports, module){
 
     LowPrioritySearchTimeout.prototype.toString = function ()
     {
-       return this.getRawValue()+" "+this.convertToMilliseconds()+ ' ms.';
+       return 'Low priority search timeout: '+this.getRawValue()+" = "+this.convertToMilliseconds()+ ' ms.';
     };
 
     module.exports = LowPrioritySearchTimeout;
