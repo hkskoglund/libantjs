@@ -35,7 +35,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     Channel.prototype = Object.create(EventEmitter.prototype);
     Channel.prototype.constructor = Channel;
 
-    // Supports initialization as an object literal
+    // Supports initialization of configuration as an object literal
     Channel.prototype.setConfiguration = function(configuration)
     {
 
@@ -61,18 +61,36 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.extendedAssignment = new ExtendedAssignment(configuration.extendedAssignment);
     };
 
-    Channel.prototype.setNetworkKey = function(network,callback)
+    Channel.prototype.setNetworkKey = function(number,key,callback)
+
     {
+      var cb = callback;
+
+      if (number instanceof Network)
+      {
         this.network = network;
-        this.host.setNetworkKey(this.network.number,this.network.key,callback);
+        cb = key;
+      }
+
+      else
+        this.network = new Network(number,key);
+
+        this.host.setNetworkKey(this.network.number,this.network.key,cb);
     };
 
     Channel.prototype.assign = function (type, extendedAssignment, callback)
     {
-      this.type = type;
-      this.extendedAssignment = extendedAssignment;
+      if (type instanceof ChannelType)
+        this.type = type;
+      else
+        this.type = new ChannelType(type);
 
-      this.host.assignChannel(this.channel, type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
+      if (extendedAssignment instanceof ExtendedAssignment)
+         this.extendedAssignment = extendedAssignment;
+      else
+        this.extendedAssignment = new ExtendedAssignment(extendedAssignment);
+
+      this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
     };
 
     Channel.prototype.unassign = function (callback)
@@ -118,12 +136,17 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Channel.prototype.getStatus = function (callback)
     {
-      var onStatus = function (err,status)
+      var key,
+          onStatus = function (err,status)
       {
 
         this.state = status.state;
         this.type = status.type;
-        this.network = status.network;
+
+        if (this.network instanceof Network)
+           this.network.number = status.networkNumber;
+        else
+          this.network = new Network(status.networkNumber);
 
         callback(err,status);
 
@@ -144,7 +167,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
       if (this.id)
        msg += this.id.toString()+'|';
-    
+
       if (this.frequency)
       {
         msg += ' '+(2400+this.frequency)+ 'MHz'+'|';

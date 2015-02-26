@@ -28,7 +28,7 @@ define(function (require, exports, module){
 
         this.state = new ChannelState(status & parseInt("00000011", 2)); // Lower 2 bits
 
-        this.network = new Network((status & parseInt("00001100", 2)) >> 2);
+        this.networkNumber = (status & parseInt("00001100", 2)) >> 2;
 
         this.type = new ChannelType((status & parseInt("11110000", 2)) >> 4);
 
@@ -37,7 +37,7 @@ define(function (require, exports, module){
     };
 
     ChannelStatusMessage.prototype.toString = function ()    {
-        return Message.prototype.toString.call(this) + " Ch " + this.channel + ' '+ this.network.toString() + " " + this.type.toString() + " " +
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + ' Net '+ this.networkNumber + " " + this.type.toString() + " " +
         this.state.toString();
     };
 

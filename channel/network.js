@@ -18,9 +18,9 @@ define(function (require,exports,module){
 
   Network.prototype.toString = function ()
   {
-    var msg = 'Net '+this.number.toString();
+    var msg = 'Net '+this.number;
     if (this.key)
-      msg += 'key '+this.key.toString();
+      msg += 'key '+this.key;
 
     return msg;
   };
