@@ -10,6 +10,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       Network = require('./network'),
       ChannelId = require('../messages/configuration/extended/channelId'),
       ChannelState = require('./channelState'),
+      ChannelType = require('./channelType'),
       LowPrioritySearchTimeout = require('../messages/configuration/util/LowPrioritySearchTimeout'),
       HighPrioritySearchTimeout = require('../messages/configuration/util/HighPrioritySearchTimeout');
 
@@ -50,6 +51,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     {
       var parameters = {
         channel : undefined,
+        type : undefined,
         net : undefined,
         key : undefined,
         deviceNumber : undefined,
@@ -65,19 +67,18 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         configuration = {};
 
       Object.keys(parameters).forEach(function (value,index,arr){ this[value] = configuration[value]; },this);
+      
+      this.network = new Network(this.net,this.key);
 
-      // Special handling
+      this.type = new ChannelType(this.type);
+
+      this.id = new ChannelId(this.deviceNumber,this.deviceType,this.transmissionType);
 
       if (this.lowPrioritySearchTimeout)
         this.lowPrioritySearchTimeout = new LowPrioritySearchTimeout(this.lowPrioritySearchTimeout);
 
       if (this.highPrioritySearchTimeout)
         this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(this.highPrioritySearchTimeout);
-
-      this.id = new ChannelId(this.deviceNumber,this.deviceType,this.transmissionType);
-
-      this.network = new Network(this.net,this.key);
-
     };
 
     Channel.prototype.setNetwork = function (network)
