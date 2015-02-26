@@ -2,8 +2,7 @@
 
 // Convention : _ before a function name indicates that the function should not be used
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
-
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require, exports, module){
 
   'use strict';
@@ -616,7 +615,7 @@ define(function (require, exports, module){
         var number;
         for (number=0;number<MAX_CHAN;number++)
         {
-          this.channel[number] = new Channel(this.options,number);
+          this.channel[number] = new Channel(this.options,this,{ channel : number});
         }
 
         usb.init(iDevice,this._onUSBinit.bind(this,onInit));
@@ -1010,12 +1009,6 @@ define(function (require, exports, module){
 
        // Wait for EVENT_CHANNEL_CLOSED ?
        // If channel status is tracking -> can get broadcast data packet before event channel closed packet
-
-        // Do we have a channel configuration available?
-        if (this._channel[channelNumber] === undefined)  {
-            callback(new Error('Cannot close channel. No channel configuration available for channel ' + channelNumber));
-            return;
-        }
 
         this.sendMessage(new CloseChannelMessage(channelNumber), callback);
 

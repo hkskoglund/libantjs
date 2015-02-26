@@ -12,7 +12,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       ChannelState = require('./channelState'),
       ChannelType = require('./channelType'),
       LowPrioritySearchTimeout = require('../messages/configuration/util/LowPrioritySearchTimeout'),
-      HighPrioritySearchTimeout = require('../messages/configuration/util/HighPrioritySearchTimeout');
+      HighPrioritySearchTimeout = require('../messages/configuration/util/HighPrioritySearchTimeout'),
+      ExtendedAssignment = require('./extendedAssignment');
 
     function Channel(options,host,configuration)    {
 
@@ -25,23 +26,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         this.log = options.logger || new Logger(options);
 
-        this.host = options.host;
+        this.host = options.host; // Allows access to host API for channel object (wrappers)
 
         this._setConfiguration(configuration);
 
-    /*    this.addConfiguration("slave", {
-            description: "Slave configuration for ANT+ "+this.constructor.name,
-            networkKey: setting.networkKey["ANT+"],
-            //channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-            channelType: "slave",
-            channelId: { deviceNumber: '*', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
-
-            channelPeriod: this.CHANNEL_PERIOD.DEFAULT
-
-        }); */
     }
 
     Channel.prototype = Object.create(EventEmitter.prototype);
@@ -60,14 +48,15 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         frequency : undefined,
         period : undefined,
         lowPrioritySearchTimeout : undefined,
-        highPrioritySearchTimeout : undefined
+        highPrioritySearchTimeout : undefined,
+        extendedAssignment : undefined,
       };
 
       if (!configuration)
         configuration = {};
 
       Object.keys(parameters).forEach(function (value,index,arr){ this[value] = configuration[value]; },this);
-      
+
       this.network = new Network(this.net,this.key);
 
       this.type = new ChannelType(this.type);
@@ -79,162 +68,69 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
       if (this.highPrioritySearchTimeout)
         this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(this.highPrioritySearchTimeout);
+
+      if (this.extendedAssignment)
+        this.extendedAssignment = new ExtendedAssignment(this.extendedAssignment);
     };
 
-    Channel.prototype.setNetwork = function (network)
+    // Tried to make API somewhat similar to Dynastream ANT Android SDK for channel
+    // file:///ANT_Android_SDK/com/dsi/ant/channel/AntChannel.html
+
+    Channel.prototype.setNetworkKey = function(net,key,callback)
     {
-      this.configuration.network = network;
+       this.network.net = net;
+       this.network.key = key;
+        this.host.setNetworkKey(net,key,callback);
+    };
+
+    Channel.prototype.assign = function (channelType, extendedAssignment, callback)
+    {
+      this.type = channelType;
+      this.extendedAssignment = extendedAssignment;
+
+      this.host.assignChannel(this.channel, channelType.type, this.network.number, this.extendedAssignment, callback);
     };
 
     Channel.prototype.unassign = function (callback)
     {
-      this.configuration.channelType = undefined;
-      this.configuration.extendedAssignment = undefined;
-    //  this.configuration.network = undefined; // Must use setNetwork to specify new network before attempting assign
+      this.type = undefined;
+      this.net = undefined;
+      this.key = undefined;
+      this.network = undefined;
 
-      host.unAssignChannel(this.configuration.number,callback);
-    };
-
-    Channel.prototype.assign = function (channelType,extendedAssignment,callback)
-    {
-     this.configuration.type = channelType;
-     this.configuration.extendedAssignment = extendedAssignment;
-
-      this.host.assignChannel(this.configuration.number,channelType,this.configuration.network.number,extendedAssignment,callback);
+      this.host.unassignChannel(this.channel,callback);
     };
 
     Channel.prototype.setChannelId = function (channelId,callback)
     {
-      this.configuration.channelId = channelId;
+      this.id = channelId;
+      this.deviceNumber = this.id.deviceNumber;
+      this.deviceType = this.id.deviceType;
+      this.transmissionType = this.id.transmissionType;
 
-      host.setChannelId(this.configuration.number,channelId.deviceNumber,channelId.deviceType,channelId.transmissionType,callback);
+      this.host.setChannelId(this.channel, channelId.deviceNumber, channelId.deviceType, channelId.transmissionType,callback);
     };
 
-    Channel.prototype.showConfiguration = function (name)    {
-        var msg = '';
-        var parameters = this.parameters[name];
-
-        function format(number)        {
-            if (number === 0x00)
-                return "*";
-            else
-                return '' + number;
-        }
-
-        function formatMessagePeriod(messagePeriod)
-        {
-            var rate;
-
-            function getInHz (period)
-            {
-                return period + " " + (32768 / period).toFixed(2) + "Hz";
-            }
-
-            if (typeof messagePeriod === "number")
-                rate = getInHz(messagePeriod);
-            else if (Array.isArray(messagePeriod))
-            {
-
-                rate = '';
-                for (var periodeNr=0, len = messagePeriod.length; periodeNr < len; periodeNr++)                {
-                    rate += getInHz(messagePeriod[periodeNr]);
-                    if (periodeNr < len -1)
-                        rate += ',';
-                }
-            }
-
-               return rate;
-        }
-
-        function formatSearchTimeout(searchTimeout)        {
-
-            var friendlyFormat,
-                value = searchTimeout;
-
-            if (typeof searchTimeout === "undefined")
-                return 'undefined';
-
-            if (typeof searchTimeout !== 'number')
-                value = searchTimeout.getRawValue();
-
-                switch (value)                {
-                    case 0:
-                        friendlyFormat = "Disabled";
-                        break;
-                    case 255:
-                        friendlyFormat = "Infinity";
-                        break;
-                    default:
-                        friendlyFormat = value * 2.5 + "s";
-                        break;
-              }
-
-                return friendlyFormat;
-
-        }
-
-
-        msg =  name +" ";
-        if (parameters.description)
-            msg += parameters.description + " ";
-
-        msg +=  parameters.channelId.toString()+
-            ' RF ' + (parameters.RFfrequency + 2400) + 'MHz Tch ' + formatMessagePeriod(parameters.channelPeriod);
-
-        if (parameters.LPsearchTimeout)
-            msg += ' LP '+ formatSearchTimeout(parameters.LPsearchTimeout);
-
-        if (parameters.HPsearchTimeout)
-            msg += ' HP ' + formatSearchTimeout(parameters.HPsearchTimeout);
-
-        if (parameters.extendedAssignment)
-            msg += ' ext.Assign ' + formatExtendedAssignment(parameters.extendedAssignment);
-
-        return msg;
-    };
-
-
-
-//    Channel.prototype.EVENT = {
-//
-//        // Event and responses
-//        CHANNEL_RESPONSE_EVENT: "channelResponseEvent",
-//
-//        // Data
-//
-//        BROADCAST: "broadcast",
-//        BURST : "burst"
-//    };
-
-    // Check for a bidirectional master channel
-    Channel.prototype.isMaster = function (configurationName){
-        var parameters = this.parameters[configurationName],
-            channelType = parameters.channelType;
-
-        if (typeof channelType === "undefined")
-            return false;
-
-        if (typeof channelType === 'number')
-            return (channelType === Channel.prototype.TYPE.BIDIRECTIONAL_MASTER_CHANNEL);
-        else if (channelType === 'master')
-            return true;
-        else return false;
-
-    };
-
-
-
-    // Default
-    Channel.prototype.channelResponse = function (channelResponse)
+    Channel.prototype.setRfFrequency = function (frequencyOffset,callback)
     {
-        return undefined;
+      this.frequency = frequencyOffset;
+      this.host.setChannelRFFreq(this.channel,frequencyOffset,callback);
     };
 
-    // Default
-    Channel.prototype.broadCast = function (broadcast)
+    Channel.prototype.setPeriod = function (period,callback)
     {
-        return undefined;
+      this.period = period;
+      this.host.setChannelPeriod(this.channel,period,callback);
+    };
 
+    Channel.prototype.open = function (callback)
+    {
+      this.host.openChannel(this.channel,callback);
+    };
+
+    Channel.prototype.close = function (callback)
+    {
+      this.host.closeChannel(this.channel,callback);
     };
 
     module.export = Channel;
