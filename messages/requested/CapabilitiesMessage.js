@@ -21,34 +21,34 @@ define(function (require, exports, module){
     // Inspired by Dynastream Android SDK 4.0.0
     CapabilitiesMessage.prototype.getNumberOfChannels = function ()
     {
-        return this.content[0];
+        return this.payload[0];
     };
 
     // Inspired by Dynastream Android SDK 4.0.0
     CapabilitiesMessage.prototype.getNumberOfNetworks = function ()
     {
-        return this.content[1];
+        return this.payload[1];
     };
 
     // ANT Message Protocol and Usage. rev 5.0b - page 115
     CapabilitiesMessage.prototype.decode = function (data){
 
-        this.MAX_CHAN =  this.content[0];
-        this.MAX_NET = this.content[1];
+        this.MAX_CHAN =  this.payload[0];
+        this.MAX_NET = this.payload[1];
 
-        this.standardOptions = this.content[2];
+        this.standardOptions = this.payload[2];
 
-        this.advancedOptions = this.content[3];
+        this.advancedOptions = this.payload[3];
 
         // Documentation update http://www.thisisant.com/forum/viewthread/4250/
 
-        this.advancedOptions2 = this.content[4];
+        this.advancedOptions2 = this.payload[4];
 
-        this.advancedOptions3 = this.content[6];
+        this.advancedOptions3 = this.payload[6];
 
-        this.advancedOptions4 = this.content[7];
+        this.advancedOptions4 = this.payload[7];
 
-        this.maxSensRcoreChannels =  this.content[5];
+        this.maxSensRcoreChannels =  this.payload[5];
 
         this.NO_RECEIVE_CHANNELS = this.standardOptions & 0x01;
         this.NO_TRANSMIT_CHANNELS = this.standardOptions & 0x02;

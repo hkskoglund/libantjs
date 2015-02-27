@@ -23,7 +23,7 @@ define(function (require, exports, module){
       var msgBuffer = new Uint8Array([channel]);
       this.channel = channel;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
     };
 
     OpenChannelMessage.prototype.toString = function (){

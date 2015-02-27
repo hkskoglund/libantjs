@@ -22,9 +22,9 @@ define(function (require, exports, module){
     ChannelStatusMessage.prototype.constructor = ChannelStatusMessage;
 
     ChannelStatusMessage.prototype.decode = function (data)    {
-        var status = this.content[1];
+        var status = this.payload[1];
 
-        this.channel = this.content[0];
+        this.channel = this.payload[0];
 
         this.state = new ChannelState(status & parseInt("00000011", 2)); // Lower 2 bits
 

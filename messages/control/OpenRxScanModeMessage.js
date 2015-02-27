@@ -25,7 +25,7 @@ define(function (require, exports, module){
 
       content[0] = Message.prototype.FILLER_BYTE; // By default new UintArray sets underlying array to 0, be sure its 0
 
-      this.setContent(content.buffer);
+      this.setPayload(content.buffer);
 
     };
 

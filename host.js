@@ -21,6 +21,7 @@ define(function (require, exports, module){
     Message = require('./messages/Message'),
 
     // Control ANT
+
     ResetSystemMessage = require('./messages/control/ResetSystemMessage'),
     OpenChannelMessage = require('./messages/control/OpenChannelMessage'),
     OpenRxScanModeMessage = require('./messages/control/OpenRxScanModeMessage'),
@@ -96,6 +97,7 @@ define(function (require, exports, module){
     UsbLib = require(usbLibraryPath);
 
     // Host for USB ANT communication
+
     function Host(options)    {
 
       var number;
@@ -117,8 +119,7 @@ define(function (require, exports, module){
           this.channel[number] = new Channel(this.options,this,number);
         }
 
-        if (this.log.logging){  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
-
+        if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
         usb = new UsbLib({ log : options.log});
 
     }
@@ -128,16 +129,10 @@ define(function (require, exports, module){
                                                                             writeable : true,
                                                                             configurable : true } });
 
-    /* Use state-machine for keeping track of messaging state
-    Host.prototype.STATE = {
-      INIT : 0x00,
-      RTS : 0x01, // Ready to send next message to ANT
-      WAIT : 0x02, // Waiting for response from ANT
-      ERROR : 0x03 // Something went wrong
-    }; */
 
-    // Send a control/channel configuration message to ANT
-    Host.prototype.sendMessage = function (message, callback)    {
+    // Send a message to ANT
+      Host.prototype.sendMessage = function (message, callback)
+    {
       var messageReceived = false,
           timeout = 500,
           intervalNoMessageReceivedID,
@@ -145,8 +140,10 @@ define(function (require, exports, module){
           MAX_TRIES = 3,
           rawMessage = message.getRawMessage(),
           errMsg,
+          noReply,
+          configMessage,
 
-       onMessageReceived = function _onMessageReceived(error,message)
+       onReply = function _onReply(error,message)
                               {
                                 clearInterval(intervalNoMessageReceivedID);
 
@@ -160,12 +157,16 @@ define(function (require, exports, module){
                         {
                           if (error)
                           {
-                            clearInterval(intervalNoMessageReceivedID);
+                            if (!noReply) clearInterval(intervalNoMessageReceivedID);
                              if (this.log.logging) {  this.log.log('error', 'TX failed of ' + message.toString(),error); }
                              callback(error);
-                          }
+                          } else
+                          {
+                            if (noReply)
+                             callback(error);
+                             // on success -> onReply should be called when 'MESSAGE' is emitted in the messageFactory
 
-                          // on success -> onMessageReceived should be called when 'MESSAGE' is emitted in the messageFactory
+                          }
 
                         }.bind(this),
 
@@ -186,25 +187,37 @@ define(function (require, exports, module){
             }
         }.bind(this);
 
-     if (this.listeners(this.EVENT.MESSAGE).length)
+      // Spec. p 54
+      noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
+      configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
+
+     console.log('NOREPLY',noReply,'CONFIG',configMessage);
+
+     if (!noReply)
       {
-        callback(new Error('Still awating response to a previous control/configuration message, cannot proceed'));
-        return;
+        if (this.listeners(this.EVENT.MESSAGE).length)
+         {
+           callback(new Error('Still awating response to a previous control/configuration message, cannot proceed'));
+           return;
+         }
+
+         if (this.log.logging){ this.log.log('log', 'Sending '+ message.toString()); }
+
+         if (configMessage)
+         {
+           this.channel[(new DataView(message.getPayload())).getUint8(0)].once('RESPONSE_NO_ERROR',onReply);
+         } else
+         {
+           this.once(this.EVENT.MESSAGE,onReply);
+         }
+
+         intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
       }
-
-      if (message.toString() === undefined) console.error('!!!!!',message);
-
-      if (this.log.logging){ this.log.log('log', 'Sending '+ message.toString()); }
-
-      this.once(this.EVENT.MESSAGE,onMessageReceived);
-
-      intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
 
       usb.transfer(rawMessage,onSentMessage);
 
     };
 
-    // for event emitter
     Host.prototype.EVENT = {
 
     //    ERROR : 'error',
@@ -640,13 +653,13 @@ define(function (require, exports, module){
 
 
   // param data - ArrayBuffer from USB
-  Host.prototype.messageFactory = function (data){
+  Host.prototype.messageFactory = function (data)  {
 
   var message;
 
-    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC){
+    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC)    {
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + 'bytes, byte offset of buffer ' + data.byteOffset, data);
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
 
         return;
     }
@@ -663,8 +676,6 @@ define(function (require, exports, module){
         if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
         return;
     }
-
-    // Construct messages
 
     switch (message[Message.prototype.iID])
     {
@@ -745,14 +756,13 @@ define(function (require, exports, module){
 
           var channelResponseMsg = new ChannelResponseMessage(message);
 
-          this.emit(this.EVENT.MESSAGE,undefined,channelResponseMsg);
-
           if (channelResponseMsg.response instanceof RFEvent) {
-            this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],channelResponseMsg.response);
+            this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
           }
           else
           {
-            this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],channelResponseMsg.response);
+
+            this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
           }
 
           break;
@@ -832,7 +842,7 @@ define(function (require, exports, module){
 //        case Message.prototype.CHANNEL_ID:
 //
 //            var channelIdMsg = new ChannelIdMessage();
-//            channelIdMsg.setContent(data.slice(3, 3 + ANTmsg.length));
+//            channelIdMsg.setPayload(data.slice(3, 3 + ANTmsg.length));
 //            channelIdMsg.decode();
 //
 //            console.log("Got response channel ID", channelIdMsg.toString());
@@ -1004,7 +1014,7 @@ define(function (require, exports, module){
 
     // Set transmit power for individual channel
     Host.prototype.setChannelTxPower = function (channel,transmitPower, callback)
-     {
+    {
        this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), callback);
     };
 
@@ -1026,13 +1036,24 @@ define(function (require, exports, module){
     };
 
     // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
-    Host.prototype.closeChannel = function (channelNumber, callback){
+    Host.prototype.closeChannel = function (channelNumber, callback)    {
 
        // Wait for EVENT_CHANNEL_CLOSED ?
        // If channel status is tracking -> can get broadcast data packet before event channel closed packet
 
         this.sendMessage(new CloseChannelMessage(channelNumber), callback);
 
+    };
+
+    Host.prototype.sendBroadcastData = function (channel,broadcastData,callback)
+    {
+      var broadcastMsg = new BroadcastDataMessage(),
+           data;
+
+      if (typeof broadcastData === 'object' && broadcastData.constructor.name === 'Array') // Allows sending of [1,2,3,4,5,6,7,8]
+         data = new Uint8Array(broadcastData);
+
+       this.sendMessage(new BroadcastDataMessage(),callback);
     };
 
         //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED

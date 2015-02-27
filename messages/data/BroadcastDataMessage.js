@@ -1,7 +1,6 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function')
-{ var define = require('amdefine')(module); }
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 define(function (require, exports, module)
 {
@@ -30,7 +29,7 @@ define(function (require, exports, module)
         if (data)
             Message.prototype.decode.call(this,data); // in Message
 
-        this.channel = this.content[0];
+        this.channel = this.payload[0];
         //this.data = new Uint8Array(this.content.buffer.slice(1, 9)); // Data 0 .. 7 - assume independent channel
         this.data = this.content.subarray(1,9);
         // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>

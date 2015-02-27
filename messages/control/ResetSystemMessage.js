@@ -24,7 +24,7 @@ define(function (require, exports, module)
 
     ResetSystemMessage.prototype.encode = function ()
     {
-      this.setContent((new Uint8Array(1)).buffer);
+      this.setPayload((new Uint8Array(1)).buffer);
     };
 
     module.exports = ResetSystemMessage;

@@ -43,7 +43,7 @@ define(function (require, exports, module){
     this.size = size;
     this.time = time;
 
-    this.setContent(msgBuffer.buffer);
+    this.setPayload(msgBuffer.buffer);
 
   };
 

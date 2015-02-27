@@ -30,7 +30,7 @@ define(function (require, exports, module){
       this.channel = channel;
       this.RFFreq = RFFreq;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 

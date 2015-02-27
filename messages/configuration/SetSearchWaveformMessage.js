@@ -33,7 +33,7 @@ define(function (require, exports, module){
       this.channel = channel;
       this.searchWaveform = searchWaveform;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 

@@ -21,7 +21,7 @@ define(function (require, exports, module){
     CloseChannelMessage.prototype.encode = function (channel)
     {
       var msgBuffer = new Uint8Array([channel]);
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 

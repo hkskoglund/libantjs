@@ -40,7 +40,7 @@ define(function (require, exports, module)
     if (extendedAssignment)
       this.extendedAssignment = extendedAssignment;
 
-    this.setContent(msgBuffer.buffer);
+    this.setPayload(msgBuffer.buffer);
   };
 
   AssignChannelMessage.prototype.toString = function ()

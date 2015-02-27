@@ -18,11 +18,18 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     ChannelResponseMessage.prototype.constructor = ChannelResponseMessage;
 
     ChannelResponseMessage.prototype.decode = function ()    {
+      var payload = this.getPayload(),
+          channel = payload[0],
+          initiatingId = payload[1],
+          code = payload[2];
 
-      switch (this.content[1])
+      switch (initiatingId)
       {
-        case 0x01: this.response = new RFEvent(this.content[0],this.content[1],this.content[2]); break;
-        default : this.response = new ChannelResponse(this.content[0],this.content[1],this.content[2]); break;
+        case 0x01:  this.response = new RFEvent(channel,initiatingId,code);
+                    break;
+
+        default :   this.response = new ChannelResponse(channel,initiatingId,code);
+                    break;
       }
 
     };

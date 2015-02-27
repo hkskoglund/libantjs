@@ -30,7 +30,7 @@ define(function (require, exports, module){
       this.channel = channel;
       this.transmitPower = transmitPower;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
      };
 

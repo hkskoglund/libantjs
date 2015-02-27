@@ -34,7 +34,7 @@ define(function (require, exports, module){
       this.deviceType = deviceType;
       this.transmissionType = transmissionType;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 

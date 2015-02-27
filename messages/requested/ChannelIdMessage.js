@@ -21,8 +21,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
   ChannelIdMessage.prototype.decode = function (data)  {
 
-      this.channel = this.content[0];
-      this.channelId = new ChannelId(new DataView(this.content).getUint16(1,true), this.content[3], this.content[4]);
+      this.channel = this.payload[0];
+      this.channelId = new ChannelId(new DataView(this.content).getUint16(1,true), this.payload[3], this.payload[4]);
 
   };
 

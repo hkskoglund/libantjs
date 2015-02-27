@@ -28,7 +28,7 @@ define(function (require, exports, module){
     this.channel = channel;
     this.messagePeriod = messagePeriod;
 
-    this.setContent(msgBuffer.buffer);
+    this.setPayload(msgBuffer.buffer);
 
   };
 

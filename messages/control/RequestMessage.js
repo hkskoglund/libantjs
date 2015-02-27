@@ -45,7 +45,7 @@ define(function (require, exports, module){
 
     }
 
-    this.setContent(msgBuffer.buffer);
+    this.setPayload(msgBuffer.buffer);
 
 
   };

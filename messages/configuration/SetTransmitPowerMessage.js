@@ -27,7 +27,7 @@ define(function (require, exports, module){
 
      this.transmitPower = transmitPower;
 
-     this.setContent(msgBuffer.buffer);
+     this.setPayload(msgBuffer.buffer);
 
     };
 

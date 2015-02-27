@@ -51,7 +51,7 @@ define(function (require, exports, module){
         var msg;
             //code;
 
-        var startupMessage = this.content[0];
+        var startupMessage = this.getPayload()[0];
 
         if (startupMessage === NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK){
             msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE;

@@ -39,7 +39,7 @@ define(function (require, exports, module){
       this.transmissionType = transmissionType;
       this.pair = pairingRequest;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
 
     };

@@ -33,7 +33,7 @@ define(function (require, exports, module){
       this.channel = channel;
       this.HPsearchTimeout = searchTimeout;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 

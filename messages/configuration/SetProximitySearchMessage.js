@@ -29,7 +29,7 @@ define(function (require, exports, module){
       this.channel = channel;
       this.searchThreshold = searchThreshold;
 
-      this.setContent(msgBuffer.buffer);
+      this.setPayload(msgBuffer.buffer);
 
     };
 
