@@ -26,9 +26,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         this.log = options.logger || new Logger(options);
 
-        this.host = host; // Allows access to host API for channel object (wrappers)
+        this.host = host; // Allows access to host API for channel (wrappers)
 
         this.channel = channel;
+        this.network = new Network(Network.prototype.PUBLIC);
 
     }
 
@@ -61,6 +62,11 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.extendedAssignment = new ExtendedAssignment(configuration.extendedAssignment);
     };
 
+    Channel.prototype.setNetwork = function (number)
+    {
+      this.network.number = number;
+    };
+
     Channel.prototype.setNetworkKey = function(number,key,callback)
 
     {
@@ -80,17 +86,28 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Channel.prototype.assign = function (type, extendedAssignment, callback)
     {
+
       if (type instanceof ChannelType)
         this.type = type;
       else
         this.type = new ChannelType(type);
 
       if (extendedAssignment instanceof ExtendedAssignment)
-         this.extendedAssignment = extendedAssignment;
-      else
-        this.extendedAssignment = new ExtendedAssignment(extendedAssignment);
+      {
+        this.extendedAssignment = extendedAssignment;
+        this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
 
-      this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
+      }
+      else if (typeof extendedAssignment === 'function')
+      {
+        this.host.assignChannel(this.channel, this.type.type, this.network.number, extendedAssignment);
+      }
+
+      else {
+        this.extendedAssignment = new ExtendedAssignment(extendedAssignment);
+        this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
+
+      }
     };
 
     Channel.prototype.unassign = function (callback)
@@ -103,11 +120,21 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       this.host.unassignChannel(this.channel,callback);
     };
 
-    Channel.prototype.setId = function (id,callback)
+    Channel.prototype.setId = function (deviceNumber,deviceType,transmissionType,callback)
     {
-      this.id = id;
+      var cb;
 
-      this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType,callback);
+      if (deviceNumber instanceof ChannelId)
+      {
+        this.id = deviceNumber;
+        cb = deviceType;
+      } else
+       {
+         this.id = new ChannelId(deviceNumber,deviceType,transmissionType);
+         cb = callback;
+       }
+
+      this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType,cb);
     };
 
     Channel.prototype.setFrequency = function (frequencyOffset,callback)
@@ -138,19 +165,19 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     {
       var key,
           onStatus = function (err,status)
-      {
+                    {
 
-        this.state = status.state;
-        this.type = status.type;
+                      this.state = status.state;
+                      this.type = status.type;
 
-        if (this.network instanceof Network)
-           this.network.number = status.networkNumber;
-        else
-          this.network = new Network(status.networkNumber);
+                      if (this.network instanceof Network)
+                         this.network.number = status.networkNumber;
+                      else
+                        this.network = new Network(status.networkNumber);
 
-        callback(err,status);
+                      callback(err,status);
 
-      }.bind(this);
+                    }.bind(this);
 
       this.host.getChannelStatus(this.channel,onStatus);
     };

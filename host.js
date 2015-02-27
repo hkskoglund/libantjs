@@ -58,7 +58,9 @@ define(function (require, exports, module){
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
     LibConfig = require('./messages/configuration/util/libConfig'),
 
-    ChannelResponseMessage = require('./messages/channelResponse/ChannelResponseMessage'),
+    ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
+    RFEvent = require('./channel/RFEvent'),
+    ChannelResponse = require('./channel/channelResponse'),
 
     ChannelId = require('./messages/configuration/extended/channelId'),
 
@@ -94,9 +96,11 @@ define(function (require, exports, module){
     UsbLib = require(usbLibraryPath);
 
     // Host for USB ANT communication
-    function Host(options){
+    function Host(options)    {
 
-        if (!options){
+      var number;
+
+        if (!options)        {
           options = {};
         }
 
@@ -107,6 +111,11 @@ define(function (require, exports, module){
         this.log = new Logger(options);
 
         this.channel = new Array(MAX_CHAN);
+
+        for (number=0; number < MAX_CHAN; number++)
+        {
+          this.channel[number] = new Channel(this.options,this,number);
+        }
 
         if (this.log.logging){  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
 
@@ -132,7 +141,8 @@ define(function (require, exports, module){
       var messageReceived = false,
           timeout = 500,
           intervalNoMessageReceivedID,
-          retry=0, MAX_TRIES = 3,
+          retry=0,
+          MAX_TRIES = 3,
           rawMessage = message.getRawMessage(),
           errMsg,
 
@@ -178,13 +188,14 @@ define(function (require, exports, module){
 
      if (this.listeners(this.EVENT.MESSAGE).length)
       {
-        callback(new Error('Still awating response to control/configuration message'));
+        callback(new Error('Still awating response to a previous control/configuration message, cannot proceed'));
         return;
       }
 
       if (message.toString() === undefined) console.error('!!!!!',message);
 
       if (this.log.logging){ this.log.log('log', 'Sending '+ message.toString()); }
+
       this.once(this.EVENT.MESSAGE,onMessageReceived);
 
       intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
@@ -612,11 +623,7 @@ define(function (require, exports, module){
                         _doLibConfigCB(error);
                 }.bind(this)); */
 
-        var number;
-        for (number=0;number<MAX_CHAN;number++)
-        {
-          this.channel[number] = new Channel(this.options,this,number);
-        }
+
 
         usb.init(iDevice,this._onUSBinit.bind(this,onInit));
 
@@ -737,12 +744,20 @@ define(function (require, exports, module){
       case Message.prototype.CHANNEL_RESPONSE:
 
           var channelResponseMsg = new ChannelResponseMessage(message);
-          console.log('response',channelResponseMsg);
+
           this.emit(this.EVENT.MESSAGE,undefined,channelResponseMsg);
+
+          if (channelResponseMsg.response instanceof RFEvent) {
+            this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],channelResponseMsg.response);
+          }
+          else
+          {
+            this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],channelResponseMsg.response);
+          }
 
           break;
 //
-//        //case Message.prototype.burst_transfer_data.id:
+//        //case Message.prototype.BURST_TRANSFER_DATA:
 //
 //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
 //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
@@ -911,12 +926,18 @@ define(function (require, exports, module){
      also sets defaults values for RF, period, tx power, search timeout p.22 */
     Host.prototype.assignChannel = function (number, channelType, networkNumber, extendedAssignment, callback)
     {
-        var configurationMsg = new AssignChannelMessage(number, channelType, networkNumber, extendedAssignment);
+      var cb,
+         configurationMsg;
 
         if (typeof extendedAssignment === "function")
-            cb = extendedAssignment; // If no extended assignment use argument as callback
-        else {
+        {
+          cb = extendedAssignment; // If no extended assignment use argument as callback
+          configurationMsg = new AssignChannelMessage(number, channelType, networkNumber);
+        }
+        else
+        {
             cb = callback;
+            configurationMsg = new AssignChannelMessage(number, channelType, networkNumber, extendedAssignment);
         }
 
         this.sendMessage(configurationMsg, cb);

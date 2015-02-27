@@ -36,6 +36,7 @@ define(function (require, exports, module)
     this.channel = channel;
     this.type = channelType;
     this.net = networkNumber;
+
     if (extendedAssignment)
       this.extendedAssignment = extendedAssignment;
 
@@ -45,8 +46,10 @@ define(function (require, exports, module)
   AssignChannelMessage.prototype.toString = function ()
 {
       var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + (new ChannelType(this.type));
+
       if (this.extendedAssignment)
           msg += " extended assignment " + (new ExtendedAssignment(this.extendedAssignment)).toString();
+
       return msg;
   };
 

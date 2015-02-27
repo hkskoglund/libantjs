@@ -11,7 +11,7 @@ define(function (require, exports, module){
     function RFEvent(channel,initiatingId,code)
     {
       this.channel = channel;
-      this.initiatingId = initiatingId;
+      this.initiatingId = initiatingId; // === 0x01
       this.code  = code;
 
     }
