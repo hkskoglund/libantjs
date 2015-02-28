@@ -57,13 +57,13 @@ define(function (require, exports, module){
     SetSerialNumChannelIdMessage = require('./messages/configuration/SetSerialNumChannelIdMessage'),
     ConfigureEventBufferMessage = require('./messages/configuration/ConfigureEventBufferMessage'),
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
-    LibConfig = require('./messages/configuration/util/libConfig'),
+    LibConfig = require('./channel/libConfig'),
 
     ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
     RFEvent = require('./channel/RFEvent'),
     ChannelResponse = require('./channel/channelResponse'),
 
-    ChannelId = require('./messages/configuration/extended/channelId'),
+    ChannelId = require('./channel/channelId'),
 
     // Profiles
 
@@ -76,7 +76,8 @@ define(function (require, exports, module){
     UsbLib,
     usb,
     usbLibraryPath,
-    MAX_CHAN = 8;
+    MAX_CHAN = 8,
+    previousMessageSlice;
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -142,6 +143,7 @@ define(function (require, exports, module){
           errMsg,
           noReply,
           configMessage,
+          messageStr = message.toString(),
 
        onReply = function _onReply(error,message)
                               {
@@ -173,7 +175,9 @@ define(function (require, exports, module){
         onNoMessageReceived = function _onNoMessageReceived()
         {
           retry++;
-          if (this.log.logging)  this.log.log('warn', 'Has not received a response in '+timeout+' ms. Retry '+retry);
+
+          if (this.log.logging)  this.log.log('warn', 'No reply in '+timeout+' ms. Retry '+retry+' for message '+messageStr);
+
           if (retry < MAX_TRIES)
           {
             usb.transfer(rawMessage,onSentMessage);
@@ -181,7 +185,7 @@ define(function (require, exports, module){
           else
             {
               clearInterval(intervalNoMessageReceivedID);
-              errMsg = 'Received no response after sending message '+retry+' times';
+              errMsg = 'Received no response after sending '+messageStr+' '+retry+' times';
               if (this.log.logging)  this.log.log('error', errMsg);
               callback(new Error(errMsg));
             }
@@ -201,7 +205,7 @@ define(function (require, exports, module){
            return;
          }
 
-         if (this.log.logging){ this.log.log('log', 'Sending '+ message.toString()); }
+         if (this.log.logging){ this.log.log('log', 'Sending '+ messageStr); }
 
          if (configMessage)
          {
@@ -610,7 +614,7 @@ define(function (require, exports, module){
         }
         else {
 
-            usb.addListener(USBDevice.prototype.EVENT.DATA, this.messageFactory.bind(this));
+            usb.addListener(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
 
             usb.listen();
 
@@ -653,223 +657,270 @@ define(function (require, exports, module){
 
 
   // param data - ArrayBuffer from USB
-  Host.prototype.messageFactory = function (data)  {
+  Host.prototype.deserialize = function (data)  {
 
-  var message;
+  var message,
+      iEndOfMessage,
+      iStartOfMessage=0,
+      metaDataLength =Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+       concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
+                       {
+                          var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
 
-    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC)    {
+                          tmp.set(new Uint8Array(buffer1), 0);
+                          tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + data[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ' cannot trust the integrity of data, discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
+                          return tmp;
+                        };
 
-        return;
+    if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength,data.constructor.name);
+
+    if (previousMessageSlice)
+    {
+      console.log('concat',previousMessageSlice.byteLength);
+      data = concat(previousMessageSlice,data);
     }
 
-    if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength);
+    iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
 
-    message = data.subarray(0,data[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH+Message.prototype.CRC_LENGTH);
-    if (this.log.logging) this.log.log('log', 'Parsing',message);
-
-    // Verify CRC
-
-    if (message[message[Message.prototype.iLENGTH] + Message.prototype.HEADER_LENGTH] !== Message.prototype.getCRC(message))
-    {
-        if (this.log.logging) this.log.log('CRC not valid, skipping parsing of message, received CRC ' + receivedCRC + ' calculated CRC ' + CRC);
-        return;
-    }
-
-    switch (message[Message.prototype.iID])
+    while (iStartOfMessage < iEndOfMessage)
     {
 
-      // Notifications
+      message = data.subarray(iStartOfMessage,iEndOfMessage);
 
-      case Message.prototype.NOTIFICATION_STARTUP:
+      if (this.log.logging) this.log.log('log', 'Parsing',message);
 
-          this.emit(this.EVENT.MESSAGE,undefined,new NotificationStartup(message));
+      if (message[Message.prototype.iSYNC] !== Message.prototype.SYNC)
+      {
 
-          break;
+          if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + message[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ', discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
+          return;
+      }
 
-      case Message.prototype.NOTIFICATION_SERIAL_ERROR:
+      switch (message[Message.prototype.iID])
+      {
 
-          this.emit(this.EVENT.MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
+        // Notifications
 
-          break;
+        case Message.prototype.NOTIFICATION_STARTUP:
 
-      // Device info.
+            this.emit(this.EVENT.MESSAGE,undefined,new NotificationStartup(message));
 
-      case Message.prototype.CAPABILITIES:
-
-          this.emit(this.EVENT.MESSAGE,undefined,new CapabilitiesMessage(message));
-
-          break;
-
-      case Message.prototype.ANT_VERSION:
-
-          this.emit(this.EVENT.MESSAGE,undefined,new VersionMessage(message));
-
-          break;
-
-      case Message.prototype.DEVICE_SERIAL_NUMBER:
-
-          this.emit(this.EVENT.MESSAGE,undefined,new DeviceSerialNumberMessage(message));
-
-          break;
-
-      case Message.prototype.EVENT_BUFFER_CONFIGURATION:
-
-        this.emit(this.EVENT.MESSAGE,undefined,new ConfigureEventBufferMessage(message));
-
-        break;
-
-      // Channel info.
-
-      case Message.prototype.CHANNEL_STATUS:
-
-         this.emit(this.EVENT.MESSAGE,undefined,new ChannelStatusMessage(message));
-
-          break;
-
-      // Data
-
-      case Message.prototype.BROADCAST_DATA:
-
-      // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
-
-          var broadcast = new BroadcastDataMessage();
-
-          broadcast.decode(message);
-
-       // Send broad to specific channel handler
-          if (typeof this._channel[broadcast.channel] !== "undefined"){
-
-              broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
-              var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
-
-          } else if (this.log.logging)
-              this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
-
-
-          break;
-
-      // Channel event or responses
-
-      case Message.prototype.CHANNEL_RESPONSE:
-
-          var channelResponseMsg = new ChannelResponseMessage(message);
-
-          if (channelResponseMsg.response instanceof RFEvent) {
-            this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
-          }
-          else
-          {
-
-            this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
-          }
-
-          break;
-//
-//        //case Message.prototype.BURST_TRANSFER_DATA:
-//
-//        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
-//        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
-//
-//        //    if (ANTmsg.length >= 9)//{ // 1 byte for channel NR + 8 byte payload - standard message format
-//
-//        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
-//        //        if (ANTmsg.sequenceNr & 0x04) // last packet
-//        //            msgStr += " LAST";
-//
-//        //        payloadData = data.slice(4, 12);
-//
-//        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
-//
-//        //        // console.log(payloadData);
-//
-//        //        if (ANTmsg.sequenceNr === 0x00) // First packet
-//        //        {
-//        //            // this.log.time('burst');
-//        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
-//
-//        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
-//
-//        //            // Extended msg. only in the first packet
-//        //            if (ANTmsg.length > 9)//{
-//        //                msgFlag = data[12];
-//        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-//        //                this.decode_extended_message(ANTmsg.channel, data);
-//        //            }
-//        //        }
-//        //        else if (ANTmsg.sequenceNr > 0x00)
-//
-//        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
-//
-//        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet
-//        //        {
-//        //            //console.timeEnd('burst');
-//        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
-//
-//        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
-//
-//        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
-//
-//        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
-//        //            if (typeof burstMsg !== "undefined")
-//        //                burstParser = burstMsg.decoder;
-//
-//        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
-//        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
-//        //            else
-//        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
-//
-//        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
-//        //        }
-//        //    }
-//        //    else {
-//        //        console.trace();
-//        //        console.log("Data", data);
-//        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
-//        //    }
-//
-//        //    break;
-//
-
-//
-//            // Response messages to request
-//
-//            // Channel specific
-//
-
-//
-//        case Message.prototype.CHANNEL_ID:
-//
-//            var channelIdMsg = new ChannelIdMessage();
-//            channelIdMsg.setPayload(data.slice(3, 3 + ANTmsg.length));
-//            channelIdMsg.decode();
-//
-//            console.log("Got response channel ID", channelIdMsg.toString());
-//
-////
-////
-////            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_ID, channelIdMsg))
-////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelIdMsg.toString());
-//
-//            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
-//            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
-//            break;
-//
-//            // ANT device specific, i.e nRF24AP2
-//
-
-
-        default:
-
-            if (this.log.logging)
-                this.log.log('log', "Unable to parse received data", data, ' msg id ', message[Message.prototype.iID]);
             break;
-    }
 
-    // TO DO : parse reset of data (next message)
+        case Message.prototype.NOTIFICATION_SERIAL_ERROR:
+
+            this.emit(this.EVENT.MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
+
+            break;
+
+        // Device info.
+
+        case Message.prototype.CAPABILITIES:
+
+            this.emit(this.EVENT.MESSAGE,undefined,new CapabilitiesMessage(message));
+
+            break;
+
+        case Message.prototype.ANT_VERSION:
+
+            this.emit(this.EVENT.MESSAGE,undefined,new VersionMessage(message));
+
+            break;
+
+        case Message.prototype.DEVICE_SERIAL_NUMBER:
+
+            this.emit(this.EVENT.MESSAGE,undefined,new DeviceSerialNumberMessage(message));
+
+            break;
+
+        case Message.prototype.EVENT_BUFFER_CONFIGURATION:
+
+          this.emit(this.EVENT.MESSAGE,undefined,new ConfigureEventBufferMessage(message));
+
+          break;
+
+        // Channel info.
+
+        case Message.prototype.CHANNEL_STATUS:
+
+           this.emit(this.EVENT.MESSAGE,undefined,new ChannelStatusMessage(message));
+
+            break;
+
+        // Data
+
+        case Message.prototype.BROADCAST_DATA:
+
+        // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
+
+            var broadcast = new BroadcastDataMessage();
+
+            broadcast.decode(message);
+
+         // Send broad to specific channel handler
+            if (typeof this._channel[broadcast.channel] !== "undefined")  {
+
+                broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
+                var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
+
+            } else if (this.log.logging)
+                this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
+
+
+            break;
+
+        // Channel event or responses
+
+        case Message.prototype.CHANNEL_RESPONSE:
+
+            var channelResponseMsg = new ChannelResponseMessage(message);
+
+            if (channelResponseMsg.response instanceof RFEvent) {
+              this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
+            }
+            else
+            {
+
+              this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
+            }
+
+            break;
+  //
+  //        //case Message.prototype.BURST_TRANSFER_DATA:
+  //
+  //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
+  //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
+  //
+  //        //    if (ANTmsg.length >= 9)  //{ // 1 byte for channel NR + 8 byte payload - standard message format
+  //
+  //        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
+  //        //        if (ANTmsg.sequenceNr & 0x04) // last packet
+  //        //            msgStr += " LAST";
+  //
+  //        //        payloadData = data.slice(4, 12);
+  //
+  //        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
+  //
+  //        //        // console.log(payloadData);
+  //
+  //        //        if (ANTmsg.sequenceNr === 0x00) // First packet
+  //        //        {
+  //        //            // this.log.time('burst');
+  //        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
+  //
+  //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
+  //
+  //        //            // Extended msg. only in the first packet
+  //        //            if (ANTmsg.length > 9)  //{
+  //        //                msgFlag = data[12];
+  //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
+  //        //                this.decode_extended_message(ANTmsg.channel, data);
+  //        //            }
+  //        //        }
+  //        //        else if (ANTmsg.sequenceNr > 0x00)
+  //
+  //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
+  //
+  //        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet
+  //        //        {
+  //        //            //console.timeEnd('burst');
+  //        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
+  //
+  //        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
+  //
+  //        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
+  //
+  //        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
+  //        //            if (typeof burstMsg !== "undefined")
+  //        //                burstParser = burstMsg.decoder;
+  //
+  //        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
+  //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
+  //        //            else
+  //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
+  //
+  //        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
+  //        //        }
+  //        //    }
+  //        //    else {
+  //        //        console.trace();
+  //        //        console.log("Data", data);
+  //        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
+  //        //    }
+  //
+  //        //    break;
+  //
+
+  //
+  //            // Response messages to request
+  //
+  //            // Channel specific
+  //
+
+  //
+  //        case Message.prototype.CHANNEL_ID:
+  //
+  //            var channelIdMsg = new ChannelIdMessage();
+  //            channelIdMsg.setPayload(data.slice(3, 3 + ANTmsg.length));
+  //            channelIdMsg.decode();
+  //
+  //            console.log("Got response channel ID", channelIdMsg.toString());
+  //
+  ////
+  ////
+  ////            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_ID, channelIdMsg))
+  ////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelIdMsg.toString());
+  //
+  //            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
+  //            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
+  //            break;
+  //
+  //            // ANT device specific, i.e nRF24AP2
+  //
+
+
+          default:
+
+              if (this.log.logging)
+                  this.log.log('log', "Unable to parse received data", data, ' msg id ', message[Message.prototype.iID]);
+              break;
+      }
+
+      iStartOfMessage = iEndOfMessage;
+
+      if (iStartOfMessage + Message.prototype.iLENGTH + metaDataLength < data.byteLength)
+      {
+        iEndOfMessage += (data[iStartOfMessage+Message.prototype.iLENGTH] + metaDataLength);
+      }
+      else
+      {
+        // TO DO : keep the rest of the message and attach it to the front of the next data transfer from usb
+        // libusb will send packet size specified by the requested in endpoint size, for example setting it to 512
+        // and the buffer gets filled with 7 bytes EVENT_TX channel response (Buffer a4 03 40 00 01 03 e5) after the channel is opened,
+        // gives 512/7 = 73 channel responses with the last byte a4 which is a SYNC byte. If we don't keep the rest
+        // of the message the SYNC byte is lost when receiving the next packet.
+
+        if (data.subarray(iStartOfMessage).byteLength)
+        {
+          previousMessageSlice = new Uint8Array(data.subarray(iStartOfMessage));
+        } else
+        {
+          previousMessageSlice = undefined;
+        }
+
+        console.log('rest of message',previousMessageSlice);
+        iEndOfMessage = iStartOfMessage;
+      }
+
+      console.log('START',iStartOfMessage,'END',iEndOfMessage);
+
+  }
 
 };
+
+
+
 
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)

@@ -76,23 +76,23 @@ define(function (require, exports, module){
 
     LibConfig.prototype.Flag = {
         DISABLED: 0x00,
-        CHANNEL_ID_ENABLED: 0x20, // 00100000
-        RSSI_ENABLED: 0x40,      // 01000000
+        CHANNEL_ID_ENABLED: 0x20,  // 00100000
+        RSSI_ENABLED: 0x40,        // 01000000
         RX_TIMESTAMP_ENABLED: 0x80 // 10000000
     };
 
     LibConfig.prototype.toString = function (){
 
-        var msg = "Library configured for extended messaging (LIBCONFIG) :";
+        var msg = "Extended messaging (LIBCONFIG) :";
 
         if (this.enableChannelId)
-            msg += " ChannelID";
+            msg += " ChannelID |";
 
         if (this.enableRSSI)
-            msg += " RSSI";
+            msg += " RSSI |";
 
         if (this.enableRXTimestamp)
-            msg += " RXtimestamp";
+            msg += " RX timestamp |";
 
         return msg;
     };

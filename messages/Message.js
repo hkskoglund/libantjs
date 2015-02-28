@@ -8,13 +8,13 @@ define(function (require, exports, module){
 
     // Standard message :  bSYNC bLENGTH bID bCHANNELNUMBER CONTENT (8 bytes) bCRC (total length meta+content = 5+8 = 13 bytes)
 
-    var LibConfig = require('./configuration/util/libConfig'),
+    var LibConfig = require('../channel/libConfig'),
 
         // Extended data if requested by libconfig
 
-        ChannelId = require('./configuration/extended/channelId'),
-        RSSI = require('./configuration/extended/RSSI'),
-        RXTimestamp = require('./configuration/extended/RXTimestamp');
+        ChannelId = require('../channel/channelId'),
+        RSSI = require('../channel/RSSI'),
+        RXTimestamp = require('../channel/RXTimestamp');
 
     function Message(data,id)    {
 
@@ -245,7 +245,11 @@ define(function (require, exports, module){
 
     Message.prototype.NO_REPLY_MESSAGE =
     [
-      Message.prototype.SLEEP_MESSAGE,Message.prototype.BROADCAST_DATA,
+      Message.prototype.OPEN_CHANNEL, // If everythings goes well, the channel starts emitting broadcasts (master) reply: EVENT_TX on each period
+
+      Message.prototype.SLEEP_MESSAGE,
+      
+      Message.prototype.BROADCAST_DATA,
       Message.prototype.ACKNOWLEDGED_DATA,
       Message.prototype.BURST_TRANSFER_DATA,
       Message.prototype.ADVANCED_BURST_TRANSFER_DATA
@@ -271,7 +275,7 @@ define(function (require, exports, module){
       Message.prototype.EVENT_BUFFER_CONFIGURATION,
       Message.prototype.SET_CHANNEL_SEARCH_PRIORITY
     ];
-    
+
     Message.prototype.MESSAGE = {
 
             // Control messages

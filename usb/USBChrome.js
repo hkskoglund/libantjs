@@ -78,7 +78,7 @@ define(['usb/USBDevice'],function (USBDevice){
 
         var transferErrorCount = 0,
             MAX_TRANSFER_ERROR_COUNT = 10,// Count LIBUSB result codes other than completed === 0
-            inlengthMax = 512;
+            inlengthMax = 1024;
 
         // console.trace();
 

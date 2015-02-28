@@ -11,7 +11,7 @@ define(function (require, exports, module){
 
     function LowPrioritySearchTimeout(timeout){
         if (typeof timeout === 'undefined'){
-          console.warn("No high priority timeout specified, setting it to default ",LowPrioritySearchTimeout.prototype.DEFAULT);
+          console.warn("No low priority timeout specified, setting it to default ",LowPrioritySearchTimeout.prototype.DEFAULT);
             this.timeout = LowPrioritySearchTimeout.prototype.DEFAULT;
         }
         else

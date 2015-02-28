@@ -8,11 +8,11 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
   var Logger = require('../util/logger'),
       EventEmitter = require('../util/events'),
       Network = require('./network'),
-      ChannelId = require('../messages/configuration/extended/channelId'),
+      ChannelId = require('./channelId'),
       ChannelState = require('./channelState'),
       ChannelType = require('./channelType'),
-      LowPrioritySearchTimeout = require('../messages/configuration/util/LowPrioritySearchTimeout'),
-      HighPrioritySearchTimeout = require('../messages/configuration/util/HighPrioritySearchTimeout'),
+      LowPrioritySearchTimeout = require('./LowPrioritySearchTimeout'),
+      HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout'),
       ExtendedAssignment = require('./extendedAssignment');
 
     function Channel(options,host,channel)    {
