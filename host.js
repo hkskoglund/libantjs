@@ -661,9 +661,9 @@ define(function (require, exports, module){
 
   var message,
       iEndOfMessage,
-      iStartOfMessage=0,
-      metaDataLength =Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
-       concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
+      iStartOfMessage = 0,
+      metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+      concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
                        {
                           var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
 
@@ -675,7 +675,7 @@ define(function (require, exports, module){
 
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength,data.constructor.name);
 
-    if (previousPacket) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
+    if (previousPacket && previousPacket.byteLength) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
     {
       data = concat(previousPacket,data);
     }
@@ -758,7 +758,7 @@ define(function (require, exports, module){
             broadcast.decode(message);
 
          // Send broad to specific channel handler
-            if (typeof this._channel[broadcast.channel] !== "undefined")  {
+            if (typeof this._channel[broadcast.channel] !== "undefined")            {
 
                 broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
                 var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
@@ -896,20 +896,12 @@ define(function (require, exports, module){
       {
         previousPacket = data.subarray(iStartOfMessage);
 
-        if (previousPacket.byteLength === 0)
-        {
-          previousPacket = undefined;
-        }
-
         iEndOfMessage = iStartOfMessage;
       }
 
-  }
+    }
 
-};
-
-
-
+  };
 
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
