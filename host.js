@@ -77,7 +77,7 @@ define(function (require, exports, module){
     usb,
     usbLibraryPath,
     MAX_CHAN = 8,
-    previousMessageSlice;
+    previousPacket;
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -675,10 +675,9 @@ define(function (require, exports, module){
 
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength,data.constructor.name);
 
-    if (previousMessageSlice)
+    if (previousPacket) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
     {
-      console.log('concat',previousMessageSlice.byteLength);
-      data = concat(previousMessageSlice,data);
+      data = concat(previousPacket,data);
     }
 
     iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
@@ -889,31 +888,21 @@ define(function (require, exports, module){
 
       iStartOfMessage = iEndOfMessage;
 
-      if (iStartOfMessage + Message.prototype.iLENGTH + metaDataLength < data.byteLength)
+      if (iStartOfMessage + data[iStartOfMessage+Message.prototype.iLENGTH] + metaDataLength <= data.byteLength)
       {
         iEndOfMessage += (data[iStartOfMessage+Message.prototype.iLENGTH] + metaDataLength);
       }
-      else
+    else
       {
-        // TO DO : keep the rest of the message and attach it to the front of the next data transfer from usb
-        // libusb will send packet size specified by the requested in endpoint size, for example setting it to 512
-        // and the buffer gets filled with 7 bytes EVENT_TX channel response (Buffer a4 03 40 00 01 03 e5) after the channel is opened,
-        // gives 512/7 = 73 channel responses with the last byte a4 which is a SYNC byte. If we don't keep the rest
-        // of the message the SYNC byte is lost when receiving the next packet.
+        previousPacket = data.subarray(iStartOfMessage);
 
-        if (data.subarray(iStartOfMessage).byteLength)
+        if (previousPacket.byteLength === 0)
         {
-          previousMessageSlice = new Uint8Array(data.subarray(iStartOfMessage));
-        } else
-        {
-          previousMessageSlice = undefined;
+          previousPacket = undefined;
         }
 
-        console.log('rest of message',previousMessageSlice);
         iEndOfMessage = iStartOfMessage;
       }
-
-      console.log('START',iStartOfMessage,'END',iEndOfMessage);
 
   }
 
