@@ -1,9 +1,9 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true */
 
-// Convention : _ before a function name indicates that the function should not be used
+// Convention : _ before a function name indicates that the function should not be used externally
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
-define(function (require, exports, module){
+define(function (require, exports, module){
 
   'use strict';
 
@@ -57,9 +57,8 @@ define(function (require, exports, module){
     SetSerialNumChannelIdMessage = require('./messages/configuration/SetSerialNumChannelIdMessage'),
     ConfigureEventBufferMessage = require('./messages/configuration/ConfigureEventBufferMessage'),
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
-    LibConfig = require('./channel/libConfig'),
 
-    ChannelResponseMessage = require('./messages/ChannelResponseMessage'),
+    ChannelResponseMessage = require('./messages/ChannelResponseEvent/ChannelResponseMessage'),
     RFEvent = require('./channel/RFEvent'),
     ChannelResponse = require('./channel/channelResponse'),
 
@@ -626,8 +625,7 @@ define(function (require, exports, module){
 
     Host.prototype.init = function (iDevice,onInit){
 
-          /*  libConfig = new LibConfig(LibConfig.prototype.Flag.CHANNEL_ID_ENABLED, LibConfig.prototype.Flag.RSSI_ENABLED, LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED);
-
+        /*
             this.libConfig(libConfig.getFlagsByte(),
                 function _libConfig(error, channelResponse){
                     if (!error){
