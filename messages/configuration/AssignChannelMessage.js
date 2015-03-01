@@ -9,9 +9,7 @@ define(function (require, exports, module)
   'use strict';
 
   var Message = require('../Message'),
-      Channel = require('../../channel/channel'),
-      ChannelType = require('../../channel/channelType'),
-      ExtendedAssignment = require('../../channel/extendedAssignment');
+      Channel = require('../../channel/channel');
 
   function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment)
 {
@@ -45,10 +43,10 @@ define(function (require, exports, module)
 
   AssignChannelMessage.prototype.toString = function ()
 {
-      var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + (new ChannelType(this.type));
+      var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.prototype.TYPE[this.type];
 
       if (this.extendedAssignment)
-          msg += " extended assignment " + (new ExtendedAssignment(this.extendedAssignment)).toString();
+          msg += " extended assignment " + Channel.prototype.getExtendedAssignment.call(this);
 
       return msg;
   };

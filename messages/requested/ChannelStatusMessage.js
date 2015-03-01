@@ -1,16 +1,13 @@
 /* global define: true */
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
-define(function (require, exports, module){
+define(function (require, exports, module){
 
     'use strict';
 
     var Message = require('../Message'),
-        Channel = require('../../channel/channel'),
-        ChannelState = require('../../channel/channelState'),
-        ChannelType = require('../../channel/channelType'),
-        Network = require('../../channel/network');
-
+        Channel = require('../../channel/channel');
+      
     function ChannelStatusMessage(data)    {
 
         Message.call(this,data);
@@ -26,19 +23,19 @@ define(function (require, exports, module){
 
         this.channel = this.payload[0];
 
-        this.state = new ChannelState(status & parseInt("00000011", 2)); // Lower 2 bits
+        this.state = status & parseInt("00000011", 2); // Lower 2 bits
 
-        this.networkNumber = (status & parseInt("00001100", 2)) >> 2;
+        this.net = (status & parseInt("00001100", 2)) >> 2;
 
-        this.type = new ChannelType((status & parseInt("11110000", 2)) >> 4);
+        this.type = (status & parseInt("11110000", 2)) >> 4;
 
         // Tip from http://www.i-programmer.info/programming/javascript/2550-javascript-bit-manipulation.html
 
     };
 
     ChannelStatusMessage.prototype.toString = function ()    {
-        return Message.prototype.toString.call(this) + " Ch " + this.channel + ' Net '+ this.networkNumber + " " + this.type.toString() + " " +
-        this.state.toString();
+        return Message.prototype.toString.call(this) + " Ch " + this.channel + ' Net '+ this.net + " " + Channel.prototype.TYPE[this.type] + " " +
+        Channel.prototype.STATE[this.state];
     };
 
     module.exports = ChannelStatusMessage;

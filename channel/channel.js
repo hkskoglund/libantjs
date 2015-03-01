@@ -7,13 +7,9 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
   var Logger = require('../util/logger'),
       EventEmitter = require('../util/events'),
-      Network = require('./network'),
       ChannelId = require('./channelId'),
-      ChannelState = require('./channelState'),
-      ChannelType = require('./channelType'),
       LowPrioritySearchTimeout = require('./LowPrioritySearchTimeout'),
-      HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout'),
-      ExtendedAssignment = require('./extendedAssignment');
+      HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout');
 
     function Channel(options,host,channel)    {
 
@@ -29,12 +25,75 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.host = host; // Allows access to host API for channel (wrappers)
 
         this.channel = channel;
-        this.network = new Network(Network.prototype.PUBLIC);
 
     }
 
     Channel.prototype = Object.create(EventEmitter.prototype);
     Channel.prototype.constructor = Channel;
+
+    Channel.prototype.UNASSIGNED = 0x00;
+
+    Channel.prototype.ASSIGNED = 0x01;
+
+    Channel.prototype.SEARCHING = 0x02;
+
+    Channel.prototype.TRACKING = 0x03;
+
+    Channel.prototype.STATE = {
+      0x00 : 'Unassigned',
+      0x01 : 'Assigned',
+      0x02 : 'Searching',
+      0x03 : 'Tracking'
+    };
+
+    Channel.prototype.BIDIRECTIONAL_SLAVE = 0x00;
+    Channel.prototype.BIDIRECTIONAL_MASTER = 0x10;
+    Channel.prototype.SHARED_BIDIRECTIONAL_SLAVE =  0x20;
+    Channel.prototype.SHARED_BIDIRECTIONAL_MASTER = 0x30;
+    Channel.prototype.SLAVE_RECEIVE_ONLY = 0x40;
+    Channel.prototype.MASTER_TRANSMIT_ONLY = 0x50;
+
+    Channel.prototype.TYPE = {
+      0x00 : 'Bidirectional SLAVE',
+      0x10 : 'Bidirectional MASTER',
+      0x20 : 'Shared bidirectional SLAVE',
+      0x30 : 'Shared bidirectional MASTER',
+      0x40 : 'SLAVE receive only (diagnostic)',
+      0x50 : 'MASTER Transmit only (legacy)'
+    };
+
+    Channel.prototype.NET = {
+      PUBLIC : 0x00,
+      KEY : {
+        'ANT+' : [0xB9, 0xA5, 0x21, 0xFB,0xBD, 0x72,0xC3,0x45]
+      }
+    };
+
+    Channel.prototype.BACKGROUND_SCANNING_ENABLE= 0x01;       // 0000 0001
+    Channel.prototype.FREQUENCY_AGILITY_ENABLE = 0x04;        // 0000 0100
+    Channel.prototype.FAST_CHANNEL_INITIATION_ENABLE = 0x10;  // 0001 0000
+    Channel.prototype.ASYNCHRONOUS_TRANSMISSION_ENABLE= 0x20; // 0010 0000
+
+    Channel.prototype.getExtendedAssignment = function()
+    {
+      var msg= '',
+          getStatus = function(flag,str)
+                          {
+                              var msg = '';
+                              msg +=  ((this.extendedAssignment & flag) !== 0) ? '+' : '-';
+                              msg += str;
+
+                              return msg;
+                          }.bind(this);
+
+      msg += getStatus(Channel.prototype.BACKGROUND_SCANNING_ENABLE,'Background Scanning|');
+      msg += getStatus(Channel.prototype.FREQUENCY_AGILITY_ENABLE,'Frequency Agility|');
+      msg += getStatus(Channel.prototype.FAST_CHANNEL_INITIATION_ENABLE,'Fast Channel Initiation|');
+      msg += getStatus(Channel.prototype.ASYNCHRONOUS_TRANSMISSION_ENABLE,'Asynchronous Transmission|');
+      msg += this.extendedAssignment.toString(2)+'b';
+
+      return msg;
+    };
 
     // Supports initialization of configuration as an object literal
     Channel.prototype.setConfiguration = function(configuration)
@@ -44,10 +103,13 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         return;
 
       if (configuration.type)
-        this.type = new ChannelType(configuration.type);
+        this.type = configuration.type;
 
-      if (configuration.network)
-         this.network = new Network(configuration.network.number,configuration.network.key);
+      if (configuration.net)
+         this.net = configuration.net;
+
+      if (configuration.key)
+         this.key = configuration.key;
 
       if (configuration.id)
         this.id = new ChannelId(this.id.deviceNumber,this.id.deviceType,this.id.transmissionType);
@@ -59,55 +121,33 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(configuration.highPrioritySearchTimeout);
 
       if (configuration.extendedAssignment)
-        this.extendedAssignment = new ExtendedAssignment(configuration.extendedAssignment);
+        this.extendedAssignment = configuration.extendedAssignment;
     };
 
-    Channel.prototype.setNetwork = function (number)
+    Channel.prototype.setNetworkKey = function(net,key,callback)
     {
-      this.network.number = number;
-    };
+      this.net = net;
+      this.key = key;
 
-    Channel.prototype.setNetworkKey = function(number,key,callback)
-
-    {
-      var cb = callback;
-
-      if (number instanceof Network)
-      {
-        this.network = network;
-        cb = key;
-      }
-
-      else
-        this.network = new Network(number,key);
-
-        this.host.setNetworkKey(this.network.number,this.network.key,cb);
+      this.host.setNetworkKey(this.net,this.key,cb);
     };
 
     Channel.prototype.assign = function (type, extendedAssignment, callback)
     {
 
-      if (type instanceof ChannelType)
         this.type = type;
-      else
-        this.type = new ChannelType(type);
 
-      if (extendedAssignment instanceof ExtendedAssignment)
+      if (typeof extendedAssignment === 'number')
       {
         this.extendedAssignment = extendedAssignment;
-        this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
+        this.host.assignChannel(this.channel, this.type, this.net, this.extendedAssignment, callback);
 
       }
       else if (typeof extendedAssignment === 'function')
       {
-        this.host.assignChannel(this.channel, this.type.type, this.network.number, extendedAssignment);
+        this.host.assignChannel(this.channel, this.typ, this.net, extendedAssignment);
       }
 
-      else {
-        this.extendedAssignment = new ExtendedAssignment(extendedAssignment);
-        this.host.assignChannel(this.channel, this.type.type, this.network.number, this.extendedAssignment.extendedAssignment, callback);
-
-      }
     };
 
     Channel.prototype.unassign = function (callback)
@@ -115,7 +155,6 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       this.type = undefined;
       this.net = undefined;
       this.key = undefined;
-      this.network = undefined;
 
       this.host.unassignChannel(this.channel,callback);
     };
@@ -169,11 +208,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
                       this.state = status.state;
                       this.type = status.type;
-
-                      if (this.network instanceof Network)
-                         this.network.number = status.networkNumber;
-                      else
-                        this.network = new Network(status.networkNumber);
+                      this.net = status.net;
 
                       callback(err,status);
 
@@ -187,10 +222,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       var msg ='Ch '+this.channel+' |';
 
       if (this.network)
-        msg += this.network.toString()+'|';
+        msg += 'Net '+this.net+'|';
 
       if (this.type)
-        msg += this.type.toString()+'|';
+        msg += Channel.prototype.TYPE[this.type]+'|';
 
       if (this.id)
        msg += this.id.toString()+'|';
@@ -207,7 +242,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
       if (this.state) // Search etc.
       {
-        msg += this.state.toString()+'|';
+        msg += Channel.prototype.STATE[this.state]+'|';
       }
 
       return msg;
