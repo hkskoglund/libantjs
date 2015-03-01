@@ -59,8 +59,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
 
     ChannelResponseMessage = require('./messages/ChannelResponseEvent/ChannelResponseMessage'),
-    RFEvent = require('./channel/RFEvent'),
-    ChannelResponse = require('./channel/channelResponse'),
+    ChannelResponseEvent = require('./channel/channelResponseEvent'),
 
     ChannelId = require('./channel/channelId'),
 
@@ -773,14 +772,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
             var channelResponseMsg = new ChannelResponseMessage(message);
 
-            if (channelResponseMsg.response instanceof RFEvent) {
-              this.channel[channelResponseMsg.response.channel].emit(RFEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
-            }
-            else
-            {
+            this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
 
-              this.channel[channelResponseMsg.response.channel].emit(ChannelResponse.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
-            }
 
             break;
   //

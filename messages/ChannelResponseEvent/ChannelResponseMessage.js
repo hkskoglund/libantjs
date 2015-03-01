@@ -5,8 +5,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     'use strict';
 
     var Message = require('./Message'),
-        ChannelResponse = require('../channel/channelResponse'),
-        RFEvent = require('../channel/RFEvent');
+        ChannelResponseEvent = require('../channel/channelResponseEvent');
 
     function ChannelResponseMessage(data)    {
 
@@ -23,14 +22,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           initiatingId = payload[1],
           code = payload[2];
 
-      switch (initiatingId)
-      {
-        case 0x01:  this.response = new RFEvent(channel,initiatingId,code);
-                    break;
-
-        default :   this.response = new ChannelResponse(channel,initiatingId,code);
-                    break;
-      }
+      this.response = new ChannelResponseEvent(channel,initiatingId,code);
 
     };
 

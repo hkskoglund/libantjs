@@ -32,43 +32,43 @@ define(function (require, exports, module){
 
     }
 
-    ChannelId.prototype._check20BitDeviceNumber = function (){
-            var transferTypeMSN;
+    ChannelId.prototype._check20BitDeviceNumber = function ()    {
+      var transferTypeMSN;
 
-                           if (this.has20BitDeviceNumber()){
-                             transferTypeMSN  = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
-                                this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
-                            }
-        };
+     if (this.has20BitDeviceNumber())     {
+         transferTypeMSN  = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
+            this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
+      }
+    };
 
     ChannelId.prototype.getUniqueId = function (networkNr,channelNr)
     {
-        var pageScheme = 'ant';
+      var pageScheme = 'ant';
 
-          pageScheme = pageScheme+':'+networkNr+'.'+channelNr+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;
+      pageScheme = pageScheme+':'+networkNr+'.'+channelNr+':'+this.deviceNumber+'.'+this.deviceType+'.'+this.transmissionType;
 
-           return pageScheme;
+      return pageScheme;
 
     };
 
-    ChannelId.prototype.getDeviceNumber = function (){
+    ChannelId.prototype.getDeviceNumber = function ()    {
         return this.deviceNumber;
     };
 
-    ChannelId.prototype.getDeviceType = function (){
+    ChannelId.prototype.getDeviceType = function ()    {
         return this.deviceType;
     };
 
-    ChannelId.prototype.getTransmissionType = function (){
+    ChannelId.prototype.getTransmissionType = function ()    {
         return this.transmissionType;
     };
 
-    ChannelId.prototype.getPair = function (){
+    ChannelId.prototype.getPair = function ()    {
         return this.pair;
     };
 
     // Parse channel ID if enabled via LIBConfig
-    ChannelId.prototype.decode = function (extendedData){
+    ChannelId.prototype.decode = function (extendedData)    {
 
         //var extendedDataUint8 = new Uint8Array(extendedData);
         // | DN # af 41 | DT # 78 |T# 01
@@ -175,6 +175,5 @@ define(function (require, exports, module){
     };
 
     module.exports = ChannelId;
-
     return module.exports;
 });
