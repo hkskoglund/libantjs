@@ -132,10 +132,11 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       this.host.setNetworkKey(this.net,this.key,cb);
     };
 
-    Channel.prototype.assign = function (type, extendedAssignment, callback)
+    Channel.prototype.assign = function (type, net,extendedAssignment, callback)
     {
 
-        this.type = type;
+      this.type = type;
+      this.net = net;
 
       if (typeof extendedAssignment === 'number')
       {
@@ -145,7 +146,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       }
       else if (typeof extendedAssignment === 'function')
       {
-        this.host.assignChannel(this.channel, this.typ, this.net, extendedAssignment);
+        this.host.assignChannel(this.channel, this.type, this.net, extendedAssignment);
       }
 
     };

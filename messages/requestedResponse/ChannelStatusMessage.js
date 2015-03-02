@@ -25,8 +25,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         this.net = (status & parseInt("00001100", 2)) >> 2;
 
-        this.type = (status & parseInt("11110000", 2)) >> 4;
-
+        this.type = (status & parseInt("11110000", 2)); // Bit 4-7
+      
         // Tip from http://www.i-programmer.info/programming/javascript/2550-javascript-bit-manipulation.html
 
     };

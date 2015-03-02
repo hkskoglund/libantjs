@@ -144,6 +144,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           configMessage,
           requestMessage,
           resetMessage,
+          closeMessage,
           messageStr = message.toString(),
 
        onReply = function _onReply(error,message)
@@ -167,7 +168,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
                           {
                             if (noReply)
                              callback(error);
-                             // on success -> onReply should be called when 'MESSAGE' is emitted in the messageFactory
+                             // on success -> onReply should be called
 
                           }
 
@@ -197,6 +198,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
       requestMessage = (message.id === Message.prototype.REQUEST);
       resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
+      closeMessage = (message.id === Message.prototype.CLOSE_CHANNEL);
 
      console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
 
@@ -205,7 +207,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
          if (this.log.logging){ this.log.log('log', 'Sending '+ messageStr); }
 
-         if (configMessage)
+         if (configMessage || closeMessage)
          {
            this.channel[(new DataView(message.getPayload())).getUint8(0)].once('RESPONSE_NO_ERROR',onReply);
          } else if (requestMessage)
@@ -718,7 +720,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         case Message.prototype.ANT_VERSION:
 
-            message = new VersionMessage(rawMessage)
+            message = new VersionMessage(rawMessage);
             this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
 
             break;
@@ -772,6 +774,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         case Message.prototype.CHANNEL_RESPONSE:
 
             var channelResponseMsg = new ChannelResponseMessage(rawMessage);
+
+            //console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
             this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
 

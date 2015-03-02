@@ -12,7 +12,7 @@ define(function (require, exports, module)
       Channel = require('../../channel/channel');
 
   function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment)
-{
+  {
 
     Message.call(this,undefined,Message.prototype.ASSIGN_CHANNEL);
     this.encode(channel,channelType,networkNumber,extendedAssignment);
