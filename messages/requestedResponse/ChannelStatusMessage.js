@@ -7,11 +7,9 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     var Message = require('../Message'),
         Channel = require('../../channel/channel');
-      
+
     function ChannelStatusMessage(data)    {
-
         Message.call(this,data);
-
     }
 
     ChannelStatusMessage.prototype = Object.create(Message.prototype);

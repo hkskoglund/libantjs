@@ -1,7 +1,6 @@
 /* global define: true, Int8Array: true, DataView: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
-
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require, exports, module){
 
     'use strict';

@@ -50,6 +50,11 @@ define(function (require, exports, module){
 
   };
 
+  RequestMessage.prototype.getRequestId = function ()
+  {
+    return this.requestId;
+  };
+
   RequestMessage.prototype.toString = function (){
       var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " ID 0x" + this.requestId.toString(16)+' '+Message.prototype.MESSAGE[this.requestId];
       if (this.NVMaddr)
@@ -62,5 +67,5 @@ define(function (require, exports, module){
   };
 
   module.exports = RequestMessage;
-      return module.exports;
+  return module.exports;
 });

@@ -4,8 +4,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     'use strict';
 
-    var Message = require('./Message'),
-        ChannelResponseEvent = require('../channel/channelResponseEvent');
+    var Message = require('../Message'),
+        ChannelResponseEvent = require('../../channel/channelResponseEvent');
 
     function ChannelResponseMessage(data)    {
 

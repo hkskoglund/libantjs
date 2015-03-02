@@ -35,10 +35,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
    // Requested response
 
-    CapabilitiesMessage = require('./messages/requested/CapabilitiesMessage'),
-    VersionMessage = require('./messages/requested/VersionMessage'),
-    DeviceSerialNumberMessage = require('./messages/requested/DeviceSerialNumberMessage'),
-    ChannelStatusMessage = require('./messages/requested/ChannelStatusMessage'),
+    CapabilitiesMessage = require('./messages/requestedResponse/CapabilitiesMessage'),
+    VersionMessage = require('./messages/requestedResponse/VersionMessage'),
+    DeviceSerialNumberMessage = require('./messages/requestedResponse/DeviceSerialNumberMessage'),
+    ChannelStatusMessage = require('./messages/requestedResponse/ChannelStatusMessage'),
 
     // Configuration
 
@@ -75,7 +75,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     usb,
     usbLibraryPath,
     MAX_CHAN = 8,
-    previousPacket;
+    previousPacket,
+    awaitingResponseMessage; // For example "RESPONSE_NO_ERROR" for configuration commands
 
     // Detect host environment, i.e if running on node load node specific USB library
 
@@ -141,6 +142,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           errMsg,
           noReply,
           configMessage,
+          requestMessage,
+          resetMessage,
           messageStr = message.toString(),
 
        onReply = function _onReply(error,message)
@@ -192,25 +195,25 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       // Spec. p 54
       noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
       configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
+      requestMessage = (message.id === Message.prototype.REQUEST);
+      resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
 
-     console.log('NOREPLY',noReply,'CONFIG',configMessage);
+     console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
 
      if (!noReply)
       {
-        if (this.listeners(this.EVENT.MESSAGE).length)
-         {
-           callback(new Error('Still awating response to a previous control/configuration message, cannot proceed'));
-           return;
-         }
 
          if (this.log.logging){ this.log.log('log', 'Sending '+ messageStr); }
 
          if (configMessage)
          {
            this.channel[(new DataView(message.getPayload())).getUint8(0)].once('RESPONSE_NO_ERROR',onReply);
-         } else
+         } else if (requestMessage)
          {
-           this.once(this.EVENT.MESSAGE,onReply);
+           this.once(Message.prototype.MESSAGE[message.getRequestId()],onReply);
+         } else if (resetMessage)
+         {
+           this.once(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP],onReply);
          }
 
          intervalNoMessageReceivedID = setInterval(onNoMessageReceived,timeout);
@@ -222,18 +225,12 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Host.prototype.EVENT = {
 
-    //    ERROR : 'error',
-
-        // Configuration/notification
-
-        MESSAGE : 'message', // sendMessage register a once-time event handler for 'message' which is emitted when message is received in the messageFactory
+        ERROR : 'error', // For example notification serial error
 
         // Data
 
         BROADCAST: 'broadcast',
         BURST: 'burst',
-
-        //CHANNEL_RESPONSE_EVENT : 'channelResponseEvent',
 
     };
 
@@ -653,22 +650,22 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     };
 
 
-  // param data - ArrayBuffer from USB
+  // param data - Uint8Array from USB subsystem
   Host.prototype.deserialize = function (data)  {
+    var rawMessage,
+        iEndOfMessage,
+        iStartOfMessage = 0,
+        metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+        message,
+        concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
+                         {
+                            var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
 
-  var message,
-      iEndOfMessage,
-      iStartOfMessage = 0,
-      metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
-      concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
-                       {
-                          var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+                            tmp.set(new Uint8Array(buffer1), 0);
+                            tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
 
-                          tmp.set(new Uint8Array(buffer1), 0);
-                          tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-
-                          return tmp;
-                        };
+                            return tmp;
+                          };
 
     if (this.log.logging) this.log.log('log', 'Received data length',data.byteLength,data.constructor.name);
 
@@ -682,77 +679,81 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     while (iStartOfMessage < iEndOfMessage)
     {
 
-      message = data.subarray(iStartOfMessage,iEndOfMessage);
+      rawMessage = data.subarray(iStartOfMessage,iEndOfMessage);
 
-      if (this.log.logging) this.log.log('log', 'Parsing',message);
+      if (this.log.logging) this.log.log('log', 'Parsing',rawMessage);
 
-      if (message[Message.prototype.iSYNC] !== Message.prototype.SYNC)
+      if (rawMessage[Message.prototype.iSYNC] !== Message.prototype.SYNC)
       {
 
-          if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + message[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ', discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
+          if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + rawMessage[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ', discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
           return;
       }
 
-      switch (message[Message.prototype.iID])
+      switch (rawMessage[Message.prototype.iID])
       {
 
         // Notifications
 
         case Message.prototype.NOTIFICATION_STARTUP:
 
-            this.emit(this.EVENT.MESSAGE,undefined,new NotificationStartup(message));
+            this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP],undefined,new NotificationStartup(rawMessage));
 
             break;
 
         case Message.prototype.NOTIFICATION_SERIAL_ERROR:
 
-            this.emit(this.EVENT.MESSAGE,new Error('Notification: Serial error'),new NotificationSerialError(message));
+            this.emit(this.EVENT.ERROR,new Error('Notification: Serial error'),new NotificationSerialError(rawMessage));
 
             break;
 
-        // Device info.
+        // Requested response
 
-        case Message.prototype.CAPABILITIES:
+        case Message.prototype.CHANNEL_STATUS:
 
-            this.emit(this.EVENT.MESSAGE,undefined,new CapabilitiesMessage(message));
+           message = new ChannelStatusMessage(rawMessage);
+           this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
 
             break;
 
         case Message.prototype.ANT_VERSION:
 
-            this.emit(this.EVENT.MESSAGE,undefined,new VersionMessage(message));
+            message = new VersionMessage(rawMessage)
+            this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
+
+            break;
+
+        case Message.prototype.CAPABILITIES:
+
+             message = new CapabilitiesMessage(rawMessage);
+             this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
 
             break;
 
         case Message.prototype.DEVICE_SERIAL_NUMBER:
 
-            this.emit(this.EVENT.MESSAGE,undefined,new DeviceSerialNumberMessage(message));
+            message = new DeviceSerialNumberMessage(rawMessage);
+            this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
 
             break;
 
         case Message.prototype.EVENT_BUFFER_CONFIGURATION:
 
-          this.emit(this.EVENT.MESSAGE,undefined,new ConfigureEventBufferMessage(message));
+          message = new ConfigureEventBufferMessage(rawMessage);
+          this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
 
           break;
 
-        // Channel info.
-
-        case Message.prototype.CHANNEL_STATUS:
-
-           this.emit(this.EVENT.MESSAGE,undefined,new ChannelStatusMessage(message));
-
-            break;
 
         // Data
 
         case Message.prototype.BROADCAST_DATA:
 
-        // Example RX broadcast standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
+           // Example Standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 
             var broadcast = new BroadcastDataMessage();
 
-            broadcast.decode(message);
+            broadcast.decode(rawMessage);
 
          // Send broad to specific channel handler
             if (typeof this._channel[broadcast.channel] !== "undefined")            {
@@ -770,10 +771,9 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         case Message.prototype.CHANNEL_RESPONSE:
 
-            var channelResponseMsg = new ChannelResponseMessage(message);
+            var channelResponseMsg = new ChannelResponseMessage(rawMessage);
 
             this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
-
 
             break;
   //
@@ -873,7 +873,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           default:
 
               if (this.log.logging)
-                  this.log.log('log', "Unable to parse received data", data, ' msg id ', message[Message.prototype.iID]);
+                  this.log.log('log', "Unable to parse received data", data, ' msg id ', rawMessage[Message.prototype.iID]);
               break;
       }
 

@@ -1,20 +1,20 @@
 /* global define: true, ArrayBuffer: true, Uint8Array: true */
 
-
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
-define(function (require, exports, module){
+define(function (require, exports, module){
 
     'use strict';
 
     // Standard message :  bSYNC bLENGTH bID bCHANNELNUMBER CONTENT (8 bytes) bCRC (total length meta+content = 5+8 = 13 bytes)
 
-    var LibConfig = require('../channel/libConfig'),
+    var
 
         // Extended data if requested by libconfig
 
+        LibConfig = require('./extended/libConfig'),
         ChannelId = require('../channel/channelId'),
-        RSSI = require('../channel/RSSI'),
-        RXTimestamp = require('../channel/RXTimestamp');
+        RSSI = require('./extended/RSSI'),
+        RXTimestamp = require('./extended/RXTimestamp');
 
     function Message(data,id)    {
 
@@ -51,16 +51,15 @@ define(function (require, exports, module){
 
     Message.prototype.decode = function (data)
     {
+        // Standard message
 
         this.SYNC = data[Message.prototype.iSYNC];
         this.length = data[Message.prototype.iLENGTH];
         this.id = data[Message.prototype.iID];
-
         this.payload = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
-
         this.CRC = data[Message.prototype.HEADER_LENGTH + this.length];
 
-        // Extended message
+        // Extended message (channel id, rx timestamp, rssi)
 
         // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
         if ((this.id === Message.prototype.BROADCAST_DATA ||
@@ -72,7 +71,7 @@ define(function (require, exports, module){
             this.extendedData = this.payload.subarray(10); // Subarray creates a view to underlying arraybuffer
             // Check for channel ID
             // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
-            if (this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED)            {
+            if (this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED)            {
                 if (!this.channelId)
                     this.channelId = new ChannelId();
                 //this.channelId.decode(this.extendedData.buffer.slice(0, 4));
@@ -91,21 +90,21 @@ define(function (require, exports, module){
                 //            }
             }
 
-            if (this.flagsByte & LibConfig.prototype.Flag.RX_TIMESTAMP_ENABLED){
+            if (this.flagsByte & LibConfig.prototype.RX_TIMESTAMP_ENABLED)            {
                 if (!this.RXTimestamp)
                     this.RXTimestamp = new RXTimestamp();
                 // this.RXTimestamp.decode(this.extendedData.buffer.slice(-2));
                 this.RXTimestamp.decode(this.extendedData.subarray(-2));
             }
 
-            if (!(this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)){
+            if (!(this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.RSSI_ENABLED))            {
                 //this.RSSI.decode(this.extendedData.buffer.slice(0, 2));
                 if (!this.RSSI)
                     this.RSSI = new RSSI();
                 this.RSSI.decode(this.extendedData.subarray(0, 2));
             }
 
-            if ((this.flagsByte & LibConfig.prototype.Flag.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.Flag.RSSI_ENABLED)){
+            if ((this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.RSSI_ENABLED))            {
                 //this.RSSI.decode(this.extendedData.buffer.slice(4, 7));
                 if (!this.RSSI)
                     this.RSSI = new RSSI();
@@ -248,7 +247,7 @@ define(function (require, exports, module){
       Message.prototype.OPEN_CHANNEL, // If everythings goes well, the channel starts emitting broadcasts (master) reply: EVENT_TX on each period
 
       Message.prototype.SLEEP_MESSAGE,
-      
+
       Message.prototype.BROADCAST_DATA,
       Message.prototype.ACKNOWLEDGED_DATA,
       Message.prototype.BURST_TRANSFER_DATA,

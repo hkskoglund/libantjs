@@ -438,7 +438,7 @@ define(function (require, exports, module){
         //this.setInEndpointTimeout(1000);
 
         if (this.log.logging ){
-          this.log.log(USBDevice.prototype.EVENT.LOG,'Listening with in endpoint transfer packet size ',endpointPacketSize+' bytes');
+          this.log.log(USBDevice.prototype.EVENT.LOG,'Listening in endpoint transfer packet size '+endpointPacketSize+' bytes'+' device max packet size '+this.inEndpoint.descriptor.wMaxPacketSize+ ' bytes');
         }
 
         //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
