@@ -657,7 +657,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     var rawMessage,
         iEndOfMessage,
         iStartOfMessage = 0,
-        metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+        metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH-1,
         message,
         concat = function (buffer1, buffer2) // https://gist.github.com/72lions/4528834
                          {
