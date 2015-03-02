@@ -6,8 +6,7 @@ define(function (require, exports, module){
 
     'use strict';
 
-    var Message = require('../Message'),
-        HighPrioritySearchTimeout = require('../../channel/HighPrioritySearchTimeout');
+    var Message = require('../Message');
 
     function SetChannelSearchTimeoutMessage(channel, searchTimeout)
     {
@@ -25,20 +24,17 @@ define(function (require, exports, module){
       var msgBuffer = new Uint8Array(2);
 
       msgBuffer[0] = channel;
-      if (typeof searchTimeout !== 'number')
-        msgBuffer[1] = searchTimeout.getRawValue();
-      else
-          msgBuffer[1] = searchTimeout;
+      msgBuffer[1] = searchTimeout;
 
       this.setPayload(msgBuffer.buffer);
 
       this.channel = channel;
-      this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(searchTimeout);
+      this.highPrioritySearchTimeout = searchTimeout;
 
     };
 
     SetChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+ "Ch "+this.channel+" high priority search timeout" +this.highPrioritySearchTimeout.toString();
+        return Message.prototype.toString.call(this)+ "Ch "+this.channel+" high priority search timeout" +this.highPrioritySearchTimeout;
     };
 
     module.exports = SetChannelSearchTimeoutMessage;

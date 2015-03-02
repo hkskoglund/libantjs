@@ -6,14 +6,12 @@ define(function (require, exports, module){
 
     var DeviceProfile = require('../deviceProfile'),
         setting = require('../../settings'),
-        HighPrioritySearchTimeout = require('../../channel/HighPrioritySearchTimeout'),
-        LowPrioritySearchTimeout = require('../../channel/LowPrioritySearchTimeout'),
         SDMPage1 = require('./SDMPage1'),
         SDMPage2 = require('./SDMPage2'),
         GenericPage = require('../Page');
 
-
-    function DeviceProfile_SDM(configuration){
+    function DeviceProfile_SDM(configuration)
+{
 
         DeviceProfile.call(this, configuration);
 
@@ -24,9 +22,7 @@ define(function (require, exports, module){
             channelType: "slave",
             channelId: { deviceNumber: '*', deviceType: DeviceProfile_SDM.prototype.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
-
+          
             channelPeriod: DeviceProfile_SDM.prototype.CHANNEL_PERIOD
 
         });

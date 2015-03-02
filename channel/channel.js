@@ -7,9 +7,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
   var Logger = require('../util/logger'),
       EventEmitter = require('../util/events'),
-      ChannelId = require('./channelId'),
-      LowPrioritySearchTimeout = require('./LowPrioritySearchTimeout'),
-      HighPrioritySearchTimeout = require('./HighPrioritySearchTimeout');
+      ChannelId = require('./channelId');
 
     function Channel(options,host,channel)    {
 
@@ -115,10 +113,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.id = new ChannelId(this.id.deviceNumber,this.id.deviceType,this.id.transmissionType);
 
       if (configuration.lowPrioritySearchTimeout)
-        this.lowPrioritySearchTimeout = new LowPrioritySearchTimeout(configuration.lowPrioritySearchTimeout);
+        this.lowPrioritySearchTimeout = configuration.lowPrioritySearchTimeout;
 
       if (configuration.highPrioritySearchTimeout)
-        this.highPrioritySearchTimeout = new HighPrioritySearchTimeout(configuration.highPrioritySearchTimeout);
+        this.highPrioritySearchTimeout = configuration.highPrioritySearchTimeout;
 
       if (configuration.extendedAssignment)
         this.extendedAssignment = configuration.extendedAssignment;

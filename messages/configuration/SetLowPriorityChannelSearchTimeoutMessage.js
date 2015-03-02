@@ -6,8 +6,7 @@ define(function (require, exports, module){
 
     'use strict';
 
-    var Message = require('../Message'),
-        LowPrioritySearchTimeout = require('../../channel/LowPrioritySearchTimeout');
+    var Message = require('../Message');
 
     function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout){
 
@@ -26,21 +25,18 @@ define(function (require, exports, module){
 
       msgBuffer[0] = channel;
 
-      if (typeof searchTimeout !== 'number')
-            msgBuffer[1] = searchTimeout.getRawValue();
-          else
-              msgBuffer[1] = searchTimeout;
+      msgBuffer[1] = searchTimeout;
 
       this.setPayload(msgBuffer.buffer);
 
       this.channel = channel;
 
-      this.lowPrioritySearchTimeout = new LowPrioritySearchTimeout(searchTimeout);
+      this.lowPrioritySearchTimeout = searchTimeout;
 
     };
 
     SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+' Ch '+this.channel+' low priority search timeout '+this.lowPrioritySearchTimeout.toString();
+        return Message.prototype.toString.call(this)+' Ch '+this.channel+' low priority search timeout '+this.lowPrioritySearchTimeout;
     };
 
     module.exports = SetLowPrioriyChannelSearchTimeoutMessage;

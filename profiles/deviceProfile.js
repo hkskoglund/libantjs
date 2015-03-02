@@ -9,8 +9,6 @@ define(function (require, exports, module){
      GenericPage = require('./Page'),
      MainPage = require('./mainPage'),
      BackgroundPage = require('./backgroundPage'),
-     HighPrioritySearchTimeout = require('../channel/HighPrioritySearchTimeout'),
-     LowPrioritySearchTimeout = require('../channel/LowPrioritySearchTimeout'),
      setting= require('../settings'),
      ManufacturerId= require('./manufacturerId'),
      ProductId= require('./productId'),
@@ -260,9 +258,7 @@ define(function (require, exports, module){
             channelType: "slave",
             channelId: { deviceNumber: '*', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            LPsearchTimeout: new LowPrioritySearchTimeout(LowPrioritySearchTimeout.prototype.MAX),
-            HPsearchTimeout: new HighPrioritySearchTimeout(HighPrioritySearchTimeout.prototype.DISABLED),
-
+          
             channelPeriod: this.CHANNEL_PERIOD.DEFAULT
 
         });
