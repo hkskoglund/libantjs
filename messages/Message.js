@@ -41,13 +41,14 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Message.prototype.FILLER_BYTE = 0x00;
 
-    Message.prototype.HEADER_LENGTH = 3; // SYNC+LENGTH+ID
+    Message.prototype.HEADER_LENGTH = 4; // SYNC+LENGTH+ID+CHANNEL
 
     Message.prototype.CRC_LENGTH = 1;
 
     Message.prototype.iSYNC = 0; // Index of sync byte within message
     Message.prototype.iLENGTH = 1;
     Message.prototype.iID = 2;
+    Message.prototype.iChannel = 3;
 
     Message.prototype.decode = function (data)
     {
@@ -56,7 +57,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.SYNC = data[Message.prototype.iSYNC];
         this.length = data[Message.prototype.iLENGTH];
         this.id = data[Message.prototype.iID];
-        this.payload = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
+        this.channel = data[Message.prototype.iChannel]; // Normally, but not all
+        this.payload = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length - 1);
         this.CRC = data[Message.prototype.HEADER_LENGTH + this.length];
 
         // Extended message (channel id, rx timestamp, rssi)

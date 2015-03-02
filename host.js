@@ -753,19 +753,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
            // Example Standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 
-            var broadcast = new BroadcastDataMessage();
+            message = new BroadcastDataMessage(rawMessage);
+            console.log('BROADCAST channel',message.channel,message.payload);
 
-            broadcast.decode(rawMessage);
-
-         // Send broad to specific channel handler
-            if (typeof this._channel[broadcast.channel] !== "undefined")            {
-
-                broadcast.channelId.sensorId = broadcast.channelId.getUniqueId(this._channel[broadcast.channel].network, broadcast.channel);
-                var page = this._channel[broadcast.channel].channel.broadCast(broadcast);
-
-            } else if (this.log.logging)
-                this.log.log('warn','No channel on host is associated with ' + broadcast.toString()); // Skip parsing of broadcast content
-
+            this.channel[message.channel].emit(Message.prototype.MESSAGE[Message.prototype.BROADCAST_DATA],undefined,message);
 
             break;
 
@@ -775,7 +766,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
             var channelResponseMsg = new ChannelResponseMessage(rawMessage);
 
-            //console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+            console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
             this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
 

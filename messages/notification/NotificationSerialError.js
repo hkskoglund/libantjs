@@ -35,12 +35,10 @@ define(function (require, exports, module){
 
 
     NotificationSerialError.prototype.decode = function (data){
-        var msg, code;
-
-        var serialErrorMessage, errorCode,faultMessage;
-
-        serialErrorMessage = this.content;
-        errorCode = serialErrorMessage[0];
+        var msg,
+            code,
+            errorCode = this.channel,
+            faultMessage;
 
         if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.CODE){
             msg = NotificationSerialError.prototype.SERIAL_ERROR.FIRST_BYTE_NOT_SYNC.MESSAGE;
@@ -53,7 +51,7 @@ define(function (require, exports, module){
         else if (errorCode === NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE){
             msg = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.MESSAGE;
             code = NotificationSerialError.prototype.SERIAL_ERROR.MESSAGE_TOO_LARGE.CODE;
-            faultMessage = serialErrorMessage.subarray(1);
+            faultMessage = this.data.subarray(4); // The message that caused the fault
         }
 
         this.message = { 'text': msg, 'code': code, 'faultMessage': faultMessage };

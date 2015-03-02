@@ -49,11 +49,11 @@ define(function (require, exports, module){
 
   ConfigureEventBufferMessage.prototype.decode = function ()
   {
-    var dw = new DataView(this.content.buffer);
+    var dw = new DataView(this.payload.buffer);
 
-    this.config = dw.getUint8(this.content.byteOffset);
-    this.size = dw.getUint16(this.content.byteOffset+1,true);
-    this.time = dw.getUint16(this.content.byteOffset+3,true);
+    this.config = dw.getUint8(this.payload.byteOffset);
+    this.size = dw.getUint16(this.payload.byteOffset+1,true);
+    this.time = dw.getUint16(this.payload.byteOffset+3,true);
 
   };
 

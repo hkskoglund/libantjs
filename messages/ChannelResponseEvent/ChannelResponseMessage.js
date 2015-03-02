@@ -17,12 +17,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     ChannelResponseMessage.prototype.constructor = ChannelResponseMessage;
 
     ChannelResponseMessage.prototype.decode = function ()    {
-      var payload = this.getPayload(),
-          channel = payload[0],
-          initiatingId = payload[1],
-          code = payload[2];
+      var initiatingId = this.payload[0],
+          code = this.payload[1];
 
-      this.response = new ChannelResponseEvent(channel,initiatingId,code);
+      this.response = new ChannelResponseEvent(this.channel,initiatingId,code);
 
     };
 

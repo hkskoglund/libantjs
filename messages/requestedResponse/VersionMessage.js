@@ -19,10 +19,10 @@ define(function (require, exports, module){
     VersionMessage.prototype.constructor = VersionMessage;
 
     VersionMessage.prototype.decode = function (data)    {
-       var version = this.content.subarray(0,-1),
-           versionStr = ''; // Content is a 11 - bytes null terminated string - strip off the null
+       var version = this.payload.subarray(0,-1),
+           versionStr = String.fromCharCode(this.channel); // Content is a 11 - bytes null terminated string - strip off the null
 
-        for (var i=0; i<version.length; i++)
+        for (var i=0; i < version.length; i++)
                 versionStr += String.fromCharCode(version[i]);
 
         this.version = versionStr;

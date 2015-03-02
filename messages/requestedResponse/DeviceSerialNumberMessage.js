@@ -1,7 +1,6 @@
 /* global define: true, DataView: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
-
+if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require, exports, module){
 
     'use strict';
@@ -17,13 +16,13 @@ define(function (require, exports, module){
 
     DeviceSerialNumberMessage.prototype.constructor = DeviceSerialNumberMessage;
 
-    DeviceSerialNumberMessage.prototype.decode = function (data)
+    DeviceSerialNumberMessage.prototype.decode = function ()
     {
         // SN 4 bytes Little Endian
-        var dw = new DataView(this.content.buffer);
+        var dw = new DataView((new Uint8Array([this.channel,this.payload[0],this.payload[1],this.payload[2]])).buffer);
 
-        this.serialNumber = dw.getUint32(this.content.byteOffset,true);
-        this.serialNumberAsChannelId = dw.getUint16(this.content.byteOffset,true); // Lower 2-bytes
+        this.serialNumber = dw.getUint32(0,true);
+        this.serialNumberAsChannelId = dw.getUint16(0,true); // Lower 2-bytes
     };
 
     DeviceSerialNumberMessage.prototype.toString = function (){
