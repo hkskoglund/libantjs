@@ -2,27 +2,30 @@
 
 if (typeof define !== 'function') { var define = require('amdefine')(module); }
 define(function (require, exports, module){
-
-      'use strict';
+  'use strict';
 
   var Message = require('../Message'),
-      ChannelId = require('./channelId');
+      ChannelId = require('../../channel/channelId');
 
-  function ChannelIdMessage()  {
-
-      Message.call(this,undefined,Message.prototype.CHANNEL_ID);
-
+  function ChannelIdMessage(data)  {
+      Message.call(this,data);
   }
 
   ChannelIdMessage.prototype = Object.create(Message.prototype);
-
   ChannelIdMessage.prototype.constructor = ChannelIdMessage;
 
+  ChannelIdMessage.prototype.decode = function ()  {
+    var deviceNum = (new DataView(this.payload.buffer)).getUint16(this.payload.byteOffset+0,true),
+        deviceType = this.payload[2],
+        transmissionType = this.payload[3];
 
-  ChannelIdMessage.prototype.decode = function (data)  {
+      console.log('channelid',deviceNum,deviceType,transmissionType,this.payload);
+      this.channelId = new ChannelId(deviceNum,deviceType,transmissionType);
+  };
 
-      this.channelId = new ChannelId(new DataView(this.payload).getUint16(0,true), this.payload[2], this.payload[3]);
-
+  ChannelId.prototype.getId = function ()
+  {
+    return this.channelId;
   };
 
   ChannelIdMessage.prototype.toString = function ()  {

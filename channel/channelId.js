@@ -174,7 +174,7 @@ define(function (require, exports, module){
 
     }.bind(this);
 
-        return "ChId 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
+        return "Id 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
     };
 
     module.exports = ChannelId;

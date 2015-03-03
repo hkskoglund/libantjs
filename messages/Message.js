@@ -16,10 +16,9 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         RSSI = require('./extended/RSSI'),
         RXTimestamp = require('./extended/RXTimestamp');
 
-    function Message(data,id)    {
+    function Message(data,id,content)    {
 
         this.timestamp = Date.now();
-        this.data = data;
 
         // Extended data - channelID, RX timestamp and RSSI
 
@@ -28,12 +27,18 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.RSSI = undefined;
 
         if (data)        {
+            this.data = data;
             Message.prototype.decode.call(this,data);
             this.decode(data);
         }
 
         if (typeof id !== 'undefined')
           this.id = id;
+
+        if (content)
+        {
+          this.setPayload(content);
+        }
 
     }
 
@@ -321,7 +326,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
             0x42 : "Assign Channel",
 
-            0x51: "Set Channel ID",
+            0x51: "Set/Get Channel ID",
 
             0x43: "Set channel period (Tch)",
 

@@ -258,7 +258,7 @@ define(function (require, exports, module){
             channelType: "slave",
             channelId: { deviceNumber: '*', deviceType: this.CHANNEL_ID.DEVICE_TYPE, transmissionType: '*' },
             RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-          
+
             channelPeriod: this.CHANNEL_PERIOD.DEFAULT
 
         });
@@ -519,22 +519,8 @@ define(function (require, exports, module){
 
     };
 
-    DeviceProfile.prototype.channelResponse = function (channelResponse){
-        // Issue IE11 - this passed as argument to log is undefined (most likely due to strict mode)
-        if (this.log && this.log.logging){ this.log.log('log', 'Channel response - DeviceProfile -', this, channelResponse, channelResponse.toString());
-                                          }
-    };
-
-    DeviceProfile.prototype.toString = function ()
-    {
-        if (this.CHANNEL_ID && (this.CHANNEL_ID.DEVICE_TYPE !== undefined || this.CHANNEL_ID.DEVICE_TYPE !== null))
-        {
-            return " Device Type " + this.CHANNEL_ID.DEVICE_TYPE;
-        }
-    };
 
     module.exports = DeviceProfile;
-
     return module.exports;
 
 });

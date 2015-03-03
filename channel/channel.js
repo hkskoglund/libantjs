@@ -62,6 +62,14 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     Channel.prototype.NET = {
       PUBLIC : 0x00,
+      PERIOD : {
+        'ENVIRONMENT' : {
+          LOW_POWER : 65535
+        }
+      },
+      FREQ : {
+        'ANT+' : 57
+      },
       KEY : {
         'ANT+' : [0xB9, 0xA5, 0x21, 0xFB,0xBD, 0x72,0xC3,0x45]
       }
@@ -122,12 +130,12 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         this.extendedAssignment = configuration.extendedAssignment;
     };
 
-    Channel.prototype.setNetworkKey = function(net,key,callback)
+    Channel.prototype.setKey = function(net,key,callback)
     {
       this.net = net;
       this.key = key;
 
-      this.host.setNetworkKey(this.net,this.key,cb);
+      this.host.setNetworkKey(this.net,this.key,callback);
     };
 
     Channel.prototype.assign = function (type, net,extendedAssignment, callback)
@@ -175,7 +183,23 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType,cb);
     };
 
-    Channel.prototype.setFrequency = function (frequencyOffset,callback)
+    Channel.prototype.getId = function (callback)
+    {
+      var onChannelId = function (err,channelId)
+      {
+        if (!err)
+        {
+          this.id = channelId;
+        }
+
+        callback(err,channelId);
+
+      }.bind(this);
+
+      this.host.getChannelId(this.channel,onChannelId);
+    };
+
+    Channel.prototype.setFreq = function (frequencyOffset,callback)
     {
       this.frequency = frequencyOffset;
 

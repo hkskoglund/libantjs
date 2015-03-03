@@ -39,6 +39,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     VersionMessage = require('./messages/requestedResponse/VersionMessage'),
     DeviceSerialNumberMessage = require('./messages/requestedResponse/DeviceSerialNumberMessage'),
     ChannelStatusMessage = require('./messages/requestedResponse/ChannelStatusMessage'),
+    ChannelIdMessage = require('./messages/requestedResponse/ChannelIdMessage'),
 
     // Configuration
 
@@ -138,14 +139,14 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           intervalNoMessageReceivedID,
           retry=0,
           MAX_TRIES = 3,
-          rawMessage = message.getRawMessage(),
+          rawMessage ,
           errMsg,
           noReply,
           configMessage,
           requestMessage,
           resetMessage,
           closeMessage,
-          messageStr = message.toString(),
+          messageStr,
 
        onReply = function _onReply(error,message)
                               {
@@ -192,6 +193,10 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
               callback(new Error(errMsg));
             }
         }.bind(this);
+
+
+      rawMessage = message.getRawMessage();
+      messageStr = message.toString();
 
       // Spec. p 54
       noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
@@ -747,6 +752,13 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
           break;
 
 
+        case Message.prototype.SET_CHANNEL_ID:
+
+          message = new ChannelIdMessage(rawMessage);
+          this.emit(Message.prototype.MESSAGE[rawMessage[Message.prototype.iID]],undefined,message);
+
+          break;
+
         // Data
 
         case Message.prototype.BROADCAST_DATA:
@@ -754,7 +766,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
            // Example Standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
 
             message = new BroadcastDataMessage(rawMessage);
-            console.log('BROADCAST channel',message.channel,message.payload);
+            //console.log('BROADCAST channel',message.channel,message.payload);
 
             this.channel[message.channel].emit(Message.prototype.MESSAGE[Message.prototype.BROADCAST_DATA],undefined,message);
 
@@ -843,26 +855,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
   //            // Channel specific
   //
 
-  //
-  //        case Message.prototype.CHANNEL_ID:
-  //
-  //            var channelIdMsg = new ChannelIdMessage();
-  //            channelIdMsg.setPayload(data.slice(3, 3 + ANTmsg.length));
-  //            channelIdMsg.decode();
-  //
-  //            console.log("Got response channel ID", channelIdMsg.toString());
-  //
-  ////
-  ////
-  ////            if (!this.emit(ParseANTResponse.prototype.EVENT.CHANNEL_ID, channelIdMsg))
-  ////                this.emit(ParseANTResponse.prototype.EVENT.LOG, "No listener for: " + channelIdMsg.toString());
-  //
-  //            //if (!antInstance.emit(ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID, data))
-  //            //    antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event ParseANTResponse.prototype.EVENT.SET_CHANNEL_ID");
-  //            break;
-  //
-  //            // ANT device specific, i.e nRF24AP2
-  //
+
 
 
           default:
@@ -892,12 +885,13 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
     // Send a reset device command
     Host.prototype.resetSystem = function (callback)
      {
-      this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset () { setTimeout(callback,500);});    };
+      this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset () { setTimeout(callback,500);});
+    };
 
     // Send request for channel ID
     Host.prototype.getChannelId = function (channel, callback)
     {
-        this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_ID), callback);
+        this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), callback);
     };
 
     // Send a request for ANT version
