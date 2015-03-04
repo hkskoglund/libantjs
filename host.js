@@ -121,7 +121,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         }
 
         if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
-        usb = new UsbLib({ log : options.log});
+        usb = new UsbLib({ log : options.log, debugLevel: 4});
 
     }
 
@@ -659,6 +659,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         usb.exit(function () {
           this.removeAllListeners();
+          usb = null;
            callback();
         }.bind(this)
         );
