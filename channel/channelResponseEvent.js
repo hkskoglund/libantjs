@@ -94,7 +94,7 @@ define(function (require, exports, module){
 
    ChannelResponse.prototype.toString = function ()
    {
-     var msg = 'Ch '+this.channel+ ' Response to ';
+     var msg = 'Ch '+this.channel+ ' ';
 
      switch (this.initiatingId)
      {

@@ -325,6 +325,11 @@ define(function (require, exports, module){
                 this.device.close();
                 this.emit(USBDevice.prototype.EVENT.CLOSED);
 
+                this.removeAllListeners();
+                this.inEndpoint.removeAllListeners();
+                this.outEndpoint.removeAllListeners();
+                console.log('usb',this);
+
                 retrn();
 
               } catch (e){
@@ -335,8 +340,6 @@ define(function (require, exports, module){
       };
 
       USBNode.prototype.exit = function (retrn){
-
-        this.removeAllListeners(USBDevice.prototype.EVENT.DATA);
 
           if (this.device === undefined){
               retrn(this.ERROR.NO_DEVICE);
@@ -357,7 +360,7 @@ define(function (require, exports, module){
 
       USBNode.prototype._onInEndpointEnd = function()
       {
-        if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling has been cancelled now'); }
+        if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling cancelled'); }
       };
 
       USBNode.prototype._onInEndpointError = function (error)

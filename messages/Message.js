@@ -20,12 +20,6 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         this.timestamp = Date.now();
 
-        // Extended data - channelID, RX timestamp and RSSI
-
-        this.channelId = undefined;
-        this.RXTimestamp = undefined;
-        this.RSSI = undefined;
-
         if (data)        {
             this.data = data;
             Message.prototype.decode.call(this,data);
@@ -322,17 +316,17 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
             // Config messages. All conf. commands receive a response, typically "RESPONSE_NO_ERROR"
 
-            0x41: "UnAssign Channel",
+            0x41: "Unassign Channel",
 
             0x42 : "Assign Channel",
 
             0x51: "Set/Get Channel ID",
 
-            0x43: "Set channel period (Tch)",
+            0x43: "Set period (Tch)",
 
-            0x44: "High priority (HP) search timeout",
+            0x44: "Set High priority (HP) search timeout",
 
-            0x45: "Channel RF frequency",
+            0x45: "Set RF frequency",
 
             0x46: "Set network key",
 

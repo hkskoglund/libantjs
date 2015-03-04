@@ -218,6 +218,11 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       this.host.openChannel(this.channel,callback);
     };
 
+    Channel.prototype.openScan = function (callback)
+    {
+      this.host.openRxScanMode(this.channel,callback);
+    };
+
     Channel.prototype.close = function (callback)
     {
       this.host.closeChannel(this.channel,callback);

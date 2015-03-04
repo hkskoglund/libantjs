@@ -19,7 +19,6 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         deviceType = this.payload[2],
         transmissionType = this.payload[3];
 
-      console.log('channelid',deviceNum,deviceType,transmissionType,this.payload);
       this.channelId = new ChannelId(deviceNum,deviceType,transmissionType);
   };
 

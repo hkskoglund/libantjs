@@ -132,7 +132,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
 
     // Send a message to ANT
-      Host.prototype.sendMessage = function (message, callback)
+    Host.prototype.sendMessage = function (message, callback)
     {
       var messageReceived = false,
           timeout = 500,
@@ -179,7 +179,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         {
           retry++;
 
-          if (this.log.logging)  this.log.log('warn', 'No reply in '+timeout+' ms. Retry '+retry+' for message '+messageStr);
+          if (this.log.logging)  this.log.log('warn', 'No reply in '+timeout+' ms. Retry '+retry+' '+messageStr);
 
           if (retry < MAX_TRIES)
           {
@@ -205,14 +205,14 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
       resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
       closeMessage = (message.id === Message.prototype.CLOSE_CHANNEL);
 
-     console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
+     //console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
 
      if (!noReply)
       {
 
          if (this.log.logging){ this.log.log('log', 'Sending '+ messageStr); }
 
-         if (configMessage || closeMessage)
+         if (configMessage || closeMessage || (message.id === Message.prototype.OPEN_RX_SCAN_MODE))
          {
            this.channel[(new DataView(message.getPayload())).getUint8(0)].once('RESPONSE_NO_ERROR',onReply);
          } else if (requestMessage)
@@ -652,7 +652,16 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
        // TO DO? Close open channels? Exit channels/profiles?
 
-        usb.exit(callback);
+       for (var ch=0;ch < MAX_CHAN;ch++)
+       {
+         this.channel[ch].removeAllListeners();
+       }
+
+        usb.exit(function () {
+          this.removeAllListeners();
+           callback();
+        }.bind(this)
+        );
 
     };
 
@@ -778,7 +787,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
             var channelResponseMsg = new ChannelResponseMessage(rawMessage);
 
-            console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+            //console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
             this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],undefined,channelResponseMsg.response);
 
