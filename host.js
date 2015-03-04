@@ -121,7 +121,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
         }
 
         if (this.log.logging) {  this.log.log('log','Loaded USB library from '+usbLibraryPath); }
-        usb = new UsbLib({ log : options.log, debugLevel: 4});
+        usb = new UsbLib({ log : options.log, debugLevel: options.debugLevel});
 
     }
 
@@ -647,8 +647,8 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
     };
 
-    // Exit host
-    Host.prototype.exit = function (callback){
+    Host.prototype.exit = function (callback)
+{
 
        // TO DO? Close open channels? Exit channels/profiles?
 
@@ -659,8 +659,7 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
 
         usb.exit(function () {
           this.removeAllListeners();
-          usb = null;
-           callback();
+          callback();
         }.bind(this)
         );
 
@@ -864,9 +863,6 @@ if (typeof define !== 'function') { var define = require('amdefine')(module); }
   //
   //            // Channel specific
   //
-
-
-
 
           default:
 

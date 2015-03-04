@@ -28,6 +28,33 @@ define(function (require, exports, module){
 
     }
 
+    Logger.prototype._formatUint8Array = function (arg)
+    {
+        if (arg instanceof Uint8Array)
+{
+            var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
+            for (i = 0; i < arg.length; i++)
+{
+                if (i < MAX_BYTES_TO_FORMAT)
+{
+                    if (arg[i] <= 0x0F)
+                        prefix = '0';
+                    else prefix = '';
+                    msg += prefix+arg[i].toString(16) + ' ';
+                }
+                else {
+                    msg += '...>';
+                    break;
+                }
+            }
+
+            if (i === arg.length)
+                msg += '>';
+
+            return msg;
+        } else
+            return arg;
+        };
 
     Logger.prototype.log = function (type)
     {
@@ -43,30 +70,6 @@ define(function (require, exports, module){
         //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
 
         // console.trace();
-        var formatUint8Array = function (arg)
-        {
-            if (arg instanceof Uint8Array){
-                var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
-                for (i = 0; i < arg.length; i++){
-                    if (i < MAX_BYTES_TO_FORMAT){
-                        if (arg[i] <= 0x0F)
-                            prefix = '0';
-                        else prefix = '';
-                        msg += prefix+arg[i].toString(16) + ' ';
-                    }
-                    else {
-                        msg += '...>';
-                        break;
-                    }
-                }
-
-                if (i === arg.length)
-                    msg += '>';
-
-                return msg;
-            } else
-                return arg;
-            };
 
         if (this.logging && this.console && this.console[type]){
 
@@ -89,7 +92,7 @@ define(function (require, exports, module){
                 for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
                 {
                     if (arguments[argNr] instanceof Uint8Array)
-                        myArguments.push(formatUint8Array(arguments[argNr]));
+                        myArguments.push(this._formatUint8Array(arguments[argNr]));
 
                     myArguments.push(arguments[argNr]);
                 }
