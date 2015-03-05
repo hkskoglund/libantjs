@@ -1,179 +1,194 @@
 /* global define: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var DeviceProfile = require('./deviceProfile'),
-        setting = require('../settings'),
-        TEMPProfile = require('./environment/deviceProfile_ENVIRONMENT'),
-        HRMProfile = require('./hrm/deviceProfile_HRM'),
-        SDMProfile = require('./sdm/deviceProfile_SDM'),
-        SPDCADProfile = require('./bike_spdcad/deviceProfile_SPDCAD'),
-        BikeSpdProfile =require('./bike_spd/deviceProfile_BikeSpd'),
-        BikeCadProfile =require('./bike_cad/deviceProfile_BikeCad'),
-        BikePowerProfile = require('./bike_power/deviceProfile_BikePower');
+  var DeviceProfile = require('./deviceProfile'),
+    setting = require('../settings'),
+    TEMPProfile = require('./environment/deviceProfile_ENVIRONMENT'),
+    HRMProfile = require('./hrm/deviceProfile_HRM'),
+    SDMProfile = require('./sdm/deviceProfile_SDM'),
+    SPDCADProfile = require('./bike_spdcad/deviceProfile_SPDCAD'),
+    BikeSpdProfile = require('./bike_spd/deviceProfile_BikeSpd'),
+    BikeCadProfile = require('./bike_cad/deviceProfile_BikeCad'),
+    BikePowerProfile = require('./bike_power/deviceProfile_BikePower');
 
-    // Just in case errors with loading
+  // Just in case errors with loading
 
-    for (var moduleNr=0;moduleNr<arguments.length;moduleNr++)
-    {
-        if (arguments[moduleNr] === undefined){
-            console.error('RXScanMode: Undefined module at argument nr',moduleNr);
-        }
+  for (var moduleNr = 0; moduleNr < arguments.length; moduleNr++) {
+    if (arguments[moduleNr] === undefined) {
+      console.error('RXScanMode: Undefined module at argument nr', moduleNr);
+    }
+  }
+
+  function RxScanMode(configuration) {
+
+    var devNum = 0,
+      devType = 0,
+      transType = 0;
+
+    DeviceProfile.call(this, configuration);
+
+    if (configuration && configuration.channelId) {
+      devNum = configuration.channelId.deviceNumber || 0;
+      devType = configuration.channelId.deviceType || 0;
+      transType = configuration.channelId.transmissionType || 0;
     }
 
-    function RxScanMode(configuration){
+    this.addConfiguration("slave", {
+      description: "Slave configuration Rx Scan Mode for ANT+ devices",
+      networkKey: setting.networkKey["ANT+"],
+      channelType: "slave",
+      channelId: {
+        deviceNumber: devNum,
+        deviceType: devType,
+        transmissionType: transType
+      },
+      RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
+      RxScanMode: true
+    });
 
-        var devNum = 0,
-            devType = 0,
-            transType = 0;
+    this.addConfiguration("slave only", {
+      description: "Slave only configuration Rx Scan Mode for ANT+ devices",
+      networkKey: setting.networkKey["ANT+"],
+      channelType: "slave only",
+      channelId: {
+        deviceNumber: devNum,
+        deviceType: devType,
+        transmissionType: transType
+      },
+      RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
+      RxScanMode: true
+    });
 
-        DeviceProfile.call(this, configuration);
+    this.profile = {}; // indexed by sensorId
 
-        if (configuration && configuration.channelId){
-            devNum = configuration.channelId.deviceNumber || 0;
-            devType = configuration.channelId.deviceType || 0;
-            transType = configuration.channelId.transmissionType || 0;
-        }
+  }
 
-        this.addConfiguration("slave", {
-            description: "Slave configuration Rx Scan Mode for ANT+ devices",
-            networkKey: setting.networkKey["ANT+"],
-            channelType: "slave",
-            channelId: { deviceNumber: devNum, deviceType: devType, transmissionType: transType },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            RxScanMode: true
-        });
+  RxScanMode.prototype = Object.create(DeviceProfile.prototype);
+  RxScanMode.prototype.constructor = RxScanMode;
 
-        this.addConfiguration("slave only", {
-            description: "Slave only configuration Rx Scan Mode for ANT+ devices",
-            networkKey: setting.networkKey["ANT+"],
-            channelType: "slave only",
-            channelId: { deviceNumber: devNum, deviceType: devType, transmissionType: transType },
-            RFfrequency: setting.RFfrequency["ANT+"],     // 2457 Mhz ANT +
-            RxScanMode: true
-        });
+  // Override default stop of device profile
+  RxScanMode.prototype.stop = function() {
+    this.removeAllListeners('page'); // In case someone is listening on our page event
 
-        this.profile = {}; // indexed by sensorId
+    for (var sensorId in this.profile) {
+      this.profile[sensorId].stop();
+    }
+  };
 
+  RxScanMode.prototype.onPage = function(page) {
+    this.emit('page', page);
+  };
+
+  RxScanMode.prototype.addProfile = function(profile, broadcast) {
+
+    var sensorId = broadcast.channelId.sensorId;
+
+    this.profile[sensorId] = profile;
+
+    profile.addListener('page', this.onPage.bind(this)); // Forward
+
+    if (this.log.logging) {
+      this.log.log('info', 'Added profile for sensorId ' + sensorId + ' to RX SCAN mode channel', profile);
+    }
+  };
+
+  // Scan mode receives all broadcasts on channel 0
+  // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
+  RxScanMode.prototype.broadCast = function(broadcast) {
+
+    var currentProfile;
+
+    if (!broadcast) {
+      this.log.log('error', 'Undefined broadcast received');
+      return;
     }
 
-    RxScanMode.prototype = Object.create(DeviceProfile.prototype);
-    RxScanMode.prototype.constructor = RxScanMode;
+    if (!broadcast.channelId) {
+      this.log.log('error', 'No channel id available for broadcast', broadcast);
+      return;
+    }
 
-    // Override default stop of device profile
-    RxScanMode.prototype.stop = function ()
-    {
-        this.removeAllListeners('page'); // In case someone is listening on our page event
+    currentProfile = this.profile[broadcast.channelId.sensorId];
 
-        for (var sensorId in this.profile)
-        {
-            this.profile[sensorId].stop();
-        }
-    };
+    if (currentProfile) { // Forward
+      currentProfile.broadCast(broadcast);
+    } else {
 
-    RxScanMode.prototype.onPage = function (page)
-    {
-        this.emit('page',page);
-    };
+      // Creating a new profile for each new sensor simplifies the code
+      // When sharing a profile object among several sensor of the same type, every
+      // datastructure inside the profile must by indexed by sensorId, e.g this.broadcast[sensorId]
 
-    RxScanMode.prototype.addProfile = function (profile,broadcast){
+      switch (broadcast.channelId.deviceType) {
+        case SPDCADProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-        var sensorId = broadcast.channelId.sensorId;
+          currentProfile = new SPDCADProfile({
+            logger: this.log
+          });
+          break;
 
-        this.profile[sensorId] = profile;
+        case BikeSpdProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-        profile.addListener('page',this.onPage.bind(this)); // Forward
-
-        if (this.log.logging){
-            this.log.log('info', 'Added profile for sensorId '+sensorId+' to RX SCAN mode channel', profile);
-        }
-    };
-
-    // Scan mode receives all broadcasts on channel 0
-    // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
-    RxScanMode.prototype.broadCast = function (broadcast){
-
-        var currentProfile;
-
-        if (!broadcast){
-            this.log.log('error', 'Undefined broadcast received');
-            return;
-        }
-
-        if (!broadcast.channelId){
-            this.log.log('error', 'No channel id available for broadcast', broadcast);
-            return;
-        }
-
-       currentProfile = this.profile[broadcast.channelId.sensorId];
-
-        if (currentProfile){// Forward
-            currentProfile.broadCast(broadcast);
-        }
-        else {
-
-            // Creating a new profile for each new sensor simplifies the code
-            // When sharing a profile object among several sensor of the same type, every
-            // datastructure inside the profile must by indexed by sensorId, e.g this.broadcast[sensorId]
-
-            switch (broadcast.channelId.deviceType)
-            {
-                   case SPDCADProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
-
-                        currentProfile = new SPDCADProfile({ logger: this.log});
-                        break;
-
-                   case BikeSpdProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
-
-                        currentProfile = new BikeSpdProfile({ logger: this.log});
-                        break;
+          currentProfile = new BikeSpdProfile({
+            logger: this.log
+          });
+          break;
 
 
-                   case BikeCadProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
+        case BikeCadProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-                        currentProfile = new BikeCadProfile({ logger: this.log});
-                        break;
+          currentProfile = new BikeCadProfile({
+            logger: this.log
+          });
+          break;
 
 
-                   case TEMPProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
+        case TEMPProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-                        currentProfile = new TEMPProfile({ logger: this.log});
-                        break;
+          currentProfile = new TEMPProfile({
+            logger: this.log
+          });
+          break;
 
-                   case HRMProfile.prototype.CHANNEL_ID.DEVICE_TYPE :
+        case HRMProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-                        currentProfile = new HRMProfile({ logger: this.log});
-                        break;
+          currentProfile = new HRMProfile({
+            logger: this.log
+          });
+          break;
 
-                  case BikePowerProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
+        case BikePowerProfile.prototype.CHANNEL_ID.DEVICE_TYPE:
 
-                        currentProfile = new BikePowerProfile({ logger : this.log });
+          currentProfile = new BikePowerProfile({
+            logger: this.log
+          });
 
-                       break;
+          break;
 
-                   default:
+        default:
 
-                        if (this.log && this.log.logging){
-                          this.log.log('warn','No profile support for device type '+broadcast.channelId.deviceType);
-                        }
-                        break;
+          if (this.log && this.log.logging) {
+            this.log.log('warn', 'No profile support for device type ' + broadcast.channelId.deviceType);
+          }
+          break;
 
-            }
+      }
 
-            if (currentProfile)
-            {
-                this.addProfile(currentProfile,broadcast);
-                currentProfile.broadCast(broadcast);
-            }
-        }
+      if (currentProfile) {
+        this.addProfile(currentProfile, broadcast);
+        currentProfile.broadCast(broadcast);
+      }
+    }
 
-    };
+  };
 
-    module.exports = RxScanMode;
-    return module.exports;
+  module.exports = RxScanMode;
+  return module.exports;
 
 });

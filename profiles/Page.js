@@ -1,111 +1,111 @@
 /* global define: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function _requireDefineGenericPage(require,exports,module){
+define(function _requireDefineGenericPage(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Logger = require('../util/logger');
+  var Logger = require('../util/logger');
 
-    function GenericPage(configuration, broadcast,profile,pageNumber){
+  function GenericPage(configuration, broadcast, profile, pageNumber) {
 
-        this.log = configuration.logger || new Logger(configuration);
+    this.log = configuration.logger || new Logger(configuration);
 
-        if (!broadcast || !broadcast.data){
-           return;
-        }
-
-        this.broadcast = broadcast;
-
-        this.timestamp = broadcast.timestamp;
-
-        if (this.timestamp === undefined)
-          {
-              this.timestamp = Date.now();
-              if (this.log && this.log.logging){
-               this.log.log('warn','No timestamp on broadcast, setting it to now',this.timestamp);
-              }
-          }
-
-        this.number = pageNumber; // page number already read by device profile
-
-        if (this.number === undefined)
-        {
-             if (this.log && this.log.logging){
-               this.log.log('warn','Cannot accept undefined page number');
-             }
-
-            return;
-          }
-
-        this.profile = profile; // For e.g previous page
-
-       // this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
-
-        // Background pages does not have these functions
-
-        if (typeof this.readCommonBytes === 'function'){
-           this.readCommonBytes(broadcast);
-        }
-
-         if (typeof this.update === 'function'){
-            this.update(broadcast); // e.g bike speed and cadence calculations
-         }
+    if (!broadcast || !broadcast.data) {
+      return;
     }
 
-    GenericPage.prototype.BIT_MASK = {
-        PAGE_NUMBER : parseInt("01111111",2), // 7 lsb of byte 0 ANT+ format
-        PAGE_TOGGLE : parseInt("10000000",2) // msb of byte 0 ANT+ format
-    };
+    this.broadcast = broadcast;
 
-    GenericPage.prototype.COMMON = {};
+    this.timestamp = broadcast.timestamp;
 
-    // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
-    GenericPage.prototype.clone = function (){
+    if (this.timestamp === undefined) {
+      this.timestamp = Date.now();
+      if (this.log && this.log.logging) {
+        this.log.log('warn', 'No timestamp on broadcast, setting it to now', this.timestamp);
+      }
+    }
 
-        var clone = Object.create(null), // Pure object
-            ownEnumerableProperties = Object.keys(this),
-            property;
+    this.number = pageNumber; // page number already read by device profile
 
-        for (var index in ownEnumerableProperties){
-            property = ownEnumerableProperties[index];
+    if (this.number === undefined) {
+      if (this.log && this.log.logging) {
+        this.log.log('warn', 'Cannot accept undefined page number');
+      }
 
-            switch (property){
+      return;
+    }
 
-                case 'broadcast': // return the most essential information for the ui
+    this.profile = profile; // For e.g previous page
 
-                    clone.broadcast = {
+    // this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
-                        channelId: this.broadcast.channelId,
-                        timestamp : this.broadcast.timestamp
+    // Background pages does not have these functions
 
-                    };
+    if (typeof this.readCommonBytes === 'function') {
+      this.readCommonBytes(broadcast);
+    }
 
-                    break;
+    if (typeof this.update === 'function') {
+      this.update(broadcast); // e.g bike speed and cadence calculations
+    }
+  }
 
-                case 'log': // ignore
-                case 'previousPage':
-                case 'profile':
+  GenericPage.prototype.BIT_MASK = {
+    PAGE_NUMBER: parseInt("01111111", 2), // 7 lsb of byte 0 ANT+ format
+    PAGE_TOGGLE: parseInt("10000000", 2) // msb of byte 0 ANT+ format
+  };
 
-                    break;
+  GenericPage.prototype.COMMON = {};
 
-                default:
+  // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
+  GenericPage.prototype.clone = function() {
 
-                    clone[property] = this[property];
+    var clone = Object.create(null), // Pure object
+      ownEnumerableProperties = Object.keys(this),
+      property;
 
-                    break;
+    for (var index in ownEnumerableProperties) {
+      property = ownEnumerableProperties[index];
 
-            }
+      switch (property) {
 
-        }
+        case 'broadcast': // return the most essential information for the ui
 
-        return clone;
+          clone.broadcast = {
 
-    };
+            channelId: this.broadcast.channelId,
+            timestamp: this.broadcast.timestamp
 
-    module.exports = GenericPage;
+          };
 
-    return module.exports;
+          break;
+
+        case 'log': // ignore
+        case 'previousPage':
+        case 'profile':
+
+          break;
+
+        default:
+
+          clone[property] = this[property];
+
+          break;
+
+      }
+
+    }
+
+    return clone;
+
+  };
+
+  module.exports = GenericPage;
+
+  return module.exports;
 
 });

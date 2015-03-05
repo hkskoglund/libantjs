@@ -1,44 +1,39 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout){
+  function SetLowPrioriyChannelSearchTimeoutMessage(channel, searchTimeout) {
 
-        Message.call(this,undefined,Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT);
-        this.encode(channel, searchTimeout);
+    Message.call(this, undefined, Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT);
+    this.encode(channel, searchTimeout);
 
-    }
+  }
 
-    SetLowPrioriyChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
+  SetLowPrioriyChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
 
-    SetLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = SetLowPrioriyChannelSearchTimeoutMessage;
+  SetLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = SetLowPrioriyChannelSearchTimeoutMessage;
 
-    SetLowPrioriyChannelSearchTimeoutMessage.prototype.encode = function (channel, searchTimeout)
-    {
-      var msgBuffer = new Uint8Array(2);
+  SetLowPrioriyChannelSearchTimeoutMessage.prototype.encode = function(channel, searchTimeout) {
+    var msgBuffer = new Uint8Array([channel,searchTimeout]);
 
-      msgBuffer[0] = channel;
+    this.setContent(msgBuffer);
 
-      msgBuffer[1] = searchTimeout;
+    this.lowPrioritySearchTimeout = searchTimeout;
 
-      this.setPayload(msgBuffer.buffer);
+  };
 
-      this.channel = channel;
+  SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' low priority search timeout ' + this.lowPrioritySearchTimeout;
+  };
 
-      this.lowPrioritySearchTimeout = searchTimeout;
-
-    };
-
-    SetLowPrioriyChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+' Ch '+this.channel+' low priority search timeout '+this.lowPrioritySearchTimeout;
-    };
-
-    module.exports = SetLowPrioriyChannelSearchTimeoutMessage;
-    return module.exports;
+  module.exports = SetLowPrioriyChannelSearchTimeoutMessage;
+  return module.exports;
 });

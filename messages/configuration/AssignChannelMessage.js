@@ -1,35 +1,33 @@
 /* global define: true, Uint8Array */
 
-if (typeof define !== 'function')
-{ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module)
-{
+define(function(require, exports, module) {
 
   'use strict';
 
   var Message = require('../Message'),
-      Channel = require('../../channel/channel');
+    Channel = require('../../channel/channel');
 
-  function AssignChannelMessage(channel,channelType,networkNumber,extendedAssignment)
-  {
+  function AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment) {
 
-    Message.call(this,undefined,Message.prototype.ASSIGN_CHANNEL);
-    this.encode(channel,channelType,networkNumber,extendedAssignment);
+    Message.call(this, undefined, Message.prototype.ASSIGN_CHANNEL);
+    this.encode(channel, channelType, networkNumber, extendedAssignment);
   }
 
   AssignChannelMessage.prototype = Object.create(Message.prototype);
 
   AssignChannelMessage.prototype.constructor = AssignChannelMessage;
 
-  AssignChannelMessage.prototype.encode = function (channel,channelType,networkNumber,extendedAssignment)
-  {
-    var msgBuffer;
+  AssignChannelMessage.prototype.encode = function(channel, channelType, networkNumber, extendedAssignment) {
+    var content;
 
     if (extendedAssignment)
-        msgBuffer = new Uint8Array([channel,channelType,networkNumber,extendedAssignment]);
+      content = new Uint8Array([channel, channelType, networkNumber, extendedAssignment]);
     else
-        msgBuffer = new Uint8Array([channel, channelType, networkNumber]);
+      content = new Uint8Array([channel, channelType, networkNumber]);
 
     this.channel = channel;
     this.type = channelType;
@@ -38,17 +36,16 @@ define(function (require, exports, module)
     if (extendedAssignment)
       this.extendedAssignment = extendedAssignment;
 
-    this.setPayload(msgBuffer.buffer);
+    this.setContent(content);
   };
 
-  AssignChannelMessage.prototype.toString = function ()
-{
-      var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.prototype.TYPE[this.type];
+  AssignChannelMessage.prototype.toString = function() {
+    var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.prototype.TYPE[this.type];
 
-      if (this.extendedAssignment)
-          msg += " extended assignment " + Channel.prototype.getExtendedAssignment.call(this);
+    if (this.extendedAssignment)
+      msg += " extended assignment " + this.extendedAssignment;
 
-      return msg;
+    return msg;
   };
 
   module.exports = AssignChannelMessage;

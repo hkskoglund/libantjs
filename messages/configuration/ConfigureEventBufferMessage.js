@@ -1,24 +1,25 @@
 /* global define: true, DataView: true, ArrayBuffer: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
   'use strict';
 
   var Message = require('../Message');
 
-  function ConfigureEventBufferMessage(configOrData,size,time)  {
+  function ConfigureEventBufferMessage(configOrData, size, time) {
 
-      if (configOrData instanceof Uint8Array) // When receiving data
-      {
-        Message.call(this,configOrData,Message.prototype.EVENT_BUFFER_CONFIGURATION);
-      } else
-      {
-        Message.call(this,undefined,Message.prototype.EVENT_BUFFER_CONFIGURATION);
-        this.encode(configOrData,size,time);
+    if (configOrData instanceof Uint8Array) // When receiving data
+    {
+      Message.call(this, configOrData, Message.prototype.EVENT_BUFFER_CONFIGURATION);
+    } else {
+      Message.call(this, undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION);
+      this.encode(configOrData, size, time);
 
-      }
+    }
 
   }
 
@@ -32,47 +33,44 @@ define(function (require, exports, module){
   ConfigureEventBufferMessage.prototype.TIME_MAX = 0xFFFF; // Unit : 10ms
   ConfigureEventBufferMessage.prototype.TIME_UNIT = 10;
 
-  ConfigureEventBufferMessage.prototype.encode = function (config,size,time)  {
+  ConfigureEventBufferMessage.prototype.encode = function(config, size, time) {
     var msgBuffer = new DataView(new ArrayBuffer(5));
 
-    msgBuffer.setUint8(0,config);
-    msgBuffer.setUint16(1,size, true);
-    msgBuffer.setUint16(3,time,true);
+    msgBuffer.setUint8(0, config);
+    msgBuffer.setUint16(1, size, true);
+    msgBuffer.setUint16(3, time, true);
 
-    this.config= config;
+    this.config = config;
     this.size = size;
     this.time = time;
 
-    this.setPayload(msgBuffer.buffer);
+    this.setContent(msgBuffer);
 
   };
 
-  ConfigureEventBufferMessage.prototype.decode = function ()
-  {
+  ConfigureEventBufferMessage.prototype.decode = function() {
     var dw = new DataView(this.payload.buffer);
 
     this.config = dw.getUint8(this.payload.byteOffset);
-    this.size = dw.getUint16(this.payload.byteOffset+1,true);
-    this.time = dw.getUint16(this.payload.byteOffset+3,true);
+    this.size = dw.getUint16(this.payload.byteOffset + 1, true);
+    this.time = dw.getUint16(this.payload.byteOffset + 3, true);
 
   };
 
-  ConfigureEventBufferMessage.prototype.toString = function ()  {
-      var msg = ' | ';
+  ConfigureEventBufferMessage.prototype.toString = function() {
+    var msg = ' | ';
 
-      if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS)
-      {
-        msg += 'buffer low priority events ';
-      } else if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS)
-      {
-        msg += 'buffer all events | ';
-      } else
-        msg += 'buffer unknown priority '+this.config;
+    if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS) {
+      msg += 'buffer low priority events ';
+    } else if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS) {
+      msg += 'buffer all events | ';
+    } else
+      msg += 'buffer unknown priority ' + this.config;
 
-      msg += ' | size '+this.size+' bytes before flush';
-      msg += ' | time '+this.time*ConfigureEventBufferMessage.prototype.TIME_UNIT+' ms';
+    msg += ' | size ' + this.size + ' bytes before flush';
+    msg += ' | time ' + this.time * ConfigureEventBufferMessage.prototype.TIME_UNIT + ' ms';
 
-      return Message.prototype.toString.call(this) + msg;
+    return Message.prototype.toString.call(this) + msg;
   };
 
   module.exports = ConfigureEventBufferMessage;

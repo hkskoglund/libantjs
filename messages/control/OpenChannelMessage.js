@@ -1,35 +1,33 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function OpenChannelMessage(channel){
+  function OpenChannelMessage(channel) {
 
-        Message.call(this,undefined,Message.prototype.OPEN_CHANNEL);
-        this.encode(channel);
-    }
+    Message.call(this, undefined, Message.prototype.OPEN_CHANNEL);
+    this.encode(channel);
+  }
 
-    OpenChannelMessage.prototype = Object.create(Message.prototype);
+  OpenChannelMessage.prototype = Object.create(Message.prototype);
 
-    OpenChannelMessage.prototype.constructor = OpenChannelMessage;
+  OpenChannelMessage.prototype.constructor = OpenChannelMessage;
 
-    OpenChannelMessage.prototype.encode = function (channel)
-    {
-      var msgBuffer = new Uint8Array([channel]);
-      this.channel = channel;
+  OpenChannelMessage.prototype.encode = function(channel) {
+    this.setContent(new Uint8Array([channel]));
+  };
 
-      this.setPayload(msgBuffer.buffer);
-    };
+  OpenChannelMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this);
+  };
 
-    OpenChannelMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this);
-    };
-
-    module.exports = OpenChannelMessage;
-    return module.exports;
+  module.exports = OpenChannelMessage;
+  return module.exports;
 });

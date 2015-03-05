@@ -1,41 +1,41 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function') { var define = require('amdefine')(module); }
-define(function (require, exports, module){
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function SetChannelSearchTimeoutMessage(channel, searchTimeout)
-    {
+  function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
 
-        Message.call(this,undefined,Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
-        this.encode(channel, searchTimeout);
-    }
+    Message.call(this, undefined, Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
+    this.encode(channel, searchTimeout);
+  }
 
-    SetChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
+  SetChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
 
-    SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMessage;
+  SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMessage;
 
-    SetChannelSearchTimeoutMessage.prototype.encode = function (channel, searchTimeout)
-    {
-      var msgBuffer = new Uint8Array(2);
+  SetChannelSearchTimeoutMessage.prototype.encode = function(channel, searchTimeout) {
+    var msgBuffer = new Uint8Array(2);
 
-      msgBuffer[0] = channel;
-      msgBuffer[1] = searchTimeout;
+    msgBuffer[0] = channel;
+    msgBuffer[1] = searchTimeout;
 
-      this.setPayload(msgBuffer.buffer);
+    this.setContent(msgBuffer);
 
-      this.channel = channel;
-      this.highPrioritySearchTimeout = searchTimeout;
+    this.channel = channel;
+    this.highPrioritySearchTimeout = searchTimeout;
 
-    };
+  };
 
-    SetChannelSearchTimeoutMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+ "Ch "+this.channel+" high priority search timeout" +this.highPrioritySearchTimeout;
-    };
+  SetChannelSearchTimeoutMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this) + "Ch " + this.channel + " high priority search timeout" + this.highPrioritySearchTimeout;
+  };
 
-    module.exports = SetChannelSearchTimeoutMessage;
-    return module.exports;
+  module.exports = SetChannelSearchTimeoutMessage;
+  return module.exports;
 });

@@ -1,38 +1,38 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
-    'use strict';
+define(function(require, exports, module) {
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function UnAssignChannelMessage(channel)
-    {
+  function UnAssignChannelMessage(channel) {
 
-        Message.call(this,undefined,Message.prototype.UNASSIGN_CHANNEL);
-        this.encode(channel);
+    Message.call(this, undefined, Message.prototype.UNASSIGN_CHANNEL);
+    this.encode(channel);
 
-    }
+  }
 
-    UnAssignChannelMessage.prototype = Object.create(Message.prototype);
+  UnAssignChannelMessage.prototype = Object.create(Message.prototype);
 
-    UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
+  UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
 
-    UnAssignChannelMessage.prototype.encode = function (channel)
-     {
-      var msgBuffer = new Uint8Array([channel]);
+  UnAssignChannelMessage.prototype.encode = function(channel) {
+    var msgBuffer = new Uint8Array([channel]);
 
-      this.channel = channel;
+    this.channel = channel;
 
-      this.setPayload(msgBuffer.buffer);
+    this.setContent(msgBuffer.buffer);
 
-    };
+  };
 
-    UnAssignChannelMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + " Ch " + this.channel;
-    };
+  UnAssignChannelMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this) + " Ch " + this.channel;
+  };
 
-    module.exports = UnAssignChannelMessage;
-        return module.exports;
+  module.exports = UnAssignChannelMessage;
+  return module.exports;
 });

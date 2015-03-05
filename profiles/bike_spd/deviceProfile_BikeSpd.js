@@ -1,73 +1,74 @@
 /* globals define: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require,exports,module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var DeviceProfileBikeShared = require('../bike_spdcad/deviceProfile_BikeShared'),
-        BikePage0 = require('./bikePage0');
+  var DeviceProfileBikeShared = require('../bike_spdcad/deviceProfile_BikeShared'),
+    BikePage0 = require('./bikePage0');
 
-    function DeviceProfile_BikeSpd(configuration){
+  function DeviceProfile_BikeSpd(configuration) {
 
-        DeviceProfileBikeShared.call(this, configuration);
+    DeviceProfileBikeShared.call(this, configuration);
 
-        this.initMasterSlaveConfiguration();
+    this.initMasterSlaveConfiguration();
 
-        this.requestPageUpdate(DeviceProfile_BikeSpd.prototype.DEFAULT_PAGE_UPDATE_DELAY);
-    }
+    this.requestPageUpdate(DeviceProfile_BikeSpd.prototype.DEFAULT_PAGE_UPDATE_DELAY);
+  }
 
-    DeviceProfile_BikeSpd.prototype = Object.create(DeviceProfileBikeShared.prototype);
-    DeviceProfile_BikeSpd.prototype.constructor = DeviceProfile_BikeSpd;
-
-
-    DeviceProfile_BikeSpd.prototype.NAME = 'BIKE_SPD';
-
-    DeviceProfile_BikeSpd.prototype.CHANNEL_ID = {
-        DEVICE_TYPE: 0x7B, // 123
-       // TRANSMISSION_TYPE: 1 // or 5
-    };
-
-    DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD = {
-        DEFAULT: 8118, // 4.06Hz
-    };
-
-    DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
+  DeviceProfile_BikeSpd.prototype = Object.create(DeviceProfileBikeShared.prototype);
+  DeviceProfile_BikeSpd.prototype.constructor = DeviceProfile_BikeSpd;
 
 
-    DeviceProfile_BikeSpd.prototype.getPage = function (broadcast)
+  DeviceProfile_BikeSpd.prototype.NAME = 'BIKE_SPD';
+
+  DeviceProfile_BikeSpd.prototype.CHANNEL_ID = {
+    DEVICE_TYPE: 0x7B, // 123
+    // TRANSMISSION_TYPE: 1 // or 5
+  };
+
+  DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD = {
+    DEFAULT: 8118, // 4.06Hz
+  };
+
+  DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
+
+
+  DeviceProfile_BikeSpd.prototype.getPage = function(broadcast) {
+
+    var pageNumber = this.getPageNumber(broadcast),
+      page;
+
+    if (pageNumber === 0) // MAIN
     {
 
-        var pageNumber = this.getPageNumber(broadcast),
-            page;
+      page = new BikePage0({
+        logger: this.log
+      }, broadcast, this, pageNumber);
 
-        if (pageNumber === 0) // MAIN
-        {
+    } else {
+      page = this.getBackgroundPage(broadcast, pageNumber);
 
-            page = new BikePage0({ logger: this.log}, broadcast,this,pageNumber);
+      if (page) {
+        BikePage0.prototype.readSpeed.call(page, BikePage0.prototype);
+        BikePage0.prototype.calcSpeed.call(page, BikePage0.prototype);
 
-        } else
-        {
-             page = this.getBackgroundPage(broadcast,pageNumber);
-
-            if (page){
-                BikePage0.prototype.readSpeed.call(page,BikePage0.prototype);
-                BikePage0.prototype.calcSpeed.call(page,BikePage0.prototype);
-
-            } else
-              {
-                  if (this.log && this.log.logging){
-                    this.log.log('error','Failed to get background page for page number '+pageNumber,this);
-                  }
-              }
+      } else {
+        if (this.log && this.log.logging) {
+          this.log.log('error', 'Failed to get background page for page number ' + pageNumber, this);
         }
+      }
+    }
 
-        return page;
+    return page;
 
-    };
+  };
 
-    module.exports = DeviceProfile_BikeSpd;
-    return module.exports;
+  module.exports = DeviceProfile_BikeSpd;
+  return module.exports;
 
 });

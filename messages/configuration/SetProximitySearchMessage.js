@@ -1,42 +1,40 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function SetProximitySearchMessage(channel, searchThreshold){
+  function SetProximitySearchMessage(channel, searchThreshold) {
 
-        Message.call(this,undefined,Message.prototype.SET_PROXIMITY_SEARCH);
-        this.encode(channel, searchThreshold);
+    Message.call(this, undefined, Message.prototype.SET_PROXIMITY_SEARCH);
+    this.encode(channel, searchThreshold);
 
-    }
+  }
 
-    SetProximitySearchMessage.prototype = Object.create(Message.prototype);
+  SetProximitySearchMessage.prototype = Object.create(Message.prototype);
 
-    SetProximitySearchMessage.prototype.constructor = SetProximitySearchMessage;
+  SetProximitySearchMessage.prototype.constructor = SetProximitySearchMessage;
 
-    SetProximitySearchMessage.prototype.encode = function (channel, searchThreshold){
+  SetProximitySearchMessage.prototype.encode = function(channel, searchThreshold) {
 
-      var msgBuffer = new Uint8Array(2);
+    var msgBuffer = new Uint8Array([channel,searchThreshold]);
 
-      msgBuffer[0] = channel;
-      msgBuffer[1] = searchThreshold; // 0 - disabled, 1:10 - closes to farthest
+    this.searchThreshold = searchThreshold;
 
-      this.channel = channel;
-      this.searchThreshold = searchThreshold;
+    this.setContent(msgBuffer);
 
-      this.setPayload(msgBuffer.buffer);
+  };
 
-    };
+  SetProximitySearchMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this) + " Ch " + this.channel + " search threshold " + this.searchThreshold;
+  };
 
-    SetProximitySearchMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this) + " Ch " + this.channel + " search threshold " + this.searchThreshold;
-    };
-
-    module.exports = SetProximitySearchMessage;
-    return module.exports;
+  module.exports = SetProximitySearchMessage;
+  return module.exports;
 });

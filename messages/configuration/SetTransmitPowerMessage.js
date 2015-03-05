@@ -1,40 +1,39 @@
 /* global define: true, Uint8Array: true */
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    'use strict';
+  'use strict';
 
-    var Message = require('../Message');
+  var Message = require('../Message');
 
-    function SetTransmitPowerMessage(transmitPower){
+  function SetTransmitPowerMessage(transmitPower) {
 
-        Message.call(this,undefined,Message.prototype.SET_TRANSMIT_POWER);
-        this.encode(transmitPower);
+    Message.call(this, undefined, Message.prototype.SET_TRANSMIT_POWER);
+    this.encode(transmitPower);
 
-    }
+  }
 
-    SetTransmitPowerMessage.prototype = Object.create(Message.prototype);
+  SetTransmitPowerMessage.prototype = Object.create(Message.prototype);
 
-    SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
+  SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
 
-    SetTransmitPowerMessage.prototype.encode = function (transmitPower){
-      var msgBuffer = new Uint8Array(2);
+  SetTransmitPowerMessage.prototype.encode = function(transmitPower) {
+    var msgBuffer = new Uint8Array([Message.prototype.FILLER_BYTE,transmitPower]);
 
-      msgBuffer[0] = Message.prototype.FILLER_BYTE;
-      msgBuffer[1] = transmitPower; // Range 0..4
+    this.transmitPower = transmitPower;
 
-     this.transmitPower = transmitPower;
+    this.setContent(msgBuffer);
 
-     this.setPayload(msgBuffer.buffer);
+  };
 
-    };
+  SetTransmitPowerMessage.prototype.toString = function() {
+    return Message.prototype.toString.call(this) + ' transmit power ' + this.transmitPower;
+  };
 
-    SetTransmitPowerMessage.prototype.toString = function (){
-        return Message.prototype.toString.call(this)+' transmit power '+this.transmitPower;
-    };
-
-    module.exports = SetTransmitPowerMessage;
-    return module.exports;
+  module.exports = SetTransmitPowerMessage;
+  return module.exports;
 });

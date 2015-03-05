@@ -2,134 +2,131 @@
 // Allows using define in node.js without requirejs
 // Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
 
-if (typeof define !== 'function'){ var define = require('amdefine')(module); }
+if (typeof define !== 'function') {
+  var define = require('amdefine')(module);
+}
 
-define(function (require, exports, module){
+define(function(require, exports, module) {
 
-    function Logger(options)
-    {
-
-
-         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
-        Object.defineProperty(this, "logging",
-                              { get : function(){ return this._logging; },
-                                set : function(newValue){ this._logging = newValue; } });
-
-        if (typeof options === 'object' && options.log) // Handle Logger ({log : true|| false})
-            this.logging = true;
-        else if (typeof options === 'boolean') // Handle Logger(true||false)
-            this.logging = options;
-        else
-            this.logging = false;
-
-        this.console = console;
-
-        this.options = options;
-
-    }
-
-    Logger.prototype._formatUint8Array = function (arg)
-    {
-        if (arg instanceof Uint8Array)
-{
-            var i, msg = 'Uint8Array < ', MAX_BYTES_TO_FORMAT = 32, prefix;
-            for (i = 0; i < arg.length; i++)
-{
-                if (i < MAX_BYTES_TO_FORMAT)
-{
-                    if (arg[i] <= 0x0F)
-                        prefix = '0';
-                    else prefix = '';
-                    msg += prefix+arg[i].toString(16) + ' ';
-                }
-                else {
-                    msg += '...>';
-                    break;
-                }
-            }
-
-            if (i === arg.length)
-                msg += '>';
-
-            return msg;
-        } else
-            return arg;
-        };
-
-    Logger.prototype.log = function (type)
-    {
-
-        //return null; // Disable
-
-        var now = new Date(),
-            nowStr = now.getTime(),
-            myArguments = [],
-            header,
-            logSource;
-         //   errStack = (new Error()).stack;
-        //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
-
-        // console.trace();
-
-        if (this.logging && this.console && this.console[type]){
-
-            // Headers
-            header = nowStr;
-            if (this.options && this.options.logSource)
-            {
-                if (typeof this.options.logSource === 'string')
-                  logSource = this.options.logSource;
-                else if (typeof this.options.logSource === 'object')
-                      logSource = this.options.logSource.constructor.name;
-
-                header += ' '+logSource+':';
-            }
-
-            myArguments.push(header);
-
-            // Arguments
-
-                for (var argNr = 1, len = arguments.length; argNr < len; argNr++)
-                {
-                    if (arguments[argNr] instanceof Uint8Array)
-                        myArguments.push(this._formatUint8Array(arguments[argNr]));
-
-                    myArguments.push(arguments[argNr]);
-                }
-
-               // myArguments.push(errStack);
-
-                this.console[type].apply(this.console, myArguments);
+  function Logger(options) {
 
 
-        } else if (!(this.console && this.console[type]))
-            this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
-        //console.timeEnd('logger');
-    };
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
+    Object.defineProperty(this, "logging", {
+      get: function() {
+        return this._logging;
+      },
+      set: function(newValue) {
+        this._logging = newValue;
+      }
+    });
 
-    Logger.prototype.changeConsole = function (newConsole)
-    {
-        if (newConsole){
-            this.console = newConsole;
-           // this.console.info('Console changed to', newConsole);
+    if (typeof options === 'object' && options.log) // Handle Logger ({log : true|| false})
+      this.logging = true;
+    else if (typeof options === 'boolean') // Handle Logger(true||false)
+      this.logging = options;
+    else
+      this.logging = false;
+
+    this.console = console;
+
+    this.options = options;
+
+  }
+
+  Logger.prototype._formatUint8Array = function(arg) {
+    if (arg instanceof Uint8Array) {
+      var i, msg = 'Uint8Array < ',
+        MAX_BYTES_TO_FORMAT = 32,
+        prefix;
+      for (i = 0; i < arg.length; i++) {
+        if (i < MAX_BYTES_TO_FORMAT) {
+          if (arg[i] <= 0x0F)
+            prefix = '0';
+          else prefix = '';
+          msg += prefix + arg[i].toString(16) + ' ';
+        } else {
+          msg += '...>';
+          break;
         }
-    };
+      }
 
-    Logger.prototype.time = function (name)
-    {
-        if (this.logging && this.console && this.console.time)
-            this.console.time(name);
+      if (i === arg.length)
+        msg += '>';
 
-    };
+      return msg;
+    } else
+      return arg;
+  };
 
-    Logger.prototype.timeEnd = function (name)
-    {
-        if (this.logging && this.console && this.console.timeEnd)
-                this.console.timeEnd(name);
-    };
+  Logger.prototype.log = function(type) {
 
-    module.export = Logger;
+    //return null; // Disable
 
-    return module.export;
+    var now = new Date(),
+      nowStr = now.getTime(),
+      myArguments = [],
+      header,
+      logSource;
+    //   errStack = (new Error()).stack;
+    //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
+
+    // console.trace();
+
+    if (this.logging && this.console && this.console[type]) {
+
+      // Headers
+      header = nowStr;
+      if (this.options && this.options.logSource) {
+        if (typeof this.options.logSource === 'string')
+          logSource = this.options.logSource;
+        else if (typeof this.options.logSource === 'object')
+          logSource = this.options.logSource.constructor.name;
+
+        header += ' ' + logSource + ':';
+      }
+
+      myArguments.push(header);
+
+      // Arguments
+
+      for (var argNr = 1, len = arguments.length; argNr < len; argNr++) {
+        if (arguments[argNr] instanceof Uint8Array)
+          myArguments.push(this._formatUint8Array(arguments[argNr]));
+
+        myArguments.push(arguments[argNr]);
+      }
+
+      // myArguments.push(errStack);
+
+      this.console[type].apply(this.console, myArguments);
+
+
+    } else if (!(this.console && this.console[type]))
+      this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
+    //console.timeEnd('logger');
+  };
+
+  Logger.prototype.changeConsole = function(newConsole) {
+    if (newConsole) {
+      this.console = newConsole;
+      // this.console.info('Console changed to', newConsole);
+    }
+  };
+
+  Logger.prototype.time = function(name) {
+    if (this.logging && this.console && this.console.time)
+      this.console.time(name);
+
+  };
+
+  Logger.prototype.timeEnd = function(name) {
+    if (this.logging && this.console && this.console.timeEnd)
+      this.console.timeEnd(name);
+  };
+
+  module.export = Logger;
+
+  return module.export;
 
 });
