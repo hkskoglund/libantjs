@@ -246,7 +246,6 @@ define(function(require, exports, module) {
   Message.prototype.ADVANCED_BURST_TRANSFER_DATA = 0x72;
 
   Message.prototype.NO_REPLY_MESSAGE = [
-    Message.prototype.OPEN_CHANNEL, // If everythings goes well, the channel starts emitting broadcasts (master) reply: EVENT_TX on each period
 
     Message.prototype.SLEEP_MESSAGE,
 
@@ -256,6 +255,12 @@ define(function(require, exports, module) {
     Message.prototype.ADVANCED_BURST_TRANSFER_DATA
   ];
 
+  Message.prototype.OPEN_CLOSE_MESSAGE = [
+    Message.prototype.OPEN_CHANNEL,
+    Message.prototype.CLOSE_CHANNEL,
+    Message.prototype.OPEN_RX_SCAN_MODE
+  ];
+  
   Message.prototype.CONFIG_MESSAGE = [
     Message.prototype.UNASSIGN_CHANNEL,
     Message.prototype.ASSIGN_CHANNEL,

@@ -17,6 +17,7 @@ define(function(require, exports, module) {
     // Data
 
     BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
+    AcknowledgedDataMessage = require('./messages/data/AcknowledgedBroadcastDataMessage'),
 
     Logger = require('./util/logger'),
     USBDevice = require('./usb/USBDevice'),
@@ -152,7 +153,7 @@ define(function(require, exports, module) {
       configMessage,
       requestMessage,
       resetMessage,
-      closeMessage,
+      openCloseMessage,
       messageStr,
 
       onReply = function _onReply(error, message) {
@@ -204,7 +205,7 @@ define(function(require, exports, module) {
     configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
     requestMessage = (message.id === Message.prototype.REQUEST);
     resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
-    closeMessage = (message.id === Message.prototype.CLOSE_CHANNEL);
+    openCloseMessage = (Message.prototype.OPEN_CLOSE_MESSAGE.indexOf(message.id) !== -1);
 
     //console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
 
@@ -214,7 +215,7 @@ define(function(require, exports, module) {
         this.log.log('log', 'Sending ' + messageStr);
       }
 
-      if (configMessage || closeMessage || (message.id === Message.prototype.OPEN_RX_SCAN_MODE)) {
+      if (configMessage || openCloseMessage ) {
         this.channel[message.getContent()[0]].once('RESPONSE_NO_ERROR', onReply);
       } else if (requestMessage) {
         this.once(Message.prototype.MESSAGE[message.getRequestId()], onReply);
@@ -747,8 +748,6 @@ define(function(require, exports, module) {
 
         case Message.prototype.BROADCAST_DATA:
 
-          // Example Standard message : <Buffer a4 09 4e 01 84 00 5a 64 79 66 40 93 94>
-
           message = new BroadcastDataMessage(msgBytes);
           //console.log('BROADCAST channel',message.channel,message.payload);
 
@@ -762,7 +761,7 @@ define(function(require, exports, module) {
 
           var channelResponseMsg = new ChannelResponseMessage(msgBytes);
 
-          //console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+          console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
           this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
 
@@ -833,13 +832,6 @@ define(function(require, exports, module) {
           //        //    }
           //
           //        //    break;
-          //
-
-          //
-          //            // Response messages to request
-          //
-          //            // Channel specific
-          //
 
         default:
 
@@ -1012,9 +1004,14 @@ define(function(require, exports, module) {
 
   };
 
-  Host.prototype.sendBroadcastData = function(channel, broadcastData, callback) {
+  Host.prototype.sendBroadcastData = function(channel, broadcastData, callback,ack) {
     var data = broadcastData,
-        msg = new BroadcastDataMessage();
+        msg;
+
+    if (!ack)
+        msg =  new BroadcastDataMessage();
+    else
+       msg = new AcknowledgedDataMessage();
 
     if (typeof broadcastData === 'object' && broadcastData.constructor.name === 'Array') // Allows sending of [1,2,3,4,5,6,7,8]
       data = new Uint8Array(broadcastData);
@@ -1024,81 +1021,13 @@ define(function(require, exports, module) {
     this.sendMessage(msg, callback);
   };
 
-  //Rx:  <Buffer a4 03 40 01 01 05 e2> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_COMPLETED
-  //Rx:  <Buffer a4 03 40 01 01 06 e1> Channel Response/Event EVENT on channel 1 EVENT_TRANSFER_TX_FAILED
-
   // p. 96 ANT Message protocol and usave rev. 5.0
-  // TRANSFER_TX_COMPLETED channel event if successfull, or TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
-  // 3rd option : GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-  //    Host.prototype.sendAcknowledgedData = function (ucChannel, pucBroadcastData, errorCallback, successCallback)
-  //{
-  //        var buf = Buffer.concat([new Buffer([ucChannel]), pucBroadcastData.buffer]),
-  //            self = this,
-  //            message = new Message(),
-  //            ack_msg = message.create_message(Message.prototype.acknowledged_data, buf),
-  //            resendMsg;
-  //
-  //        // Add to retry queue -> will only be of length === 1
-  //        resendMsg = {
-  //            message: ack_msg,
-  //            retry: 0,
-  //            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
-  //            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
-  //
-  //            timestamp: Date.now(),
-  //
-  //            retryCB : function _resendAckowledgedDataCB()
-  //{
-  //
-  //                if (resendMsg.timeoutID)  // If we already have a timeout running, reset
-  //                    clearTimeout(resendMsg.timeoutID);
-  //
-  //                resendMsg.timeoutID = setTimeout(resendMsg.retryCB, 2000);
-  //                resendMsg.retry++;
-  //
-  //                if (resendMsg.retry <= Host.prototype.TX_DEFAULT_RETRY)
-  //{
-  //                    resendMsg.lastRetryTimestamp = Date.now();
-  //                    // Two-levels of transfer : 1. from app. to ANT via libusb and 2. over RF
-  //                    self.sendOnly(ack_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT,
-  //                        function error(err)
-  //{
-  //                            self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Failed to send acknowledged data packet to ANT engine, due to problems with libusb <-> device"+ err);
-  //                            if (typeof errorCallback === "function")
-  //                                errorCallback(err);
-  //                            else
-  //                                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No transfer failed callback specified");
-  //                        },
-  //                        function success()
-  //{ self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Sent acknowledged message to ANT engine "+ ack_msg.friendly+" "+ pucBroadcastData.friendly); });
-  //                } else {
-  //                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maxium number of retries of "+ resendMsg.message.friendly);
-  //                    if (typeof resendMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
-  //                        resendMsg.EVENT_TRANSFER_TX_FAILED_CB();
-  //                    else
-  //                        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
-  //                }
-  //            }
-  //        };
-  //
-  //        this.retryQueue[ucChannel].push(resendMsg);
-  //
-  //
-  //        //console.log(Date.now() + " SETTING TIMEOUT ");
-  //
-  //        //resendMsg.timeoutCB = function ()
-  //{
-  //        //    //console.log(Date.now() + "TIMEOUT HANDLER FOR EVENT_TRANSFER_TX_COMPLETED/FAILED - NOT IMPLEMENTED");
-  //        //    resendMsg.timeoutRetry++;
-  //        //    if (resendMsg.timeoutRetry <= Host.prototype.TX_DEFAULT_RETRY)
-  //        //        send();
-  //        //    else
-  //        //        console.log(Date.now() + " Reached maxium number of timeout retries");
-  //        //};
-  //
-  //        resendMsg.retryCB();
-  //
-  //    };
+  // Event TRANSFER_TX_COMPLETED channel event if successfull,
+  // Event TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
+  // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
+  Host.prototype.sendAcknowledgedData = function (channel, ackData, callback) {
+    this.sendBroadcastData(channel,ackData,callback,true);
+  };
 
   //    // Send an individual packet as part of a bulk transfer
   //    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback)

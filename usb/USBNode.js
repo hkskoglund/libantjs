@@ -454,17 +454,16 @@ define(function(require, exports, module) {
   USBNode.prototype.transfer = function(chunk, retrn) {
 
     //this.setOutEndpointTimeout(1000);
+    var nodeBuf = Util.prototype.toNodeBuffer(chunk);
 
     if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', Util.prototype.toNodeBuffer(chunk));
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf );
     }
 
-    this.outEndpoint.transfer(Util.prototype.toNodeBuffer(chunk), retrn);
-
+    this.outEndpoint.transfer(nodeBuf, retrn);
   };
 
   function Util() {
-
   }
 
   Util.prototype.toNodeBuffer = function(chunk) {

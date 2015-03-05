@@ -225,8 +225,14 @@ define(function(require, exports, module) {
     this.host.getChannelStatus(this.channel, onStatus);
   };
 
+  // Data
+
   Channel.prototype.send = function (broadcastData,callback) {
     this.host.sendBroadcastData(this.channel,broadcastData,callback);
+  };
+
+  Channel.prototype.sendAck = function (ackData,callback) {
+    this.host.sendAcknowledgedData(this.channel,ackData,callback);
   };
 
   Channel.prototype.toString = function() {
