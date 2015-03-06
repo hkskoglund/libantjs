@@ -749,11 +749,19 @@ define(function(require, exports, module) {
         case Message.prototype.BROADCAST_DATA:
 
           message = new BroadcastDataMessage(msgBytes);
-          //console.log('BROADCAST channel',message.channel,message.payload);
 
-          this.channel[message.channel].emit(Message.prototype.MESSAGE[Message.prototype.BROADCAST_DATA], undefined, message);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], undefined, message);
 
           break;
+
+       case Message.prototype.ACKNOWLEDGED_DATA:
+
+         message = new AcknowledgedDataMessage(msgBytes);
+         this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], undefined, message);
+
+
+
+         break;
 
           // Channel event or responses
 
@@ -761,7 +769,7 @@ define(function(require, exports, module) {
 
           var channelResponseMsg = new ChannelResponseMessage(msgBytes);
 
-          console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+        //  console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
           this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
 

@@ -245,6 +245,13 @@ define(function(require, exports, module) {
   Message.prototype.BURST_TRANSFER_DATA = 0x50;
   Message.prototype.ADVANCED_BURST_TRANSFER_DATA = 0x72;
 
+  Message.prototype.EVENT = {
+    0x4E : 'data',
+    0x4F : 'ackdata',
+    0x50 : 'burstdata',
+    0x72 : 'advburstdata'
+  };
+
   Message.prototype.NO_REPLY_MESSAGE = [
 
     Message.prototype.SLEEP_MESSAGE,
@@ -260,7 +267,7 @@ define(function(require, exports, module) {
     Message.prototype.CLOSE_CHANNEL,
     Message.prototype.OPEN_RX_SCAN_MODE
   ];
-  
+
   Message.prototype.CONFIG_MESSAGE = [
     Message.prototype.UNASSIGN_CHANNEL,
     Message.prototype.ASSIGN_CHANNEL,
