@@ -17,7 +17,7 @@ define(function(require, exports, module) {
     // Data
 
     BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
-    AcknowledgedDataMessage = require('./messages/data/AcknowledgedBroadcastDataMessage'),
+    AcknowledgedDataMessage = require('./messages/data/AcknowledgedDataMessage'),
 
     Logger = require('./util/logger'),
     USBDevice = require('./usb/USBDevice'),
@@ -1037,137 +1037,78 @@ define(function(require, exports, module) {
     this.sendBroadcastData(channel,ackData,callback,true);
   };
 
-  //    // Send an individual packet as part of a bulk transfer
-  //    Host.prototype.sendBurstTransferPacket = function (ucChannelSeq, packet, errorCallback, successCallback)
-  //{
-  //
+  // Send an individual packet as part of a burst transfer
+  // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
+ //  p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
+ //  "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
+  Host.prototype.sendBurstTransferPacket = function (sequenceChannel, packet, callback)
+  {
+  };
+
   //        var buf,
   //            burst_msg,
   //            self = this,
   //            message = new Message();
-  //
+
   //        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
-  //
+
   //        burst_msg = message.create_message(Message.prototype.burst_transfer_data, buf);
-  //
-  //        // Thought : what about transfer rate here? Maybe add timeout if there is a problem will burst buffer overload for the ANT engine
-  //        // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
-  //        // p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
-  //        // "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
-  //
+
   //        self.sendOnly(burst_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
   //    };
-  //
-  //    // p. 98 in spec.
-  //    // Sends bulk data
-  //    Host.prototype.sendBurstTransfer = function (ucChannel, pucData, errorCallback, successCallback, messageFriendlyName)
-  //{
-  //        var numberOfPackets = Math.ceil(pucData.length / 8),
-  //            packetNr,
-  //            lastPacket = numberOfPackets - 1,
-  //            sequenceNr,
-  //            channelNrField,
-  //            packet,
-  //            self = this,
-  //            burstMsg;
-  //
-  //        self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Burst transfer of "+numberOfPackets+" packets (8-byte) on channel "+ucChannel+", length of payload is "+pucData.length+" bytes");
-  //
-  //        // Add to retry queue -> will only be of length === 1
-  //        burstMsg = {
-  //            timestamp: Date.now(),
-  //
-  //            message: {
-  //                buffer: pucData,
-  //                friendlyName: messageFriendlyName
-  //            },
-  //
-  //            retry: 0,
-  //
-  //            EVENT_TRANSFER_TX_COMPLETED_CB: successCallback,
-  //            EVENT_TRANSFER_TX_FAILED_CB: errorCallback,
-  //
-  //
-  //        };
-  //
-  //        //console.log(Date.now(), burstMsg);
-  //
-  //        this.burstQueue[ucChannel].push(burstMsg);
-  //
-  //        var error = function (err)
-  //{
-  //            self.emit(Host.prototype.EVENT.LOG_MESSAGE, " Failed to send burst transfer to ANT engine"+ err);
-  //        };
-  //
-  //        var success = function ()
-  //{
-  //            //console.log(Date.now()+ " Sent burst packet to ANT engine for transmission");
-  //        };
-  //
-  //        function sendBurst()
-  //{
-  //
-  //            if (burstMsg.retry <= Host.prototype.TX_DEFAULT_RETRY)
-  //{
-  //                burstMsg.retry++;
-  //                burstMsg.lastRetryTimestamp = Date.now();
-  //
-  //                for (packetNr = 0; packetNr < numberOfPackets; packetNr++)
-  //{
-  //
-  //                    sequenceNr = packetNr % 4; // 3-upper bits Rolling from 0-3; 000 001 010 011 000 ....
-  //
-  //                    if (packetNr === lastPacket)
-  //                        sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
-  //
-  //                    channelNrField = (sequenceNr << 5) | ucChannel; // Add lower 5 bit (channel nr)
-  //
-  //                    // http://nodejs.org/api/buffer.html#buffer_class_method_buffer_concat_list_totallength
-  //                    if (packetNr === lastPacket)
-  //                        packet = pucData.slice(packetNr * 8, pucData.length);
-  //                    else
-  //                        packet = pucData.slice(packetNr * 8, packetNr * 8 + 8);
-  //
-  //                    self.sendBurstTransferPacket(channelNrField, packet,error,success);
-  //                }
-  //            } else {
-  //                self.emit(Host.prototype.EVENT.LOG_MESSAGE, "Reached maximum number of retries of entire burst of "+ burstMsg.message.friendlyName);
-  //                if (typeof burstMsg.EVENT_TRANSFER_TX_FAILED_CB === "function")
-  //                    burstMsg.EVENT_TRANSFER_TX_FAILED_CB();
-  //                else
-  //                    self.emit(Host.prototype.EVENT.LOG_MESSAGE, "No EVENT_TRANSFER_TX_FAILED callback specified");
-  //            }
-  //        }
-  //
-  //        burstMsg.retryCB = function retry()
-  //{ sendBurst(); };
-  //
-  //        sendBurst();
-  //    };
 
 
-  //        host.init({
-  //            vid: 4047,
-  //            pid: 4104,
-  //            libconfig: "channelid,rssi,rxtimestamp",
-  //            //configuration : {
-  //            //    slaveANTPLUS_ANY: {
-  //            //        networkKey: ["0xB9", "0xA5", "0x21", "0xFB", "0xBD", "0x72", "0xC3", "0x45"],
-  //            //        channelType: Channel.prototype.TYPE.BIDIRECTIONAL_SLAVE_CHANNEL,
-  //            //        channelId: new ChannelId(ChannelId.prototype.ANY_DEVICE_NUMBER, ChannelId.prototype.ANY_DEVICE_TYPE, ChannelId.prototype.ANY_TRANSMISSION_TYPE),
-  //            //        RFfrequency: 57,     // 2457 Mhz ANT +
-  //            //        LPsearchTimeout: 24, // 60 seconds
-  //            //        HPsearchTimeout: 10, // 25 seconds n*2.5 s
-  //            //        transmitPower: 3,
-  //            //        channelPeriod: 8070, // HRM
-  //            //    }
-  //            //},
-  //            //establish : [{
-  //            //    channel : 0,
-  //            //    network: 0,
-  //            //    configuration: "slaveANTPLUS_ANY"
-  //            //    }]
+  // Sends bulk data
+  // Events : EVENT_TRANSFER_TX_COMPLETED or EVENT_TRANSFER_TX_FAILED
+  Host.prototype.sendBurstTransfer = function(channel, data, callback) {
+    var numberOfPackets = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH),
+      packetNr = 0,
+      sequenceNr = 0,
+      sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
+      packet,
+      sendPacket = function () {
 
+          sequenceNr = packetNr % 4;
+          if (sequenceNr === 0 && packetNr > 0)
+           sequenceNr = 1; // Roll back to 001 according to spec p. 110
+
+          if (packetNr === lastPacket)
+            sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
+
+          sequenceChannel = (sequenceNr << 5) | channel;
+          //
+          //                    // http://nodejs.org/api/buffer.html#buffer_class_method_buffer_concat_list_totallength
+          //                    if (packetNr === lastPacket)
+          //                        packet = data.slice(packetNr * 8, data.length);
+          //                    else
+          //                        packet = data.slice(packetNr * 8, packetNr * 8 + 8);
+          //
+           this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
+                 if (!err) {
+                   packetNr++;
+                   if (packetNr < numberOfPackets)
+                     sendPacket();
+                   else
+                     callback(undefined); // Finished sending
+
+                 } else
+                 {
+                  /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
+                  // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+
+                   callback(err);
+                 }
+           });
+      }.bind(this);
+
+    if (this.log.logging)
+      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + cannel + ' total bytes ' + data.byteLength);
+
+     //this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED',callback);
+     //this.channel[channel].on('EVENT_TRANSFER_TX_FAILED',callback);
+     sendPacket();
+
+  };
 
   module.exports = Host;
   return module.exports;

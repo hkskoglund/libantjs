@@ -225,6 +225,11 @@ define(function(require, exports, module) {
     this.host.getChannelStatus(this.channel, onStatus);
   };
 
+  Channel.prototype.hasId = function ()
+  {
+    return (this.id.deviceNumber !== 0) && (this.id.deviceType !== 0) && (this.id.transmissionType !== 0);
+  };
+
   // Data
 
   Channel.prototype.send = function (broadcastData,callback) {
@@ -233,6 +238,11 @@ define(function(require, exports, module) {
 
   Channel.prototype.sendAck = function (ackData,callback) {
     this.host.sendAcknowledgedData(this.channel,ackData,callback);
+  };
+
+  Channel.prototype.sendBurst = function (burstData,callback)
+  {
+    this.host.sendBurstTransferData(this.channel,burstData,callback);
   };
 
   Channel.prototype.toString = function() {
