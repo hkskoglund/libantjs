@@ -460,6 +460,8 @@ define(function(require, exports, module) {
       this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf );
     }
 
+    // Buffer chunks when transmitting burst data?
+
     this.outEndpoint.transfer(nodeBuf, retrn);
   };
 

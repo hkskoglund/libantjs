@@ -11,7 +11,7 @@ define(function(require, exports, module) {
      Message = require('../Message');
 
   function BurstDataMessage(data) {
-    Message.call(this, data, Message.prototype.BURST_DATA);
+    Message.call(this, data, Message.prototype.BURST_TRANSFER_DATA);
   }
 
   BurstDataMessage.prototype = Object.create(AcknowledgedDataMessage.prototype);

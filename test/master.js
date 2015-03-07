@@ -34,9 +34,13 @@ function onMasterChannel0Closed(err,msg)
   console.log('closed sent!!!');
 }
 
+
+
 function onMasterAssigned(error)
 {
   var sendFunc,
+      burstData = new Uint8Array(32*8),
+      data,
       sendData = function ()
                 {
                   if (dataSeed+7 <= 0xFF)
@@ -44,14 +48,22 @@ function onMasterAssigned(error)
                    else
                      dataSeed = 0;
 
-                   //  if (dataSeed > 127)
-                       sendFunc = MasterChannel0.sendAck;
-                   //  else
-                   //    sendFunc = MasterChannel0.send;
+                    if (dataSeed === 8) {
+                      sendFunc = MasterChannel0.sendBurst;
+                      data = burstData;
+                      sendFunc.call(MasterChannel0, data,function _sendFunc(err,msg) { if (err) console.error('send fail!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',err);});
 
-                       sendFunc.call(MasterChannel0,[dataSeed,dataSeed+1,dataSeed+2,dataSeed+3,dataSeed+4,dataSeed+5,dataSeed+6,dataSeed+7],
-                          function (err,msg) {});
-                }.bind(this);
+                    }
+                  /*  else if (dataSeed > 0 && data < 127 ) {
+                       sendFunc = MasterChannel0.sendAck;
+                       data = [dataSeed,dataSeed+1,dataSeed+2,dataSeed+3,dataSeed+4,dataSeed+5,dataSeed+6,dataSeed+7];
+                    } else
+                     {
+                       sendFunc = MasterChannel0.send;
+                       data = [dataSeed,dataSeed+1,dataSeed+2,dataSeed+3,dataSeed+4,dataSeed+5,dataSeed+6,dataSeed+7];
+                     } */
+
+                            }.bind(this);
 
    console.log('master assigned',error);
 
@@ -61,7 +73,7 @@ function onMasterAssigned(error)
      sendData();
    });
 
-   // Acknowledged broadcast
+   // Acknowledged broadcast/Burst data
    MasterChannel0.on("EVENT_TRANSFER_TX_COMPLETED",function (err,resp) {
       console.log('EVENT_TRANSFER_TX_COMPLETED',resp);
       sendData();
@@ -80,17 +92,17 @@ function onMasterAssigned(error)
 
       });
 
-     MasterChannel0.setId(1,1,1,function (err,msg)
-     {
-       console.log('setChannelId response',msg.toString());
+   MasterChannel0.setId(1,1,1,function (err,msg)
+   {
+     console.log('setChannelId response',msg.toString());
 
-       // Start sending data
-       MasterChannel0.sendAck([0,1,2,3,4,5,6,7],function (err,msg) {
-         if (!err)
-           MasterChannel0.open(onMasterChannel0Open);
-       });
-
+     // Start sending data
+     MasterChannel0.sendAck([0,1,2,3,4,5,6,7],function (err,msg) {
+       if (!err)
+         MasterChannel0.open(onMasterChannel0Open);
      });
+
+   });
 
  }
 

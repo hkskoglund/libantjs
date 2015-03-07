@@ -242,7 +242,8 @@ define(function(require, exports, module) {
 
   Channel.prototype.sendBurst = function (burstData,callback)
   {
-    this.host.sendBurstTransferData(this.channel,burstData,callback);
+    console.log('BURST',burstData);
+    this.host.sendBurstTransfer(this.channel,burstData,callback);
   };
 
   Channel.prototype.toString = function() {

@@ -18,6 +18,7 @@ define(function(require, exports, module) {
 
     BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
     AcknowledgedDataMessage = require('./messages/data/AcknowledgedDataMessage'),
+    BurstDataMessage = require('./messages/data/BurstDataMessage'),
 
     Logger = require('./util/logger'),
     USBDevice = require('./usb/USBDevice'),
@@ -215,7 +216,7 @@ define(function(require, exports, module) {
         this.log.log('log', 'Sending ' + messageStr);
       }
 
-      if (configMessage || openCloseMessage ) {
+      if (configMessage || openCloseMessage) {
         this.channel[message.getContent()[0]].once('RESPONSE_NO_ERROR', onReply);
       } else if (requestMessage) {
         this.once(Message.prototype.MESSAGE[message.getRequestId()], onReply);
@@ -699,7 +700,7 @@ define(function(require, exports, module) {
 
           break;
 
-          // Requested response
+        // Requested response
 
         case Message.prototype.CHANNEL_STATUS:
 
@@ -744,7 +745,7 @@ define(function(require, exports, module) {
 
           break;
 
-          // Data
+        // Data
 
         case Message.prototype.BROADCAST_DATA:
 
@@ -759,17 +760,15 @@ define(function(require, exports, module) {
          message = new AcknowledgedDataMessage(msgBytes);
          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], undefined, message);
 
-
-
          break;
 
-          // Channel event or responses
+        // Channel event or responses
 
         case Message.prototype.CHANNEL_RESPONSE:
 
           var channelResponseMsg = new ChannelResponseMessage(msgBytes);
 
-        //  console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+          console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
           this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
 
@@ -859,7 +858,6 @@ define(function(require, exports, module) {
       }
 
     }
-
   };
 
   // Send a reset device command
@@ -1043,69 +1041,83 @@ define(function(require, exports, module) {
  //  "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
   Host.prototype.sendBurstTransferPacket = function (sequenceChannel, packet, callback)
   {
+    var msg = new BurstDataMessage();
+
+    msg.encode(sequenceChannel,packet);
+
+    this.sendMessage(msg,callback);
   };
 
-  //        var buf,
-  //            burst_msg,
-  //            self = this,
-  //            message = new Message();
-
-  //        buf = Buffer.concat([new Buffer([ucChannelSeq]), packet]);
-
-  //        burst_msg = message.create_message(Message.prototype.burst_transfer_data, buf);
-
-  //        self.sendOnly(burst_msg, Host.prototype.ANT_DEFAULT_RETRY, Host.prototype.ANT_DEVICE_TIMEOUT, errorCallback, successCallback);
-  //    };
-
-
   // Sends bulk data
-  // Events : EVENT_TRANSFER_TX_COMPLETED or EVENT_TRANSFER_TX_FAILED
+  // EVENT_TRANSFER_TX_START - next channel period after message sent to device
+  // EVENT_TRANSFER_TX_COMPLETED
+  // EVENT_TRANSFER_TX_FAILED : After 5 retries
   Host.prototype.sendBurstTransfer = function(channel, data, callback) {
     var numberOfPackets = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH),
       packetNr = 0,
       sequenceNr = 0,
       sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
       packet,
+      tmpPacket,
+      sendNextPacketTimeoutID,
       sendPacket = function () {
 
-          sequenceNr = packetNr % 4;
-          if (sequenceNr === 0 && packetNr > 0)
-           sequenceNr = 1; // Roll back to 001 according to spec p. 110
+          if (sequenceNr > 3) // Roll over sequence nr
+            sequenceNr = 1;
 
-          if (packetNr === lastPacket)
+          if (packetNr === (numberOfPackets-1))
             sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
 
+          packet = data.subarray(packetNr * Message.prototype.PAYLOAD_LENGTH, packet * Message.prototype.PAYLOAD_LENGTH + Message.prototype.PAYLOAD_LENGTH);
+
+          // Fill with 0 for last packet if necessary
+
+          if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
+            tmpPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
+            tmpPacket.set(packet);
+            packet = tmpPacket;
+          }
+
           sequenceChannel = (sequenceNr << 5) | channel;
-          //
-          //                    // http://nodejs.org/api/buffer.html#buffer_class_method_buffer_concat_list_totallength
-          //                    if (packetNr === lastPacket)
-          //                        packet = data.slice(packetNr * 8, data.length);
-          //                    else
-          //                        packet = data.slice(packetNr * 8, packetNr * 8 + 8);
-          //
-           this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
-                 if (!err) {
-                   packetNr++;
-                   if (packetNr < numberOfPackets)
-                     sendPacket();
-                   else
-                     callback(undefined); // Finished sending
 
-                 } else
-                 {
-                  /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
-                  // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+         this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
+            //sendNextPacketTimeoutID = setTimeout(function () {
+               if (!err) {
+                 sequenceNr++;
+                 packetNr++;
+                 if (packetNr < numberOfPackets)
+                   sendPacket();
+                 else
+                   callback(undefined); // Finished sending to ANT engine
 
-                   callback(err);
-                 }
+               } else
+               {
+                /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
+                // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+
+                 callback(err);
+               }
+            // },125);
            });
+      }.bind(this),
+
+      onTxFailed = function (err,msg)
+      {
+        // If retry, must start with packet 0 again
+        //clearTimeout(sendNextPacketTimeoutID);
+        console.log('FAILED!!!!');
+        callback(err,msg);
       }.bind(this);
 
     if (this.log.logging)
-      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + cannel + ' total bytes ' + data.byteLength);
+      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + channel + ' total bytes ' + data.byteLength);
 
      //this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED',callback);
-     //this.channel[channel].on('EVENT_TRANSFER_TX_FAILED',callback);
+     //this.channel[channel].once('EVENT_TRANSFER_TX_FAILED',onTxFailed);
+
+     if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
+       data = new Uint8Array(data);
+
      sendPacket();
 
   };
