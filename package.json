@@ -1,5 +1,5 @@
 {
-  "name": "libant",
+  "name": "libantjs",
   "version": "0.1.5",
   "description": "ANT wireless USB library",
   "main": "host.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hkskoglund/libant.git"
+    "url": "https://github.com/hkskoglund/libantjs.git"
   },
   "keywords": [
     "ANT",
@@ -20,9 +20,9 @@
   "author": "Henning Knut Skoglund <hkskoglund@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/hkskoglund/libant/issues"
+    "url": "https://github.com/hkskoglund/libantjs/issues"
   },
-  "homepage": "https://github.com/hkskoglund/libant",
+  "homepage": "https://github.com/hkskoglund/libantjs",
   "dependencies": {
     "amdefine": ">=0.1.0",
     "usb": ">=1.0.3"
