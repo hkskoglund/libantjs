@@ -82,8 +82,9 @@ define(function(require, exports, module) {
     usbLibraryPath,
     MAX_CHAN = 8,
     previousPacket,
-    awaitingResponseMessage; // For example "RESPONSE_NO_ERROR" for configuration commands
-
+    MAX_TRANSFER_PACKETS = 8, // Max 64 byte packets to prime ANT engine with
+    burstBuffer = new Uint8Array(),
+    iLastBurstTransfer = 0;
   // Detect host environment, i.e if running on node load node specific USB library
 
   // Node/iojs
@@ -156,6 +157,9 @@ define(function(require, exports, module) {
       resetMessage,
       openCloseMessage,
       messageStr,
+      burstPacketNr,
+      burstBufferLength,
+      lastBurstPacket,
 
       onReply = function _onReply(error, message) {
         clearInterval(intervalNoMessageReceivedID);
@@ -197,8 +201,6 @@ define(function(require, exports, module) {
         }
       }.bind(this);
 
-
-    msgBytes = message.getBytes();
     messageStr = message.toString();
 
     // Spec. p 54
@@ -227,8 +229,60 @@ define(function(require, exports, module) {
       intervalNoMessageReceivedID = setInterval(onNoMessageReceived, timeout);
     }
 
-    usb.transfer(msgBytes, onSentMessage);
+    msgBytes = message.getBytes();
 
+    // Fill endpoint packet with burst packets (up to 64 bytes)
+
+    if (message.id === Message.prototype.BURST_TRANSFER_DATA)
+    {
+
+      burstBuffer = this._concatBuffer(burstBuffer,msgBytes);
+
+      lastBurstPacket = message.getSequenceNr() & 0x04;
+
+      // Transfer burst packets if last burst packet is received (sequence nr most significant bit high)
+      // or endpoint max packet size filled.
+      // Exception : ANT Message too large if bursts is over 60 bytes (4 burst packet a 15 bytes = 60)
+      // Endpoint packet can max contain 4 burst packets and no partial burst packet at the end
+
+      if ((lastBurstPacket) || (burstBuffer.byteLength-iLastBurstTransfer >= 60))
+      {
+
+       console.log('transfer buffer',iLastBurstTransfer,burstBuffer.byteLength);
+
+        usb.transfer(burstBuffer.subarray(iLastBurstTransfer,iLastBurstTransfer+60), function (err)
+        {
+          if (err)
+          {
+            if (this.log.logging)
+              this.log.log('log','Transfer of burst failed',err);
+
+             callback('Transfer of burst Failed');
+          }
+
+          if (lastBurstPacket) {
+            burstBuffer = new Uint8Array(); // Reset
+            iLastBurstTransfer = 0;
+          }
+          else {
+            if (burstBuffer.byteLength <= 60)
+               iLastBurstTransfer = burstBuffer.byteLength; // Advance to end
+            else
+              iLastBurstTransfer += 60; // Start of next burst packet
+
+            callback(undefined,'Ready for more data');
+          }
+
+        });
+
+      } else {
+        callback(undefined,'Burst message integrated in endpoint packet'); // Call sync
+      }
+
+    } else {
+
+        usb.transfer(msgBytes, onSentMessage);
+    }
   };
 
   Host.prototype.EVENT = {
@@ -645,6 +699,15 @@ define(function(require, exports, module) {
 
   };
 
+  Host.prototype._concatBuffer = function(buffer1, buffer2) // https://gist.github.com/72lions/4528834
+  {
+    var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+
+    tmp.set(new Uint8Array(buffer1), 0);
+    tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+
+    return tmp;
+  };
 
   // param data - Uint8Array from USB subsystem
   Host.prototype.deserialize = function(data) {
@@ -652,22 +715,13 @@ define(function(require, exports, module) {
       iEndOfMessage,
       iStartOfMessage = 0,
       metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
-      message,
-      concat = function(buffer1, buffer2) // https://gist.github.com/72lions/4528834
-      {
-        var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-
-        tmp.set(new Uint8Array(buffer1), 0);
-        tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-
-        return tmp;
-      };
+      message;
 
     if (this.log.logging) this.log.log('log', 'Received data length', data.byteLength, data.constructor.name);
 
     if (previousPacket && previousPacket.byteLength) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
     {
-      data = concat(previousPacket, data);
+      data = this._concatBuffer(previousPacket, data);
     }
 
     iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
@@ -696,7 +750,9 @@ define(function(require, exports, module) {
 
         case Message.prototype.NOTIFICATION_SERIAL_ERROR:
 
-          this.emit(this.EVENT.ERROR, new Error('Notification: Serial error'), new NotificationSerialError(msgBytes));
+          message = new NotificationSerialError(msgBytes);
+          console.log('serial error',message);
+          this.emit(this.EVENT.ERROR, message, undefined);
 
           break;
 
@@ -1054,66 +1110,83 @@ define(function(require, exports, module) {
   // EVENT_TRANSFER_TX_FAILED : After 5 retries
   Host.prototype.sendBurstTransfer = function(channel, data, callback) {
     var numberOfPackets = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH),
-      packetNr = 0,
-      sequenceNr = 0,
-      sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
-      packet,
-      tmpPacket,
-      sendNextPacketTimeoutID,
+        packetNr = 0,
+        sequenceNr = 0,
+        sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
+        packet,
+        tmpPacket,
+        txFailed=false,
+
       sendPacket = function () {
 
-          if (sequenceNr > 3) // Roll over sequence nr
-            sequenceNr = 1;
+        if (sequenceNr > 3) // Roll over sequence nr
+          sequenceNr = 1;
 
-          if (packetNr === (numberOfPackets-1))
-            sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
+        if (packetNr === (numberOfPackets-1))
+          sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
 
-          packet = data.subarray(packetNr * Message.prototype.PAYLOAD_LENGTH, packet * Message.prototype.PAYLOAD_LENGTH + Message.prototype.PAYLOAD_LENGTH);
+        packet = data.subarray(packetNr * Message.prototype.PAYLOAD_LENGTH, (packetNr + 1)* Message.prototype.PAYLOAD_LENGTH);
 
-          // Fill with 0 for last packet if necessary
+        // Fill with 0 for last packet if necessary
 
-          if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
-            tmpPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
-            tmpPacket.set(packet);
-            packet = tmpPacket;
-          }
+        if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
+          tmpPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
+          tmpPacket.set(packet);
+          packet = tmpPacket;
+        }
 
-          sequenceChannel = (sequenceNr << 5) | channel;
+        sequenceChannel = (sequenceNr << 5) | channel;
 
-         this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
-            //sendNextPacketTimeoutID = setTimeout(function () {
-               if (!err) {
-                 sequenceNr++;
-                 packetNr++;
-                 if (packetNr < numberOfPackets)
-                   sendPacket();
-                 else
-                   callback(undefined); // Finished sending to ANT engine
+       if (packetNr === 0)
+        {
+          console.time('TXSTART');
+        }
 
-               } else
-               {
-                /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
-                // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+       this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
 
-                 callback(err);
-               }
-            // },125);
-           });
+          if (txFailed) // Stop in case of failure
+            return;
+
+             if (!err) {
+
+                   sequenceNr++;
+                   packetNr++;
+                   if (packetNr < numberOfPackets)
+                     sendPacket();
+                   else
+                     callback(undefined); // Finished sending to ANT engine
+
+             } else
+             {
+              /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
+              // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+
+               callback(err);
+             }
+
+         });
       }.bind(this),
+
+      onTxStart = function (err,msg)
+      {
+        console.timeEnd('TXSTART');
+      },
 
       onTxFailed = function (err,msg)
       {
         // If retry, must start with packet 0 again
         //clearTimeout(sendNextPacketTimeoutID);
-        console.log('FAILED!!!!');
-        callback(err,msg);
+        txFailed = true;
+        console.log('FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',err,msg);
+        callback(new Error(msg.toString()),msg);
       }.bind(this);
 
     if (this.log.logging)
-      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + channel + ' total bytes ' + data.byteLength);
+      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
      //this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED',callback);
-     //this.channel[channel].once('EVENT_TRANSFER_TX_FAILED',onTxFailed);
+     this.channel[channel].once('EVENT_TRANSFER_TX_FAILED',onTxFailed);
+     this.channel[channel].once('EVENT_TRANSFER_TX_START',onTxStart);
 
      if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
        data = new Uint8Array(data);

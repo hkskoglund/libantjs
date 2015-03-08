@@ -456,6 +456,8 @@ define(function(require, exports, module) {
     //this.setOutEndpointTimeout(1000);
     var nodeBuf = Util.prototype.toNodeBuffer(chunk);
 
+    console.log('USB TX BUFFER LENGTH',nodeBuf.length);
+
     if (this.log.logging) {
       this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf );
     }
@@ -470,7 +472,7 @@ define(function(require, exports, module) {
 
   Util.prototype.toNodeBuffer = function(chunk) {
 
-    return new Buffer(new Uint8Array(chunk));
+    return new Buffer(chunk);
 
   };
 

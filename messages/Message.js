@@ -153,6 +153,12 @@ define(function(require, exports, module) {
     return this;
   };
 
+  // Get sequence nr. of burst 3 msb of channel byte
+  Message.prototype.getSequenceNr = function ()
+  {
+    return (this.content[0] & 0xe0) >> 5 ; // e = 1110
+  };
+
   /*
   This function create a raw message
    SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)

@@ -1,5 +1,5 @@
 
-var masterHost = new (require('../host'))({log : true});
+var masterHost = new (require('../host'))({log : true, debugLevel: 0});
 var MasterChannel0 = masterHost.channel[0];
 var dataSeed = 0;
 
@@ -34,12 +34,20 @@ function onMasterChannel0Closed(err,msg)
   console.log('closed sent!!!');
 }
 
+function generateBurstData()
+{
+  var burst = new Uint8Array(9),
+      i;
+  for (i=0;i<burst.byteLength;i++)
+    burst[i] = i & 0xFF;
 
+  return burst;
+}
 
 function onMasterAssigned(error)
 {
   var sendFunc,
-      burstData = new Uint8Array(32*8),
+      burstData = generateBurstData(),
       data,
       sendData = function ()
                 {
