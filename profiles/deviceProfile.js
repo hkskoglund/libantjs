@@ -11,7 +11,6 @@ define(function(require, exports, module) {
     GenericPage = require('./Page'),
     MainPage = require('./mainPage'),
     BackgroundPage = require('./backgroundPage'),
-    setting = require('../settings'),
     ManufacturerId = require('./manufacturerId'),
     ProductId = require('./productId'),
     CumulativeOperatingTime = require('./cumulativeOperatingTime'),

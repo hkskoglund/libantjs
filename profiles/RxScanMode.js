@@ -9,7 +9,6 @@ define(function(require, exports, module) {
   'use strict';
 
   var DeviceProfile = require('./deviceProfile'),
-    setting = require('../settings'),
     TEMPProfile = require('./environment/deviceProfile_ENVIRONMENT'),
     HRMProfile = require('./hrm/deviceProfile_HRM'),
     SDMProfile = require('./sdm/deviceProfile_SDM'),

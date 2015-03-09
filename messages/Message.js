@@ -232,6 +232,7 @@ define(function(require, exports, module) {
   Message.prototype.SET_PROXIMITY_SEARCH = 0x71;
   Message.prototype.EVENT_BUFFER_CONFIGURATION = 0x74;
   Message.prototype.SET_CHANNEL_SEARCH_PRIORITY = 0x75;
+  Message.prototype.ADVANCED_BURST_CAPABILITIES = 0x78;
 
   Message.prototype.RESET_SYSTEM = 0x4A;
   Message.prototype.OPEN_CHANNEL = 0x4B;
@@ -327,6 +328,8 @@ define(function(require, exports, module) {
     0x61: "Device Serial Number",
 
     0x74: "Event Buffer Configuration",
+
+    0x78: "Advanced Burst Capabilities",
 
     // Request/response
 

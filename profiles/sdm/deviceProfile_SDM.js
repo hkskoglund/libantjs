@@ -6,7 +6,6 @@ define(function(require, exports, module) {
   'use strict';
 
   var DeviceProfile = require('../deviceProfile'),
-    setting = require('../../settings'),
     SDMPage1 = require('./SDMPage1'),
     SDMPage2 = require('./SDMPage2'),
     GenericPage = require('../Page');

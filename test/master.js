@@ -119,7 +119,13 @@ function onMasterInited(error)
 {
    console.log('master inited',error);
 
+   masterHost.getAdvancedBurstCapabilities(function (err,msg) {
+     if (!err)
+     {
+       console.log('advanced burst capabilities '+msg.toString());
+
   MasterChannel0.assign(MasterChannel0.BIDIRECTIONAL_MASTER,MasterChannel0.NET.PUBLIC,onMasterAssigned);
+}});
    //masterHost.establishRXScanModeChannel(onPage);
    //masterHost.resetSystem(onReset);
   /* masterHost.configureEventBuffer(0x01,0xFFFF,0x00,function ()
@@ -149,7 +155,9 @@ devices = masterHost.getDevices();
 
 try {
   console.log('master device',devices[0]);
-  masterHost.init(0,onMasterInited);
+
+      masterHost.init(0,onMasterInited);
+
 
 } catch (err)
   {
