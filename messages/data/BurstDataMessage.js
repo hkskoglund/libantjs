@@ -17,6 +17,12 @@ define(function(require, exports, module) {
   BurstDataMessage.prototype = Object.create(AcknowledgedDataMessage.prototype);
   BurstDataMessage.prototype.constructor = BurstDataMessage;
 
+  BurstDataMessage.prototype.decode = function (data)
+  {
+    this.channel = data[Message.prototype.iChannel] & 0x1F;
+    this.sequenceNr = (data[Message.prototype.iChannel] & 0xE0) >> 5;
+  };
+
   module.exports = BurstDataMessage;
   return module.exports;
 });

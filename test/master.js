@@ -2,6 +2,7 @@
 var masterHost = new (require('../host'))({log : true, debugLevel: 0});
 var MasterChannel0 = masterHost.channel[0];
 var dataSeed = 0;
+var devices;
 
 function onExited(error)
 {
@@ -23,20 +24,20 @@ function onMasterChannel0Open(error,msg)
 {
   console.log('master open',error,msg);
 
-  setTimeout(function () { MasterChannel0.getStatus(function (err,msg) { console.log('status',msg); }); },2500);
-  setTimeout(function _close () {
+//  setTimeout(function () { MasterChannel0.getStatus(function (err,msg) { console.log('status',msg); }); },2500);
+/*  setTimeout(function _close () {
     MasterChannel0.close(onMasterChannel0Closed);
-  },5000);
+  },10000); */
 }
 
 function onMasterChannel0Closed(err,msg)
 {
-  console.log('closed sent!!!');
+  console.log('master closed sent');
 }
 
 function generateBurstData()
 {
-  var burst = new Uint8Array(9),
+  var burst = new Uint8Array(20000*8),
       i;
   for (i=0;i<burst.byteLength;i++)
     burst[i] = i & 0xFF;
@@ -105,10 +106,10 @@ function onMasterAssigned(error)
      console.log('setChannelId response',msg.toString());
 
      // Start sending data
-     MasterChannel0.sendAck([0,1,2,3,4,5,6,7],function (err,msg) {
-       if (!err)
+    // MasterChannel0.sendAck([0,1,2,3,4,5,6,7],function (err,msg) {
+    //   if (!err)
          MasterChannel0.open(onMasterChannel0Open);
-     });
+    // });
 
    });
 
@@ -143,9 +144,11 @@ function onError(error)
   console.error('error',error);
 }
 
-console.log('devices',masterHost.getDevices());
+devices = masterHost.getDevices();
+//console.log('devices',devices);
 
 try {
+  console.log('master device',devices[0]);
   masterHost.init(0,onMasterInited);
 
 } catch (err)

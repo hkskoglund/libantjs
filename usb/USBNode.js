@@ -54,7 +54,7 @@ define(function(require, exports, module) {
       this._deviceToString(device, function(err, str) {
         device.close();
         if (this.log.logging) {
-          this.log.log(USBDevice.prototype.EVENT.LOG, 'Attached ' + str);
+          this.log.log(USBDevice.prototype.EVENT.LOG, 'Attached device ' + str);
         }
       }.bind(this));
 
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
 
 
       if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached ' + this._deviceToString(device));
+        this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached device ' + this._deviceToString(device));
       }
       this.getDevices();
     }
@@ -456,13 +456,9 @@ define(function(require, exports, module) {
     //this.setOutEndpointTimeout(1000);
     var nodeBuf = Util.prototype.toNodeBuffer(chunk);
 
-    console.log('USB TX BUFFER LENGTH',nodeBuf.length);
-
     if (this.log.logging) {
       this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf );
     }
-
-    // Buffer chunks when transmitting burst data?
 
     this.outEndpoint.transfer(nodeBuf, retrn);
   };

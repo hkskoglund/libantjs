@@ -2,6 +2,8 @@
 var slaveHost = new (require('../host'))({log : true});
 var slaveChannel0 = slaveHost.channel[0];
 var key;
+var devices;
+var burstNr=0;
 
 function onExited(error)
 {
@@ -24,11 +26,27 @@ function onSlaveChannel0Open(err,msg)
  console.log('slave open');
 }
 
+function onAckBroadcast(err,msg)
+{
+  console.log(Date.now(),'ACK broadcast',err);
+//  if (!slaveChannel0.hasId())
+//    slaveChannel0.getId(function (err,channelId) { console.log('cid'+channelId);});
+}
+
 function onBroadcast(err,msg)
 {
-  console.log('data',err,msg);
-  if (!slaveChannel0.hasId())
-    slaveChannel0.getId(function (err,channelId) { console.log('cid'+channelId);});
+  console.log(Date.now(),'broadcast',err);
+//  if (!slaveChannel0.hasId())
+//    slaveChannel0.getId(function (err,channelId) { console.log('cid'+channelId);});
+}
+
+function onBurst(err,msg)
+{
+  if (msg.sequenceNr===0)
+    burstNr=1;
+  else
+    burstNr++;
+  console.log(Date.now(),'burst',err,'channel '+msg.channel+' seq '+msg.sequenceNr+' nr '+burstNr);
 }
 
 function onSlaveAssigned(error)
@@ -43,6 +61,8 @@ function onSlaveAssigned(error)
            {
              console.log('setChannelId response',msg.toString());
              slaveChannel0.on('data',onBroadcast);
+             slaveChannel0.on('ackdata',onAckBroadcast);
+             slaveChannel0.on('burstdata',onBurst);
              console.log('slave channel' + slaveChannel0);
              slaveChannel0.open(onSlaveChannel0Open);
            });
@@ -74,10 +94,12 @@ function onError(error)
   console.error('error',error);
 }
 
-console.log('devices',slaveHost.getDevices());
+devices = slaveHost.getDevices();
+//console.log('devices',slaveHost.getDevices());
 
 try {
 
+  console.log('slave device',devices[0]);
   slaveHost.init(1,onSlaveInited);
 } catch (err)
   {

@@ -233,7 +233,7 @@ define(function(require, exports, module) {
 
     // Fill endpoint packet with burst packets (up to 64 bytes)
 
-    if (message.id === Message.prototype.BURST_TRANSFER_DATA)
+    /* if (message.id === Message.prototype.BURST_TRANSFER_DATA)
     {
 
       burstBuffer = this._concatBuffer(burstBuffer,msgBytes);
@@ -248,8 +248,6 @@ define(function(require, exports, module) {
       if ((lastBurstPacket) || (burstBuffer.byteLength-iLastBurstTransfer >= 60))
       {
 
-       console.log('transfer buffer',iLastBurstTransfer,burstBuffer.byteLength);
-
         usb.transfer(burstBuffer.subarray(iLastBurstTransfer,iLastBurstTransfer+60), function (err)
         {
           if (err)
@@ -257,7 +255,7 @@ define(function(require, exports, module) {
             if (this.log.logging)
               this.log.log('log','Transfer of burst failed',err);
 
-             callback('Transfer of burst Failed');
+             callback('Transfer of burst failed');
           }
 
           if (lastBurstPacket) {
@@ -270,7 +268,7 @@ define(function(require, exports, module) {
             else
               iLastBurstTransfer += 60; // Start of next burst packet
 
-            callback(undefined,'Ready for more data');
+            callback(undefined,'Ready for more burst packets');
           }
 
         });
@@ -279,10 +277,10 @@ define(function(require, exports, module) {
         callback(undefined,'Burst message integrated in endpoint packet'); // Call sync
       }
 
-    } else {
+    } else { */
 
         usb.transfer(msgBytes, onSentMessage);
-    }
+    //}
   };
 
   Host.prototype.EVENT = {
@@ -717,7 +715,7 @@ define(function(require, exports, module) {
       metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
       message;
 
-    if (this.log.logging) this.log.log('log', 'Received data length', data.byteLength, data.constructor.name);
+    //if (this.log.logging) this.log.log('log', 'Received data length', data.byteLength, data.constructor.name);
 
     if (previousPacket && previousPacket.byteLength) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
     {
@@ -730,7 +728,7 @@ define(function(require, exports, module) {
 
       msgBytes = data.subarray(iStartOfMessage, iEndOfMessage);
 
-      if (this.log.logging) this.log.log('log', 'Parsing', msgBytes);
+      //if (this.log.logging) this.log.log('log', 'Parsing', msgBytes);
 
       if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
 
@@ -793,7 +791,6 @@ define(function(require, exports, module) {
 
           break;
 
-
         case Message.prototype.SET_CHANNEL_ID:
 
           message = new ChannelIdMessage(msgBytes);
@@ -818,6 +815,76 @@ define(function(require, exports, module) {
 
          break;
 
+        case Message.prototype.BURST_TRANSFER_DATA:
+
+          message = new BurstDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
+
+         //
+         //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
+         //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
+         //
+         //        //    if (ANTmsg.length >= 9)
+         //{ // 1 byte for channel NR + 8 byte payload - standard message format
+         //
+         //        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
+         //        //        if (ANTmsg.sequenceNr & 0x04) // last packet
+         //        //            msgStr += " LAST";
+         //
+         //        //        payloadData = data.slice(4, 12);
+         //
+         //        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
+         //
+         //        //        // console.log(payloadData);
+         //
+         //        //        if (ANTmsg.sequenceNr === 0x00) // First packet
+         //        //        {
+         //        //            // this.log.time('burst');
+         //        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
+         //
+         //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
+         //
+         //        //            // Extended msg. only in the first packet
+         //        //            if (ANTmsg.length > 9)
+         //{
+         //        //                msgFlag = data[12];
+         //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
+         //        //                this.decode_extended_message(ANTmsg.channel, data);
+         //        //            }
+         //        //        }
+         //        //        else if (ANTmsg.sequenceNr > 0x00)
+         //
+         //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
+         //
+         //        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet
+         //        //        {
+         //        //            //console.timeEnd('burst');
+         //        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
+         //
+         //        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
+         //
+         //        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
+         //
+         //        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
+         //        //            if (typeof burstMsg !== "undefined")
+         //        //                burstParser = burstMsg.decoder;
+         //
+         //        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
+         //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
+         //        //            else
+         //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
+         //
+         //        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
+         //        //        }
+         //        //    }
+         //        //    else {
+         //        //        console.trace();
+         //        //        console.log("Data", data);
+         //        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
+         //        //    }
+         //
+          break;
+
         // Channel event or responses
 
         case Message.prototype.CHANNEL_RESPONSE:
@@ -829,72 +896,7 @@ define(function(require, exports, module) {
           this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
 
           break;
-          //
-          //        //case Message.prototype.BURST_TRANSFER_DATA:
-          //
-          //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
-          //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
-          //
-          //        //    if (ANTmsg.length >= 9)
-          //{ // 1 byte for channel NR + 8 byte payload - standard message format
-          //
-          //        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
-          //        //        if (ANTmsg.sequenceNr & 0x04) // last packet
-          //        //            msgStr += " LAST";
-          //
-          //        //        payloadData = data.slice(4, 12);
-          //
-          //        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
-          //
-          //        //        // console.log(payloadData);
-          //
-          //        //        if (ANTmsg.sequenceNr === 0x00) // First packet
-          //        //        {
-          //        //            // this.log.time('burst');
-          //        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
-          //
-          //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
-          //
-          //        //            // Extended msg. only in the first packet
-          //        //            if (ANTmsg.length > 9)
-          //{
-          //        //                msgFlag = data[12];
-          //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-          //        //                this.decode_extended_message(ANTmsg.channel, data);
-          //        //            }
-          //        //        }
-          //        //        else if (ANTmsg.sequenceNr > 0x00)
-          //
-          //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
-          //
-          //        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet
-          //        //        {
-          //        //            //console.timeEnd('burst');
-          //        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
-          //
-          //        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
-          //
-          //        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
-          //
-          //        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
-          //        //            if (typeof burstMsg !== "undefined")
-          //        //                burstParser = burstMsg.decoder;
-          //
-          //        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
-          //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
-          //        //            else
-          //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
-          //
-          //        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
-          //        //        }
-          //        //    }
-          //        //    else {
-          //        //        console.trace();
-          //        //        console.log("Data", data);
-          //        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
-          //        //    }
-          //
-          //        //    break;
+
 
         default:
 

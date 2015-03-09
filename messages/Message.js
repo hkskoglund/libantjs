@@ -167,8 +167,7 @@ define(function(require, exports, module) {
   */
   Message.prototype.getBytes = function() {
 
-    var standardMessage = new Uint8Array(13+Message.prototype.PAD_BYTES_LENGTH), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC 0 0
-        padByte,
+    var standardMessage = new Uint8Array(13), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC 0 0
         iCRC;
 
     if (this.content)
@@ -184,15 +183,6 @@ define(function(require, exports, module) {
 
     iCRC = this.length +3 ;
     standardMessage[iCRC] = this.getCRC(standardMessage.subarray(0, iCRC));
-
-    // Inserts two 0-zeros for preventing data loss (primarily for burst) and that the RTS is toggeled for 50 microsecs. between packets
-    // Datasheet : nRFAP2 Nordic Semiconductor product specification, 5.2.3 Asynchronous Port Control (RTS) Rev1.2, p. 24
-    // Also used in : DSIFramerANT::WriteMessage#L142 ANT_Library_MacOSX_Package
-
-    for (padByte = 0; padByte < Message.prototype.PAD_BYTES_LENGTH; padByte++)
-    {
-      standardMessage[iCRC+padByte+1] = 0x00;
-    }
 
     return standardMessage;
 
@@ -216,9 +206,6 @@ define(function(require, exports, module) {
   Message.prototype.getMessageId = function() {
     return this.id;
   };
-
-
-  Message.prototype.PAD_BYTES_LENGTH = 0x02;
 
   // ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
 
