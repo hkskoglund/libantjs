@@ -51,6 +51,7 @@ define(function(require, exports, module) {
   Message.prototype.iLENGTH = 1;
   Message.prototype.iID = 2;
   Message.prototype.iChannel = 3;
+  Message.prototype.iPayload = 4;
   Message.prototype.iFlagsByte = 9;
 
   Message.prototype.decode = function(data) {

@@ -26,6 +26,8 @@ define(function(require, exports, module) {
 
     this.channel = channel;
 
+    this.burst = undefined; // Contains burst data
+
   }
 
   Channel.prototype = Object.create(EventEmitter.prototype);
@@ -75,6 +77,10 @@ define(function(require, exports, module) {
     KEY: {
       'ANT+': [0xB9, 0xA5, 0x21, 0xFB, 0xBD, 0x72, 0xC3, 0x45]
     }
+  };
+
+  Channel.prototype.EVENT = {
+    BURST : 'burst' // Total burst, i.e all burst packets
   };
 
   Channel.prototype.BACKGROUND_SCANNING_ENABLE = 0x01; // 0000 0001

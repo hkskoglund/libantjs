@@ -40,7 +40,12 @@ function onBroadcast(err,msg)
 //    slaveChannel0.getId(function (err,channelId) { console.log('cid'+channelId);});
 }
 
-function onBurst(err,msg)
+function onBurst()
+{
+    console.log(Date.now(),'Received burst ',slaveChannel0.burst.byteLength);
+}
+
+function onBurstData(err,msg)
 {
   if (msg.sequenceNr===0)
     burstNr=1;
@@ -57,12 +62,13 @@ function onSlaveAssigned(error)
 
   //     slaveChannel0.setPeriod(slaveChannel0.NET.PERIOD.ENVIRONMENT.LOW_POWER,function () {
 
-           slaveChannel0.setId(0,0,0,function (err,msg)
+           slaveChannel0.setId(1,1,1,function (err,msg)
            {
              console.log('setChannelId response',msg.toString());
              slaveChannel0.on('data',onBroadcast);
              slaveChannel0.on('ackdata',onAckBroadcast);
-             slaveChannel0.on('burstdata',onBurst);
+             slaveChannel0.on('burstdata',onBurstData); // Each packet
+             slaveChannel0.on('burst',onBurst);
              console.log('slave channel' + slaveChannel0);
              slaveChannel0.open(onSlaveChannel0Open);
            });

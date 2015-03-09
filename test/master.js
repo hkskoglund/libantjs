@@ -37,7 +37,7 @@ function onMasterChannel0Closed(err,msg)
 
 function generateBurstData()
 {
-  var burst = new Uint8Array(20000*8),
+  var burst = new Uint8Array(5000*8),
       i;
   for (i=0;i<burst.byteLength;i++)
     burst[i] = i & 0xFF;

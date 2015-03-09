@@ -21,6 +21,7 @@ define(function(require, exports, module) {
   {
     this.channel = data[Message.prototype.iChannel] & 0x1F;
     this.sequenceNr = (data[Message.prototype.iChannel] & 0xE0) >> 5;
+    this.packet = data.subarray(Message.prototype.iPayload,Message.prototype.iPayload+Message.prototype.PAYLOAD_LENGTH);
   };
 
   module.exports = BurstDataMessage;

@@ -157,8 +157,7 @@ define(function(require, exports, module) {
       resetMessage,
       openCloseMessage,
       messageStr,
-      burstPacketNr,
-      burstBufferLength,
+
       lastBurstPacket,
 
       onReply = function _onReply(error, message) {
@@ -231,56 +230,7 @@ define(function(require, exports, module) {
 
     msgBytes = message.getBytes();
 
-    // Fill endpoint packet with burst packets (up to 64 bytes)
-
-    /* if (message.id === Message.prototype.BURST_TRANSFER_DATA)
-    {
-
-      burstBuffer = this._concatBuffer(burstBuffer,msgBytes);
-
-      lastBurstPacket = message.getSequenceNr() & 0x04;
-
-      // Transfer burst packets if last burst packet is received (sequence nr most significant bit high)
-      // or endpoint max packet size filled.
-      // Exception : ANT Message too large if bursts is over 60 bytes (4 burst packet a 15 bytes = 60)
-      // Endpoint packet can max contain 4 burst packets and no partial burst packet at the end
-
-      if ((lastBurstPacket) || (burstBuffer.byteLength-iLastBurstTransfer >= 60))
-      {
-
-        usb.transfer(burstBuffer.subarray(iLastBurstTransfer,iLastBurstTransfer+60), function (err)
-        {
-          if (err)
-          {
-            if (this.log.logging)
-              this.log.log('log','Transfer of burst failed',err);
-
-             callback('Transfer of burst failed');
-          }
-
-          if (lastBurstPacket) {
-            burstBuffer = new Uint8Array(); // Reset
-            iLastBurstTransfer = 0;
-          }
-          else {
-            if (burstBuffer.byteLength <= 60)
-               iLastBurstTransfer = burstBuffer.byteLength; // Advance to end
-            else
-              iLastBurstTransfer += 60; // Start of next burst packet
-
-            callback(undefined,'Ready for more burst packets');
-          }
-
-        });
-
-      } else {
-        callback(undefined,'Burst message integrated in endpoint packet'); // Call sync
-      }
-
-    } else { */
-
-        usb.transfer(msgBytes, onSentMessage);
-    //}
+    usb.transfer(msgBytes, onSentMessage);
   };
 
   Host.prototype.EVENT = {
@@ -289,8 +239,8 @@ define(function(require, exports, module) {
 
     // Data
 
-    BROADCAST: 'broadcast',
-    BURST: 'burst',
+    //BROADCAST: 'broadcast',
+    BURST: 'burst', // Total burst , i.e all burst packets
 
   };
 
@@ -820,69 +770,14 @@ define(function(require, exports, module) {
           message = new BurstDataMessage(msgBytes);
           this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
 
-         //
-         //        //    ANTmsg.channel = data[3] & 0x1F; // 5 lower bits
-         //        //    ANTmsg.sequenceNr = (data[3] & 0xE0) >> 5; // 3 upper bits
-         //
-         //        //    if (ANTmsg.length >= 9)
-         //{ // 1 byte for channel NR + 8 byte payload - standard message format
-         //
-         //        //        msgStr += "BURST on CHANNEL " + ANTmsg.channel + " SEQUENCE NR " + ANTmsg.sequenceNr;
-         //        //        if (ANTmsg.sequenceNr & 0x04) // last packet
-         //        //            msgStr += " LAST";
-         //
-         //        //        payloadData = data.slice(4, 12);
-         //
-         //        //        // Assemble burst data packets on channelConfiguration for channel, assume sequence number are received in order ...
-         //
-         //        //        // console.log(payloadData);
-         //
-         //        //        if (ANTmsg.sequenceNr === 0x00) // First packet
-         //        //        {
-         //        //            // this.log.time('burst');
-         //        //            antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp = Date.now();
-         //
-         //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = payloadData; // Payload 8 bytes
-         //
-         //        //            // Extended msg. only in the first packet
-         //        //            if (ANTmsg.length > 9)
-         //{
-         //        //                msgFlag = data[12];
-         //        //                //console.log("Extended msg. flag : 0x"+msgFlag.toString(16));
-         //        //                this.decode_extended_message(ANTmsg.channel, data);
-         //        //            }
-         //        //        }
-         //        //        else if (ANTmsg.sequenceNr > 0x00)
-         //
-         //        //            antInstance.channelConfiguration[ANTmsg.channel].burstData = Buffer.concat([antInstance.channelConfiguration[ANTmsg.channel].burstData, payloadData]);
-         //
-         //        //        if (ANTmsg.sequenceNr & 0x04) // msb set === last packet
-         //        //        {
-         //        //            //console.timeEnd('burst');
-         //        //            antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp = Date.now();
-         //
-         //        //            var diff = antInstance.channelConfiguration[ANTmsg.channel].endBurstTimestamp - antInstance.channelConfiguration[ANTmsg.channel].startBurstTimestamp;
-         //
-         //        //            // console.log("Burst time", diff, " bytes/sec", (antInstance.channelConfiguration[channelNr].burstData.length / (diff / 1000)).toFixed(1), "bytes:", antInstance.channelConfiguration[channelNr].burstData.length);
-         //
-         //        //            burstMsg = antInstance.burstQueue[ANTmsg.channel][0];
-         //        //            if (typeof burstMsg !== "undefined")
-         //        //                burstParser = burstMsg.decoder;
-         //
-         //        //            if (!antInstance.channelConfiguration[ANTmsg.channel].emit(Channel.prototype.EVENT.BURST, ANTmsg.channel, antInstance.channelConfiguration[ANTmsg.channel].burstData, burstParser))
-         //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "No listener for event Channel.prototype.EVENT.BURST on channel " + ANTmsg.channel);
-         //        //            else
-         //        //                antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Burst data received " + antInstance.channelConfiguration[ANTmsg.channel].burstData.length + " bytes time " + diff + " ms rate " + (antInstance.channelConfiguration[ANTmsg.channel].burstData.length / (diff / 1000)).toFixed(1) + " bytes/sec");
-         //
-         //        //            //antInstance.channelConfiguration[channelNr].decodeBurstData(antInstance.channelConfiguration[channelNr].burstData, burstParser);
-         //        //        }
-         //        //    }
-         //        //    else {
-         //        //        console.trace();
-         //        //        console.log("Data", data);
-         //        //        antInstance.emit(ParseANTResponse.prototype.EVENT.LOG_MESSAGE, "Cannot handle this message of "+ANTmsg.length+ " bytes. Expecting a message length of 9 for standard messages or greater for extended messages (channel ID/RSSI/RX timestamp)");
-         //        //    }
-         //
+          if (message.sequenceNr === 0) // First packet
+            this.channel[message.channel].burst = new Uint8Array();
+
+          this.channel[message.channel].burst = this._concatBuffer(this.channel[message.channel].burst,message.packet);
+
+          if (message.sequenceNr & 0x04) // Last packet
+              this.channel[message.channel].emit(Channel.prototype.EVENT.BURST,undefined,message);
+
           break;
 
         // Channel event or responses
@@ -1139,11 +1034,6 @@ define(function(require, exports, module) {
 
         sequenceChannel = (sequenceNr << 5) | channel;
 
-       if (packetNr === 0)
-        {
-          console.time('TXSTART');
-        }
-
        this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
 
           if (txFailed) // Stop in case of failure
@@ -1169,9 +1059,14 @@ define(function(require, exports, module) {
          });
       }.bind(this),
 
+      onTxCompleted = function (err,msg)
+      {
+        //console.timeEnd('TXCOMPLETED');
+      },
+
       onTxStart = function (err,msg)
       {
-        console.timeEnd('TXSTART');
+        //console.time('TXCOMPLETED');
       },
 
       onTxFailed = function (err,msg)
@@ -1186,7 +1081,7 @@ define(function(require, exports, module) {
     if (this.log.logging)
       this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
-     //this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED',callback);
+     this.channel[channel].once('EVENT_TRANSFER_TX_COMPLETED',onTxCompleted);
      this.channel[channel].once('EVENT_TRANSFER_TX_FAILED',onTxFailed);
      this.channel[channel].once('EVENT_TRANSFER_TX_START',onTxStart);
 
