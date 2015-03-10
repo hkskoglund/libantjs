@@ -22,7 +22,7 @@ define(function(require, exports, module) {
   SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
 
   SetTransmitPowerMessage.prototype.encode = function(transmitPower) {
-    var msgBuffer = new Uint8Array([Message.prototype.FILLER_BYTE,transmitPower]);
+    var msgBuffer = new Uint8Array([Message.prototype.FILLER_BYTE, transmitPower]);
 
     this.transmitPower = transmitPower;
 

@@ -1,7 +1,5 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:truel, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-// Convention : _ before a function name indicates that the function should not be used externally
-
 if (typeof define !== 'function') {
   var define = require('amdefine')(module);
 }
@@ -10,15 +8,14 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var
-
-    EventEmitter = require('./util/events'),
+  var EventEmitter = require('./util/events'),
 
     // Data
 
     BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
     AcknowledgedDataMessage = require('./messages/data/AcknowledgedDataMessage'),
     BurstDataMessage = require('./messages/data/BurstDataMessage'),
+    AdvancedBurstDataMessage = require('./messages/data/AdvancedBurstDataMessage'),
 
     Logger = require('./util/logger'),
     USBDevice = require('./usb/USBDevice'),
@@ -65,6 +62,7 @@ define(function(require, exports, module) {
     SetSerialNumChannelIdMessage = require('./messages/configuration/SetSerialNumChannelIdMessage'),
     ConfigureEventBufferMessage = require('./messages/configuration/ConfigureEventBufferMessage'),
     LibConfigMessage = require('./messages/configuration/LibConfigMessage'),
+    ConfigureAdvancedBurstMessage = require('./messages/configuration/ConfigureAdvancedBurstMessage'),
 
     ChannelResponseMessage = require('./messages/ChannelResponseEvent/ChannelResponseMessage'),
     ChannelResponseEvent = require('./channel/channelResponseEvent'),
@@ -75,38 +73,19 @@ define(function(require, exports, module) {
 
     RxScanModeProfile = require('./profiles/RxScanMode'),
 
-    // Private objects
-
     // Don't expose usb interface to higher level code, use wrappers instead on host
 
     UsbLib,
     usb,
     usbLibraryPath,
     MAX_CHAN = 8,
-    previousPacket,
-    MAX_TRANSFER_PACKETS = 8, // Max 64 byte packets to prime ANT engine with
-    burstBuffer = new Uint8Array(),
-    iLastBurstTransfer = 0;
-  // Detect host environment, i.e if running on node load node specific USB library
-
-  // Node/iojs
-
-  if (typeof process !== 'undefined' && process.title === 'node') {
-    usbLibraryPath = './usb/USBNode';
-  }
-
-  // Chrome packaged app
-  else if (typeof window !== 'undefined' && typeof window.chrome === 'object') {
-    usbLibraryPath = './usb/USBChrome';
-  }
-
-  UsbLib = require(usbLibraryPath);
+    previousPacket;
 
   // Host for USB ANT communication
 
   function Host(options) {
 
-    var number;
+    var channel;
 
     if (!options) {
       options = {};
@@ -120,8 +99,8 @@ define(function(require, exports, module) {
 
     this.channel = new Array(MAX_CHAN);
 
-    for (number = 0; number < MAX_CHAN; number++) {
-      this.channel[number] = new Channel(this.options, this, number);
+    for (channel = 0; channel < MAX_CHAN; channel++) {
+      this.channel[channel] = new Channel(this.options, this, channel);
     }
 
     if (this.log.logging) {
@@ -143,10 +122,18 @@ define(function(require, exports, module) {
     }
   });
 
+  Host.prototype.ADVANCED_BURST = {
+    ENABLE : 0x01,
+    DISABLE : 0x02,
+    MAX_PACKET_8BYTES : 0x01,
+    MAX_PACKET_16BYTES : 0x02,
+    MAX_PACKET_24BYTES : 0x03
+  };
 
   // Send a message to ANT
   Host.prototype.sendMessage = function(message, callback) {
-    var messageReceived = false,
+
+  var messageReceived = false,
       timeout = 500,
       intervalNoMessageReceivedID,
       retry = 0,
@@ -163,6 +150,7 @@ define(function(require, exports, module) {
       lastBurstPacket,
 
       onReply = function _onReply(error, message) {
+
         clearInterval(intervalNoMessageReceivedID);
 
         if (this.log.logging) this.log.log('log', message.toString());
@@ -172,6 +160,7 @@ define(function(require, exports, module) {
       }.bind(this),
 
       onSentMessage = function _onSentMessage(error) {
+
         if (error) {
           if (!noReply) clearInterval(intervalNoMessageReceivedID);
           if (this.log.logging) {
@@ -188,6 +177,7 @@ define(function(require, exports, module) {
       }.bind(this),
 
       onNoMessageReceived = function _onNoMessageReceived() {
+
         retry++;
 
         if (this.log.logging) this.log.log('warn', 'No reply in ' + timeout + ' ms. Retry ' + retry + ' ' + messageStr);
@@ -210,8 +200,6 @@ define(function(require, exports, module) {
     requestMessage = (message.id === Message.prototype.REQUEST);
     resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
     openCloseMessage = (Message.prototype.OPEN_CLOSE_MESSAGE.indexOf(message.id) !== -1);
-
-    //console.log('NOREPLY',noReply,'CONFIG',configMessage,'REQUEST',requestMessage,'RESET',resetMessage);
 
     if (!noReply) {
 
@@ -242,7 +230,7 @@ define(function(require, exports, module) {
     // Data
 
     //BROADCAST: 'broadcast',
-    BURST: 'burst', // Total burst , i.e all burst packets
+    BURST: 'burst', // Total burst , i.e all burst packets are received
 
   };
 
@@ -251,22 +239,22 @@ define(function(require, exports, module) {
 
   };
 
-  Host.prototype._onUSBinit = function(onInit, error) {
-    if (error) {
-      onInit(error);
-    } else {
-
-      usb.addListener(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
-
-      usb.listen();
-
-      this.resetSystem(onInit);
-
-    }
-
-  };
-
   Host.prototype.init = function(iDevice, onInit) {
+
+    var onUSBinit = function(onInit, error) {
+
+      if (error) {
+        onInit(error);
+      } else {
+
+        usb.addListener(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
+
+        usb.listen();
+
+        this.resetSystem(onInit);
+
+      }
+    }.bind(this);
 
     /*
             this.libConfig(libConfig.getFlagsByte(),
@@ -285,7 +273,7 @@ define(function(require, exports, module) {
 
 
 
-    usb.init(iDevice, this._onUSBinit.bind(this, onInit));
+    usb.init(iDevice, onUSBinit.bind(this, onInit));
 
   };
 
@@ -302,185 +290,6 @@ define(function(require, exports, module) {
       callback();
     }.bind(this));
 
-  };
-
-  Host.prototype._concatBuffer = function(buffer1, buffer2) // https://gist.github.com/72lions/4528834
-  {
-    var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-
-    tmp.set(new Uint8Array(buffer1), 0);
-    tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-
-    return tmp;
-  };
-
-  // param data - Uint8Array from USB subsystem
-  Host.prototype.deserialize = function(data) {
-    var msgBytes,
-      iEndOfMessage,
-      iStartOfMessage = 0,
-      metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
-      message;
-
-    //if (this.log.logging) this.log.log('log', 'Received data length', data.byteLength, data.constructor.name);
-
-    if (previousPacket && previousPacket.byteLength) // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
-    {
-      data = this._concatBuffer(previousPacket, data);
-    }
-
-    iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
-
-    while (iStartOfMessage < iEndOfMessage) {
-
-      msgBytes = data.subarray(iStartOfMessage, iEndOfMessage);
-
-      //if (this.log.logging) this.log.log('log', 'Parsing', msgBytes);
-
-      if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
-
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC byte ' + msgBytes[Message.prototype.iSYNC] + ' expected ' + Message.prototype.SYNC + ', discarding ' + data.length + ' bytes, byte offset of buffer ' + data.byteOffset, data);
-        return;
-      }
-
-      switch (msgBytes[Message.prototype.iID]) {
-
-        // Notifications
-
-        case Message.prototype.NOTIFICATION_STARTUP:
-
-          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, new NotificationStartup(msgBytes));
-
-          break;
-
-        case Message.prototype.NOTIFICATION_SERIAL_ERROR:
-
-          message = new NotificationSerialError(msgBytes);
-          console.log('serial error',message);
-          this.emit(this.EVENT.ERROR, message, undefined);
-
-          break;
-
-        // Requested response
-
-        case Message.prototype.CHANNEL_STATUS:
-
-          message = new ChannelStatusMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.ANT_VERSION:
-
-          message = new VersionMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.CAPABILITIES:
-
-          message = new CapabilitiesMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.DEVICE_SERIAL_NUMBER:
-
-          message = new DeviceSerialNumberMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.EVENT_BUFFER_CONFIGURATION:
-
-          message = new ConfigureEventBufferMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.ADVANCED_BURST_CAPABILITIES:
-
-          switch (msgBytes[Message.prototype.iLENGTH]) {
-            case 0x04 :   message = new AdvancedBurstCapabilitiesMessage(msgBytes);
-                          break;
-            case 0x0A :   message = new AdvancedBurstCurrentConfigurationMessage(msgBytes);
-                          break;
-          }
-
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        case Message.prototype.SET_CHANNEL_ID:
-
-          message = new ChannelIdMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
-
-          break;
-
-        // Data
-
-        case Message.prototype.BROADCAST_DATA:
-
-          message = new BroadcastDataMessage(msgBytes);
-
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], undefined, message);
-
-          break;
-
-       case Message.prototype.ACKNOWLEDGED_DATA:
-
-         message = new AcknowledgedDataMessage(msgBytes);
-         this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], undefined, message);
-
-         break;
-
-        case Message.prototype.BURST_TRANSFER_DATA:
-
-          message = new BurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
-
-          if (message.sequenceNr === 0) // First packet
-            this.channel[message.channel].burst = new Uint8Array();
-
-          this.channel[message.channel].burst = this._concatBuffer(this.channel[message.channel].burst,message.packet);
-
-          if (message.sequenceNr & 0x04) // Last packet
-              this.channel[message.channel].emit(Channel.prototype.EVENT.BURST,undefined,message);
-
-          break;
-
-        // Channel event or responses
-
-        case Message.prototype.CHANNEL_RESPONSE:
-
-          var channelResponseMsg = new ChannelResponseMessage(msgBytes);
-
-          console.log('RESPONSE',ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
-
-          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
-
-          break;
-
-
-        default:
-
-          if (this.log.logging)
-            this.log.log('log', "Unable to parse received data", data, ' msg id ', msgBytes[Message.prototype.iID]);
-          break;
-      }
-
-      iStartOfMessage = iEndOfMessage;
-
-      if (iStartOfMessage + data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength <= data.byteLength) {
-        iEndOfMessage += (data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength);
-      } else {
-        previousPacket = data.subarray(iStartOfMessage);
-
-        iEndOfMessage = iStartOfMessage;
-      }
-
-    }
   };
 
   Host.prototype.resetSystem = function(callback) {
@@ -501,14 +310,32 @@ define(function(require, exports, module) {
     this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), callback);
   };
 
-  Host.prototype.getAdvancedBurstCapabilities = function(callback)
-  {
+  Host.prototype.getAdvancedBurstCapabilities = function(callback) {
     this.sendMessage(new RequestMessage(0x00, Message.prototype.ADVANCED_BURST_CAPABILITIES), callback);
   };
 
-  Host.prototype.getAdvancedBurstConfiguration = function(callback)
-  {
+  Host.prototype.getAdvancedBurstConfiguration = function(callback) {
     this.sendMessage(new RequestMessage(0x01, Message.prototype.ADVANCED_BURST_CAPABILITIES), callback);
+  };
+
+  // For convenience
+  Host.prototype.enableAdvancedBurst = function (callback)
+  {
+    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE,this.ADVANCED_BURST.MAX_PACKET_24BYTES,0,0,callback);
+  };
+
+  Host.prototype.disableAdvancedBurst = function (callback)
+  {
+    this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE,this.ADVANCED_BURST.MAX_PACKET_24BYTES,0,0,callback);
+  };
+
+  Host.prototype.configAdvancedBurst = function(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount, callback) {
+    var cb = callback;
+
+    if (typeof stallCount === 'function')
+     cb = stallCount;
+
+    this.sendMessage(new ConfigureAdvancedBurstMessage(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount),cb);
   };
 
   Host.prototype.getSerialNumber = function(callback) {
@@ -538,9 +365,9 @@ define(function(require, exports, module) {
     this.sendMessage(new UnAssignChannelMessage(channelNr), callback);
   };
 
-  /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters to defaults.
-   Assign channel command should be issued before any other channel configuration messages (p. 64 ANT Message Protocol And Usaga Rev 50) ->
-   also sets defaults values for RF, period, tx power, search timeout p.22 */
+  /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters
+     to defaults. Assign channel command should be issued before any other channel configuration messages
+     (p. 64 ANT Message Protocol And Usaga Rev 50) -> also sets defaults values for RF, period, tx power, search timeout p.22 */
   Host.prototype.assignChannel = function(number, channelType, networkNumber, extendedAssignment, callback) {
     var cb,
       configurationMsg;
@@ -557,8 +384,8 @@ define(function(require, exports, module) {
 
   };
 
-  /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,  0 = wildecard
-  "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
+  /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,
+   0 = wildcard "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
   */
   Host.prototype.setChannelId = function(channel, deviceNum, deviceType, transmissionType, callback) {
     this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), callback);
@@ -581,7 +408,8 @@ define(function(require, exports, module) {
     this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), callback);
   };
 
-  // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite, 0 = disable high priority search mode (default search timeout is 25 seconds)
+  // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite,
+  //0 = disable high priority search mode (default search timeout is 25 seconds)
   Host.prototype.setChannelSearchTimeout = function(channel, searchTimeout, callback) {
     this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), callback);
   };
@@ -635,19 +463,19 @@ define(function(require, exports, module) {
 
   };
 
-  Host.prototype.sendBroadcastData = function(channel, broadcastData, callback,ack) {
+  Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, ack) {
     var data = broadcastData,
-        msg;
+      msg;
 
     if (!ack)
-        msg =  new BroadcastDataMessage();
+      msg = new BroadcastDataMessage();
     else
-       msg = new AcknowledgedDataMessage();
+      msg = new AcknowledgedDataMessage();
 
     if (typeof broadcastData === 'object' && broadcastData.constructor.name === 'Array') // Allows sending of [1,2,3,4,5,6,7,8]
       data = new Uint8Array(broadcastData);
 
-    msg.encode(channel,data);
+    msg.encode(channel, data);
 
     this.sendMessage(msg, callback);
   };
@@ -656,113 +484,360 @@ define(function(require, exports, module) {
   // Event TRANSFER_TX_COMPLETED channel event if successfull,
   // Event TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
   // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-  Host.prototype.sendAcknowledgedData = function (channel, ackData, callback) {
-    this.sendBroadcastData(channel,ackData,callback,true);
+  Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
+    this.sendBroadcastData(channel, ackData, callback, true);
   };
 
   // Send an individual packet as part of a burst transfer
   // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
- //  p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
- //  "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
-  Host.prototype.sendBurstTransferPacket = function (sequenceChannel, packet, callback)
-  {
-    var msg = new BurstDataMessage();
+  //  p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
+  //  "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
+  Host.prototype.sendBurstTransferPacket = function(sequenceChannel, packet, callback) {
+    var msg;
 
-    msg.encode(sequenceChannel,packet);
+    if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH)
+    {
+        msg = new BurstDataMessage();
+    }
+    else
+    {
+       msg = new AdvancedBurstDataMessage();
+    }
 
-    this.sendMessage(msg,callback);
+    msg.encode(sequenceChannel, packet);
+
+    this.sendMessage(msg, callback);
   };
 
   // Sends bulk data
   // EVENT_TRANSFER_TX_START - next channel period after message sent to device
   // EVENT_TRANSFER_TX_COMPLETED
   // EVENT_TRANSFER_TX_FAILED : After 5 retries
-  Host.prototype.sendBurstTransfer = function(channel, data, callback) {
-    var numberOfPackets = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH),
-        packetNr = 0,
-        sequenceNr = 0,
-        sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
-        packet,
-        tmpPacket,
-        txFailed=false,
+  Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB,callback) {
+    var cb,
+      numberOfPackets,
+      packetLength,
+      packetNr = 0,
+      sequenceNr = 0,
+      sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
+      packet,
+      tmpPacket,
+      txFailed = false,
 
-      sendPacket = function () {
+      sendPacket = function() {
 
         if (sequenceNr > 3) // Roll over sequence nr
           sequenceNr = 1;
 
-        if (packetNr === (numberOfPackets-1))
-          sequenceNr = sequenceNr | 0x04;  // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
+        if (packetNr === (numberOfPackets - 1))
+          sequenceNr = sequenceNr | 0x04; // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
 
-        packet = data.subarray(packetNr * Message.prototype.PAYLOAD_LENGTH, (packetNr + 1)* Message.prototype.PAYLOAD_LENGTH);
+        packet = data.subarray(packetNr * packetLength, (packetNr + 1) * packetLength);
 
         // Fill with 0 for last packet if necessary
 
-        if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
-          tmpPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
+        if (packet.byteLength < packetLength) {
+          tmpPacket = new Uint8Array(packetLength);
           tmpPacket.set(packet);
           packet = tmpPacket;
         }
 
         sequenceChannel = (sequenceNr << 5) | channel;
 
-       this.sendBurstTransferPacket(sequenceChannel, packet, function (err,msg) {
+        this.sendBurstTransferPacket(sequenceChannel, packet, function(err, msg) {
 
           if (txFailed) // Stop in case of failure
             return;
 
-             if (!err) {
+          if (!err) {
 
-                   sequenceNr++;
-                   packetNr++;
-                   if (packetNr < numberOfPackets)
-                     sendPacket();
-                   else
-                     callback(undefined); // Finished sending to ANT engine
+            sequenceNr++;
+            packetNr++;
 
-             } else
-             {
-              /// this.chanel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED');
-              // this.chanel[channel].removeListener('EVENT_TRANSFER_TX_FAILED');
+            if (packetNr < numberOfPackets)
+              sendPacket();
+            // else (call callback on TX_COMPLETED/FAILED)
+          } else {
 
-               callback(err);
-             }
+            removeListeners();
 
-         });
+            cb(err);
+          }
+
+        });
       }.bind(this),
 
-      onTxCompleted = function (err,msg)
+      addListeners = function ()
       {
-        //console.timeEnd('TXCOMPLETED');
+        this.channel[channel].once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
+        this.channel[channel].once('EVENT_TRANSFER_TX_FAILED', onTxFailed);
+        this.channel[channel].once('EVENT_TRANSFER_TX_START', onTxStart);
+
+      }.bind(this),
+
+      removeListeners = function ()
+      {
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED',onTxCompleted);
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_FAILED',onTxFailed);
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_START',onTxStart);
+      }.bind(this),
+
+      onTxCompleted = function(err, msg) {
+        console.timeEnd('TXCOMPLETED');
+        removeListeners();
+        cb(undefined);
       },
 
-      onTxStart = function (err,msg)
-      {
-        //console.time('TXCOMPLETED');
+      onTxStart = function(err, msg) {
+        console.time('TXCOMPLETED');
       },
 
-      onTxFailed = function (err,msg)
-      {
+      onTxFailed = function(err, msg) {
         // If retry, must start with packet 0 again
         //clearTimeout(sendNextPacketTimeoutID);
         txFailed = true;
-        console.log('FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',err,msg);
-        callback(new Error(msg.toString()),msg);
+        console.log('FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', err, msg);
+        removeListeners();
+        cb(new Error(msg.toString()), msg);
       }.bind(this);
 
+    addListeners();
+
+    if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
+      data = new Uint8Array(data);
+
+    if (typeof packetsPerURB === 'function') // Standard burst
+    {
+     packetLength = Message.prototype.PAYLOAD_LENGTH;
+     cb = packetsPerURB;
+    }
+
+    else {
+
+      packetLength = Message.prototype.PAYLOAD_LENGTH * packetsPerURB;
+      cb = callback;
+    }
+
+    numberOfPackets = Math.ceil(data.byteLength / packetLength);
+
     if (this.log.logging)
-      this.log.log('log', 'Sending burst ' + numberOfPackets + ' packets channel ' + channel + ' ' + data.byteLength + ' bytes ');
+      this.log.log('log', 'Sending burst, ' + numberOfPackets + ' packets, packet length '+packetLength+' channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
-     this.channel[channel].once('EVENT_TRANSFER_TX_COMPLETED',onTxCompleted);
-     this.channel[channel].once('EVENT_TRANSFER_TX_FAILED',onTxFailed);
-     this.channel[channel].once('EVENT_TRANSFER_TX_START',onTxStart);
-
-     if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
-       data = new Uint8Array(data);
-
-     sendPacket();
+    sendPacket();
 
   };
+
+ // For compability with spec. interface 9.5.5.4 Advanced Burst Data 0x72
+  Host.prototype.sendAdvancedTransfer = function (channel, data, size, packetsPerURB,callback)
+  {
+    // Note size ignored/not necessary
+     this.sendBurstTransfer(channel,data,packetsPerURB,callback);
+  };
+
+  Host.prototype.deserialize = function(data) {
+    var msgBytes,
+      iEndOfMessage,
+      iStartOfMessage = 0,
+      metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+      message,
+      concatBuffer = function(buffer1, buffer2) // https://gist.github.com/72lions/4528834
+      {
+        var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
+
+        tmp.set(new Uint8Array(buffer1), 0);
+        tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
+
+        return tmp;
+      };
+
+    if (previousPacket && previousPacket.byteLength)
+    // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
+    {
+      data = concatBuffer(previousPacket, data);
+    }
+
+    iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
+
+    while (iStartOfMessage < iEndOfMessage) {
+
+      msgBytes = data.subarray(iStartOfMessage, iEndOfMessage);
+
+      if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
+
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC ' + msgBytes[Message.prototype.iSYNC]  +
+        ', discarding ' + data.length + ' bytes', data);
+
+        return;
+      }
+
+      switch (msgBytes[Message.prototype.iID]) {
+
+        // Notifications
+
+        case Message.prototype.NOTIFICATION_STARTUP:
+
+          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, new NotificationStartup(msgBytes));
+
+          break;
+
+        case Message.prototype.NOTIFICATION_SERIAL_ERROR:
+
+          message = new NotificationSerialError(msgBytes);
+          this.emit(this.EVENT.ERROR, message, undefined);
+
+          break;
+
+        // Requested response
+
+        case Message.prototype.CHANNEL_STATUS:
+
+          message = new ChannelStatusMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.ANT_VERSION:
+
+          message = new VersionMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.CAPABILITIES:
+
+          message = new CapabilitiesMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.DEVICE_SERIAL_NUMBER:
+
+          message = new DeviceSerialNumberMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.EVENT_BUFFER_CONFIGURATION:
+
+          message = new ConfigureEventBufferMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.ADVANCED_BURST_CAPABILITIES:
+
+          switch (msgBytes[Message.prototype.iLENGTH]) {
+            case 0x04:
+              message = new AdvancedBurstCapabilitiesMessage(msgBytes);
+              break;
+            case 0x0A:
+              message = new AdvancedBurstCurrentConfigurationMessage(msgBytes);
+              break;
+          }
+
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        case Message.prototype.SET_CHANNEL_ID:
+
+          message = new ChannelIdMessage(msgBytes);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+
+          break;
+
+        // Data
+
+        case Message.prototype.BROADCAST_DATA:
+
+          message = new BroadcastDataMessage(msgBytes);
+
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], undefined, message);
+
+          break;
+
+        case Message.prototype.ACKNOWLEDGED_DATA:
+
+          message = new AcknowledgedDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], undefined, message);
+
+          break;
+
+        case Message.prototype.BURST_TRANSFER_DATA:
+
+          message = new BurstDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
+
+          if (message.sequenceNr === 0) // First packet (also for advanced burst)
+            this.channel[message.channel].burst = new Uint8Array();
+
+          this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
+
+          if (message.sequenceNr & 0x04) // Last packet
+            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, undefined, message);
+
+          break;
+
+        case Message.prototype.ADVANCED_BURST_TRANSFER_DATA:
+
+          message = new AdvancedBurstDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
+
+          this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
+
+          if (message.sequenceNr & 0x04) // Last packet
+            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, undefined, message);
+
+          break;
+
+        // Channel responses or RF event
+
+        case Message.prototype.CHANNEL_RESPONSE:
+
+          var channelResponseMsg = new ChannelResponseMessage(msgBytes);
+
+          console.log('RESPONSE', ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+
+          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],
+            undefined, channelResponseMsg.response);
+
+          break;
+
+        default:
+
+          if (this.log.logging)
+            this.log.log('log', "Unable to parse received data", data, ' msg id ', msgBytes[Message.prototype.iID]);
+          break;
+      }
+
+      iStartOfMessage = iEndOfMessage;
+
+      if (iStartOfMessage + data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength <= data.byteLength) {
+        iEndOfMessage += (data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength);
+      } else {
+        previousPacket = data.subarray(iStartOfMessage);
+
+        iEndOfMessage = iStartOfMessage;
+      }
+
+    }
+  };
+
+  // Detect host environment, i.e if running on node then load node specific USB library
+  function requireUSB()
+  {
+
+    if (typeof process !== 'undefined' && process.title === 'node') { // Node/iojs
+      usbLibraryPath = './usb/USBNode';
+    }
+    else if (typeof window !== 'undefined' && typeof window.chrome === 'object') { // Chrome packaged app
+      usbLibraryPath = './usb/USBChrome';
+    }
+
+    UsbLib = require(usbLibraryPath);
+  }
+
+  requireUSB();
 
   module.exports = Host;
   return module.exports;

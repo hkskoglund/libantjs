@@ -8,7 +8,7 @@ define(function(require, exports, module) {
   'use strict';
 
   var BroadcastDataMessage = require('./BroadcastDataMessage'),
-     Message = require('../Message');
+    Message = require('../Message');
 
   function AcknowledgedDataMessage(data) {
     Message.call(this, data, Message.prototype.ACKNOWLEDGED_DATA);

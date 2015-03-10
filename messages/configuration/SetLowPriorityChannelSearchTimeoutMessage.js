@@ -22,7 +22,7 @@ define(function(require, exports, module) {
   SetLowPrioriyChannelSearchTimeoutMessage.prototype.constructor = SetLowPrioriyChannelSearchTimeoutMessage;
 
   SetLowPrioriyChannelSearchTimeoutMessage.prototype.encode = function(channel, searchTimeout) {
-    var msgBuffer = new Uint8Array([channel,searchTimeout]);
+    var msgBuffer = new Uint8Array([channel, searchTimeout]);
 
     this.setContent(msgBuffer);
 

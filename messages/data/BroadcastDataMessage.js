@@ -16,11 +16,10 @@ define(function(require, exports, module) {
   BroadcastDataMessage.prototype = Object.create(Message.prototype);
   BroadcastDataMessage.prototype.constructor = BroadcastDataMessage;
 
-  BroadcastDataMessage.prototype.encode = function (channel,data)
-  {
-     this.content = new Uint8Array(Message.prototype.PAYLOAD_LENGTH+1);
-     this.content[0] = channel;
-     this.content.set(data,1);
+  BroadcastDataMessage.prototype.encode = function(channel, data) {
+    this.content = new Uint8Array(data.byteLength + 1);
+    this.content[0] = channel;
+    this.content.set(data, 1);
   };
 
   // Spec. p. 91

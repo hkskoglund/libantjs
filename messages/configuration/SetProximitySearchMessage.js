@@ -23,7 +23,7 @@ define(function(require, exports, module) {
 
   SetProximitySearchMessage.prototype.encode = function(channel, searchThreshold) {
 
-    var msgBuffer = new Uint8Array([channel,searchThreshold]);
+    var msgBuffer = new Uint8Array([channel, searchThreshold]);
 
     this.searchThreshold = searchThreshold;
 

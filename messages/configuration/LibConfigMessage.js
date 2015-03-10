@@ -22,10 +22,10 @@ define(function(require, exports, module) {
 
 
   LibConfigMessage.prototype.encode = function(libConfig) {
-    
+
     this.libConfig = libConfig;
 
-    this.setContent(new Uint8Array([Message.prototype.FILLER_BYTE,libConfig]));
+    this.setContent(new Uint8Array([Message.prototype.FILLER_BYTE, libConfig]));
   };
 
 

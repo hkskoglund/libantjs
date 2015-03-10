@@ -80,7 +80,7 @@ define(function(require, exports, module) {
   };
 
   Channel.prototype.EVENT = {
-    BURST : 'burst' // Total burst, i.e all burst packets
+    BURST: 'burst' // Total burst, i.e all burst packets
   };
 
   Channel.prototype.BACKGROUND_SCANNING_ENABLE = 0x01; // 0000 0001
@@ -140,6 +140,12 @@ define(function(require, exports, module) {
     this.key = key;
 
     this.host.setNetworkKey(this.net, this.key, callback);
+
+  };
+
+  Channel.prototype.assignSlave = function (net,callback)
+  {
+    this.assign(this.BIDIRECTIONAL_SLAVE, net, callback);
   };
 
   Channel.prototype.assign = function(type, net, extendedAssignment, callback) {
@@ -231,24 +237,22 @@ define(function(require, exports, module) {
     this.host.getChannelStatus(this.channel, onStatus);
   };
 
-  Channel.prototype.hasId = function ()
-  {
+  Channel.prototype.hasId = function() {
     return (this.id.deviceNumber !== 0) && (this.id.deviceType !== 0) && (this.id.transmissionType !== 0);
   };
 
   // Data
 
-  Channel.prototype.send = function (broadcastData,callback) {
-    this.host.sendBroadcastData(this.channel,broadcastData,callback);
+  Channel.prototype.send = function(broadcastData, callback) {
+    this.host.sendBroadcastData(this.channel, broadcastData, callback);
   };
 
-  Channel.prototype.sendAck = function (ackData,callback) {
-    this.host.sendAcknowledgedData(this.channel,ackData,callback);
+  Channel.prototype.sendAck = function(ackData, callback) {
+    this.host.sendAcknowledgedData(this.channel, ackData, callback);
   };
 
-  Channel.prototype.sendBurst = function (burstData,callback)
-  {
-    this.host.sendBurstTransfer(this.channel,burstData,callback);
+  Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {
+    this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB,callback);
   };
 
   Channel.prototype.toString = function() {

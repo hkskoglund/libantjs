@@ -51,7 +51,7 @@ define(function(require, exports, module) {
 
   NotificationStartup.prototype.decode = function(data) {
     var msg,
-       startupMessage = this.getContent()[0];
+      startupMessage = this.getContent()[0];
 
     if (startupMessage === NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE;

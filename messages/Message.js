@@ -61,7 +61,7 @@ define(function(require, exports, module) {
     this.length = data[Message.prototype.iLENGTH];
     this.id = data[Message.prototype.iID];
     this.channel = data[Message.prototype.iChannel]; // Normally, but not all
-    this.content = data.subarray(Message.prototype.HEADER_LENGTH,Message.prototype.HEADER_LENGTH + this.length);
+    this.content = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
     this.CRC = data[Message.prototype.HEADER_LENGTH + this.length];
 
     // Extended message (channel id, rx timestamp, rssi)
@@ -73,7 +73,7 @@ define(function(require, exports, module) {
 
       this.flagsByte = this.content[Message.prototype.iFlagsByte];
       //this.extendedData = new Uint8Array(this.payload.buffer.slice(10));
-      this.extendedData = this.content.subarray(Message.prototype.iFlagsByte+1); // Subarray creates a view to underlying arraybuffer
+      this.extendedData = this.content.subarray(Message.prototype.iFlagsByte + 1); // Subarray creates a view to underlying arraybuffer
       // Check for channel ID
       // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
       if (this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) {
@@ -155,9 +155,8 @@ define(function(require, exports, module) {
   };
 
   // Get sequence nr. of burst 3 msb of channel byte
-  Message.prototype.getSequenceNr = function ()
-  {
-    return (this.content[0] & 0xe0) >> 5 ; // e = 1110
+  Message.prototype.getSequenceNr = function() {
+    return (this.content[0] & 0xe0) >> 5; // e = 1110
   };
 
   /*
@@ -168,21 +167,17 @@ define(function(require, exports, module) {
   */
   Message.prototype.getBytes = function() {
 
-    var standardMessage = new Uint8Array(13), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC 0 0
-        iCRC;
+    var standardMessage = new Uint8Array(Message.prototype.HEADER_LENGTH+this.content.byteLength+1), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
+      iCRC;
 
-    if (this.content)
-      this.length = this.content.byteLength;
-    else {
-      this.length = 0;
-    }
+    this.length = this.content.byteLength;
 
     standardMessage[0] = Message.prototype.SYNC;
     standardMessage[1] = this.length;
     standardMessage[2] = this.id;
-    standardMessage.set(this.content, 3);
+    standardMessage.set(this.content, Message.prototype.HEADER_LENGTH);
 
-    iCRC = this.length +3 ;
+    iCRC = this.length + Message.prototype.HEADER_LENGTH;
     standardMessage[iCRC] = this.getCRC(standardMessage.subarray(0, iCRC));
 
     return standardMessage;
@@ -233,6 +228,7 @@ define(function(require, exports, module) {
   Message.prototype.EVENT_BUFFER_CONFIGURATION = 0x74;
   Message.prototype.SET_CHANNEL_SEARCH_PRIORITY = 0x75;
   Message.prototype.ADVANCED_BURST_CAPABILITIES = 0x78;
+  Message.prototype.CONFIGURE_ADVANCED_BURST = 0x78;
 
   Message.prototype.RESET_SYSTEM = 0x4A;
   Message.prototype.OPEN_CHANNEL = 0x4B;
@@ -257,10 +253,10 @@ define(function(require, exports, module) {
   Message.prototype.ADVANCED_BURST_TRANSFER_DATA = 0x72;
 
   Message.prototype.EVENT = {
-    0x4E : 'data',
-    0x4F : 'ackdata',
-    0x50 : 'burstdata',
-    0x72 : 'advburstdata'
+    0x4E: 'data',
+    0x4F: 'ackdata',
+    0x50: 'burstdata',
+    0x72: 'advburstdata'
   };
 
   Message.prototype.NO_REPLY_MESSAGE = [
@@ -296,7 +292,8 @@ define(function(require, exports, module) {
     Message.prototype.LIBCONFIG,
     Message.prototype.SET_PROXIMITY_SEARCH,
     Message.prototype.EVENT_BUFFER_CONFIGURATION,
-    Message.prototype.SET_CHANNEL_SEARCH_PRIORITY
+    Message.prototype.SET_CHANNEL_SEARCH_PRIORITY,
+    Message.prototype.CONFIGURE_ADVANCED_BURST
   ];
 
   Message.prototype.MESSAGE = {
@@ -329,7 +326,7 @@ define(function(require, exports, module) {
 
     0x74: "Event Buffer Configuration",
 
-    0x78: "Advanced Burst Capabilities",
+    0x78: "Advanced Burst Capabilities/Configuration",
 
     // Request/response
 

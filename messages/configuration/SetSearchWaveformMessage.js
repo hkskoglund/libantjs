@@ -26,7 +26,7 @@ define(function(require, exports, module) {
   SetSearchWaveform.prototype.FAST_SEARCH_WAVEFORM = 97;
 
   SetSearchWaveform.prototype.encode = function(channel, searchWaveform) {
-    var msgBuffer = new Uint8Array([channel,searchWaveform]);
+    var msgBuffer = new Uint8Array([channel, searchWaveform]);
 
     this.searchWaveform = searchWaveform;
 

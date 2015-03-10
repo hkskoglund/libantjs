@@ -457,14 +457,13 @@ define(function(require, exports, module) {
     var nodeBuf = Util.prototype.toNodeBuffer(chunk);
 
     if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf );
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf);
     }
 
     this.outEndpoint.transfer(nodeBuf, retrn);
   };
 
-  function Util() {
-  }
+  function Util() {}
 
   Util.prototype.toNodeBuffer = function(chunk) {
 
