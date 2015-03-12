@@ -9,7 +9,8 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var Channel = require('../../channel/channel');
+  var Channel = require('../../channel/channel'),
+      ClientBeacon = require('./clientBeacon');
 
   function Host(options, host, channelNumber, net)
   {
@@ -31,7 +32,8 @@ define(function(require, exports, module) {
 
   Host.prototype.onBroadcast = function (error,broadcast)
   {
-    console.log('clientbeacon',broadcast.payload);
+    var clientBeacon = new ClientBeacon(broadcast.payload);
+    console.log('clientbeacon',clientBeacon,clientBeacon.toString());
   };
 
   Host.prototype.onBurst = function ()
