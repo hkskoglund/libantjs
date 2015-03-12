@@ -34,7 +34,7 @@ define(function(require, exports, module) {
 
     this.id = this.getWildcardId();
 
-    this.frequency = this.NET.FREQ.DEFAULT;
+    this.frequency = this.NET.FREQUENCY.DEFAULT;
 
     this.period = this.NET.PERIOD.DEFAULT;
 
@@ -84,7 +84,7 @@ define(function(require, exports, module) {
         LOW_POWER: 65535  // 0.5 Hz
       }
     },
-    FREQ: {
+    FREQUENCY: {
       DEFAULT : 66, // 2466 MHz
       'ANT+': 57,
       ANTFS : 50,

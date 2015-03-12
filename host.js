@@ -229,6 +229,11 @@ define(function(require, exports, module) {
 
   };
 
+  Host.prototype.setChannel = function (channel)
+  {
+    this.channel[channel.channel] = channel;
+  };
+
   Host.prototype.getDevices = function() {
     return usb.getDevices();
 
@@ -404,6 +409,7 @@ define(function(require, exports, module) {
   };
 
   Host.prototype.setChannelPeriod = function(channel, messagePeriod, callback) {
+    console.log('setchannelPeriod args',arguments);
     this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), callback);
   };
 

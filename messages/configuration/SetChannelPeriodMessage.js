@@ -22,10 +22,11 @@ define(function(require, exports, module) {
   SetChannelPeriodMessage.prototype.constructor = SetChannelPeriodMessage;
 
   SetChannelPeriodMessage.prototype.encode = function(channel, messagePeriod) {
-    var msgBuffer = new DataView(new ArrayBuffer(3));
+    var   msgBuffer = new Uint8Array(3);
 
-    msgBuffer.setUint8(0, channel);
-    msgBuffer.setUint16(1, messagePeriod, true);
+    msgBuffer[0] =  channel;
+    msgBuffer[1] = messagePeriod & 0xFF;
+    msgBuffer[2] = (messagePeriod & 0xFF00) >> 8;
 
     this.channel = channel;
     this.messagePeriod = messagePeriod;
