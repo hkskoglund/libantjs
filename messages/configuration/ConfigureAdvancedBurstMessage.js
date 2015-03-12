@@ -61,6 +61,13 @@ define(function(require, exports, module) {
 
     this.setContent(msgBuffer);
 
+    console.log(this.toString());
+
+  };
+
+  ConfigureAdvancedBurstMessage.prototype.toString = function () {
+    return Message.prototype.toString.call(this)+ ' enabled '+this.enable+' max packet length '+
+          this.maxPacketLength+' required '+this.requiredFeatures+ ' optional '+this.optionalFeatures;
   };
 
   module.exports = ConfigureAdvancedBurstMessage;

@@ -2,6 +2,7 @@ var masterHost = new(require('../host'))({
   log: true,
   debugLevel: 0
 });
+var masterPort = 0;
 var MasterChannel0 = masterHost.channel[0];
 var dataSeed = 0;
 var devices;
@@ -54,7 +55,7 @@ function onMasterAssigned(error) {
       if (dataSeed === 8) {
         sendFunc = MasterChannel0.sendBurst;
         data = burstData;
-        sendFunc.call(MasterChannel0, data, 3,function _sendFunc(err, msg) {
+        sendFunc.call(MasterChannel0, data, 1,function _sendFunc(err, msg) {
           if (err) console.error('send fail!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', err);
         });
 
@@ -115,20 +116,20 @@ function onMasterAssigned(error) {
 function onMasterInited(error) {
   console.log('master inited', error);
 
-  masterHost.enableAdvancedBurst(function(err, msg) {
-    if (!err) {
-      console.log('config advanced burst ');
+//  masterHost.enableAdvancedBurst(0x01,function(err, msg) {
+//    if (!err) {
+//      console.log('config advanced burst ');
 
-      masterHost.getAdvancedBurstConfiguration(function (err,msg)
-      {
-        if (!err)
-        {
-          console.log('advanced conf',msg.toString());
-          MasterChannel0.assign(MasterChannel0.BIDIRECTIONAL_MASTER, MasterChannel0.NET.PUBLIC, onMasterAssigned);
-        }
-      });
-    }
-  });
+//      masterHost.getAdvancedBurstConfiguration(function (err,msg)
+//      {
+//        if (!err)
+//        {
+//          console.log('advanced conf',msg.toString());
+          MasterChannel0.master(0, onMasterAssigned);
+//        }
+//      });
+//    }
+//  });
   //masterHost.establishRXScanModeChannel(onPage);
   //masterHost.resetSystem(onReset);
   /* masterHost.configureEventBuffer(0x01,0xFFFF,0x00,function ()
@@ -155,11 +156,20 @@ function onError(error) {
 devices = masterHost.getDevices();
 //console.log('devices',devices);
 
+/*    process.on('SIGINT', function sigint()
+{
+          console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
+          MasterChannel0.close(function (err,msg) { if (!err) {
+            console.log(Date.now(),'Master channel closed sent');
+            masterHost.exit(function () { console.log(Date.now('Master host exit')); });
+          }});
+
+   }); */
+
 try {
-  console.log('master device', devices[0]);
+  console.log('master device', devices[masterPort]);
 
-  masterHost.init(0, onMasterInited);
-
+  masterHost.init(masterPort, onMasterInited);
 
 } catch (err) {
   onError(err);

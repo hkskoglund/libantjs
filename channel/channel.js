@@ -11,7 +11,7 @@ define(function(require, exports, module) {
     EventEmitter = require('../util/events'),
     ChannelId = require('./channelId');
 
-  function Channel(options, host, channel) {
+  function Channel(options, host, channelNumber, net, type) {
 
     EventEmitter.call(this, options);
 
@@ -24,9 +24,21 @@ define(function(require, exports, module) {
 
     this.host = host; // Allows access to host API for channel (wrappers)
 
-    this.channel = channel;
+    this.channel = channelNumber;
 
-    this.burst = undefined; // Contains burst data
+    this.net = net || 0;
+
+    this.key = this.NET.KEY.PUBLIC;
+
+    this.type = type || this.BIDIRECTIONAL_SLAVE;
+
+    this.id = this.getWildcardId();
+
+    this.frequency = this.NET.FREQ.DEFAULT;
+
+    this.period = this.NET.PERIOD.DEFAULT;
+
+    this.burst = undefined; // Contains aggregated burst data
 
   }
 
@@ -65,17 +77,22 @@ define(function(require, exports, module) {
   };
 
   Channel.prototype.NET = {
-    PUBLIC: 0x00,
     PERIOD: {
+      DEFAULT : 8192,  // 4 Hz
+      ANTFS : 4096,    // 8 Hz
       'ENVIRONMENT': {
-        LOW_POWER: 65535
+        LOW_POWER: 65535  // 0.5 Hz
       }
     },
     FREQ: {
-      'ANT+': 57
+      DEFAULT : 66, // 2466 MHz
+      'ANT+': 57,
+      ANTFS : 50,
     },
     KEY: {
-      'ANT+': [0xB9, 0xA5, 0x21, 0xFB, 0xBD, 0x72, 0xC3, 0x45]
+      PUBLIC  : [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // Default
+      'ANT+'  : [0xB9, 0xA5, 0x21, 0xFB, 0xBD, 0x72, 0xC3, 0x45],
+      ANTFS   : [0xa8, 0xa4, 0x23, 0xb9, 0xf5, 0x5e, 0x63, 0xc1]
     }
   };
 
@@ -107,45 +124,84 @@ define(function(require, exports, module) {
     return msg;
   };
 
-  // Supports initialization of configuration as an object literal
-  Channel.prototype.setConfiguration = function(configuration) {
-
-    if (!configuration)
-      return;
-
-    if (configuration.type)
-      this.type = configuration.type;
-
-    if (configuration.net)
-      this.net = configuration.net;
-
-    if (configuration.key)
-      this.key = configuration.key;
-
-    if (configuration.id)
-      this.id = new ChannelId(this.id.deviceNumber, this.id.deviceType, this.id.transmissionType);
-
-    if (configuration.lowPrioritySearchTimeout)
-      this.lowPrioritySearchTimeout = configuration.lowPrioritySearchTimeout;
-
-    if (configuration.highPrioritySearchTimeout)
-      this.highPrioritySearchTimeout = configuration.highPrioritySearchTimeout;
-
-    if (configuration.extendedAssignment)
-      this.extendedAssignment = configuration.extendedAssignment;
+  Channel.prototype.getWildcardId = function ()
+  {
+    return new ChannelId(0,0,0);
   };
 
-  Channel.prototype.setKey = function(net, key, callback) {
-    this.net = net;
+  Channel.prototype.connect = function (callback)
+  {
+    var onSetNetworkKey = function _onSetNetworkKey (err,msg) {
+                            if (!err)
+                              this.slave(onAssigned);
+                            else
+                              callback(err);
+                          }.bind(this),
+
+    onAssigned = function _onAssigned (err,msg) {
+                  if (!err)
+                    this.setId(this.id,onSetId);
+                  else
+                    callback(err);
+                }.bind(this),
+
+    onSetId = function _onSetId (err,msg) {
+                if (!err)
+                  this.setFreq(this.frequency,onSetFreq);
+                else
+                  callback(err);
+              }.bind(this),
+
+    onSetFreq = function _onSetFreq (err,msg) {
+                  if (!err)
+                    this.setPeriod(this.period,onSetPeriod);
+                  else
+                    callback(err);
+                }.bind(this),
+
+    onSetPeriod = function _onSetPeriod (err,msg) {
+                   if (!err)
+                    this.setLowPriorityTimeout(this.lowPrioritySearchTimeout,onSetLowPriorityTimeout);
+                  else
+                    callback(err);
+                }.bind(this),
+
+    onSetLowPriorityTimeout = function _onSetLowPriorityTimeout (err,msg) {
+                                 if (!err)
+                                  this.open(callback);
+                                else
+                                  callback(err);
+                              }.bind(this);
+
+    this.setNetworkKey(this.key,onSetNetworkKey);
+
+  };
+
+  Channel.prototype.setNetworkKey = function(key, callback) {
     this.key = key;
 
     this.host.setNetworkKey(this.net, this.key, callback);
 
   };
 
-  Channel.prototype.assignSlave = function (net,callback)
+  Channel.prototype.slave = function (callback)
   {
-    this.assign(this.BIDIRECTIONAL_SLAVE, net, callback);
+    this.assign(this.BIDIRECTIONAL_SLAVE, this.net, callback);
+  };
+
+  Channel.prototype.slaveOnly = function (callback)
+  {
+    this.assign(this.SLAVE_RECEIVE_ONLY, this.net, callback);
+  };
+
+  Channel.prototype.master = function (callback)
+  {
+    this.assign(this.BIDIRECTIONAL_MASTER, this.net, callback);
+  };
+
+  Channel.prototype.masterOnly = function (callback)
+  {
+    this.assign(this.MASTER_TRANSMIT_ONLY, this.net, callback);
   };
 
   Channel.prototype.assign = function(type, net, extendedAssignment, callback) {
@@ -165,8 +221,6 @@ define(function(require, exports, module) {
 
   Channel.prototype.unassign = function(callback) {
     this.type = undefined;
-    this.net = undefined;
-    this.key = undefined;
 
     this.host.unassignChannel(this.channel, callback);
   };
@@ -208,6 +262,12 @@ define(function(require, exports, module) {
     this.period = period;
 
     this.host.setChannelPeriod(this.channel, period, callback);
+  };
+
+  Channel.prototype.setLowPriorityTimeout = function (timeout,callback)
+  {
+    this.lowPrioritySearchTimeout = timeout;
+    this.host.setLowPriorityChannelSearchTimeout(this.channel, this.lowPrioritySearchTimeout, callback);
   };
 
   Channel.prototype.open = function(callback) {
@@ -258,7 +318,7 @@ define(function(require, exports, module) {
   Channel.prototype.toString = function() {
     var msg = 'Ch ' + this.channel + ' |';
 
-    if (this.network)
+    if (this.net)
       msg += 'Net ' + this.net + '|';
 
     if (this.type)

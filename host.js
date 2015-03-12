@@ -73,11 +73,9 @@ define(function(require, exports, module) {
 
     RxScanModeProfile = require('./profiles/RxScanMode'),
 
-    // Don't expose usb interface to higher level code, use wrappers instead on host
+    UsbLib = require('./usb/usb'),
+    usb,  // Don't expose usb interface to higher level code, use wrappers instead on host
 
-    UsbLib,
-    usb,
-    usbLibraryPath,
     MAX_CHAN = 8,
     previousPacket;
 
@@ -103,9 +101,6 @@ define(function(require, exports, module) {
       this.channel[channel] = new Channel(this.options, this, channel);
     }
 
-    if (this.log.logging) {
-      this.log.log('log', 'Loaded USB library from ' + usbLibraryPath);
-    }
     usb = new UsbLib({
       log: options.log,
       debugLevel: options.debugLevel
@@ -319,9 +314,21 @@ define(function(require, exports, module) {
   };
 
   // For convenience
-  Host.prototype.enableAdvancedBurst = function (callback)
+  Host.prototype.enableAdvancedBurst = function (maxPacketLength,callback)
   {
-    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE,this.ADVANCED_BURST.MAX_PACKET_24BYTES,0,0,callback);
+    var cb = callback,
+        packetLength;
+
+
+    if (typeof maxPacketLength === 'function') {
+      cb = maxPacketLength;
+      packetLength = this.ADVANCED_BURST.MAX_PACKET_24BYTES;
+    }
+    else {
+      packetLength = maxPacketLength;
+    }
+
+    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE,packetLength,0,0,cb);
   };
 
   Host.prototype.disableAdvancedBurst = function (callback)
@@ -489,13 +496,10 @@ define(function(require, exports, module) {
   };
 
   // Send an individual packet as part of a burst transfer
-  // We will get a EVENT_TRANFER_TX_START when the actual transfer over RF starts
-  //  p. 102 ANT Message Protocol and Usage rev 5.0 - "it is possible to 'prime' the ANT buffers with 2 (or 8, depending on ANT device) burst packet prior to the next channel period."
-  //  "its important that the Host/ANT interface can sustain the maximum 20kbps rate"
   Host.prototype.sendBurstTransferPacket = function(sequenceChannel, packet, callback) {
     var msg;
 
-    if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH)
+    if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH) // Use ordinary burst if only 8-byte packets
     {
         msg = new BurstDataMessage();
     }
@@ -822,22 +826,6 @@ define(function(require, exports, module) {
 
     }
   };
-
-  // Detect host environment, i.e if running on node then load node specific USB library
-  function requireUSB()
-  {
-
-    if (typeof process !== 'undefined' && process.title === 'node') { // Node/iojs
-      usbLibraryPath = './usb/USBNode';
-    }
-    else if (typeof window !== 'undefined' && typeof window.chrome === 'object') { // Chrome packaged app
-      usbLibraryPath = './usb/USBChrome';
-    }
-
-    UsbLib = require(usbLibraryPath);
-  }
-
-  requireUSB();
 
   module.exports = Host;
   return module.exports;

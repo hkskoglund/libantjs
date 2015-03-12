@@ -82,7 +82,7 @@ function onSlaveAssigned(error) {
 
     }.bind(this);
 
-  slaveChannel0.setId(0, 0, 0, function(err, msg) {
+  slaveChannel0.id(0, 0, 0, function(err, msg) {
     //console.log('setChannelId response',msg.toString());
     slaveChannel0.on('Broadcast Data', onBroadcast);
     //console.log('slave channel' + slaveChannel0);
@@ -108,7 +108,7 @@ function onSlaveInited(error) {
 
   if (key) {
     console.log('slave net 0 key', key);
-    slaveChannel0.setKey(0, key, onSlaveKey);
+    slaveChannel0.key(0, key, onSlaveKey);
   } else {
     console.log('slave net 0 key PUBLIC');
     onSlaveKey();

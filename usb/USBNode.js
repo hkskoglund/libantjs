@@ -349,6 +349,8 @@ define(function(require, exports, module) {
 
       if (this.inEndpoint) {
 
+         usb.setDebugLevel(4);
+         this.inEndpoint.currentTransfer.cancel();
         // Arguments to bind precedes actual arguments from passed by calling function
         // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
         this.deviceInterface.release(true, this._onInterfaceReleased.bind(this, retrn));
@@ -370,7 +372,7 @@ define(function(require, exports, module) {
     }
   };
 
-  USBNode.prototype._onInEndpointData = function(data) {
+  USBNode.prototype._onInEndpointData = function(error,data) {
     /*
             if (error)
             {
@@ -392,7 +394,6 @@ define(function(require, exports, module) {
       }
 
       this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
-
 
     }
 
@@ -434,7 +435,16 @@ define(function(require, exports, module) {
 
   USBNode.prototype.listen = function() {
 
-    var endpointPacketSize = 8 * this.inEndpoint.descriptor.wMaxPacketSize;
+    var endpointPacketSize = 8 * this.inEndpoint.descriptor.wMaxPacketSize,
+
+       deserialize = function _deserialize()
+                      {
+                        this.inEndpoint.transfer(endpointPacketSize, function (error,data) {
+                          this._onInEndpointData.call(this,error,data);
+                          if (!error)
+                            deserialize();
+                        }.bind(this));
+                      }.bind(this);
 
     //this.setInEndpointTimeout(1000);
 
@@ -445,9 +455,11 @@ define(function(require, exports, module) {
     //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
     //  this.inEndpoint.transfer(endpointPacketSize,this._onData.bind(this,retrn));
 
-    this.inEndpoint.on('data', this._onInEndpointData.bind(this));
+    //this.inEndpoint.on('data', this._onInEndpointData.bind(this));
 
-    this.inEndpoint.startPoll(1, endpointPacketSize);
+    //this.inEndpoint.startPoll(1, endpointPacketSize);
+
+     deserialize();
 
   };
 

@@ -8,6 +8,10 @@ Tested on platform:
     2. iojs 1.4.1
     3. libusbx 1.0.19
 
+Used utilities:
+
+    1. Atom.io editor 0.186
+
 #### Message support matrix
 
 | Class  | Type                                 | Supported |
