@@ -14,6 +14,7 @@ define(function(require, exports, module) {
 
   function ClientBeacon(payload) {
 
+   if (payload)
     this.decode(payload);
   }
 
@@ -21,9 +22,18 @@ define(function(require, exports, module) {
     DATA_AVAILABLE: 0x20, // 0010 0000 bit 5
     UPLOAD_ENABLED: 0x10, // 0001 0000 bit 4
     PAIRING_ENABLED: 0x08, // 0000 1000 bit 3
-    BEACON_CHANNEL_PERIOD: 0x07 // 0000 0111 bit 2-0
+    BEACON_CHANNEL_PERIOD: 0x07, // 0000 0111 bit 2-0
+
+    DEVICE_TYPE_MANAGED_BY : 0x4000 // MSB 1 = device type ANT+ alliance managed, MSB 0 = device type Dynastream managed
   };
 
+  ClientBeacon.prototype.CHANNEL_PERIOD = {
+    Hz05 : 0x00,
+    Hz1 : 0x01,
+    Hz2 : 0x02,
+    Hz4 : 0x03,
+    Hz8 : 0x04
+  };
 
   ClientBeacon.prototype.decode = function(payload) {
     var dv = new DataView(payload.buffer),
@@ -44,10 +54,18 @@ define(function(require, exports, module) {
 
     if (this.clientDeviceState.isAuthentication() ||  this.clientDeviceState.isTransport() ||
       this.clientDeviceState.isBusy()) {
-      this.hostSerialNumber = dv.getUInt32(4+payload.byteOffset, true);
+
+      this.hostSerialNumber = dv.getUint32(4+payload.byteOffset, true);
+
     } else if (this.clientDeviceState.isLink()) {
+
       this.deviceType = dv.getUint16(4+payload.byteOffset, true);
       this.manufacturerID = dv.getUint16(6+payload.byteOffset, true);
+
+      if (this.manufacturerID & ClientBeacon.prototype.BIT_MASK.DEVICE_TYPE_MANAGED_BY)
+        this.managedBy = 'ANT+ Alliance';
+      else
+        this.managedBy = 'Manufacturer';
     }
   };
 
@@ -97,7 +115,7 @@ define(function(require, exports, module) {
     str = statusByte1Str +' | State '+this.clientDeviceState.toString();
 
     if (this.clientDeviceState.isLink()) {
-      str += " | Device type " + this.deviceType + " Manuf. ID " + this.manufacturerID + " | " +
+      str += " | Device type " + this.deviceType + ' by ' + this.managedBy + " Manuf. ID " + this.manufacturerID + " | " +
              this.authenticationType.toString();
     } else
       str += " | Host SN. " + this.hostSerialNumber + " | " +  this.authenticationType.toString();

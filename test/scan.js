@@ -48,7 +48,7 @@ function onSlaveAssigned(error) {
 
       console.log('scan freq.', freq);
 
-      slaveChannel0.setFreq(freq++, function() {
+      slaveChannel0.setFrequency(freq++, function() {
 
         slaveChannel0.openScan(onSlaveChannel0Open);
 

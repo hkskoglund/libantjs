@@ -23,6 +23,11 @@ define(function(require, exports, module) {
     return this.state;
   };
 
+  State.prototype.set = function (state)
+  {
+    this.state = state;
+  };
+
   State.prototype.isLink = function ()
   {
     return this.state === State.prototype.LINK;

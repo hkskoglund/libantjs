@@ -129,6 +129,11 @@ define(function(require, exports, module) {
     return new ChannelId(0,0,0);
   };
 
+  Channel.prototype.getSerialNumber = function (callback)
+  {
+    this.host.getSerialNumber(callback);
+  };
+
   Channel.prototype.connect = function (callback)
   {
     var onSetNetworkKey = function _onSetNetworkKey (err,msg) {
@@ -147,7 +152,7 @@ define(function(require, exports, module) {
 
     onSetId = function _onSetId (err,msg) {
                 if (!err)
-                  this.setFreq(this.frequency,onSetFreq);
+                  this.setFrequency(this.frequency,onSetFreq);
                 else
                   callback(err);
               }.bind(this),
@@ -252,7 +257,7 @@ define(function(require, exports, module) {
     this.host.getChannelId(this.channel, onChannelId);
   };
 
-  Channel.prototype.setFreq = function(frequencyOffset, callback) {
+  Channel.prototype.setFrequency = function(frequencyOffset, callback) {
     this.frequency = frequencyOffset;
 
     this.host.setChannelRFFreq(this.channel, frequencyOffset, callback);
@@ -307,7 +312,26 @@ define(function(require, exports, module) {
     this.host.sendBroadcastData(this.channel, broadcastData, callback);
   };
 
-  Channel.prototype.sendAck = function(ackData, callback) {
+  Channel.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed) {
+
+    var onCompleted = function _onComplete ()
+      {
+         this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
+         onTxCompleted.call(this);
+      }.bind(this),
+
+       onFailed = function _onFailed ()
+       {
+         this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+         onTxFailed.call(this);
+       }.bind(this);
+
+    if (typeof onTxCompleted === 'function')
+      this.once('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+
+    if (typeof onTxFailed === 'function')
+      this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
+
     this.host.sendAcknowledgedData(this.channel, ackData, callback);
   };
 

@@ -165,7 +165,7 @@ define(function(require, exports, module) {
    CRC = XOR of all bytes in message
    Sending of LSB first = little endian NB!
   */
-  Message.prototype.getBytes = function() {
+  Message.prototype.serialize = function() {
 
     var standardMessage = new Uint8Array(Message.prototype.HEADER_LENGTH+this.content.byteLength+1), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
       iCRC;

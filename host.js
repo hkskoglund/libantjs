@@ -1,4 +1,4 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:truel, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 if (typeof define !== 'function') {
   var define = require('amdefine')(module);
@@ -213,7 +213,7 @@ define(function(require, exports, module) {
       intervalNoMessageReceivedID = setInterval(onNoMessageReceived, timeout);
     }
 
-    msgBytes = message.getBytes();
+    msgBytes = message.serialize();
 
     usb.transfer(msgBytes, onSentMessage);
   };
@@ -409,7 +409,6 @@ define(function(require, exports, module) {
   };
 
   Host.prototype.setChannelPeriod = function(channel, messagePeriod, callback) {
-    console.log('setchannelPeriod args',arguments);
     this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), callback);
   };
 
@@ -495,7 +494,7 @@ define(function(require, exports, module) {
 
   // p. 96 ANT Message protocol and usave rev. 5.0
   // Event TRANSFER_TX_COMPLETED channel event if successfull,
-  // Event TX_TRANSFER_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
+  // Event TRANSFER_TX_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
   // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
   Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
     this.sendBroadcastData(channel, ackData, callback, true);

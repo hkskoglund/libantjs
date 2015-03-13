@@ -104,7 +104,7 @@ function onMasterAssigned(error) {
     console.log('setChannelId response', msg.toString());
 
     // Start sending data
-    // MasterChannel0.sendAck([0,1,2,3,4,5,6,7],function (err,msg) {
+    // MasterChannel0.sendAcknowledged([0,1,2,3,4,5,6,7],function (err,msg) {
     //   if (!err)
     MasterChannel0.open(onMasterChannel0Open);
     // });

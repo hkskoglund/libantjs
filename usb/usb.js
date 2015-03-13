@@ -1,4 +1,4 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:truel, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 if (typeof define !== 'function') {
   var define = require('amdefine')(module);

@@ -51,7 +51,7 @@ function onBurstData(err, msg) {
 function onSlaveAssigned(error) {
   console.log('slave assigned', error);
 
-  // slaveChannel0.setFreq(slaveChannel0.NET.FREQ['ANT+'],function () {
+  // slaveChannel0.setFrequency(slaveChannel0.NET.FREQ['ANT+'],function () {
 
   //     slaveChannel0.setPeriod(slaveChannel0.NET.PERIOD.ENVIRONMENT.LOW_POWER,function () {
 
