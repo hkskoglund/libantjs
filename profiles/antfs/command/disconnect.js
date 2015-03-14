@@ -11,7 +11,7 @@ define(function(require, exports, module) {
   function Disconnect(timeDuration,appSpecificDuration)
   {
       this.id = 0x03;
-      this.timeDuration = frequency;
+      this.timeDuration = timeDuration;
       this.appSpecificDuration = appSpecificDuration;
 
   }

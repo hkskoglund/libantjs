@@ -26,6 +26,7 @@ define(function(require, exports, module) {
   State.prototype.set = function (state)
   {
     this.state = state;
+    console.log('state '+this.toString());
   };
 
   State.prototype.isLink = function ()

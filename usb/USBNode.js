@@ -26,7 +26,6 @@ define(function(require, exports, module) {
 
     this._needsKernelDriverAttach = undefined; // For unix/linux
 
-    this.setBurstMode(false);
   }
 
   USBNode.prototype = Object.create(USBDevice.prototype, {
@@ -444,6 +443,7 @@ define(function(require, exports, module) {
                           if (!error)
                             deserialize();
                         }.bind(this));
+
                       }.bind(this);
 
     //this.setInEndpointTimeout(1000);

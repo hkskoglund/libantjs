@@ -144,13 +144,13 @@ define(function(require, exports, module) {
 
       lastBurstPacket,
 
-      onReply = function _onReply(error, message) {
+      onReply = function _onReply(message) {
 
         clearInterval(intervalNoMessageReceivedID);
 
         if (this.log.logging) this.log.log('log', message.toString());
 
-        callback(error, message);
+        callback(undefined, message);
 
       }.bind(this),
 
@@ -685,14 +685,14 @@ define(function(require, exports, module) {
 
         case Message.prototype.NOTIFICATION_STARTUP:
 
-          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, new NotificationStartup(msgBytes));
+          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], new NotificationStartup(msgBytes));
 
           break;
 
         case Message.prototype.NOTIFICATION_SERIAL_ERROR:
 
           message = new NotificationSerialError(msgBytes);
-          this.emit(this.EVENT.ERROR, message, undefined);
+          this.emit(this.EVENT.ERROR, message);
 
           break;
 
@@ -701,35 +701,35 @@ define(function(require, exports, module) {
         case Message.prototype.CHANNEL_STATUS:
 
           message = new ChannelStatusMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
         case Message.prototype.ANT_VERSION:
 
           message = new VersionMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
         case Message.prototype.CAPABILITIES:
 
           message = new CapabilitiesMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
         case Message.prototype.DEVICE_SERIAL_NUMBER:
 
           message = new DeviceSerialNumberMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
         case Message.prototype.EVENT_BUFFER_CONFIGURATION:
 
           message = new ConfigureEventBufferMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
@@ -744,14 +744,14 @@ define(function(require, exports, module) {
               break;
           }
 
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
         case Message.prototype.SET_CHANNEL_ID:
 
           message = new ChannelIdMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
 
           break;
 
@@ -761,21 +761,21 @@ define(function(require, exports, module) {
 
           message = new BroadcastDataMessage(msgBytes);
 
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], undefined, message);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], message);
 
           break;
 
         case Message.prototype.ACKNOWLEDGED_DATA:
 
           message = new AcknowledgedDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], undefined, message);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], message);
 
           break;
 
         case Message.prototype.BURST_TRANSFER_DATA:
 
           message = new BurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], message);
 
           if (message.sequenceNr === 0) // First packet (also for advanced burst)
             this.channel[message.channel].burst = new Uint8Array();
@@ -783,19 +783,19 @@ define(function(require, exports, module) {
           this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
-            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, undefined, message);
+            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
 
           break;
 
         case Message.prototype.ADVANCED_BURST_TRANSFER_DATA:
 
           message = new AdvancedBurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], undefined, message);
+          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], message);
 
           this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
-            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, undefined, message);
+            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, message);
 
           break;
 
@@ -807,15 +807,19 @@ define(function(require, exports, module) {
 
           console.log('RESPONSE', ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
-          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code],
-            undefined, channelResponseMsg.response);
+          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], channelResponseMsg.response);
 
           break;
 
         default:
 
+          message = 'Unable to parse received msg id ' + msgBytes[Message.prototype.iID];
+
           if (this.log.logging)
-            this.log.log('log', "Unable to parse received data", data, ' msg id ', msgBytes[Message.prototype.iID]);
+            this.log.log('log', message,data);
+
+            this.emit(this.EVENT.ERROR, message);
+
           break;
       }
 

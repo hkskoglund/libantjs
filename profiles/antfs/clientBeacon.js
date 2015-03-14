@@ -63,9 +63,9 @@ define(function(require, exports, module) {
       this.manufacturerID = dv.getUint16(6+payload.byteOffset, true);
 
       if (this.manufacturerID & ClientBeacon.prototype.BIT_MASK.DEVICE_TYPE_MANAGED_BY)
-        this.managedBy = 'ANT+ Alliance';
+        this.deviceTypeManagedBy = 'ANT+ Alliance';
       else
-        this.managedBy = 'Manufacturer';
+        this.deviceTypeManagedBy = 'Manufacturer';
     }
   };
 
@@ -115,7 +115,7 @@ define(function(require, exports, module) {
     str = statusByte1Str +' | State '+this.clientDeviceState.toString();
 
     if (this.clientDeviceState.isLink()) {
-      str += " | Device type " + this.deviceType + ' by ' + this.managedBy + " Manuf. ID " + this.manufacturerID + " | " +
+      str += " | Device type " + this.deviceType + ' by ' + this.deviceTypeManagedBy + " Manuf. ID " + this.manufacturerID + " | " +
              this.authenticationType.toString();
     } else
       str += " | Host SN. " + this.hostSerialNumber + " | " +  this.authenticationType.toString();
