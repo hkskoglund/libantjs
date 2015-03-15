@@ -18,6 +18,8 @@ define(function(require, exports, module) {
   State.prototype.TRANSPORT = 0x02;
   State.prototype.BUSY = 0x03;
 
+  State.prototype.SEARCH = 0x04; // For host
+
   State.prototype.get = function ()
   {
     return this.state;

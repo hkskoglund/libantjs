@@ -15,14 +15,11 @@ define(function(require, exports, module) {
 
       // Commands
 
-      Link = require('./command/link'),
-      Disconnect = require('./command/disconnect'),
+      LinkCommand = require('./command/linkCommand'),
+      DisconnectCommand = require('./command/disconnectCommand'),
 
-      // Beacon
-
-      beacon = new ClientBeacon();
-
-
+      AuthenticateCommand = require('./command/authenticateCommand'),
+      AuthenticateResponse = require('./response/authenticateResponse');
 
   function Host(options, host, channelNumber, net)
   {
@@ -35,18 +32,18 @@ define(function(require, exports, module) {
     this.period = this.NET.PERIOD.ANTFS;
     this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
-    this.state = new State(State.prototype.LINK);
-
-    this.hostSerialNumber = undefined;
-
-    this.linkCommand = undefined;
-
     this.hostName = 'antfsjs';
+    this.beacon =  new ClientBeacon();
+
+    this.state = undefined; // INIT
+
+    this.timerID = {
+      waitForLinkClientBeacon : { id : undefined, delay: 60000 },
+      waitForAuthenticateClientBeacon : { id : undefined, delay : 60000 }
+    };
 
     this.on('data', this.onBroadcast);
     this.on('burst', this.onBurst);
-
-    this.on('clientbeacon', this.onBeacon);
 
     this.once('link', this.onLink);                     // Once = Only the first received beacon received triggers callback
     this.once('authentication', this.onAuthentication);
@@ -58,6 +55,13 @@ define(function(require, exports, module) {
 
   Host.prototype.connect = function (callback)
   {
+
+    var onNoLinkClientBeacon = function _onNoLinkClientBeacon()
+    {
+        if (this.log.logging)
+          this.log.log('warn','No LINK beacon received from client in '+this.timerID.waitForLinkClientBeacon.delay+' ms');
+    }.bind(this);
+
     // Need host serial number in LINK command
      this.getSerialNumber(function _getSN(err,serialNumberMsg) {
        if (!err)
@@ -66,8 +70,12 @@ define(function(require, exports, module) {
        } else
          this.hostSerialNumber = 0;
 
+       this.state = new State(State.prototype.SEARCH);
+
+       this.timerID.waitForLinkClientBeacon.id = setTimeout(onNoLinkClientBeacon,this.timerID.waitForLinkClientBeacon.delay);
 
        Channel.prototype.connect.call(this,callback);
+
      }.bind(this));
   };
 
@@ -77,12 +85,12 @@ define(function(require, exports, module) {
     // http://stackoverflow.com/questions/4959975/generate-random-value-between-two-numbers-in-javascript
       var getRandomRF = function ()
           {
-            return Math.floor(Math.random()*125);
-          },
-          invalidFreq = [this.NET.FREQUENCY.ANTFS,this.NET.FREQUENCY['ANT+'],66],
+            return Math.floor(Math.random()*(this.MAX_RF+1));
+          }.bind(this),
+          occupiedFrequency = [this.NET.FREQUENCY.ANTFS,this.NET.FREQUENCY['ANT+'],this.NET.FREQUENCY.DEFAULT],
           frequency = getRandomRF();
 
-      while (invalidFreq.indexOf(frequency) !== -1)
+      while (occupiedFrequency.indexOf(frequency) !== -1)
         frequency = getRandomRF();
 
       return frequency;
@@ -90,6 +98,7 @@ define(function(require, exports, module) {
 
   Host.prototype.onLink = function ()
   {
+    console.log('ONLINK!!!!!');
 
     var authentication_RF = this.getAuthenticationRF();
 
@@ -98,16 +107,14 @@ define(function(require, exports, module) {
                             if (this.log.logging)
                               this.log.log('log','Switching frequency to '+(2400+authentication_RF)+' MHz');
 
-                            this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreq(err,msg) {
+                            this.timerID.waitForAuthenticateClientBeacon.id = setTimeout(onNoAuthenticationFromClient,this.timerID.waitForAuthenticateClientBeacon.delay);
 
-                                this.state.set(State.prototype.AUTHENTICATION);
+                            this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+                                function _switchFreq(err,msg) {
 
-                                this.once('link',this.onLink); // If client drops to link layer again
+                                    this.once('link',this.onLink); // If client drops to link layer again
 
-                                // Client should send authentication beacon
-                                // If no authentication command from host, client returns to link state after a timeout
-
-                            }.bind(this));
+                                }.bind(this));
                         },
 
       onLinkFailed = function _onLinkFail(err,msg)
@@ -122,21 +129,59 @@ define(function(require, exports, module) {
 
      onSentToANT = function _onSentToANT(err,msg)
      {
-       if (err && this.log.logging)
-        this.log.log('error','Failed to send LINK command to ANT chip',err);
-     }.bind(this);
+       if (err && this.log.logging) {
+          this.log.log('error','Failed to send LINK command to ANT chip',err);
+          this.once('link',this.onLink);
+        }
 
-    // Recommended to switch RF frequency for further communication
+     }.bind(this),
 
-    this.linkCommand =  new Link(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
+     onNoAuthenticationFromClient = function _onNoAuthenticationFromClient()
+     {
 
-    this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed);
+      if (this.log.logging)
+        this.log.log('warn','Client did not proceed to authentication in '+this.timerID.waitForAuthenticateClientBeacon.delay+' ms');
+
+      this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function () {});
+
+      this.once('link',this.onLink);
+
+    }.bind(this),
+
+    onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err,repsonse)
+    {
+      this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
+
+      this.state.set(State.prototype.LINK);
+
+      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed);
+
+    }.bind(this);
+
+    if (this.frequency !== this.NET.FREQUENCY.ANTFS)
+       this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onFrequencyAndPeriodSet);
+    else
+      onFrequencyAndPeriodSet.call(this);
 
   };
 
   Host.prototype.onAuthentication = function ()
   {
 
+    clearTimeout(this.timerID.waitForAuthenticateClientBeacon);
+
+    this.state.set(State.prototype.AUTHENTICATION);
+
+    var onSentToANT = function _onSentToANT(err,msg)
+    {
+      if (err && this.log.logging)
+       this.log.log('error','Failed to send AUTHENTICATE command to ANT chip',err);
+    }.bind(this);
+
+    this.authenticateCommand = new AuthenticateCommand();
+    this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
+
+    this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT);
 
   };
 
@@ -145,43 +190,87 @@ define(function(require, exports, module) {
     var onFrequencyAndPeriodSet = function _onFreqAndPeriodSet(err,msg)
     {
       this.state.set(State.prototype.LINK);
-    }.bind(this);
+    }.bind(this),
+    clientState;
 
-    console.log(beacon.toString());
+    console.log(this.beacon.toString());
 
-    if (this.state.isLink() && beacon.clientDeviceState.isLink()) {
+    clientState = this.beacon.clientDeviceState.get();
+
+    switch (clientState)
+    {
+      case State.prototype.LINK : this.emit('link');
+
+                                  break;
+
+      case State.prototype.AUTHENTICATION:
+
+                                  break;
+
+      case State.prototype.TRANSPORT:
+
+                                  break;
+
+      case State.prototype.BUSY :
+
+                                  break;
+
+    }
+
+  /*  if (this.state.isLink() && this.beacon.clientDeviceState.isLink()) {
       this.emit('link');
     }
-    else if (!this.state.isLink() && beacon.clientDeviceState.isLink()) // Client dropped to link state
+    else if (!this.state.isLink() && this.beacon.clientDeviceState.isLink()) // Client dropped to link state
     {
-      this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onFrequencyAndPeriodSet);
-    } else if (beacon.clientDeviceState.isAuthentication() && beacon.hostSerialNumber === this.hostSerialNumber) {
+      ;
+    } else if (this.beacon.clientDeviceState.isAuthentication() && this.beacon.hostSerialNumber === this.hostSerialNumber) {
       this.emit('authentication');
-    } else if (beacon.clientDeviceState.isAuthentication() && beacon.hostSerialNumber !== this.hostSerialNumber) {
+    } else if (this.beacon.clientDeviceState.isAuthentication() && this.beacon.hostSerialNumber !== this.hostSerialNumber) {
       if (this.log.logging)
-        this.log.log('warn','Ignoring client beacon for foreign host serial number ' + beacon.hostSerialNumber);
-    }
+        this.log.log('warn','Ignoring client beacon for foreign host serial number ' + this.beacon.hostSerialNumber);
+    } */
 
   };
 
   Host.prototype.onBroadcast = function (broadcast)
   {
-    beacon.decode(broadcast.payload);
-
-    this.emit('clientbeacon');
+    this.beacon.decode(broadcast.payload);
+    this.onBeacon();
 
   };
 
   Host.prototype.onBurst = function (burst)
   {
-    // 1 packet should be a beacon
-    beacon.decode(burst.subarray(0,8));
+    var responseData,
+        responseId,
+        response;
 
-    this.emit('clientbeacon');
+    this.beacon.decode(burst.subarray(0,ClientBeacon.prototype.PAYLOAD_LENGTH));
+    this.onBeacon();
+
+    console.log('BURST!!!!!',burst,'client device state',this.beacon.clientDeviceState);
+
+    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+    responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+
+    switch (responseId) {
+
+      case AuthenticateResponse.prototype.ID :
+
+          response = new AuthenticateResponse(responseData);
+          console.log('resp',response);
+          break;
+
+      default :
+         console.log('cannot deserialize response id',responseId);
+         break;
+    }
+
   };
 
   Host.prototype.switchFrequencyAndPeriod = function (frequency,period,callback)
   {
+  
     var newPeriod;
 
     switch (period)

@@ -18,6 +18,8 @@ define(function(require, exports, module) {
     this.decode(payload);
   }
 
+  ClientBeacon.prototype.PAYLOAD_LENGTH = 0x08;
+
   ClientBeacon.prototype.BIT_MASK = {
     DATA_AVAILABLE: 0x20, // 0010 0000 bit 5
     UPLOAD_ENABLED: 0x10, // 0001 0000 bit 4

@@ -10,11 +10,13 @@ define(function(require, exports, module) {
 
   function Link(frequency,period,hostSerialNumber)
   {
-      this.id = 0x02;
+
       this.frequency = frequency;
       this.period = period;
       this.hostSerialNumber = hostSerialNumber;
   }
+
+  Link.prototype.ID = 0x02;
 
   Link.prototype.serialize = function ()
   {
@@ -22,7 +24,7 @@ define(function(require, exports, module) {
           dv = new DataView(command.buffer);
 
       command[0] = 0x44; // ANT-FS COMMAND message
-      command[1] = this.id;
+      command[1] = this.ID;
       command[2] = this.frequency;
       command[3] = this.period;
       dv.setUint32(4,this.hostSerialNumber,true);

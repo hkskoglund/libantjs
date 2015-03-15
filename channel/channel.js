@@ -124,6 +124,8 @@ define(function(require, exports, module) {
     return msg;
   };
 
+  Channel.prototype.MAX_RF = 124;
+
   Channel.prototype.getWildcardId = function ()
   {
     return new ChannelId(0,0,0);
