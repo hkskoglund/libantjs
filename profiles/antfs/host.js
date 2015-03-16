@@ -45,6 +45,8 @@ define(function(require, exports, module) {
       session : { id : undefined, delay: SESSION_TIMEOUT },
     };
 
+    this.passkeyDB = {};
+
     this.on('data', this.onBroadcast);
     this.on('burst', this.onBurst);
 
@@ -59,8 +61,15 @@ define(function(require, exports, module) {
   Host.prototype = Object.create(Channel.prototype);
   Host.prototype.constructor = Channel;
 
+  Host.prototype.setPasskey = function (clientDeviceSerialNumber,passkey)
+  {
+    this.passkeyDB[clientDeviceSerialNumber] = passkey;
+  };
+
   Host.prototype.onReset = function ()
   {
+
+    console.log('ONRESET');
 
     if (this.frequency !== this.NET.FREQUENCY.ANTFS)
       this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(err) {
@@ -162,7 +171,6 @@ define(function(require, exports, module) {
                         if (this.log.logging)
                           this.log.log('log','Failed to send LINK command to client');
 
-                        // retry?
                       }.bind(this),
 
      onSentToANT = function _onSentToANT(err,msg)
@@ -204,9 +212,9 @@ define(function(require, exports, module) {
     }.bind(this);
 
     this.authenticateCommand = new AuthenticateCommand();
-    this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
-
-    this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
+    //this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
+    if (this.beacon.authenticationType.isPassthrough())
+     this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
 
   };
 

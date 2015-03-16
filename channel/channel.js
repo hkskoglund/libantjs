@@ -318,41 +318,53 @@ define(function(require, exports, module) {
 
     var onCompleted = function _onComplete ()
       {
-         clearInterval(retryAcknowledgedDataID);
-         this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+         this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
+         this.removeListener('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
          if (typeof onTxCompleted === 'function')
           onTxCompleted.call(this);
       }.bind(this),
 
+      onRxFailGotoSearch = function _onRxFailGotoSearch()
+      {
+        this.removeListener('EVENT_TRANSFER_TX_FAILED', onFailed);
+        this.removeListener('EVENT_TRANSFER_TX_COMPLETED', onCompleted);
+      }.bind(this),
+
        onFailed = function _onFailed ()
        {
-         if ((maxRetries && retry >= maxRetries) || !maxRetries) {
-           clearInterval(retryAcknowledgedDataID);
-           this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
-           if (typeof onTxFailed === 'function')
-             onTxFailed.call(this);
+           if (maxRetries && (++retry <= maxRetries))
+           {
+             this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
+             retrySend();
+           } else {
+             this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+             this.removeListener('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
+             if (typeof onTxFailed === 'function')
+               onTxFailed.call(this);
            }
+
        }.bind(this),
 
        retry=0,
 
-       retryAcknowledgedDataID;
+       retrySend = function _retrySend()
+       {
+         this.host.sendAcknowledgedData(this.channel, ackData, function _sentToANT(err,msg){
+           if (!err) {
+             this.once('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+             this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
+           }
+            callback(err,msg);
+          }.bind(this));
+       }.bind(this);
 
       if (typeof onTxCompleted === 'number')
         maxRetries = onTxCompleted;
 
-      this.once('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
-      this.on('EVENT_TRANSFER_TX_FAILED', onFailed); // on because of retries
+      this.once('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
 
-      if (maxRetries)
-       retryAcknowledgedDataID = setInterval(function () {
-        if (++retry <= maxTries)
-          this.host.sendAcknowledgedData(this.channel, ackData, callback);
-        else {
-          clearInterval(retryAcknowledgedDataID);
-        }}, 1000);
+      retrySend();
 
-      this.host.sendAcknowledgedData(this.channel, ackData, callback);
   };
 
   Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {

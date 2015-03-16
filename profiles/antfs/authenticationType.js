@@ -23,6 +23,11 @@ define(function(require, exports, module) {
     return this.type;
   };
 
+  AuthenticationType.prototype.isPassthrough = function ()
+  {
+    return this.type === AuthenticationType.prototype.PASSTHROUGH;
+  };
+
   AuthenticationType.prototype.toString = function() {
 
      switch (this.type)

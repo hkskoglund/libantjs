@@ -23,9 +23,19 @@ define(function(require, exports, module) {
 
   AuthenticateCommand.prototype.ID = 0x04;
 
+  AuthenticateCommand.prototype.proceedToTransport = function (hostSerialNumber)
+  {
+    this._noPasskeyCommand(AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT);
+  };
+
   AuthenticateCommand.prototype.requestClientSerialNumber = function (hostSerialNumber)
   {
-    this.commandType = AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER;
+    this._noPasskeyCommand(AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER);
+  };
+
+  AuthenticateCommand.prototype._noPasskeyCommand = function (commandType,hostSerialNumber)
+  {
+    this.commandType = commandType;
     this.authenticationStringLength = 0;
     this.hostSerialNumber = hostSerialNumber;
   };

@@ -438,7 +438,7 @@ define(function(require, exports, module) {
 
        deserialize = function _deserialize()
                       {
-                        this.inEndpoint.transfer(endpointPacketSize, function (error,data) {
+                        this.inEndpoint.transfer(endpointPacketSize, function _transferInEndpoint(error,data) {
                           this._onInEndpointData.call(this,error,data);
                           if (!error)
                             deserialize();
