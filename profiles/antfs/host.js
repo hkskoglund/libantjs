@@ -19,7 +19,11 @@ define(function(require, exports, module) {
       DisconnectCommand = require('./command/disconnectCommand'),
 
       AuthenticateCommand = require('./command/authenticateCommand'),
-      AuthenticateResponse = require('./response/authenticateResponse');
+      AuthenticateResponse = require('./response/authenticateResponse'),
+
+      SESSION_TIMEOUT = 60000,
+
+      MAX_ACKNOWLEDGED_RETRIES = 3;
 
   function Host(options, host, channelNumber, net)
   {
@@ -38,28 +42,68 @@ define(function(require, exports, module) {
     this.state = undefined; // INIT
 
     this.timerID = {
-      waitForLinkClientBeacon : { id : undefined, delay: 60000 },
-      waitForAuthenticateClientBeacon : { id : undefined, delay : 60000 }
+      session : { id : undefined, delay: SESSION_TIMEOUT },
     };
 
     this.on('data', this.onBroadcast);
     this.on('burst', this.onBurst);
 
+    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset);
+    this.on('reset', this.onReset);
+
     this.once('link', this.onLink);                     // Once = Only the first received beacon received triggers callback
-    this.once('authentication', this.onAuthentication);
+    this.once('authenticate', this.onAuthenticate);
 
   }
 
   Host.prototype = Object.create(Channel.prototype);
   Host.prototype.constructor = Channel;
 
+  Host.prototype.onReset = function ()
+  {
+
+    if (this.frequency !== this.NET.FREQUENCY.ANTFS)
+      this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(err) {
+        if (err & this.log.logging)
+          this.log.log('error','Failed to reset search frequency to default ANT-FS 2450 MHz');
+      }.bind(this));
+
+
+      this.state.set(State.prototype.LINK);
+
+      this.removeAllListeners('link');
+      this.once('link',this.onLink);
+
+      this.removeAllListeners('authenticate');
+      this.once('authenticate',this.onAuthenticate);
+
+      this.resetSessionTimeout();
+
+  };
+
+  Host.prototype.resetSessionTimeout = function ()
+  {
+    clearTimeout(this.timerID.session.id);
+    this.timerID.session.id = setTimeout(this.onSessionTimeout.bind(this),this.timerID.session.delay);
+  };
+
+  Host.prototype.onSessionTimeout = function ()
+  {
+    if (this.log.logging)
+      this.log.log('warn','No client beacon '+this.timerID.session.delay+' ms. Host '+this.state.toString()+' Client '+this.beacon.clientDeviceState.toString());
+
+    this.onReset();
+  };
+
   Host.prototype.connect = function (callback)
   {
 
-    var onNoLinkClientBeacon = function _onNoLinkClientBeacon()
+    var onConnected = function (err,msg)
     {
-        if (this.log.logging)
-          this.log.log('warn','No LINK beacon received from client in '+this.timerID.waitForLinkClientBeacon.delay+' ms');
+      // Spec sec 4.1.2 "The host enters the Link state after the ANT slave channel is initialized and opened"
+      if (!err)
+        this.state = new State(State.prototype.LINK);
+      callback(err);
     }.bind(this);
 
     // Need host serial number in LINK command
@@ -70,11 +114,9 @@ define(function(require, exports, module) {
        } else
          this.hostSerialNumber = 0;
 
-       this.state = new State(State.prototype.SEARCH);
+       this.resetSessionTimeout();
 
-       this.timerID.waitForLinkClientBeacon.id = setTimeout(onNoLinkClientBeacon,this.timerID.waitForLinkClientBeacon.delay);
-
-       Channel.prototype.connect.call(this,callback);
+       Channel.prototype.connect.call(this,onConnected);
 
      }.bind(this));
   };
@@ -98,31 +140,27 @@ define(function(require, exports, module) {
 
   Host.prototype.onLink = function ()
   {
-    console.log('ONLINK!!!!!');
-
     var authentication_RF = this.getAuthenticationRF();
 
     var onLinkCompleted = function _onLinkSuccess(err,msg) {
 
-                            if (this.log.logging)
-                              this.log.log('log','Switching frequency to '+(2400+authentication_RF)+' MHz');
+                            if (this.frequency !== authentication_RF) {
 
-                            this.timerID.waitForAuthenticateClientBeacon.id = setTimeout(onNoAuthenticationFromClient,this.timerID.waitForAuthenticateClientBeacon.delay);
+                              if (this.log.logging)
+                                this.log.log('log','Switching frequency to '+(2400+authentication_RF)+' MHz');
 
-                            this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-                                function _switchFreq(err,msg) {
+                              this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+                                  function _switchFreq(err,msg) {
 
-                                    this.once('link',this.onLink); // If client drops to link layer again
-
-                                }.bind(this));
+                                  }.bind(this));
+                              }
                         },
 
       onLinkFailed = function _onLinkFail(err,msg)
                       {
+
                         if (this.log.logging)
                           this.log.log('log','Failed to send LINK command to client');
-
-                        this.once('link',this.onLink);
 
                         // retry?
                       }.bind(this),
@@ -131,30 +169,17 @@ define(function(require, exports, module) {
      {
        if (err && this.log.logging) {
           this.log.log('error','Failed to send LINK command to ANT chip',err);
+
           this.once('link',this.onLink);
         }
 
      }.bind(this),
 
-     onNoAuthenticationFromClient = function _onNoAuthenticationFromClient()
-     {
-
-      if (this.log.logging)
-        this.log.log('warn','Client did not proceed to authentication in '+this.timerID.waitForAuthenticateClientBeacon.delay+' ms');
-
-      this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function () {});
-
-      this.once('link',this.onLink);
-
-    }.bind(this),
-
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err,repsonse)
     {
       this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
 
-      this.state.set(State.prototype.LINK);
-
-      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed);
+      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed,MAX_ACKNOWLEDGED_RETRIES);
 
     }.bind(this);
 
@@ -165,10 +190,10 @@ define(function(require, exports, module) {
 
   };
 
-  Host.prototype.onAuthentication = function ()
+  Host.prototype.onAuthenticate = function ()
   {
 
-    clearTimeout(this.timerID.waitForAuthenticateClientBeacon);
+    this.once('link',this.onLink); // If client drops to link layer again
 
     this.state.set(State.prototype.AUTHENTICATION);
 
@@ -181,17 +206,15 @@ define(function(require, exports, module) {
     this.authenticateCommand = new AuthenticateCommand();
     this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
 
-    this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT);
+    this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
 
   };
 
   Host.prototype.onBeacon = function ()
   {
-    var onFrequencyAndPeriodSet = function _onFreqAndPeriodSet(err,msg)
-    {
-      this.state.set(State.prototype.LINK);
-    }.bind(this),
-    clientState;
+    var clientState;
+
+    this.resetSessionTimeout();
 
     console.log(this.beacon.toString());
 
@@ -205,6 +228,13 @@ define(function(require, exports, module) {
 
       case State.prototype.AUTHENTICATION:
 
+                                  if (this.beacon.hostSerialNumber === this.hostSerialNumber)
+                                     this.emit('authenticate');
+                                  else {
+                                    if (this.log.logging)
+                                      this.log.log('log','Client wishes to communicate with host serial number ',this.beaconSerialNumber);
+                                  }
+
                                   break;
 
       case State.prototype.TRANSPORT:
@@ -216,19 +246,6 @@ define(function(require, exports, module) {
                                   break;
 
     }
-
-  /*  if (this.state.isLink() && this.beacon.clientDeviceState.isLink()) {
-      this.emit('link');
-    }
-    else if (!this.state.isLink() && this.beacon.clientDeviceState.isLink()) // Client dropped to link state
-    {
-      ;
-    } else if (this.beacon.clientDeviceState.isAuthentication() && this.beacon.hostSerialNumber === this.hostSerialNumber) {
-      this.emit('authentication');
-    } else if (this.beacon.clientDeviceState.isAuthentication() && this.beacon.hostSerialNumber !== this.hostSerialNumber) {
-      if (this.log.logging)
-        this.log.log('warn','Ignoring client beacon for foreign host serial number ' + this.beacon.hostSerialNumber);
-    } */
 
   };
 
@@ -270,7 +287,7 @@ define(function(require, exports, module) {
 
   Host.prototype.switchFrequencyAndPeriod = function (frequency,period,callback)
   {
-  
+
     var newPeriod;
 
     switch (period)

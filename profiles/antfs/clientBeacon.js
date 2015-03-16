@@ -16,6 +16,8 @@ define(function(require, exports, module) {
 
    if (payload)
     this.decode(payload);
+
+   this.clientDeviceState = 'UNKNOWN';
   }
 
   ClientBeacon.prototype.PAYLOAD_LENGTH = 0x08;

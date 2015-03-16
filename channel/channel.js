@@ -314,27 +314,45 @@ define(function(require, exports, module) {
     this.host.sendBroadcastData(this.channel, broadcastData, callback);
   };
 
-  Channel.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed) {
+  Channel.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed, maxRetries) {
 
     var onCompleted = function _onComplete ()
       {
-         this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
-         onTxCompleted.call(this);
+         clearInterval(retryAcknowledgedDataID);
+         this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+         if (typeof onTxCompleted === 'function')
+          onTxCompleted.call(this);
       }.bind(this),
 
        onFailed = function _onFailed ()
        {
-         this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
-         onTxFailed.call(this);
-       }.bind(this);
+         if ((maxRetries && retry >= maxRetries) || !maxRetries) {
+           clearInterval(retryAcknowledgedDataID);
+           this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
+           if (typeof onTxFailed === 'function')
+             onTxFailed.call(this);
+           }
+       }.bind(this),
 
-    if (typeof onTxCompleted === 'function')
+       retry=0,
+
+       retryAcknowledgedDataID;
+
+      if (typeof onTxCompleted === 'number')
+        maxRetries = onTxCompleted;
+
       this.once('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
+      this.on('EVENT_TRANSFER_TX_FAILED', onFailed); // on because of retries
 
-    if (typeof onTxFailed === 'function')
-      this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
+      if (maxRetries)
+       retryAcknowledgedDataID = setInterval(function () {
+        if (++retry <= maxTries)
+          this.host.sendAcknowledgedData(this.channel, ackData, callback);
+        else {
+          clearInterval(retryAcknowledgedDataID);
+        }}, 1000);
 
-    this.host.sendAcknowledgedData(this.channel, ackData, callback);
+      this.host.sendAcknowledgedData(this.channel, ackData, callback);
   };
 
   Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {

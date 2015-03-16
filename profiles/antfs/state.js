@@ -18,8 +18,6 @@ define(function(require, exports, module) {
   State.prototype.TRANSPORT = 0x02;
   State.prototype.BUSY = 0x03;
 
-  State.prototype.SEARCH = 0x04; // For host
-
   State.prototype.get = function ()
   {
     return this.state;
@@ -27,8 +25,11 @@ define(function(require, exports, module) {
 
   State.prototype.set = function (state)
   {
+   var prevState = this;
+   if (state !== this.state) {
     this.state = state;
-    console.log('state '+this.toString());
+    console.log('state from ' + prevState.toString() + ' to ' + this.toString());
+   }
   };
 
   State.prototype.isLink = function ()
