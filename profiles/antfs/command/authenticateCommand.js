@@ -10,9 +10,9 @@ define(function(require, exports, module) {
 
   function AuthenticateCommand(commandType,authenticationStringLength,hostSerialNumber)
   {
-      this.commandType = commandType;
-      this.authenticationStringLength = authenticationStringLength;
-      this.hostSerialNumber = hostSerialNumber;
+      this.commandType = commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
+      this.authenticationStringLength = authenticationStringLength || 0;
+      this.hostSerialNumber = hostSerialNumber || 0;
 
   }
 
@@ -47,9 +47,9 @@ define(function(require, exports, module) {
 
       command[0] = 0x44; // ANT-FS COMMAND message
       command[1] = this.ID;
-      command[2] = this.commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
-      command[3] = this.authenticationStringLength || 0;
-      dv.setUint32(4,this.hostSerialNumber || 0,true);
+      command[2] = this.commandType;
+      command[3] = this.authenticationStringLength;
+      dv.setUint32(4,this.hostSerialNumber ,true);
 
       return command;
   };

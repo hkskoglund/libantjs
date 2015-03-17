@@ -73,6 +73,22 @@ define(function(require, exports, module) {
     }
   };
 
+  ClientBeacon.prototype.hasDataAvailable = function ()
+  {
+    return this.dataAvailable;
+  };
+
+  ClientBeacon.prototype.hasUploadEnabled = function ()
+  {
+    return this.uploadEnabled;
+  };
+
+  ClientBeacon.prototype.hasPairingEnabled = function ()
+  {
+    return this.pairingEnabled;
+  };
+
+
   ClientBeacon.prototype.toString = function() {
     var str,
       statusByte1Str;

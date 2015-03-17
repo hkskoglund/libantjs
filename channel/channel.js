@@ -368,6 +368,12 @@ define(function(require, exports, module) {
   };
 
   Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {
+
+    if (typeof packetsPerURB === 'function') {
+      callback = packetsPerURB;
+      packetsPerURB = 1;
+    }
+
     this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB,callback);
   };
 

@@ -10,16 +10,20 @@ define(function(require, exports, module) {
   'use strict';
 
   var Channel = require('../../channel/channel'),
-      ClientBeacon = require('./clientBeacon'),
-      State = require('./state'),
+      ClientBeacon = require('./lib/clientBeacon'),
+      State = require('./lib/state'),
 
       // Commands
 
       LinkCommand = require('./command/linkCommand'),
       DisconnectCommand = require('./command/disconnectCommand'),
+      DownloadCommand = require('./command/downloadCommand'),
 
       AuthenticateCommand = require('./command/authenticateCommand'),
       AuthenticateResponse = require('./response/authenticateResponse'),
+      DownloadResponse = require('./response/downloadResponse'),
+
+      CRC = require('./lib/crc'),
 
       SESSION_TIMEOUT = 60000,
 
@@ -55,6 +59,7 @@ define(function(require, exports, module) {
 
     this.once('link', this.onLink);                     // Once = Only the first received beacon received triggers callback
     this.once('authenticate', this.onAuthenticate);
+    this.once('transport',this.onTransport);
 
   }
 
@@ -187,7 +192,7 @@ define(function(require, exports, module) {
     {
       this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
 
-      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed,MAX_ACKNOWLEDGED_RETRIES);
+      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed, MAX_ACKNOWLEDGED_RETRIES);
 
     }.bind(this);
 
@@ -218,6 +223,32 @@ define(function(require, exports, module) {
 
   };
 
+  Host.prototype.onTransport = function ()
+  {
+    this.state.set(State.prototype.TRANSPORT);
+
+    var onSentToANT = function _onSentToANT(err,msg)
+    {
+      if (err && this.log.logging)
+       this.log.log('error','Failed to send DOWNLOAD command to ANT chip',err);
+    }.bind(this);
+
+    this.downloadCommand = new DownloadCommand();
+
+    this.sendBurst(this.downloadCommand.serialize(), onSentToANT);
+
+  };
+
+  Host.prototype._verifyHostSerialNumber = function (type)
+  {
+    if (this.beacon.hostSerialNumber === this.hostSerialNumber)
+       this.emit(type);
+    else {
+      if (this.log.logging)
+        this.log.log('log','Client wishes to communicate with host serial number ',this.beaconSerialNumber);
+    }
+  };
+
   Host.prototype.onBeacon = function ()
   {
     var clientState;
@@ -236,16 +267,14 @@ define(function(require, exports, module) {
 
       case State.prototype.AUTHENTICATION:
 
-                                  if (this.beacon.hostSerialNumber === this.hostSerialNumber)
-                                     this.emit('authenticate');
-                                  else {
-                                    if (this.log.logging)
-                                      this.log.log('log','Client wishes to communicate with host serial number ',this.beaconSerialNumber);
-                                  }
+                                  this._verifyHostSerialNumber('authenticate');
 
                                   break;
 
       case State.prototype.TRANSPORT:
+
+
+                                  this._verifyHostSerialNumber('transport');
 
                                   break;
 
@@ -283,10 +312,17 @@ define(function(require, exports, module) {
       case AuthenticateResponse.prototype.ID :
 
           response = new AuthenticateResponse(responseData);
-          console.log('resp',response);
+          console.log('authenticate',response);
+          break;
+
+      case DownloadResponse.prototype.ID :
+
+          response = new DownloadResponse(responseData);
+          console.log('download',response);
           break;
 
       default :
+
          console.log('cannot deserialize response id',responseId);
          break;
     }
@@ -300,11 +336,11 @@ define(function(require, exports, module) {
 
     switch (period)
     {
-      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz05 : newPeriod = 65535; break;
-      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz1 : newPeriod = 32768; break;
-      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz2 : newPeriod = 16384; break;
-      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz4 : newPeriod = 8192; break;
-      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8 : newPeriod = 4096; break;
+      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz05 : newPeriod = 65535;  break;
+      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz1  : newPeriod = 32768;  break;
+      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz2  : newPeriod = 16384;  break;
+      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz4  : newPeriod = 8192;   break;
+      case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8  : newPeriod = 4096;   break;
     }
 
     this.setFrequency(frequency, function _setFreq(err,msg)

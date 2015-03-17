@@ -10,8 +10,8 @@ define(function(require, exports, module) {
 
   function DisconnectCommand(timeDuration,appSpecificDuration)
   {
-      this.timeDuration = timeDuration;
-      this.appSpecificDuration = appSpecificDuration;
+      this.timeDuration = timeDuration || DisconnectCommand.prototype.DISABLE;
+      this.appSpecificDuration = appSpecificDuration || DisconnectCommand.prototype.DISABLE;
 
   }
 
@@ -28,8 +28,8 @@ define(function(require, exports, module) {
 
       command[0] = 0x44; // ANT-FS COMMAND message
       command[1] = this.ID;
-      command[2] = this.timeDuration || DisconnectCommand.prototype.DISABLE;
-      command[3] = this.appSpecificDuration || DisconnectCommand.prototype.DISABLE;
+      command[2] = this.timeDuration;
+      command[3] = this.appSpecificDuration;
 
       return command;
   };
