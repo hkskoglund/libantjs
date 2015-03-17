@@ -10,7 +10,7 @@ define(function(require, exports, module) {
   'use strict';
 
   function State(state) {
-    this.state = state;
+    this.state = state || State.prototype.LINK;
   }
 
   State.prototype.LINK = 0x00;

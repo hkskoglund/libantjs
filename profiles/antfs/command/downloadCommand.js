@@ -10,18 +10,29 @@ define(function(require, exports, module) {
 
   function DownloadCommand(index,offset,request,crcSeed,maxBlockSize)
   {
-      this.indedx = index || 0;
-      this.offset = offset || 0;
-      this.request = request || DownloadCommand.prototype.NEW_TRANSFER;
-      this.crcSeed = crcSeed || 0;
-      this.maxBlockSize = maxBlockSize || 0; // 0 = "host do not wish to limit the block size"
-
+      this.request(index,offset,request,crcSeed,maxBlockSize);
   }
 
   DownloadCommand.prototype.CONTINUE_TRANSFER = 0x00;
   DownloadCommand.prototype.NEW_TRANSFER = 0x01;
 
   DownloadCommand.prototype.ID = 0x09;
+
+  DownloadCommand.prototype.continueRequest = function (offset,crcSeed)
+  {
+    this.request = DownloadCommand.prototype.CONTINUE_TRANSFER;
+    this.offset = offset;
+    this.crcSeed = crcSeed;
+  };
+
+  DownloadCommand.prototype.request = function (index,offset,request,crcSeed,maxBlockSize)
+  {
+    this.index = index || 0;
+    this.offset = offset || 0;
+    this.request = request || DownloadCommand.prototype.NEW_TRANSFER;
+    this.crcSeed = crcSeed || 0;
+    this.maxBlockSize = maxBlockSize || 0; // 0 = "host do not wish to limit the block size"
+  };
 
   // Spec 12.7 Downloading - its a two packet burst
   DownloadCommand.prototype.serialize = function ()
