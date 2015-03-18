@@ -71,6 +71,9 @@ define(function(require, exports, module) {
       else
         this.deviceTypeManagedBy = 'Manufacturer';
     }
+
+    console.log(this.toString());
+    
   };
 
   ClientBeacon.prototype.hasDataAvailable = function ()
@@ -86,6 +89,11 @@ define(function(require, exports, module) {
   ClientBeacon.prototype.hasPairingEnabled = function ()
   {
     return this.pairingEnabled;
+  };
+
+  ClientBeacon.prototype.forHost = function (hostSN)
+  {
+    return this.hostSerialNumber === hostSN;
   };
 
 

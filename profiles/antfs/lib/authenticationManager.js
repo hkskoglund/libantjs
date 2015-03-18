@@ -10,13 +10,57 @@ define(function(require, exports, module) {
   'use strict';
 
   var MAX_ACKNOWLEDGED_RETRIES = 3,
+      EventEmitter = require('../../../util/events'),
+      ClientBeacon = require('./clientBeacon'),
       AuthenticateCommand = require('../command/authenticateCommand'),
-      AuthenticateResponse = require('../response/authenticateResponse');
+      AuthenticateResponse = require('../response/authenticateResponse'),
+      State = require('./state');
 
   function AuthenticationManager(host)
   {
     this.host = host;
+    this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+    this.host.on('beacon',this.onBeacon.bind(this));
+
+    this.once('authenticate',this.onAuthenticate);
   }
+
+
+  AuthenticationManager.prototype = Object.create(EventEmitter.prototype);
+  AuthenticationManager.prototype.constructor = AuthenticationManager;
+
+  AuthenticationManager.prototype.onReset = function ()
+  {
+    this.removeAllListeners('authenticate');
+    this.once('authenticate',this.onAuthenticate);
+  };
+
+  AuthenticationManager.prototype.onBeacon = function (beacon)
+  {
+    if (beacon.clientDeviceState.isAuthentication() && beacon.forHost(this.host.hostSerialNumber))
+      {
+        this.emit('authenticate');
+      }
+  };
+
+  AuthenticationManager.prototype.onBurst = function (burst)
+  {
+    var responseData,
+        responseId,
+        response;
+
+    if (!this.host.beacon.forHost(this.host.hostSerialNumber))
+       return;
+
+    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+    responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+
+    if  (responseId === AuthenticateResponse.prototype.ID) {
+          response = new AuthenticateResponse(responseData);
+          console.log('authenticate',response);
+        }
+
+  };
 
   // New frequency to communicate on when on authentication/transport layer
   AuthenticationManager.prototype.getAuthenticationRF = function ()
@@ -38,8 +82,6 @@ define(function(require, exports, module) {
   AuthenticationManager.prototype.onAuthenticate = function ()
   {
 
-        this.once('link',this.host.onLink); // If client drops to link layer again
-
         this.host.state.set(State.prototype.AUTHENTICATION);
 
         var onSentToANT = function _onSentToANT(err,msg)
@@ -51,7 +93,7 @@ define(function(require, exports, module) {
         this.authenticateCommand = new AuthenticateCommand();
         //this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
         if (this.host.beacon.authenticationType.isPassthrough())
-         this.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
+         this.host.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
 
   };
 

@@ -9,31 +9,39 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var LinkCommand = require('../command/linkCommand');
+  var  MAX_ACKNOWLEDGED_RETRIES = 3,
+       EventEmitter = require('../../../util/events'),
+       ClientBeacon = require('./clientBeacon'),
+       LinkCommand = require('../command/linkCommand'),
+       State = require('./state');
 
   function LinkManager(host)
   {
     this.host = host;
+    this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+    this.host.on('beacon',this.onBeacon.bind(this));
+
+    this.once('link',this.onLink);
   }
 
-  LinkManager.prototype.onConnected = function (callback,err,msg)
+  LinkManager.prototype = Object.create(EventEmitter.prototype);
+  LinkManager.prototype.constructor = LinkManager;
+
+  LinkManager.prototype.onReset = function ()
   {
-    // Spec sec 4.1.2 "The host enters the Link state after the ANT slave channel is initialized and opened"
-    if (!err)
+      this.removeAllListeners('link');
+      this.once('link',this.onLink);
+  };
+
+  LinkManager.prototype.onBeacon = function (beacon)
+  {
+
+    if (beacon.clientDeviceState.isLink())
     {
-
-      // Need host serial number in LINK command
-
-       this.host.getSerialNumber(function _getSN(err,serialNumberMsg) {
-         if (!err)
-         {
-           this.host.hostSerialNumber = serialNumberMsg.serialNumber;
-         } else
-           this.host.hostSerialNumber = 0;
-         }.bind(this));
+      this.host.state.set(State.prototype.LINK);
+      this.emit('link');
     }
 
-    callback(err);
   };
 
   LinkManager.prototype.onLink = function ()
@@ -43,23 +51,31 @@ define(function(require, exports, module) {
 
     var onLinkCompleted = function _onLinkSuccess(err,msg) {
 
-                            if (this.frequency !== authentication_RF) {
+                           // LINK is received by client ANT stack now, and client will switch frequency to
+                           // the requested frequency on the link command and start advertising authentication beacon
 
-                              if (this.log.logging)
-                                this.log.log('log','Switching frequency to '+(2400+authentication_RF)+' MHz');
+                            if (this.host.frequency !== authentication_RF) {
 
                               this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
                                   function _switchFreq(err,msg) {
-
+                                    if (!err && this.log.logging)
+                                      this.log.log('log','Switched frequency to '+(2400+authentication_RF)+' MHz');
                                   }.bind(this.host));
                               }
-                        }.bind(this.host),
+
+                            // In case client drops to link layer again we must be prepared again
+
+                             this.once('link',this.onLink);
+
+                        }.bind(this),
 
       onLinkFailed = function _onLinkFail(err,msg)
                       {
 
                         if (this.log.logging)
                           this.log.log('log','Failed to send LINK command to client');
+
+                        this.once('link',this.onLink);
 
                       }.bind(this.host),
 
@@ -82,7 +98,8 @@ define(function(require, exports, module) {
     }.bind(this.host);
 
     if (this.host.frequency !== this.host.NET.FREQUENCY.ANTFS)
-       this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onFrequencyAndPeriodSet);
+    // In case client drops to link layer from higher layers (communicating on the agreed upon authentication RF)
+       this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onFrequencyAndPeriodSet.bind(this));
     else
       onFrequencyAndPeriodSet.call(this);
 
@@ -102,7 +119,7 @@ define(function(require, exports, module) {
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8  : newPeriod = 4096;   break;
     }
 
-    this.setFrequency(frequency, function _setFreq(err,msg)
+    this.host.setFrequency(frequency, function _setFreq(err,msg)
     {
       if (err)
        {

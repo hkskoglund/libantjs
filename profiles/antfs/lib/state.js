@@ -25,10 +25,10 @@ define(function(require, exports, module) {
 
   State.prototype.set = function (state)
   {
-   var prevState = this;
-   if (state !== this.state) {
+   var prevState = this.state;
+   if (state !== prevState) {
     this.state = state;
-    console.log('state from ' + prevState.toString() + ' to ' + this.toString());
+    console.log('State transition ' + new State(prevState).toString() + ' to ' + this.toString());
    }
   };
 

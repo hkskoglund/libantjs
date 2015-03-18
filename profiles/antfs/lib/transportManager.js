@@ -9,19 +9,67 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var   DownloadCommand = require('./command/downloadCommand'),
-        DownloadResponse = require('./response/downloadResponse'),
+  var   EventEmitter = require('../../../util/events'),
+        ClientBeacon = require('./clientBeacon'),
 
-        CRC = require('./lib/crc');
+        DownloadCommand = require('../command/downloadCommand'),
+        DownloadResponse = require('../response/downloadResponse'),
+
+        CRC = require('./crc'),
+        State = require('./state');
 
   function TransportManager(host)
   {
     this.host = host;
+
+    this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+    this.host.on('beacon',this.onBeacon.bind(this));
+    this.host.on('burst', this.onBurst.bind(this));
+
+    this.once('transport',this.onTransport);
   }
+
+
+  TransportManager.prototype = Object.create(EventEmitter.prototype);
+  TransportManager.prototype.constructor = TransportManager;
+
+  TransportManager.prototype.onReset = function ()
+  {
+    this.removeAllListeners('transport');
+    this.once('transport',this.onTransport);
+  };
+
+  TransportManager.prototype.onBeacon = function (beacon)
+  {
+    if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.hostSerialNumber))
+      {
+        this.emit('transport');
+      }
+  };
+
+  TransportManager.prototype.onBurst = function (burst)
+  {
+    var responseData,
+        responseId,
+        response;
+
+    if (!this.host.beacon.forHost(this.host.hostSerialNumber))
+       return;
+
+       responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+       responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+
+    if (responseId === DownloadResponse.prototype.ID) {
+
+        response = new DownloadResponse(responseData);
+        console.log('download',response);
+    }
+  };
+
 
   TransportManager.prototype.onTransport = function ()
   {
-    this.state.set(State.prototype.TRANSPORT);
+    this.host.state.set(State.prototype.TRANSPORT);
 
     var onSentToANT = function _onSentToANT(err,msg)
     {
@@ -31,7 +79,7 @@ define(function(require, exports, module) {
 
     this.downloadCommand = new DownloadCommand();
 
-    this.sendBurst(this.downloadCommand.serialize(), onSentToANT);
+    this.host.sendBurst(this.downloadCommand.serialize(), onSentToANT);
 
   };
 

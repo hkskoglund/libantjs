@@ -13,17 +13,11 @@ define(function(require, exports, module) {
       ClientBeacon = require('./lib/clientBeacon'),
       State = require('./lib/state'),
 
-      // Commands
-
-      DisconnectCommand = require('./command/disconnectCommand'),
-
       // Layers
 
       LinkManager = require('./lib/linkManager'),
       AuthenticationManager = require('./lib/authenticationManager'),
-      TransportManager = require('./lib/transportManager'),
-
-      MAX_ACKNOWLEDGED_RETRIES = 3;
+      TransportManager = require('./lib/transportManager');
 
   function Host(options, host, channelNumber, net)
   {
@@ -47,20 +41,13 @@ define(function(require, exports, module) {
 
     this.beacon =  new ClientBeacon();
 
-    this.state = new State();
-
     this.passkeyDB = {};
 
     this.on('data', this.onBroadcast);
 
-    //this.on('burst', this.onBurst);
+    this.on('burst', this.onBurst);
 
     this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset);
-    this.on('reset', this.onReset);
-
-    this.once('link', this.linkManager.onLink.bind(this.linkManager));                     // Once = Only the first received beacon received triggers callback
-    this.once('authenticate', this.authenticationManager.onAuthenticate.bind(this.authenticationManager));
-    //this.once('transport',this.onTransport);
 
   }
 
@@ -75,121 +62,100 @@ define(function(require, exports, module) {
   Host.prototype.onReset = function ()
   {
 
-    console.log('ONRESET');
+    if (this.log.logging)
+      this.log.log('log','Lost contact with client. Resetting.');
 
     if (this.frequency !== this.NET.FREQUENCY.ANTFS)
-      this.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(err) {
+      this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(err) {
         if (err & this.log.logging)
           this.log.log('error','Failed to reset search frequency to default ANT-FS 2450 MHz');
       }.bind(this));
 
 
-      this.state.set(State.prototype.LINK);
-
-      this.removeAllListeners('link');
-      this.once('link',this.onLink);
-
-      this.removeAllListeners('authenticate');
-      this.once('authenticate',this.authenticationManager.onAuthenticate);
+    this.state.set(State.prototype.LINK);
 
   };
 
   Host.prototype.connect = function (callback)
   {
 
-    Channel.prototype.connect.call(this,this.linkManager.onConnected.bind(this.linkManager,callback));
-
-  };
-
-
-  Host.prototype._verifyHostSerialNumber = function (type)
-  {
-    if (this.beacon.hostSerialNumber === this.hostSerialNumber)
-       this.emit(type);
-    else {
-      if (this.log.logging)
-        this.log.log('log','Client wishes to communicate with host serial number ',this.beaconSerialNumber);
-    }
-  };
-
-  Host.prototype.onBeacon = function ()
-  {
-    var clientState;
-
-
-
-    console.log(this.beacon.toString());
-
-    clientState = this.beacon.clientDeviceState.get();
-
-    switch (clientState)
+    var onConnecting = function _onConnecting(err,msg)
     {
-      case State.prototype.LINK : this.emit('link');
 
-                                  break;
+      if (!err) {
+        this.state = new State(State.prototype.LINK);
+        if (this.log.logging)
+          this.log.log('log','Connecting, host state now '+this.state.toString());
+      }
+      callback(err,msg);
 
-      case State.prototype.AUTHENTICATION:
+  }.bind(this);
 
-                                  this._verifyHostSerialNumber('authenticate');
+    this.getSerialNumber(function _getSN(err,serialNumberMsg) {
 
-                                  break;
+      if (!err)
+      {
+        this.hostSerialNumber = serialNumberMsg.serialNumber;
+      } else
+          {
+            this.hostSerialNumber = 0;
+          }
 
-      case State.prototype.TRANSPORT:
+      Channel.prototype.connect.call(this,onConnecting);
 
-
-                                  this._verifyHostSerialNumber('transport');
-
-                                  break;
-
-      case State.prototype.BUSY :
-
-                                  break;
-
-    }
+    }.bind(this));
 
   };
 
   Host.prototype.onBroadcast = function (broadcast)
   {
     this.beacon.decode(broadcast.payload);
-    this.onBeacon();
+
+    this.emit('beacon',this.beacon);
 
   };
 
   Host.prototype.onBurst = function (burst)
   {
-    var responseData,
-        responseId,
-        response;
-
     this.beacon.decode(burst.subarray(0,ClientBeacon.prototype.PAYLOAD_LENGTH));
-    this.onBeacon();
 
-    console.log('BURST!!!!!',burst,'client device state',this.beacon.clientDeviceState);
+    this.emit('beacon', this.beacon);
 
-    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
-    responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+  };
 
-    switch (responseId) {
+  // Take care of the situation when the client indicates that it is busy, we wait for the beacon to indicate 'not busy'
+  Host.prototype.sendDelayed = function (delayedSendFunc)
+  {
 
-      case AuthenticateResponse.prototype.ID :
+    var onBeacon = function _onBeacon(beacon)
+    {
+      if (!beacon.clientDeviceState.isBusy()) {
 
-          response = new AuthenticateResponse(responseData);
-          console.log('authenticate',response);
-          break;
+        if (this.log.logging)
+          this.log.log('log','Sending delayed message because client was busy');
 
-      case DownloadResponse.prototype.ID :
+        this.removeListener('beacon',onBeacon);
 
-          response = new DownloadResponse(responseData);
-          console.log('download',response);
-          break;
+        delayedSendFunc();
+      }
+    }.bind(this);
 
-      default :
+      if (this.beacon.clientDeviceState.isBusy())
+        {
+        if (this.log.logging)
+           this.log.log('log','Cannot send burst now because client is busy...');
+        }
+      else
+        delayedSendFunc();
 
-         console.log('cannot deserialize response id',responseId);
-         break;
-    }
+  };
 
+  Host.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed, maxRetries) {
+    this.sendDelayed(Channel.prototype.sendAcknowledged.bind(this,ackData, callback, onTxCompleted, onTxFailed, maxRetries));
+  };
+
+  Host.prototype.sendBurst = function (burstData, packetsPerURB,callback) {
+     this.sendDelayed(Channel.prototype.sendBurst.bind(this,burstData, packetsPerURB,callback));
   };
 
   module.exports = Host;
