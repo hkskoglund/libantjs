@@ -47,6 +47,8 @@ define(function(require, exports, module) {
 
     this.on('burst', this.onBurst);
 
+    this.on('beacon', this.onBeacon);
+
     this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset);
 
   }
@@ -107,6 +109,12 @@ define(function(require, exports, module) {
 
   };
 
+  Host.prototype.onBeacon = function (beacon)
+  {
+    if (this.log.logging)
+      this.log.log('log',this.beacon.toString());
+  };
+
   Host.prototype.onBroadcast = function (broadcast)
   {
     this.beacon.decode(broadcast.payload);
@@ -132,22 +140,20 @@ define(function(require, exports, module) {
       if (!beacon.clientDeviceState.isBusy()) {
 
         if (this.log.logging)
-          this.log.log('log','Sending delayed message because client was busy');
+          this.log.log('log','Sending message');
 
         this.removeListener('beacon',onBeacon);
 
         delayedSendFunc();
+        
+      } else
+      {
+        if (this.log.logging)
+          this.log.log('log','Client is busy cannot send message right now');
       }
     }.bind(this);
 
-      if (this.beacon.clientDeviceState.isBusy())
-        {
-        if (this.log.logging)
-           this.log.log('log','Cannot send burst now because client is busy...');
-        }
-      else
-        delayedSendFunc();
-
+    this.on('beacon',onBeacon); // Wait for next beacon (has noticed that client is busy some time after a burst is received)
   };
 
   Host.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed, maxRetries) {

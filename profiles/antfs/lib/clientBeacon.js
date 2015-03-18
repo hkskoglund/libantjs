@@ -72,8 +72,6 @@ define(function(require, exports, module) {
         this.deviceTypeManagedBy = 'Manufacturer';
     }
 
-    console.log(this.toString());
-    
   };
 
   ClientBeacon.prototype.hasDataAvailable = function ()

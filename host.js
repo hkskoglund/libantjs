@@ -605,9 +605,8 @@ define(function(require, exports, module) {
         // If retry, must start with packet 0 again
         //clearTimeout(sendNextPacketTimeoutID);
         txFailed = true;
-        console.log('FAILED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', err, msg);
         removeListeners();
-        cb(new Error(msg.toString()), msg);
+        cb(err, msg);
       }.bind(this);
 
     addListeners();
