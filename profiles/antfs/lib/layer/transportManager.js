@@ -12,11 +12,11 @@ define(function(require, exports, module) {
   var   EventEmitter = require('../../../../util/events'),
         ClientBeacon = require('./clientBeacon'),
 
-        DownloadCommand = require('../command/downloadCommand'),
-        DownloadResponse = require('../response/downloadResponse'),
+        DownloadCommand = require('../command-response/downloadCommand'),
+        DownloadResponse = require('../command-response/downloadResponse'),
 
-        CRC = require('./crc'),
-        State = require('./state'),
+        CRC = require('./util/crc'),
+        State = require('./util/state'),
 
         Directory = require('../file/directory');
 

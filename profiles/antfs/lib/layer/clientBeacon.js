@@ -9,8 +9,8 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var State = require('./state'),
-      AuthenticationType = require('./authenticationType');
+  var State = require('./util/state'),
+      AuthenticationType = require('./util/authenticationType');
 
   function ClientBeacon(payload) {
 

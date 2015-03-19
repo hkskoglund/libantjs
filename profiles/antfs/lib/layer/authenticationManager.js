@@ -11,9 +11,9 @@ define(function(require, exports, module) {
 
 var   EventEmitter = require('../../../../util/events'),
       ClientBeacon = require('./clientBeacon'),
-      AuthenticateCommand = require('../command/authenticateCommand'),
-      AuthenticateResponse = require('../response/authenticateResponse'),
-      State = require('./state');
+      AuthenticateCommand = require('../command-response/authenticateCommand'),
+      AuthenticateResponse = require('../command-response/authenticateResponse'),
+      State = require('./util/state');
 
   function AuthenticationManager(host)
   {

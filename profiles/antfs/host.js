@@ -11,7 +11,7 @@ define(function(require, exports, module) {
 
   var Channel = require('../../channel/channel'),
       ClientBeacon = require('./lib/layer/clientBeacon'),
-      State = require('./lib/layer/state'),
+      State = require('./lib/layer/util/state'),
 
       // Layers
 
