@@ -10,14 +10,14 @@ define(function(require, exports, module) {
   'use strict';
 
   var Channel = require('../../channel/channel'),
-      ClientBeacon = require('./lib/clientBeacon'),
-      State = require('./lib/state'),
+      ClientBeacon = require('./lib/layer/clientBeacon'),
+      State = require('./lib/layer/state'),
 
       // Layers
 
-      LinkManager = require('./lib/linkManager'),
-      AuthenticationManager = require('./lib/authenticationManager'),
-      TransportManager = require('./lib/transportManager');
+      LinkManager = require('./lib/layer/linkManager'),
+      AuthenticationManager = require('./lib/layer/authenticationManager'),
+      TransportManager = require('./lib/layer/transportManager');
 
   function Host(options, host, channelNumber, net)
   {
@@ -145,7 +145,7 @@ define(function(require, exports, module) {
         this.removeListener('beacon',onBeacon);
 
         delayedSendFunc();
-        
+
       } else
       {
         if (this.log.logging)

@@ -9,13 +9,15 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var  EventEmitter = require('../../../util/events'),
+  var  EventEmitter = require('../../../../util/events'),
        ClientBeacon = require('./clientBeacon'),
        LinkCommand = require('../command/linkCommand'),
        State = require('./state');
 
   function LinkManager(host)
   {
+    EventEmitter.call(this);
+    
     this.host = host;
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
     this.host.on('beacon',this.onBeacon.bind(this));

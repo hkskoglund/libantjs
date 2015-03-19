@@ -10,23 +10,21 @@ define(function(require, exports, module) {
   'use strict';
 
 
-  function FitFilePermission(flags)
-  {
+  function FitFilePermission(flags) {
     this.flags = flags;
 
     this.selected = this.flags & FitFilePermission.prototype.BIT_MASK.SELECTED ? true : false;
   }
 
   FitFilePermission.prototype.BIT_MASK = {
-    SELECTED : 0x01 // Selected (file is user selected)
+    SELECTED: 0x01 // Selected (file is user selected)
   };
 
-  FitFilePermission.prototype.toString = function ()
-  {
-      if (this.selected)
-        return 'Selected : User selected';
-      else
-        return'Selected : NO';
+  FitFilePermission.prototype.toString = function() {
+    if (this.selected)
+      return 'Selected : User selected';
+    else
+      return 'Selected : NO';
   };
 
   module.exports = FitFilePermission;

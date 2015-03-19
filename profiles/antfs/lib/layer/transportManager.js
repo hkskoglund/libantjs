@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var   EventEmitter = require('../../../util/events'),
+  var   EventEmitter = require('../../../../util/events'),
         ClientBeacon = require('./clientBeacon'),
 
         DownloadCommand = require('../command/downloadCommand'),
@@ -18,10 +18,12 @@ define(function(require, exports, module) {
         CRC = require('./crc'),
         State = require('./state'),
 
-        Directory = require('./directory');
+        Directory = require('../file/directory');
 
   function TransportManager(host)
   {
+    EventEmitter.call(this);
+
     this.host = host;
 
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
@@ -33,7 +35,6 @@ define(function(require, exports, module) {
     this.directory = new Directory();
 
   }
-
 
   TransportManager.prototype = Object.create(EventEmitter.prototype);
   TransportManager.prototype.constructor = TransportManager;

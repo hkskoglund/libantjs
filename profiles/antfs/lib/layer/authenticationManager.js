@@ -9,7 +9,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-var   EventEmitter = require('../../../util/events'),
+var   EventEmitter = require('../../../../util/events'),
       ClientBeacon = require('./clientBeacon'),
       AuthenticateCommand = require('../command/authenticateCommand'),
       AuthenticateResponse = require('../response/authenticateResponse'),
@@ -17,13 +17,14 @@ var   EventEmitter = require('../../../util/events'),
 
   function AuthenticationManager(host)
   {
+    EventEmitter.call(this);
+
     this.host = host;
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
     this.host.on('beacon',this.onBeacon.bind(this));
 
     this.once('authenticate',this.onAuthenticate);
   }
-
 
   AuthenticationManager.prototype = Object.create(EventEmitter.prototype);
   AuthenticationManager.prototype.constructor = AuthenticationManager;

@@ -59,6 +59,8 @@ define(function(require, exports, module) {
       if (this.lastModified !== this.SYSTEM_TIME_NOT_USED && this.lastModified >= 0x0FFFFFFF)
          this.lastModifiedDate = new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + this.lastModified * 1000);
 
+      console.log('directory',this.toString());
+
       // File decoding -> produce File or FitFile objects based on file type
 
       numberOfFiles = (data.byteLength-this.HEADER_LENGTH)/this.structureLength;
@@ -79,10 +81,8 @@ define(function(require, exports, module) {
 
         this.file.push(file);
 
-        console.log(fileNr, this.file[fileNr].toString());
+        console.log(this.file[fileNr].toString());
       }
-
-      console.log('directory',this.toString());
 
   };
 
