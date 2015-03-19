@@ -18,6 +18,11 @@ define(function(require, exports, module) {
 
   DownloadCommand.prototype.ID = 0x09;
 
+  DownloadCommand.prototype.FILE_INDEX = {
+    DIRECTORY : 0x00,
+    COMMAND_PIPE : 0xFFFE
+  };
+
   DownloadCommand.prototype.continueRequest = function (offset,crcSeed)
   {
     this.request = DownloadCommand.prototype.CONTINUE_TRANSFER;

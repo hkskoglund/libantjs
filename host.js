@@ -553,7 +553,7 @@ define(function(require, exports, module) {
 
         sequenceChannel = (sequenceNr << 5) | channel;
 
-        this.sendBurstTransferPacket(sequenceChannel, packet, function(err, msg) {
+        this.sendBurstTransferPacket(sequenceChannel, packet, function _sendBurstTransferPacket(err, msg) {
 
           if (txFailed) // Stop in case of failure
             return;
@@ -594,7 +594,7 @@ define(function(require, exports, module) {
       onTxCompleted = function(err, msg) {
         console.timeEnd('TXCOMPLETED');
         removeListeners();
-        cb(undefined);
+        //cb(undefined);
       },
 
       onTxStart = function(err, msg) {
@@ -603,10 +603,10 @@ define(function(require, exports, module) {
 
       onTxFailed = function(err, msg) {
         // If retry, must start with packet 0 again
-        //clearTimeout(sendNextPacketTimeoutID);
+
         txFailed = true;
         removeListeners();
-        cb(err, msg);
+        //cb(err, msg);
       }.bind(this);
 
     addListeners();

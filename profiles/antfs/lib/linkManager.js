@@ -9,8 +9,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var  MAX_ACKNOWLEDGED_RETRIES = 3,
-       EventEmitter = require('../../../util/events'),
+  var  EventEmitter = require('../../../util/events'),
        ClientBeacon = require('./clientBeacon'),
        LinkCommand = require('../command/linkCommand'),
        State = require('./state');
@@ -93,7 +92,7 @@ define(function(require, exports, module) {
     {
       this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
 
-      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed, MAX_ACKNOWLEDGED_RETRIES);
+      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed);
 
     }.bind(this.host);
 

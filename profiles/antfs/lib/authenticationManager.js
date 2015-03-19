@@ -9,8 +9,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  var MAX_ACKNOWLEDGED_RETRIES = 3,
-      EventEmitter = require('../../../util/events'),
+var   EventEmitter = require('../../../util/events'),
       ClientBeacon = require('./clientBeacon'),
       AuthenticateCommand = require('../command/authenticateCommand'),
       AuthenticateResponse = require('../response/authenticateResponse'),
@@ -93,7 +92,7 @@ define(function(require, exports, module) {
         this.authenticateCommand = new AuthenticateCommand();
         //this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
         if (this.host.beacon.authenticationType.isPassthrough())
-         this.host.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT, MAX_ACKNOWLEDGED_RETRIES);
+         this.host.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT);
 
   };
 

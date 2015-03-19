@@ -16,7 +16,9 @@ define(function(require, exports, module) {
         DownloadResponse = require('../response/downloadResponse'),
 
         CRC = require('./crc'),
-        State = require('./state');
+        State = require('./state'),
+
+        Directory = require('./directory');
 
   function TransportManager(host)
   {
@@ -27,6 +29,9 @@ define(function(require, exports, module) {
     this.host.on('burst', this.onBurst.bind(this));
 
     this.once('transport',this.onTransport);
+
+    this.directory = new Directory();
+
   }
 
 
@@ -62,8 +67,32 @@ define(function(require, exports, module) {
     if (responseId === DownloadResponse.prototype.ID) {
 
         response = new DownloadResponse(responseData);
+
+        if (response.length === response.fileSize) // All data received in one burst
+        {
+           this.emit('download',response.packets);
+         }
         console.log('download',response);
+
+        // TO DO : Stick together all blocks of a file (aggregated length === fileSize)
+        // request continuation download request if neccessary, calculate new crc seed
+        // this.emit('download',bytes)
+
     }
+  };
+
+  TransportManager.prototype.onSentToANT = function (err,msg)
+  {
+    if (err && this.log.logging)
+     this.log.log('error','Failed to send command to ANT chip',err);
+  };
+
+  TransportManager.prototype.getDirectory = function ()
+  {
+    this.once('download',this.directory.decode.bind(this.directory));
+    this.downloadCommand = new DownloadCommand(DownloadCommand.prototype.FILE_INDEX.DIRECTORY);
+
+    this.host.sendBurst(this.downloadCommand.serialize(), this.onSentToANT);
   };
 
 
@@ -71,15 +100,7 @@ define(function(require, exports, module) {
   {
     this.host.state.set(State.prototype.TRANSPORT);
 
-    var onSentToANT = function _onSentToANT(err,msg)
-    {
-      if (err && this.log.logging)
-       this.log.log('error','Failed to send DOWNLOAD command to ANT chip',err);
-    }.bind(this);
-
-    this.downloadCommand = new DownloadCommand();
-
-    this.host.sendBurst(this.downloadCommand.serialize(), onSentToANT);
+    this.getDirectory();
 
   };
 
