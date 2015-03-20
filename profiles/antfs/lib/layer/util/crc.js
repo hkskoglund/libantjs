@@ -28,7 +28,7 @@ define(function(require, exports, module) {
 
       CRC.prototype.updateCRC16 = function(crcSeed, data) {
 
-        for (var byteNr = 0, len = data.length; byteNr < len; byteNr++)
+        for (var byteNr = 0, len = data.byteLength; byteNr < len; byteNr++)
           crcSeed = this.get16(crcSeed, data[byteNr]);
 
         return crcSeed;

@@ -16,9 +16,16 @@ define(function(require, exports, module) {
         DownloadResponse = require('../command-response/downloadResponse'),
 
         CRC = require('./util/crc'),
+        crc = new CRC(),
+
+        Concat = require('../../../../util/concat'),
+        bufferUtil = new Concat(),
+
         State = require('./util/state'),
 
         Directory = require('../file/directory');
+
+
 
   function TransportManager(host)
   {
@@ -34,10 +41,17 @@ define(function(require, exports, module) {
 
     this.directory = new Directory();
 
+    this.download = {
+      command : [],
+      response : [],
+      totalPackets : new Uint8Array(0),
+    };
+
   }
 
   TransportManager.prototype = Object.create(EventEmitter.prototype);
   TransportManager.prototype.constructor = TransportManager;
+
 
   TransportManager.prototype.onReset = function ()
   {
@@ -57,7 +71,8 @@ define(function(require, exports, module) {
   {
     var responseData,
         responseId,
-        response;
+        response,
+        crcSeed;
 
     if (!this.host.beacon.forHost(this.host.hostSerialNumber))
        return;
@@ -68,16 +83,27 @@ define(function(require, exports, module) {
     if (responseId === DownloadResponse.prototype.ID) {
 
         response = new DownloadResponse(responseData);
+        this.download.response.push(response);
 
-        if (response.length === response.fileSize) // All data received in one burst
+        if (response.response === DownloadResponse.prototype.OK)
         {
-           this.emit('download',response.packets);
-         }
-        console.log('download',response);
 
-        // TO DO : Stick together all blocks of a file (aggregated length === fileSize)
-        // request continuation download request if neccessary, calculate new crc seed
-        // this.emit('download',bytes)
+          this.download.totalPackets = bufferUtil.concat(this.download.totalPackets,response.packets);
+
+          console.log('download state',this.download);
+
+          if (this.download.totalPackets.byteLength >= response.fileSize)
+          {
+             this.emit('download',this.download.totalPackets);
+
+           } else
+           {
+
+             this.continueDownload();
+           }
+       }
+
+        console.log('download',response.toString());
 
     }
   };
@@ -88,12 +114,53 @@ define(function(require, exports, module) {
      this.log.log('error','Failed to send command to ANT chip',err);
   };
 
+  TransportManager.prototype.sendDownload = function (command)
+  {
+
+    this.download.command.push(command);
+
+    this.host.sendBurst(command.serialize(), this.onSentToANT);
+  };
+
+
+  TransportManager.prototype.continueDownload = function ()
+  {
+
+   var command,
+       crcSeed;
+
+   command = new DownloadCommand();
+
+   // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
+
+   crcSeed = crc.calc16(this.download.totalPackets);
+
+   command.continueRequest(this.download.command[0].index,this.download.totalPackets.byteLength,crcSeed,
+                            this.download.command[0].maxBlockSize);
+
+   this.sendDownload(command);
+
+  };
+
+  TransportManager.prototype.newDownload = function (index,dataParser)
+  {
+    var command;
+
+     this.download.command = [];
+
+      command = new DownloadCommand(index);
+
+      if (typeof dataParser === 'function') // Hook up parser if requested
+      {
+        this.once('download',dataParser);
+      }
+
+      this.sendDownload(command);
+  };
+
   TransportManager.prototype.getDirectory = function ()
   {
-    this.once('download',this.directory.decode.bind(this.directory));
-    this.downloadCommand = new DownloadCommand(DownloadCommand.prototype.FILE_INDEX.DIRECTORY);
-
-    this.host.sendBurst(this.downloadCommand.serialize(), this.onSentToANT);
+    this.newDownload(0,this.directory.decode.bind(this.directory));
   };
 
 

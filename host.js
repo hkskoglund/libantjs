@@ -18,6 +18,7 @@ define(function(require, exports, module) {
     AdvancedBurstDataMessage = require('./messages/data/AdvancedBurstDataMessage'),
 
     Logger = require('./util/logger'),
+    Concat = require('./util/concat'),
     USBDevice = require('./usb/USBDevice'),
     Channel = require('./channel/channel'),
     Message = require('./messages/Message'),
@@ -648,20 +649,12 @@ define(function(require, exports, module) {
       iStartOfMessage = 0,
       metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
       message,
-      concatBuffer = function(buffer1, buffer2) // https://gist.github.com/72lions/4528834
-      {
-        var tmp = new Uint8Array(buffer1.byteLength + buffer2.byteLength);
-
-        tmp.set(new Uint8Array(buffer1), 0);
-        tmp.set(new Uint8Array(buffer2), buffer1.byteLength);
-
-        return tmp;
-      };
+      bufferUtil = new Concat();
 
     if (previousPacket && previousPacket.byteLength)
     // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
     {
-      data = concatBuffer(previousPacket, data);
+      data = bufferUtil.concat(previousPacket, data);
     }
 
     iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
@@ -779,7 +772,7 @@ define(function(require, exports, module) {
           if (message.sequenceNr === 0) // First packet (also for advanced burst)
             this.channel[message.channel].burst = new Uint8Array();
 
-          this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
+          this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
             this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
@@ -791,7 +784,7 @@ define(function(require, exports, module) {
           message = new AdvancedBurstDataMessage(msgBytes);
           this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], message);
 
-          this.channel[message.channel].burst = concatBuffer(this.channel[message.channel].burst, message.packet);
+          this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
             this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, message);

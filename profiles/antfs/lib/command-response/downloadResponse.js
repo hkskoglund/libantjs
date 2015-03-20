@@ -25,13 +25,18 @@ define(function(require, exports, module) {
 
   DownloadResponse.prototype.HEADER_LENGTH = 16;
   DownloadResponse.prototype.FOOTER_LENGTH = 8;
+  DownloadResponse.prototype.FOOTER_RESERVED_PAD_LENGTH = 6;
   DownloadResponse.prototype.CRC_LENGTH = 2;
+  DownloadResponse.prototype.PACKET_LENGTH = 8;
 
   DownloadResponse.prototype.deserialize = function (data)
   {
+      // overview p. 59 in spec of response format
 
-      var dv = new DataView(data.buffer);
-
+      var dv = new DataView(data.buffer),
+          iStart,
+          iEnd;
+  
       // HEADER
 
       // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
@@ -47,11 +52,14 @@ define(function(require, exports, module) {
 
       // DATA
 
-      this.packets = data.subarray(DownloadResponse.prototype.HEADER_LENGTH,-DownloadResponse.prototype.FOOTER_LENGTH);
+      iStart = DownloadResponse.prototype.HEADER_LENGTH;
+      iEnd = DownloadResponse.prototype.HEADER_LENGTH + this.length; // we are optimistic and trust length
+
+      this.packets = data.subarray(iStart,iEnd);
 
       // FOOTER
 
-      this.CRC = dv.getUint16(data.buffer.byteLength-DownloadResponse.prototype.CRC_LENGTH,true);
+      this.CRC = data[data.byteLength-1] << 8 | data[data.byteLength - 2];
 
   };
 
@@ -70,7 +78,7 @@ define(function(require, exports, module) {
       case DownloadResponse.prototype.CRC_INCORRECT : msg += 'CRC incorrect'; break;
     }
 
-    return msg + ' | Length ' + this.length+' | Offset ' + this.offset + ' | Size ' +
+    return msg + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
            this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
   };

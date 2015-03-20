@@ -8,9 +8,9 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function DownloadCommand(index,offset,request,crcSeed,maxBlockSize)
+  function DownloadCommand(index,offset,initialRequest,crcSeed,maxBlockSize)
   {
-      this.request(index,offset,request,crcSeed,maxBlockSize);
+      this.request(index,offset,initialRequest,crcSeed,maxBlockSize);
   }
 
   DownloadCommand.prototype.CONTINUE_TRANSFER = 0x00;
@@ -23,18 +23,18 @@ define(function(require, exports, module) {
     COMMAND_PIPE : 0xFFFE
   };
 
-  DownloadCommand.prototype.continueRequest = function (offset,crcSeed)
+  DownloadCommand.prototype.continueRequest = function (index,offset,crcSeed,maxBlockSize)
   {
-    this.request = DownloadCommand.prototype.CONTINUE_TRANSFER;
-    this.offset = offset;
-    this.crcSeed = crcSeed;
+    this.request(index,offset,DownloadCommand.prototype.CONTINUE_TRANSFER,crcSeed,maxBlockSize);
   };
 
-  DownloadCommand.prototype.request = function (index,offset,request,crcSeed,maxBlockSize)
+  DownloadCommand.prototype.request = function (index,offset,initialRequest,crcSeed,maxBlockSize)
   {
     this.index = index || 0;
     this.offset = offset || 0;
-    this.request = request || DownloadCommand.prototype.NEW_TRANSFER;
+    if (initialRequest === undefined)
+      initialRequest = DownloadCommand.prototype.NEW_TRANSFER;
+    this.initialRequest = initialRequest;
     this.crcSeed = crcSeed || 0;
     this.maxBlockSize = maxBlockSize || 0; // 0 = "host do not wish to limit the block size"
   };
@@ -50,7 +50,7 @@ define(function(require, exports, module) {
       dv.setUint16(2,this.index,true);
       dv.setUint32(4,this.offset,true);
       command[8] = 0;
-      command[9] = this.request;
+      command[9] = this.initialRequest;
       dv.setUint16(10,this.crcSeed,true);
       dv.setUint32(12,this.maxBlockSize,true);
 
