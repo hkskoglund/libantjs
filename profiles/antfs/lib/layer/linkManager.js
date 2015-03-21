@@ -48,53 +48,43 @@ define(function(require, exports, module) {
   LinkManager.prototype.onLink = function ()
   {
 
-    var authentication_RF = this.host.authenticationManager.getAuthenticationRF();
+    var authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
 
-    var onLinkCompleted = function _onLinkSuccess(err,msg) {
-
-                           // LINK is received by client ANT stack now, and client will switch frequency to
-                           // the requested frequency on the link command and start advertising authentication beacon
-
-                            if (this.host.frequency !== authentication_RF) {
-
-                              this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-                                  function _switchFreq(err,msg) {
-                                    if (!err && this.log.logging)
-                                      this.log.log('log','Switched frequency to '+(2400+authentication_RF)+' MHz');
-                                  }.bind(this.host));
-                              }
-
-                            // In case client drops to link layer again we must be prepared again
-
-                             this.once('link',this.onLink);
-
-                        }.bind(this),
-
-      onLinkFailed = function _onLinkFail(err,msg)
-                      {
-
-                        if (this.log.logging)
-                          this.log.log('log','Failed to send LINK command to client');
-
-                        this.once('link',this.onLink);
-
-                      }.bind(this.host),
-
-     onSentToANT = function _onSentToANT(err,msg)
+     onSentToClient = function _onSentToClient(err, RFevent)
      {
-       if (err && this.log.logging) {
-          this.log.log('error','Failed to send LINK command to ANT chip',err);
+       if (err ) {
 
-          this.once('link',this.onLink);
+         if (this.log.logging)
+          this.log.log('error','Failed to send LINK command to client',err);
+
+
+        } else {
+
+          // LINK is received by client ANT stack now, and client will switch frequency to
+          // the requested frequency on the link command and start advertising authentication beacon
+
+           if (this.host.frequency !== authentication_RF) {
+
+             this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+                 function _switchFreq(err,msg) {
+                   if (!err && this.log.logging)
+                     this.log.log('log','Switched frequency to '+(2400+authentication_RF)+' MHz');
+                 }.bind(this.host));
+             }
+
         }
 
-     }.bind(this.host),
+        // In case client drops to link layer again we must be prepared again
+
+         this.once('link',this.onLink);
+
+     }.bind(this),
 
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err,repsonse)
     {
       this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
 
-      this.sendAcknowledged(this.linkCommand.serialize(), onSentToANT, onLinkCompleted, onLinkFailed);
+      this.sendAcknowledged(this.linkCommand.serialize(), onSentToClient);
 
     }.bind(this.host);
 

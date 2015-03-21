@@ -314,70 +314,8 @@ define(function(require, exports, module) {
     this.host.sendBroadcastData(this.channel, broadcastData, callback);
   };
 
-  Channel.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed) {
-
-    var MAX_RETRIES = 3,
-
-      onCompleted = function _onComplete ()
-      {
-
-         this.removeListener('EVENT_TRANSFER_TX_FAILED',onFailed);
-         this.removeListener('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
-
-         if (typeof onTxCompleted === 'function')
-          onTxCompleted.call(this);
-
-      }.bind(this),
-
-      onRxFailGotoSearch = function _onRxFailGotoSearch()
-      {
-
-        this.removeListener('EVENT_TRANSFER_TX_FAILED', onFailed);
-        this.removeListener('EVENT_TRANSFER_TX_COMPLETED', onCompleted);
-
-      }.bind(this),
-
-       onFailed = function _onFailed ()
-       {
-           if (MAX_RETRIES && (++retry <= MAX_RETRIES))
-           {
-
-             this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
-             retrySend();
-
-           } else {
-
-             this.removeListener('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
-             this.removeListener('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
-
-             if (typeof onTxFailed === 'function')
-               onTxFailed.call(this);
-           }
-
-       }.bind(this),
-
-       retry=0,
-
-       retrySend = function _retrySend()
-       {
-
-         this.host.sendAcknowledgedData(this.channel, ackData, function _sentToANT(err,msg){
-
-           if (!err) {
-             this.once('EVENT_TRANSFER_TX_COMPLETED',onCompleted);
-             this.once('EVENT_TRANSFER_TX_FAILED', onFailed);
-           }
-
-            callback(err,msg);
-
-          }.bind(this));
-
-       }.bind(this);
-
-      this.once('EVENT_RX_FAIL_GO_TO_SEARCH', onRxFailGotoSearch);
-
-      retrySend();
-
+  Channel.prototype.sendAcknowledged = function(ackData, callback) {
+    this.host.sendAcknowledgedData(this.channel, ackData, callback);
   };
 
   Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {

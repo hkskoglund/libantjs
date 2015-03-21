@@ -25,8 +25,6 @@ define(function(require, exports, module) {
 
     Directory = require('../file/directory');
 
-
-
   function TransportManager(host) {
 
     EventEmitter.call(this);
@@ -44,17 +42,10 @@ define(function(require, exports, module) {
 
     this.directory = new Directory(undefined,host);
 
-    this.downloadSession = {
-      command: [],
-      response: [],
-      packets: new Uint8Array(0),
-    };
-
   }
 
   TransportManager.prototype = Object.create(EventEmitter.prototype);
   TransportManager.prototype.constructor = TransportManager;
-
 
   TransportManager.prototype.onReset = function() {
     this.removeAllListeners('transport');
@@ -161,10 +152,14 @@ define(function(require, exports, module) {
   TransportManager.prototype.newDownload = function(index, dataParser) {
     var command;
 
-    this.downloadSession.command = [];
+    this.downloadSession =  {
+      command: [],
+      response: [],
+      packets: new Uint8Array(0),
+    };
 
     command = new DownloadCommand(index);
-    //command.setMaxBlockSize(8);
+    command.setMaxBlockSize(8);
 
     if (typeof dataParser === 'function') // Hook up parser if requested
     {
@@ -177,7 +172,6 @@ define(function(require, exports, module) {
   TransportManager.prototype.getDirectory = function() {
     this.newDownload(0, this.directory.decode.bind(this.directory));
   };
-
 
   TransportManager.prototype.onTransport = function() {
     console.log('previos download',this.downloadSession);

@@ -20,6 +20,10 @@ define(function(require, exports, module) {
     this.content = new Uint8Array(data.byteLength + 1);
     this.content[0] = channel;
     this.content.set(data, 1);
+
+    this.channel = channel;
+    this.payload = data;
+
   };
 
   // Spec. p. 91

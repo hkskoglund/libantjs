@@ -259,11 +259,17 @@ define(function(require, exports, module) {
     0x72: 'advburstdata'
   };
 
-  Message.prototype.NO_REPLY_MESSAGE = [
+/*  Message.prototype.NO_REPLY_MESSAGE = [
 
     Message.prototype.SLEEP_MESSAGE,
 
     Message.prototype.BROADCAST_DATA,
+    Message.prototype.ACKNOWLEDGED_DATA,
+    Message.prototype.BURST_TRANSFER_DATA,
+    Message.prototype.ADVANCED_BURST_TRANSFER_DATA
+  ]; */
+
+  Message.prototype.ACK_MESSAGE = [
     Message.prototype.ACKNOWLEDGED_DATA,
     Message.prototype.BURST_TRANSFER_DATA,
     Message.prototype.ADVANCED_BURST_TRANSFER_DATA

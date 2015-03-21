@@ -75,7 +75,7 @@ define(function(require, exports, module) {
     RxScanModeProfile = require('./profiles/RxScanMode'),
 
     UsbLib = require('./usb/usb'),
-    usb,  // Don't expose usb interface to higher level code, use wrappers instead on host
+    usb, // Don't expose usb interface to higher level code, use wrappers instead on host
 
     MAX_CHAN = 8,
     previousPacket;
@@ -119,35 +119,34 @@ define(function(require, exports, module) {
   });
 
   Host.prototype.ADVANCED_BURST = {
-    ENABLE : 0x01,
-    DISABLE : 0x02,
-    MAX_PACKET_8BYTES : 0x01,
-    MAX_PACKET_16BYTES : 0x02,
-    MAX_PACKET_24BYTES : 0x03
+    ENABLE: 0x01,
+    DISABLE: 0x02,
+    MAX_PACKET_8BYTES: 0x01,
+    MAX_PACKET_16BYTES: 0x02,
+    MAX_PACKET_24BYTES: 0x03
   };
 
   // Send a message to ANT
   Host.prototype.sendMessage = function(message, callback) {
 
-  var messageReceived = false,
+    var messageReceived = false,
       timeout = 500,
-      intervalNoMessageReceivedID,
+      intervalNoResponse,
       retry = 0,
       MAX_TRIES = 3,
       msgBytes,
       errMsg,
-      noReply,
       configMessage,
       requestMessage,
       resetMessage,
       openCloseMessage,
+      ackMessage,
       messageStr,
 
-      lastBurstPacket,
 
-      onReply = function _onReply(message) {
+      onResponse = function _onResponse(message) {
 
-        clearInterval(intervalNoMessageReceivedID);
+        clearInterval(intervalNoResponse);
 
         if (this.log.logging) this.log.log('log', message.toString());
 
@@ -155,68 +154,84 @@ define(function(require, exports, module) {
 
       }.bind(this),
 
-      onSentMessage = function _onSentMessage(error) {
-
-        if (error) {
-          if (!noReply) clearInterval(intervalNoMessageReceivedID);
-          if (this.log.logging) {
-            this.log.log('error', 'TX failed of ' + message.toString(), error);
-          }
-          callback(error);
-        } else {
-          if (noReply)
-            callback(error);
-          // on success -> onReply should be called
-
-        }
-
-      }.bind(this),
-
-      onNoMessageReceived = function _onNoMessageReceived() {
+      onNoResponse = function _onNoResponse() {
 
         retry++;
 
         if (this.log.logging) this.log.log('warn', 'No reply in ' + timeout + ' ms. Retry ' + retry + ' ' + messageStr);
 
         if (retry < MAX_TRIES) {
-          usb.transfer(msgBytes, onSentMessage);
+          usb.transfer(msgBytes, onSentToANT);
         } else {
-          clearInterval(intervalNoMessageReceivedID);
+          clearInterval(intervalNoResponse);
           errMsg = 'Received no response after sending ' + messageStr + ' ' + retry + ' times';
           if (this.log.logging) this.log.log('error', errMsg);
           callback(new Error(errMsg));
         }
+      }.bind(this),
+
+      onSentToANT = function _onSentToANT(error, msg) {
+
+        if (configMessage || openCloseMessage || requestMessage || resetMessage)
+          clearInterval(intervalNoResponse);
+
+        if (error) {
+
+          if (this.log.logging) {
+            this.log.log('error', 'TX failed of ' + message.toString(), error);
+          }
+
+          callback(error);
+
+        } else {
+
+          // Calls callback normally for messages that don't wait for events
+          // i.e the callback is called * after * receiving event TX_COMPLETE/TX-FAILED for an
+          // acknowledged data message
+
+          if (!ackMessage && !(configMessage || openCloseMessage || requestMessage || resetMessage))
+            callback(error, msg);
+
+        }
+
       }.bind(this);
 
-    messageStr = message.toString();
-
     // Spec. p 54
-    noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
+    //noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
     configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
     requestMessage = (message.id === Message.prototype.REQUEST);
     resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
     openCloseMessage = (Message.prototype.OPEN_CLOSE_MESSAGE.indexOf(message.id) !== -1);
+    ackMessage = (Message.prototype.ACK_MESSAGE.indexOf(message.id) !== -1);
 
-    if (!noReply) {
+    messageStr = message.toString();
 
-      if (this.log.logging) {
-        this.log.log('log', 'Sending ' + messageStr);
-      }
+    if (this.log.logging) {
+      this.log.log('log', 'Sending ' + messageStr);
+    }
+
+    // Setup event listeners for RESPONSE_NO_ERROR, request response and notification startup
+
+    if (configMessage || openCloseMessage || requestMessage || resetMessage) {
 
       if (configMessage || openCloseMessage) {
-        this.channel[message.getContent()[0]].once('RESPONSE_NO_ERROR', onReply);
+
+        this.channel[message.getContent()[0]].once('RESPONSE_NO_ERROR', onResponse);
       } else if (requestMessage) {
-        this.once(Message.prototype.MESSAGE[message.getRequestId()], onReply);
+
+        this.once(Message.prototype.MESSAGE[message.getRequestId()], onResponse);
       } else if (resetMessage) {
-        this.once(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], onReply);
+
+        this.once(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], onResponse);
+
       }
 
-      intervalNoMessageReceivedID = setInterval(onNoMessageReceived, timeout);
+      intervalNoResponse = setInterval(onNoResponse, timeout);
     }
 
     msgBytes = message.serialize();
 
-    usb.transfer(msgBytes, onSentMessage);
+    usb.transfer(msgBytes, onSentToANT);
   };
 
   Host.prototype.EVENT = {
@@ -228,10 +243,12 @@ define(function(require, exports, module) {
     //BROADCAST: 'broadcast',
     BURST: 'burst', // Total burst , i.e all burst packets are received
 
+    FAILED : 'EVENT_TRANSFER_TX_FAILED',
+    COMPLETED : 'EVENT_TRANSFER_TX_COMPLETED'
+
   };
 
-  Host.prototype.setChannel = function (channel)
-  {
+  Host.prototype.setChannel = function(channel) {
     this.channel[channel.channel] = channel;
   };
 
@@ -320,35 +337,32 @@ define(function(require, exports, module) {
   };
 
   // For convenience
-  Host.prototype.enableAdvancedBurst = function (maxPacketLength,callback)
-  {
+  Host.prototype.enableAdvancedBurst = function(maxPacketLength, callback) {
     var cb = callback,
-        packetLength;
+      packetLength;
 
 
     if (typeof maxPacketLength === 'function') {
       cb = maxPacketLength;
       packetLength = this.ADVANCED_BURST.MAX_PACKET_24BYTES;
-    }
-    else {
+    } else {
       packetLength = maxPacketLength;
     }
 
-    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE,packetLength,0,0,cb);
+    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE, packetLength, 0, 0, cb);
   };
 
-  Host.prototype.disableAdvancedBurst = function (callback)
-  {
-    this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE,this.ADVANCED_BURST.MAX_PACKET_24BYTES,0,0,callback);
+  Host.prototype.disableAdvancedBurst = function(callback) {
+    this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE, this.ADVANCED_BURST.MAX_PACKET_24BYTES, 0, 0, callback);
   };
 
-  Host.prototype.configAdvancedBurst = function(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount, callback) {
+  Host.prototype.configAdvancedBurst = function(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount, callback) {
     var cb = callback;
 
     if (typeof stallCount === 'function')
-     cb = stallCount;
+      cb = stallCount;
 
-    this.sendMessage(new ConfigureAdvancedBurstMessage(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount),cb);
+    this.sendMessage(new ConfigureAdvancedBurstMessage(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount), cb);
   };
 
   Host.prototype.getSerialNumber = function(callback) {
@@ -498,7 +512,40 @@ define(function(require, exports, module) {
   // Event TRANSFER_TX_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
   // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
   Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
+
+    var retry = 0,
+      MAX_RETRIES = 3,
+
+      onTxCompleted = function _onTxCompleted(RFevent) {
+
+        this.channel[channel].removeListener(this.EVENT.FAILED, retryAckData);
+
+        callback(undefined,RFevent);
+
+      }.bind(this),
+
+      retryAckData = function _retryAckData(RFevent) {
+        console.log('tx failed args', arguments);
+
+        retry++;
+
+        if (retry <= MAX_RETRIES) {
+
+          this.sendBroadcastData(channel, ackData, callback, true);
+
+        } else {
+
+          this.channel[channel].removeListener(this.EVENT.COMPLETED, onTxCompleted);
+
+          callback(RFevent,undefined);
+        }
+      }.bind(this);
+
+    this.channel[channel].once(this.EVENT.FAILED, retryAckData);
+    this.channel[channel].once(this.EVENT.COMPLETED, onTxCompleted);
+
     this.sendBroadcastData(channel, ackData, callback, true);
+
   };
 
   // Send an individual packet as part of a burst transfer
@@ -507,11 +554,9 @@ define(function(require, exports, module) {
 
     if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH) // Use ordinary burst if only 8-byte packets
     {
-        msg = new BurstDataMessage();
-    }
-    else
-    {
-       msg = new AdvancedBurstDataMessage();
+      msg = new BurstDataMessage();
+    } else {
+      msg = new AdvancedBurstDataMessage();
     }
 
     msg.encode(sequenceChannel, packet);
@@ -523,7 +568,7 @@ define(function(require, exports, module) {
   // EVENT_TRANSFER_TX_START - next channel period after message sent to device
   // EVENT_TRANSFER_TX_COMPLETED
   // EVENT_TRANSFER_TX_FAILED : After 5 retries
-  Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB,callback) {
+  Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callback) {
     var cb,
       numberOfPackets,
       packetLength,
@@ -533,6 +578,8 @@ define(function(require, exports, module) {
       packet,
       tmpPacket,
       txFailed = false,
+      retryNr = 0,
+      MAX_BURST_RETRIES = 3,
 
       sendPacket = function() {
 
@@ -577,25 +624,23 @@ define(function(require, exports, module) {
         });
       }.bind(this),
 
-      addListeners = function ()
-      {
+      addListeners = function() {
         this.channel[channel].once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
         this.channel[channel].once('EVENT_TRANSFER_TX_FAILED', onTxFailed);
         this.channel[channel].once('EVENT_TRANSFER_TX_START', onTxStart);
 
       }.bind(this),
 
-      removeListeners = function ()
-      {
-        this.channel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED',onTxCompleted);
-        this.channel[channel].removeListener('EVENT_TRANSFER_TX_FAILED',onTxFailed);
-        this.channel[channel].removeListener('EVENT_TRANSFER_TX_START',onTxStart);
+      removeListeners = function() {
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_FAILED', onTxFailed);
+        this.channel[channel].removeListener('EVENT_TRANSFER_TX_START', onTxStart);
       }.bind(this),
 
       onTxCompleted = function(err, msg) {
         console.timeEnd('TXCOMPLETED');
         removeListeners();
-        //cb(undefined);
+        cb(undefined, msg);
       },
 
       onTxStart = function(err, msg) {
@@ -603,11 +648,21 @@ define(function(require, exports, module) {
       },
 
       onTxFailed = function(err, msg) {
-        // If retry, must start with packet 0 again
-
         txFailed = true;
-        removeListeners();
-        //cb(err, msg);
+
+        retryNr++;
+        if (retryNr <= MAX_BURST_RETRIES) {
+          packetNr = 0;
+          sequenceNr = 0;
+          if (this.log.logging)
+            this.log.log('log', 'Retry ' + retryNr + ' burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
+
+          sendPacket();
+        } else {
+          removeListeners();
+          cb(err, msg);
+        }
+
       }.bind(this);
 
     addListeners();
@@ -617,11 +672,9 @@ define(function(require, exports, module) {
 
     if (typeof packetsPerURB === 'function') // Standard burst
     {
-     packetLength = Message.prototype.PAYLOAD_LENGTH;
-     cb = packetsPerURB;
-    }
-
-    else {
+      packetLength = Message.prototype.PAYLOAD_LENGTH;
+      cb = packetsPerURB;
+    } else {
 
       packetLength = Message.prototype.PAYLOAD_LENGTH * packetsPerURB;
       cb = callback;
@@ -630,17 +683,16 @@ define(function(require, exports, module) {
     numberOfPackets = Math.ceil(data.byteLength / packetLength);
 
     if (this.log.logging)
-      this.log.log('log', 'Sending burst, ' + numberOfPackets + ' packets, packet length '+packetLength+' channel ' + channel + ' ' + data.byteLength + ' bytes ');
+      this.log.log('log', 'Sending burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
     sendPacket();
 
   };
 
- // For compability with spec. interface 9.5.5.4 Advanced Burst Data 0x72
-  Host.prototype.sendAdvancedTransfer = function (channel, data, size, packetsPerURB,callback)
-  {
+  // For compability with spec. interface 9.5.5.4 Advanced Burst Data 0x72
+  Host.prototype.sendAdvancedTransfer = function(channel, data, size, packetsPerURB, callback) {
     // Note size ignored/not necessary
-     this.sendBurstTransfer(channel,data,packetsPerURB,callback);
+    this.sendBurstTransfer(channel, data, packetsPerURB, callback);
   };
 
   Host.prototype.deserialize = function(data) {
@@ -665,8 +717,8 @@ define(function(require, exports, module) {
 
       if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
 
-        if (this.log.logging) this.log.log('error', 'Invalid SYNC ' + msgBytes[Message.prototype.iSYNC]  +
-        ', discarding ' + data.length + ' bytes', data);
+        if (this.log.logging) this.log.log('error', 'Invalid SYNC ' + msgBytes[Message.prototype.iSYNC] +
+          ', discarding ' + data.length + ' bytes', data);
 
         return;
       }
@@ -688,7 +740,7 @@ define(function(require, exports, module) {
 
           break;
 
-        // Requested response
+          // Requested response
 
         case Message.prototype.CHANNEL_STATUS:
 
@@ -747,7 +799,7 @@ define(function(require, exports, module) {
 
           break;
 
-        // Data
+          // Data
 
         case Message.prototype.BROADCAST_DATA:
 
@@ -791,7 +843,7 @@ define(function(require, exports, module) {
 
           break;
 
-        // Channel responses or RF event
+          // Channel responses or RF event
 
         case Message.prototype.CHANNEL_RESPONSE:
 
@@ -808,9 +860,9 @@ define(function(require, exports, module) {
           message = 'Unable to parse received msg id ' + msgBytes[Message.prototype.iID];
 
           if (this.log.logging)
-            this.log.log('log', message,data);
+            this.log.log('log', message, data);
 
-            this.emit(this.EVENT.ERROR, message);
+          this.emit(this.EVENT.ERROR, message);
 
           break;
       }

@@ -156,8 +156,8 @@ define(function(require, exports, module) {
     this.on('beacon',onBeacon); // Wait for next beacon (has noticed that client is busy some time after a burst is received)
   };
 
-  Host.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed, maxRetries) {
-    this.sendDelayed(Channel.prototype.sendAcknowledged.bind(this,ackData, callback, onTxCompleted, onTxFailed, maxRetries));
+  Host.prototype.sendAcknowledged = function(ackData, callback, onTxCompleted, onTxFailed) {
+    this.sendDelayed(Channel.prototype.sendAcknowledged.bind(this,ackData, callback, onTxCompleted, onTxFailed));
   };
 
   Host.prototype.sendBurst = function (burstData, packetsPerURB,callback) {
