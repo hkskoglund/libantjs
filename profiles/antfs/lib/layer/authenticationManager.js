@@ -68,8 +68,9 @@ var   EventEmitter = require('../../../../util/events'),
     // http://stackoverflow.com/questions/4959975/generate-random-value-between-two-numbers-in-javascript
       var getRandomRF = function ()
           {
-            return Math.floor(Math.random()*(this.MAX_RF+1));
+            return Math.floor(Math.random() * (this.MAX_RF + 1));
           }.bind(this.host),
+          
           occupiedFrequency = [this.host.NET.FREQUENCY.ANTFS,this.host.NET.FREQUENCY['ANT+'],this.host.NET.FREQUENCY.DEFAULT],
           frequency = getRandomRF();
 

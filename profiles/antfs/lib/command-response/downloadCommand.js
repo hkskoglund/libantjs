@@ -23,6 +23,11 @@ define(function(require, exports, module) {
     COMMAND_PIPE : 0xFFFE
   };
 
+  DownloadCommand.prototype.setMaxBlockSize = function (maxBlockSize)
+  {
+    this.maxBlockSize = maxBlockSize;
+  };
+
   DownloadCommand.prototype.continueRequest = function (index,offset,crcSeed,maxBlockSize)
   {
     this.request(index,offset,DownloadCommand.prototype.CONTINUE_TRANSFER,crcSeed,maxBlockSize);

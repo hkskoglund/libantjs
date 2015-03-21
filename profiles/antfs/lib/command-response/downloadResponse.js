@@ -36,13 +36,13 @@ define(function(require, exports, module) {
       var dv = new DataView(data.buffer),
           iStart,
           iEnd;
-  
+
       // HEADER
 
       // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
       // data[1] should be 0x84;
 
-      this.response = data[2];
+      this.result = data[2];
 
       // data[3] should be 0x00
 
@@ -68,7 +68,7 @@ define(function(require, exports, module) {
 
     var msg = '';
 
-    switch (this.response)
+    switch (this.result)
     {
       case DownloadResponse.prototype.OK : msg += 'Request OK'; break;
       case DownloadResponse.prototype.NOT_EXIST : msg += 'Does not exist'; break;

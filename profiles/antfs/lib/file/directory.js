@@ -12,12 +12,17 @@ define(function(require, exports, module) {
   var FitFile = require('./fitFile'),
       File = require('./file');
 
-  function Directory(data)
+  function Directory(data,host)
   {
     if (data)
       this.decode(data);
 
     this.file = [];
+
+    this.host = host;
+    this.log = this.host.log;
+    this.logger = this.host.log.log.bind(this.host.log);
+
 
   }
 
@@ -59,11 +64,12 @@ define(function(require, exports, module) {
       if (this.lastModified !== this.SYSTEM_TIME_NOT_USED && this.lastModified >= 0x0FFFFFFF)
          this.lastModifiedDate = new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + this.lastModified * 1000);
 
-      console.log('directory',this.toString());
+      if (this.log.logging)
+        this.logger('log','directory',this.toString());
 
       // File decoding -> produce File or FitFile objects based on file type
 
-      numberOfFiles = (data.byteLength-this.HEADER_LENGTH)/this.structureLength;
+      numberOfFiles = (data.byteLength - this.HEADER_LENGTH) / this.structureLength;
 
       for (fileNr = 0; fileNr < numberOfFiles; fileNr++)
       {
@@ -81,7 +87,8 @@ define(function(require, exports, module) {
 
         this.file.push(file);
 
-        console.log(this.file[fileNr].toString());
+        if (this.log.logging)
+          this.logger('log',this.file[fileNr].toString());
       }
 
   };

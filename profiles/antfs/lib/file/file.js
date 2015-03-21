@@ -44,8 +44,16 @@ define(function(require, exports, module) {
 
   File.prototype.toString = function ()
   {
+    var typeStr;
 
-   return 'Index : ' + this.index + ' | Type : ' + this.type + ' | Identifier : ' +
+    if (this.type <= File.prototype.TYPE.MANUFACTURER_MAX)
+      typeStr = this.type + ' Manufacturer';
+    else if (this.type === File.prototype.TYPE.FIT)
+      typeStr = this.type + ' FIT';
+    else
+      typeStr = this.type.toString();
+
+   return 'Index : ' + this.index + ' | Type : ' + typeStr + ' | Identifier : ' +
                 this.identifier + ' | Type flags : 0x' + this.typeFlags.toString(16)  + ' | Permissions : ' +
                 this.permission.toString() +  ' | File size : ' + this.size;
   };
