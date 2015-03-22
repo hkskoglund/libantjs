@@ -144,9 +144,18 @@ define(function(require, exports, module) {
 
         }
 
+        console.log('events',this._events);
+
         // else control flow continuation should happend when receiving appropiate
-        // events like RESPONSE_NO_ERROR for msg. types configuration/open/close
-        // (see deserialization function)
+        // responses like:
+        //
+        //    RESPONSE_NO_ERROR for msg. types configuration/open/close or reqeusted
+        //    requested responses, like device serial number/ant version
+        //
+
+        if (message.id === Message.prototype.BURST_TRANSFER_DATA || message.id === Message.prototype.ADVANCED_BURST_TRANSFER_DATA)
+          callback(error,msg); // To transfer next packet in sequence
+
 
       }.bind(this);
 
@@ -505,7 +514,6 @@ define(function(require, exports, module) {
       }.bind(this),
 
       onTxFailed = function _onTxFailed(RFevent) {
-        console.log('tx failed args', arguments);
 
         retry++;
 
@@ -628,19 +636,25 @@ define(function(require, exports, module) {
       },
 
       onTxFailed = function(err, msg) {
+
         txFailed = true;
 
         retryNr++;
+
         if (retryNr <= MAX_BURST_RETRIES) {
+
           packetNr = 0;
           sequenceNr = 0;
+
           if (this.log.logging)
             this.log.log('log', 'Retry ' + retryNr + ' burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
           sendPacket();
         } else {
+
           removeListeners();
-          cb(err, msg);
+          cb(msg, undefined); // error msg should be EVENT_TRANSFER_TX_FAILED
+
         }
 
       }.bind(this);

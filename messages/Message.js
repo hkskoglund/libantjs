@@ -259,49 +259,6 @@ define(function(require, exports, module) {
     0x72: 'advburstdata'
   };
 
-/*  Message.prototype.NO_REPLY_MESSAGE = [
-
-    Message.prototype.SLEEP_MESSAGE,
-
-    Message.prototype.BROADCAST_DATA,
-    Message.prototype.ACKNOWLEDGED_DATA,
-    Message.prototype.BURST_TRANSFER_DATA,
-    Message.prototype.ADVANCED_BURST_TRANSFER_DATA
-  ]; */
-
-  Message.prototype.ACK_MESSAGE = [
-    Message.prototype.ACKNOWLEDGED_DATA,
-    Message.prototype.BURST_TRANSFER_DATA,
-    Message.prototype.ADVANCED_BURST_TRANSFER_DATA
-  ];
-
-  Message.prototype.OPEN_CLOSE_MESSAGE = [
-    Message.prototype.OPEN_CHANNEL,
-    Message.prototype.CLOSE_CHANNEL,
-    Message.prototype.OPEN_RX_SCAN_MODE
-  ];
-
-  Message.prototype.CONFIG_MESSAGE = [
-    Message.prototype.UNASSIGN_CHANNEL,
-    Message.prototype.ASSIGN_CHANNEL,
-    Message.prototype.SET_CHANNEL_ID,
-    Message.prototype.SET_CHANNEL_PERIOD,
-    Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT,
-    Message.prototype.SET_CHANNEL_RFFREQ,
-    Message.prototype.SET_NETWORK_KEY,
-    Message.prototype.SET_TRANSMIT_POWER,
-    Message.prototype.SET_SEARCH_WAVEFORM,
-    Message.prototype.SET_CHANNEL_TX_POWER,
-    Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT,
-    Message.prototype.SET_SERIAL_NUM_CHANNEL_ID,
-    Message.prototype.RXEXTMESGSENABLE,
-    Message.prototype.LIBCONFIG,
-    Message.prototype.SET_PROXIMITY_SEARCH,
-    Message.prototype.EVENT_BUFFER_CONFIGURATION,
-    Message.prototype.SET_CHANNEL_SEARCH_PRIORITY,
-    Message.prototype.CONFIGURE_ADVANCED_BURST
-  ];
-
   Message.prototype.MESSAGE = {
 
     // Control messages
