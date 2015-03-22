@@ -129,104 +129,31 @@ define(function(require, exports, module) {
   // Send a message to ANT
   Host.prototype.sendMessage = function(message, callback) {
 
-    var messageReceived = false,
-      timeout = 500,
-      intervalNoResponse,
-      retry = 0,
-      MAX_TRIES = 3,
-      msgBytes,
-      errMsg,
-      configMessage,
-      requestMessage,
-      resetMessage,
-      openCloseMessage,
-      ackMessage,
+    var msgBytes,
       messageStr,
 
-
-      onResponse = function _onResponse(message) {
-
-        clearInterval(intervalNoResponse);
-
-        if (this.log.logging) this.log.log('log', message.toString());
-
-        callback(undefined, message);
-
-      }.bind(this),
-
-      onNoResponse = function _onNoResponse() {
-
-        retry++;
-
-        if (this.log.logging) this.log.log('warn', 'No reply in ' + timeout + ' ms. Retry ' + retry + ' ' + messageStr);
-
-        if (retry < MAX_TRIES) {
-          usb.transfer(msgBytes, onSentToANT);
-        } else {
-          clearInterval(intervalNoResponse);
-          errMsg = 'Received no response after sending ' + messageStr + ' ' + retry + ' times';
-          if (this.log.logging) this.log.log('error', errMsg);
-          callback(new Error(errMsg));
-        }
-      }.bind(this),
-
       onSentToANT = function _onSentToANT(error, msg) {
-
-        if (configMessage || openCloseMessage || requestMessage || resetMessage)
-          clearInterval(intervalNoResponse);
 
         if (error) {
 
           if (this.log.logging) {
-            this.log.log('error', 'TX failed of ' + message.toString(), error);
+            this.log.log('error', 'TX failed of ' + messageStr, error);
           }
 
-          callback(error);
-
-        } else {
-
-          // Calls callback normally for messages that don't wait for events
-          // i.e the callback is called * after * receiving event TX_COMPLETE/TX-FAILED for an
-          // acknowledged data message
-
-          if (!ackMessage && !(configMessage || openCloseMessage || requestMessage || resetMessage))
-            callback(error, msg);
+          callback(error,msg); // call immediately on errors
 
         }
 
-      }.bind(this);
+        // else control flow continuation should happend when receiving appropiate
+        // events like RESPONSE_NO_ERROR for msg. types configuration/open/close
+        // (see deserialization function)
 
-    // Spec. p 54
-    //noReply = (Message.prototype.NO_REPLY_MESSAGE.indexOf(message.id) !== -1);
-    configMessage = (Message.prototype.CONFIG_MESSAGE.indexOf(message.id) !== -1);
-    requestMessage = (message.id === Message.prototype.REQUEST);
-    resetMessage = (message.id === Message.prototype.RESET_SYSTEM);
-    openCloseMessage = (Message.prototype.OPEN_CLOSE_MESSAGE.indexOf(message.id) !== -1);
-    ackMessage = (Message.prototype.ACK_MESSAGE.indexOf(message.id) !== -1);
+      }.bind(this);
 
     messageStr = message.toString();
 
     if (this.log.logging) {
       this.log.log('log', 'Sending ' + messageStr);
-    }
-
-    // Setup event listeners for RESPONSE_NO_ERROR, request response and notification startup
-
-    if (configMessage || openCloseMessage || requestMessage || resetMessage) {
-
-      if (configMessage || openCloseMessage) {
-
-        this.channel[message.getContent()[0]].once('RESPONSE_NO_ERROR', onResponse);
-      } else if (requestMessage) {
-
-        this.once(Message.prototype.MESSAGE[message.getRequestId()], onResponse);
-      } else if (resetMessage) {
-
-        this.once(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], onResponse);
-
-      }
-
-      intervalNoResponse = setInterval(onNoResponse, timeout);
     }
 
     msgBytes = message.serialize();
@@ -244,7 +171,9 @@ define(function(require, exports, module) {
     BURST: 'burst', // Total burst , i.e all burst packets are received
 
     FAILED : 'EVENT_TRANSFER_TX_FAILED',
-    COMPLETED : 'EVENT_TRANSFER_TX_COMPLETED'
+    COMPLETED : 'EVENT_TRANSFER_TX_COMPLETED',
+
+    OK : 'RESPONSE_NO_ERROR'
 
   };
 
@@ -311,33 +240,63 @@ define(function(require, exports, module) {
   };
 
   Host.prototype.resetSystem = function(callback) {
-    this.sendMessage(new ResetSystemMessage(), function _wait500msAfterReset() {
-      setTimeout(callback, 500);
+
+    var onNotificationStartup = function _onNotificationStartup(msg)
+    {
+        setTimeout(callback.bind(this,undefined,msg), 500);
+
+    }.bind(this);
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], onNotificationStartup);
+
+    this.sendMessage(new ResetSystemMessage(), function _onResetSent(err,msg) {
+      if (err) {
+        this.removeListener(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], onNotificationStartup);
+        callback(err,msg);
+      }
+
+      // else callback should be called in onNotificationStartup
     });
   };
 
   Host.prototype.getChannelId = function(channel, callback) {
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.SET_CHANNEL_ID], callback);
+
     this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), callback);
   };
 
   Host.prototype.getVersion = function(callback) {
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.ANT_VERSION], callback);
+
     this.sendMessage(new RequestMessage(undefined, Message.prototype.ANT_VERSION), callback);
   };
 
   Host.prototype.getCapabilities = function(callback) {
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.CAPABILITIES], callback);
+
     this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), callback);
   };
 
   Host.prototype.getAdvancedBurstCapabilities = function(callback) {
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES], callback);
+
     this.sendMessage(new RequestMessage(0x00, Message.prototype.ADVANCED_BURST_CAPABILITIES), callback);
   };
 
   Host.prototype.getAdvancedBurstConfiguration = function(callback) {
+
+    this.once(Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES], callback);
+
     this.sendMessage(new RequestMessage(0x01, Message.prototype.ADVANCED_BURST_CAPABILITIES), callback);
   };
 
   // For convenience
   Host.prototype.enableAdvancedBurst = function(maxPacketLength, callback) {
+
     var cb = callback,
       packetLength;
 
@@ -366,6 +325,7 @@ define(function(require, exports, module) {
   };
 
   Host.prototype.getSerialNumber = function(callback) {
+    this.once(Message.prototype.MESSAGE[Message.prototype.DEVICE_SERIAL_NUMBER], callback);
     this.sendMessage(new RequestMessage(undefined, Message.prototype.DEVICE_SERIAL_NUMBER), callback);
   };
 
@@ -374,38 +334,44 @@ define(function(require, exports, module) {
   };
 
   Host.prototype.getEventBufferConfiguration = function(callback) {
+    this.once(Message.prototype.MESSAGE[Message.prototype.EVENT_BUFFER_CONFIGURATION], callback);
     this.sendMessage(new RequestMessage(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION), callback);
   };
 
   Host.prototype.getChannelStatus = function(channel, callback) {
+    this.once(Message.prototype.MESSAGE[Message.prototype.CHANNEL_STATUS], callback);
     this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_STATUS), callback);
   };
 
   // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
   // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
   Host.prototype.libConfig = function(libConfig, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new LibConfigMessage(libConfig), callback);
   };
 
   // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
-  Host.prototype.unAssignChannel = function(channelNr, callback) {
-    this.sendMessage(new UnAssignChannelMessage(channelNr), callback);
+  Host.prototype.unAssignChannel = function(channel, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
+    this.sendMessage(new UnAssignChannelMessage(channel), callback);
   };
 
   /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters
      to defaults. Assign channel command should be issued before any other channel configuration messages
      (p. 64 ANT Message Protocol And Usaga Rev 50) -> also sets defaults values for RF, period, tx power, search timeout p.22 */
-  Host.prototype.assignChannel = function(number, channelType, networkNumber, extendedAssignment, callback) {
+  Host.prototype.assignChannel = function(channel, channelType, networkNumber, extendedAssignment, callback) {
     var cb,
       configurationMsg;
 
     if (typeof extendedAssignment === "function") {
       cb = extendedAssignment; // If no extended assignment use argument as callback
-      configurationMsg = new AssignChannelMessage(number, channelType, networkNumber);
+      configurationMsg = new AssignChannelMessage(channel, channelType, networkNumber);
     } else {
       cb = callback;
-      configurationMsg = new AssignChannelMessage(number, channelType, networkNumber, extendedAssignment);
+      configurationMsg = new AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment);
     }
+
+    this.channel[channel].once(this.EVENT.OK,cb);
 
     this.sendMessage(configurationMsg, cb);
 
@@ -415,15 +381,18 @@ define(function(require, exports, module) {
    0 = wildcard "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
   */
   Host.prototype.setChannelId = function(channel, deviceNum, deviceType, transmissionType, callback) {
+    this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), callback);
   };
 
   // Uses the lower 2 bytes of the device serial number as channel Id.
   Host.prototype.setSerialNumChannelId = function(channel, deviceType, transmissionType, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType), callback);
   };
 
   Host.prototype.setChannelPeriod = function(channel, messagePeriod, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), callback);
   };
 
@@ -432,51 +401,62 @@ define(function(require, exports, module) {
   // "If the low priority search times out, the module will switch to high priority mode"
   Host.prototype.setLowPriorityChannelSearchTimeout = function(channel, searchTimeout, callback) {
     // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), callback);
   };
 
   // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite,
   //0 = disable high priority search mode (default search timeout is 25 seconds)
   Host.prototype.setChannelSearchTimeout = function(channel, searchTimeout, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), callback);
   };
 
   // Set the RF frequency, i.e 66 = 2466 MHz
   Host.prototype.setChannelRFFreq = function(channel, RFFreq, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq), callback);
   };
 
   // Set network key for specific net
   Host.prototype.setNetworkKey = function(netNumber, key, callback) {
+  this.channel[0].once(this.EVENT.OK,callback);
+
     this.sendMessage(new SetNetworkKeyMessage(netNumber, key), callback);
   };
 
   // Set search waveform individual channel
   Host.prototype.setSearchWaveform = function(channel, searchWaveform, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), callback);
   };
 
   // Set transmit power for all channels
   Host.prototype.setTransmitPower = function(transmitPower, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetTransmitPowerMessage(transmitPower), callback);
   };
 
   // Set transmit power for individual channel
   Host.prototype.setChannelTxPower = function(channel, transmitPower, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), callback);
   };
 
   // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
   Host.prototype.setProximitySearch = function(channel, searchThreshold, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), callback);
   };
 
   Host.prototype.openRxScanMode = function(channel, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new OpenRxScanModeMessage(channel), callback);
   };
 
   // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
   Host.prototype.openChannel = function(channel, callback) {
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new OpenChannelMessage(channel), callback);
   };
 
@@ -485,7 +465,7 @@ define(function(require, exports, module) {
 
     // Wait for EVENT_CHANNEL_CLOSED ?
     // If channel status is tracking -> can get broadcast data packet before event channel closed packet
-
+  this.channel[channel].once(this.EVENT.OK,callback);
     this.sendMessage(new CloseChannelMessage(channelNumber), callback);
 
   };
@@ -518,13 +498,13 @@ define(function(require, exports, module) {
 
       onTxCompleted = function _onTxCompleted(RFevent) {
 
-        this.channel[channel].removeListener(this.EVENT.FAILED, retryAckData);
+        this.channel[channel].removeListener(this.EVENT.FAILED, onTxFailed);
 
         callback(undefined,RFevent);
 
       }.bind(this),
 
-      retryAckData = function _retryAckData(RFevent) {
+      onTxFailed = function _onTxFailed(RFevent) {
         console.log('tx failed args', arguments);
 
         retry++;
@@ -541,7 +521,7 @@ define(function(require, exports, module) {
         }
       }.bind(this);
 
-    this.channel[channel].once(this.EVENT.FAILED, retryAckData);
+    this.channel[channel].once(this.EVENT.FAILED,  onTxFailed);
     this.channel[channel].once(this.EVENT.COMPLETED, onTxCompleted);
 
     this.sendBroadcastData(channel, ackData, callback, true);
@@ -745,35 +725,47 @@ define(function(require, exports, module) {
         case Message.prototype.CHANNEL_STATUS:
 
           message = new ChannelStatusMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
           break;
 
         case Message.prototype.ANT_VERSION:
 
           message = new VersionMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+
+          if (this.log.logging)
+            this.log.log('log',message.toString());
+
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
           break;
 
         case Message.prototype.CAPABILITIES:
 
           message = new CapabilitiesMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+
+          if (this.log.logging)
+            this.log.log('log',message.toString());
+
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined,message);
 
           break;
 
         case Message.prototype.DEVICE_SERIAL_NUMBER:
 
           message = new DeviceSerialNumberMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+
+          if (this.log.logging)
+            this.log.log('log',message.toString());
+
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined,message);
 
           break;
 
         case Message.prototype.EVENT_BUFFER_CONFIGURATION:
 
           message = new ConfigureEventBufferMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined,message);
 
           break;
 
@@ -788,14 +780,14 @@ define(function(require, exports, module) {
               break;
           }
 
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
           break;
 
         case Message.prototype.SET_CHANNEL_ID:
 
           message = new ChannelIdMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], message);
+          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
           break;
 
@@ -849,9 +841,10 @@ define(function(require, exports, module) {
 
           var channelResponseMsg = new ChannelResponseMessage(msgBytes);
 
-          console.log('RESPONSE', ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
+          if (this.log.logging)
+            this.log.log('log', ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code]);
 
-          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], channelResponseMsg.response);
+          this.channel[channelResponseMsg.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[channelResponseMsg.response.code], undefined, channelResponseMsg.response);
 
           break;
 

@@ -94,7 +94,7 @@ define(function(require, exports, module) {
   }.bind(this);
 
     this.getSerialNumber(function _getSN(err,serialNumberMsg) {
-
+      
       if (!err)
       {
         this.hostSerialNumber = serialNumberMsg.serialNumber;

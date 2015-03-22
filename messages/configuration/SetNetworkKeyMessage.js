@@ -10,10 +10,10 @@ define(function(require, exports, module) {
 
   var Message = require('../Message');
 
-  function SetNetworkKeyMessage(channel, key) {
+  function SetNetworkKeyMessage(net, key) {
 
     Message.call(this, undefined, Message.prototype.SET_NETWORK_KEY);
-    this.encode(channel, key);
+    this.encode(net, key);
 
   }
 
@@ -21,13 +21,13 @@ define(function(require, exports, module) {
 
   SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
 
-  SetNetworkKeyMessage.prototype.encode = function(channel, key) {
+  SetNetworkKeyMessage.prototype.encode = function(net, key) {
     var msgBuffer = new Uint8Array(9);
 
-    msgBuffer[0] = channel;
+    msgBuffer[0] = net;
     msgBuffer.set(key, 1);
 
-    this.channel = channel;
+    this.net = net;
     this.key = key;
 
     this.setContent(msgBuffer);
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
   };
 
   SetNetworkKeyMessage.prototype.toString = function() {
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " key " + this.key;
+    return Message.prototype.toString.call(this) + " Net " + this.net + " key " + this.key;
   };
 
   module.exports = SetNetworkKeyMessage;
