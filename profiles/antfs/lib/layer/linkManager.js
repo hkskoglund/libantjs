@@ -61,11 +61,11 @@ define(function(require, exports, module) {
         } else {
 
           // LINK is received by client ANT stack now, and client will switch frequency to
-          // the requested frequency on the link command and start advertising authentication beacon
+          // the requested frequency by the link command and start advertising the authentication beacon
 
            if (this.host.frequency !== authentication_RF) {
 
-             this.switchFrequencyAndPeriod(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+             this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
                  function _switchFreq(err,msg) {
                    if (!err && this.log.logging)
                      this.log.log('log','Switched frequency to '+(2400+authentication_RF)+' MHz');
@@ -82,7 +82,7 @@ define(function(require, exports, module) {
 
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err,repsonse)
     {
-      this.linkCommand =  new LinkCommand(authentication_RF,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,this.hostSerialNumber);
+      this.linkCommand =  new LinkCommand(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
       this.sendAcknowledged(this.linkCommand.serialize(), onSentToClient);
 
@@ -96,7 +96,7 @@ define(function(require, exports, module) {
 
   };
 
-  LinkManager.prototype.switchFrequencyAndPeriod = function (frequency,period,callback)
+  LinkManager.prototype.switchFrequencyAndPeriod = function (frequency, period, callback)
   {
 
     var newPeriod;
@@ -110,7 +110,7 @@ define(function(require, exports, module) {
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8  : newPeriod = 4096;   break;
     }
 
-    this.host.setFrequency(frequency, function _setFreq(err,msg)
+    this.host.setFrequency(frequency, function _setFreq(err, msg)
     {
       if (err)
        {
@@ -120,7 +120,7 @@ define(function(require, exports, module) {
          return;
        }
 
-      this.setPeriod(newPeriod, function _setPeriod(err,msg)
+      this.setPeriod(newPeriod, function _setPeriod(err, msg)
       {
         if (err)
          {
