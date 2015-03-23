@@ -32,6 +32,11 @@ define(function(require, exports, module) {
       return command;
   };
 
+  Link.prototype.toString = function ()
+  {
+    return 'Link ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host SN ' + this.hostSerialNumber;
+  };
+
   module.exports = Link;
   return module.exports;
 

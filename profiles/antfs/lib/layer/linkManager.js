@@ -84,7 +84,7 @@ define(function(require, exports, module) {
     {
       this.linkCommand =  new LinkCommand(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
-      this.sendAcknowledged(this.linkCommand.serialize(), onSentToClient);
+      this.sendAcknowledged(this.linkCommand, onSentToClient);
 
     }.bind(this.host);
 

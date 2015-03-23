@@ -34,6 +34,11 @@ define(function(require, exports, module) {
       return command;
   };
 
+  DisconnectCommand.prototype.toString = function ()
+  {
+    return 'DISCONNECT ' + ' time duration ' + this.timeDuration + ' app specific duration ' + this.appSpecificDuration;
+  };
+
   module.exports = DisconnectCommand;
   return module.exports;
 

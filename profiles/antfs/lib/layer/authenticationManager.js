@@ -70,7 +70,7 @@ var   EventEmitter = require('../../../../util/events'),
           {
             return Math.floor(Math.random() * (this.MAX_RF + 1));
           }.bind(this.host),
-          
+
           occupiedFrequency = [this.host.NET.FREQUENCY.ANTFS,this.host.NET.FREQUENCY['ANT+'],this.host.NET.FREQUENCY.DEFAULT],
           frequency = getRandomRF();
 
@@ -94,7 +94,7 @@ var   EventEmitter = require('../../../../util/events'),
         this.authenticateCommand = new AuthenticateCommand();
         //this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
         if (this.host.beacon.authenticationType.isPassthrough())
-         this.host.sendAcknowledged(this.authenticateCommand.serialize(), onSentToANT);
+         this.host.sendAcknowledged(this.authenticateCommand, onSentToANT);
 
   };
 

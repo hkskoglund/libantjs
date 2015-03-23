@@ -118,16 +118,16 @@ define(function(require, exports, module) {
     }
   };
 
-  TransportManager.prototype.onSentToANT = function(err, msg) {
+  TransportManager.prototype.onSentToClient = function(err, msg) {
     if (err && this.log.logging)
-      this.log.log('error', 'Failed to send command to ANT chip', err);
+      this.log.log('error', 'Failed to send command to client', err);
   };
 
   TransportManager.prototype.sendDownload = function(command) {
 
     this.downloadSession.command.push(command);
 
-    this.host.sendBurst(command.serialize(), this.onSentToANT);
+    this.host.sendBurst(command, this.onSentToClient);
   };
 
 
@@ -149,7 +149,7 @@ define(function(require, exports, module) {
 
   };
 
-  TransportManager.prototype.newDownload = function(index, dataParser) {
+  TransportManager.prototype.get = function(index) {
     var command;
 
     this.downloadSession =  {
@@ -161,16 +161,22 @@ define(function(require, exports, module) {
     command = new DownloadCommand(index);
     command.setMaxBlockSize(8);
 
-    if (typeof dataParser === 'function') // Hook up parser if requested
+    if (index === DownloadCommand.prototype.FILE_INDEX.DIRECTORY)
     {
-      this.once('download', dataParser);
+      this.once('download',this.onDirectory.bind(this));
     }
 
     this.sendDownload(command);
   };
 
-  TransportManager.prototype.getDirectory = function() {
-    this.newDownload(0, this.directory.decode.bind(this.directory));
+  TransportManager.prototype.downloadFiles = function (reqDownload)
+  {
+    this.requestDownload = reqDownload; // file index [1,2,3]
+  };
+
+  TransportManager.prototype.onDirectory = function (directoryBytes)
+  {
+    this.directory.decode(directoryBytes);
   };
 
   TransportManager.prototype.onTransport = function() {
@@ -178,7 +184,7 @@ define(function(require, exports, module) {
 
     this.host.state.set(State.prototype.TRANSPORT);
 
-    this.getDirectory();
+    this.get(DownloadCommand.prototype.FILE_INDEX.DIRECTORY);
 
   };
 

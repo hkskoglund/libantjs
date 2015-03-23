@@ -33,6 +33,7 @@ define(function(require, exports, module) {
 
     this.hostName = 'antfsjs';
 
+    console.log('this before linkmanager',this);
     this.linkManager = new LinkManager(this);
 
     this.authenticationManager = new AuthenticationManager(this);
@@ -132,7 +133,7 @@ define(function(require, exports, module) {
   };
 
   // Take care of the situation when the client indicates that it is busy, we wait for the beacon to indicate 'not busy'
-  Host.prototype.sendDelayed = function (delayedSendFunc)
+  Host.prototype.sendDelayed = function (command, delayedSendFunc)
   {
 
     var onBeacon = function _onBeacon(beacon)
@@ -140,7 +141,7 @@ define(function(require, exports, module) {
       if (!beacon.clientDeviceState.isBusy()) {
 
         if (this.log.logging)
-          this.log.log('log','Sending message');
+          this.log.log('log','Sending ' + command.toString());
 
         this.removeListener('beacon',onBeacon);
 
@@ -156,12 +157,14 @@ define(function(require, exports, module) {
     this.on('beacon',onBeacon); // Wait for next beacon (has noticed that client is busy some time after a burst is received)
   };
 
-  Host.prototype.sendAcknowledged = function(ackData, callback) {
-    this.sendDelayed(Channel.prototype.sendAcknowledged.bind(this, ackData, callback));
+  Host.prototype.sendAcknowledged = function(command, callback) {
+    var ackData = command.serialize();
+    this.sendDelayed(command, Channel.prototype.sendAcknowledged.bind(this, ackData, callback));
   };
 
-  Host.prototype.sendBurst = function (burstData, packetsPerURB, callback) {
-     this.sendDelayed(Channel.prototype.sendBurst.bind(this, burstData, packetsPerURB, callback));
+  Host.prototype.sendBurst = function (command, packetsPerURB, callback) {
+    var burstData = command.serialize();
+     this.sendDelayed(command, Channel.prototype.sendBurst.bind(this, burstData, packetsPerURB, callback));
   };
 
   module.exports = Host;

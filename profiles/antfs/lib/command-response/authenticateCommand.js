@@ -54,6 +54,22 @@ define(function(require, exports, module) {
       return command;
   };
 
+  AuthenticateCommand.prototype.toString = function ()
+  {
+    var cmdType;
+
+    switch (this.commandType)
+    {
+      case AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT : cmdType = 'proceed to transport'; break;
+      case AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER : cmdType = 'client SN'; break;
+      case AuthenticateCommand.prototype.REQUEST_PAIRING : cmdType = 'pairing'; break;
+      case AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE : cmdType = 'passkey exchange'; break;
+    }
+
+
+    return 'AUTHENTICATE '+ cmdType + ' host SN ' + this.hostSerialNumber;
+  };
+
   module.exports = AuthenticateCommand;
   return module.exports;
 

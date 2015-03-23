@@ -76,8 +76,8 @@ define(function(require, exports, module) {
 
         iStart = this.HEADER_LENGTH + fileNr * this.structureLength;
         iEnd = this.HEADER_LENGTH + (fileNr + 1) * this.structureLength;
-        fileType = data[iStart+2];
-        fileMetaData = data.subarray(iStart,iEnd);
+        fileType = data[iStart + 2];
+        fileMetaData = data.subarray(iStart, iEnd);
 
         switch (fileType)
         {
@@ -91,6 +91,18 @@ define(function(require, exports, module) {
           this.logger('log',this.file[fileNr].toString());
       }
 
+  };
+
+  Directory.prototype.getReadable = function ()
+  {
+    var readable = [];
+
+    this.file.forEach(function (file,index,arr) {
+      if (file.permission.read)
+        readable.push(file.index);
+    }.bind(this));
+
+    return readable;
   };
 
   Directory.prototype.toString = function ()

@@ -62,6 +62,12 @@ define(function(require, exports, module) {
       return command;
   };
 
+  DownloadCommand.prototype.toString = function ()
+  {
+    return 'DOWNLOAD index ' + this.index + ' offset ' + this.offset + ' initial request '  +
+            this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
+  };
+
   module.exports = DownloadCommand;
   return module.exports;
 

@@ -15,13 +15,14 @@ define(function(require, exports, module) {
   function requireUSB()
   {
 
-    if (typeof process !== 'undefined' && process.title === 'node') { // Node/iojs
+    if (typeof process !== 'undefined') { // Node/iojs
       usbLibraryPath = './USBNode';
     }
     else if (typeof window !== 'undefined' && typeof window.chrome === 'object') { // Chrome packaged app
       usbLibraryPath = './USBChrome';
     }
 
+    console.log('require',usbLibraryPath,typeof process, process.title);
     UsbLib = require(usbLibraryPath);
   }
 
