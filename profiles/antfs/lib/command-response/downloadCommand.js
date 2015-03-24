@@ -37,8 +37,10 @@ define(function(require, exports, module) {
   {
     this.index = index || 0;
     this.offset = offset || 0;
+
     if (initialRequest === undefined)
       initialRequest = DownloadCommand.prototype.NEW_TRANSFER;
+
     this.initialRequest = initialRequest;
     this.crcSeed = crcSeed || 0;
     this.maxBlockSize = maxBlockSize || 0; // 0 = "host do not wish to limit the block size"

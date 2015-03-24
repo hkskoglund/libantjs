@@ -18,9 +18,6 @@ define(function(require, exports, module) {
     CRC = require('./util/crc'),
     crc = new CRC(),
 
-    Concat = require('../../../../util/concat'),
-    bufferUtil = new Concat(),
-
     State = require('./util/state'),
 
     Directory = require('../file/directory');
@@ -60,7 +57,9 @@ define(function(require, exports, module) {
 
   TransportManager.prototype.handleDownloadResponse = function (responseData)
   {
-    var response;
+    var response,
+        appendArray,
+        offset;
 
     response = new DownloadResponse(responseData);
 
@@ -71,16 +70,31 @@ define(function(require, exports, module) {
 
       case DownloadResponse.prototype.OK :
 
-        this.downloadSession.packets = bufferUtil.concat(this.downloadSession.packets, response.packets);
+        if (response.offset === 0)
+          this.downloadSession.packets = new Uint8Array(response.fileSize);
+
+        // May happend if client appends to a file during download (rare case?)
+        if (response.fileSize > this.downloadSession.packets.byteLength) {
+
+          if (this.log.logging)
+           this.logger('warn','Client has increased file size to ' + response.fileSize + ' bytes from '+this.downloadSession.packets.byteLength);
+
+           appendArray = new Uint8Array(response.fileSize);
+           appendArray.set(this.downloadSession.packets);
+           this.downloadSession.packets = appendArray;
+         }
+
+        this.downloadSession.packets.set(response.packets,response.offset);
 
         console.log('download state', this.downloadSession);
 
-        if (this.downloadSession.packets.byteLength >= response.fileSize) {
+        offset = response.offset + response.length;
+        if (offset >= response.fileSize) {
           this.emit('download', this.downloadSession.packets);
 
         } else {
 
-          this.continueDownload();
+          this.continueDownload(response,offset);
         }
 
         break;
@@ -131,19 +145,18 @@ define(function(require, exports, module) {
   };
 
 
-  TransportManager.prototype.continueDownload = function() {
+  TransportManager.prototype.continueDownload = function(response,offset) {
 
     var command,
       crcSeed;
-
+    
     command = new DownloadCommand();
 
     // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
 
-    crcSeed = crc.calc16(this.downloadSession.packets);
+    crcSeed = crc.calc16(this.downloadSession.packets.subarray(0,offset));
 
-    command.continueRequest(this.downloadSession.command[0].index, this.downloadSession.packets.byteLength, crcSeed,
-      this.downloadSession.command[0].maxBlockSize);
+    command.continueRequest(this.downloadSession.command[0].index, offset, crcSeed, this.downloadSession.command[0].maxBlockSize);
 
     this.sendDownload(command);
 
@@ -155,7 +168,6 @@ define(function(require, exports, module) {
     this.downloadSession =  {
       command: [],
       response: [],
-      packets: new Uint8Array(0),
     };
 
     command = new DownloadCommand(index);
