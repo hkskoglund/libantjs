@@ -60,8 +60,32 @@ define(function(require, exports, module) {
 
   };
 
-  FitFile.prototype.toString = function() {
-    return File.prototype.toString.call(this) + ' | Fit permission : ' + this.fitPermission.toString() +
+  FitFile.prototype.getFileName = function ()
+  {
+    var dateStr;
+
+    function formatDate(fDate) {
+      var dateAsString = (new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + fDate * 1000)).toISOString();
+      // Remove millisec.
+      // ISO : 1989-12-31T00:00:00.000Z
+      dateAsString = dateAsString.substring(0, dateAsString.length - 5);
+      dateAsString = dateAsString.replace(new RegExp(":", "g"), "-");
+      //dateAsString = dateAsString.replace("T", "-");
+      return dateAsString;
+    }
+
+    if (this.date === 0xFFFFFFFF)
+      dateStr = "UnknownDate";
+    else if (this.date < 0x0FFFFFFF)
+      dateStr = "SystemDate" + this.date;
+    else
+      dateStr = formatDate(this.date);
+
+    return 'FIT-' + this.subType + '-' + this.index + '-' + dateStr + '.FIT';
+  };
+
+  FitFile.prototype.toString = function(timeFormat) {
+    return File.prototype.toString.call(this,timeFormat) + ' | Fit permission : ' + this.fitPermission.toString() +
       ' | Sub type : ' + this.subType + ' ' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
       ' | File number : ' + this.fileNumber;
 

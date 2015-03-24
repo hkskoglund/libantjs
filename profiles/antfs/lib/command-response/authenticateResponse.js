@@ -34,7 +34,7 @@ define(function(require, exports, module) {
 
       // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
       // data[1] should be 0x84;
-      
+
       this.responseType = data[2];
       this.authenticationStringLength = data[3];
       this.authentication = '';
@@ -45,6 +45,19 @@ define(function(require, exports, module) {
           this.authentication += String.fromCharCode(data[8+i]); // Static method on String
       }
 
+  };
+
+  AuthenticateResponse.prototype.toString = function ()
+  {
+    var msg = 'AUTHENTICATE ';
+
+    switch (this.responseType)
+    {
+      case AuthenticateResponse.prototype.ACCEPT : msg += 'accept'; break;
+      case AuthenticateResponse.prototype.REJECT : msg += 'reject'; break;
+    }
+
+    return msg+' client SN ' + this.clientSerialNumber;
   };
 
   module.exports = AuthenticateResponse;

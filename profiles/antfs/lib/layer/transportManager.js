@@ -59,11 +59,15 @@ define(function(require, exports, module) {
   {
     var response,
         appendArray,
-        offset;
+        offset,
+        NO_ERROR;
 
     response = new DownloadResponse(responseData);
 
     this.downloadSession.response.push(response);
+
+    if (this.log.logging)
+     this.logger('log',response.toString());
 
     switch (response.result)
     {
@@ -74,6 +78,7 @@ define(function(require, exports, module) {
           this.downloadSession.packets = new Uint8Array(response.fileSize);
 
         // May happend if client appends to a file during download (rare case?)
+
         if (response.fileSize > this.downloadSession.packets.byteLength) {
 
           if (this.log.logging)
@@ -86,23 +91,24 @@ define(function(require, exports, module) {
 
         this.downloadSession.packets.set(response.packets,response.offset);
 
-        console.log('download state', this.downloadSession);
-
         offset = response.offset + response.length;
+
         if (offset >= response.fileSize) {
-          this.emit('download', this.downloadSession.packets);
+
+          this.emit('download', NO_ERROR, this.downloadSession.packets);
 
         } else {
 
-          this.continueDownload(response,offset);
+          this.download(this.downloadSession.command[0].index, offset);
         }
 
         break;
 
-      default :
+        default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
 
-        if (this.log.logging)
-         this.logger('log',response.toString());
+          this.emit('download', response);
+
+          break;
 
     }
 
@@ -144,59 +150,80 @@ define(function(require, exports, module) {
     this.host.sendBurst(command, this.onSentToClient);
   };
 
+  TransportManager.prototype.download = function(index, offset) {
+  var command,
+    crcSeed;
 
-  TransportManager.prototype.continueDownload = function(response,offset) {
+  if (typeof offset === 'function') {
 
-    var command,
-      crcSeed;
-    
-    command = new DownloadCommand();
-
-    // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
-
-    crcSeed = crc.calc16(this.downloadSession.packets.subarray(0,offset));
-
-    command.continueRequest(this.downloadSession.command[0].index, offset, crcSeed, this.downloadSession.command[0].maxBlockSize);
-
-    this.sendDownload(command);
-
-  };
-
-  TransportManager.prototype.get = function(index) {
-    var command;
-
-    this.downloadSession =  {
+    this.downloadSession = {
       command: [],
       response: [],
     };
 
     command = new DownloadCommand(index);
-    command.setMaxBlockSize(8);
+   // TEST  command.setMaxBlockSize(8);
 
-    if (index === DownloadCommand.prototype.FILE_INDEX.DIRECTORY)
-    {
-      this.once('download',this.onDirectory.bind(this));
-    }
+    this.once('download', offset);
 
-    this.sendDownload(command);
+  } else  {
+
+    command = new DownloadCommand();
+
+    // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
+
+    crcSeed = crc.calc16(this.downloadSession.packets.subarray(0, offset));
+
+    command.continueRequest(index, offset, crcSeed, this.downloadSession.command[0].maxBlockSize);
+  }
+
+  this.sendDownload(command);
+};
+
+  TransportManager.prototype.setIndex = function (commandType,indexArray)
+  {
+    this[commandType + 'Index'] = indexArray;
+
+    if (this.log.logging)
+      this.log.log('log',commandType.toUpperCase() + ' request for index ',indexArray);
+
   };
 
-  TransportManager.prototype.downloadFiles = function (reqDownload)
+  TransportManager.prototype.setDownloadIndex = function (downloadIndex)
   {
-    this.requestDownload = reqDownload; // file index [1,2,3]
+    this.setIndex('download',downloadIndex);
   };
 
-  TransportManager.prototype.onDirectory = function (directoryBytes)
+  TransportManager.prototype.setEraseIndex = function (downloadIndex)
   {
-    this.directory.decode(directoryBytes);
+    this.setIndex('erase',eraseIndex);
   };
 
   TransportManager.prototype.onTransport = function() {
-    console.log('previos download',this.downloadSession);
+
+    var index = -1;
+    var onNextDownloadIndex = function _onNextDownloadIndex(err,bytes)
+      {
+        index++;
+        if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)
+          this.download(this.downloadIndex[index], onNextDownloadIndex);
+      }.bind(this);
+
+    var onDirectory = function _onDirectory(err,bytes)
+    {
+
+        if (!err)
+          this.directory.decode(bytes);
+
+        onNextDownloadIndex();
+
+    }.bind(this);
 
     this.host.state.set(State.prototype.TRANSPORT);
 
-    this.get(DownloadCommand.prototype.FILE_INDEX.DIRECTORY);
+    this.setDownloadIndex([1,2,3,4,5,6,7,8,9,10,20]);
+
+    this.download(DownloadCommand.prototype.FILE_INDEX.DIRECTORY, onDirectory);
 
   };
 

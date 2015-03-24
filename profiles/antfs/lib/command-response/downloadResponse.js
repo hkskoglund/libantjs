@@ -66,7 +66,7 @@ define(function(require, exports, module) {
   DownloadResponse.prototype.toString = function ()
   {
 
-    var msg = '';
+    var msg = 'DOWNLOAD ';
 
     switch (this.result)
     {

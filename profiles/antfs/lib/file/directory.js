@@ -88,7 +88,7 @@ define(function(require, exports, module) {
         this.file.push(file);
 
         if (this.log.logging)
-          this.logger('log',this.file[fileNr].toString());
+          this.logger('log',this.file[fileNr].toString(this.timeFormat));
       }
 
   };
