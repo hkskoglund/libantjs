@@ -8,14 +8,14 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function AuthenticateResponse(responseType,authenticationStringLength,clientSerialNumber)
+  function AuthenticateResponse(type, authenticationStringLength, clientSerialNumber)
   {
 
-      if (typeof responseType === 'object' && responseType.constructor.name === 'Uint8Array')
+      if (typeof type === 'object' && type.constructor.name === 'Uint8Array')
       {
-        this.deserialize(responseType);
+        this.deserialize(type);
       } else {
-          this.responseType = responseType;
+          this.type = type;
           this.authenticationStringLength = authenticationStringLength;
           this.clientSerialNumber = clientSerialNumber;
     }
@@ -35,14 +35,14 @@ define(function(require, exports, module) {
       // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
       // data[1] should be 0x84;
 
-      this.responseType = data[2];
+      this.type = data[2];
       this.authenticationStringLength = data[3];
-      this.authentication = '';
-      this.clientSerialNumber = dv.getUint32(4+data.byteOffset,true);
+      this.authenticationString = '';
+      this.clientSerialNumber = dv.getUint32(4 + data.byteOffset,true);
 
-      for (i = 0; i < this.authenticationStringLength && data[8+i] !== 0x00; i++)
+      for (i = 0; i < this.authenticationStringLength && data[8 + i] !== 0x00; i++)
       {
-          this.authentication += String.fromCharCode(data[8+i]); // Static method on String
+          this.authenticationString += String.fromCharCode(data[8 + i]); // Static method on String
       }
 
   };
@@ -51,13 +51,25 @@ define(function(require, exports, module) {
   {
     var msg = 'AUTHENTICATE ';
 
-    switch (this.responseType)
+    switch (this.type)
     {
-      case AuthenticateResponse.prototype.ACCEPT : msg += 'accept'; break;
-      case AuthenticateResponse.prototype.REJECT : msg += 'reject'; break;
+      case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER :
+
+        if (this.authenticationString)
+          msg += 'name '+ this.authenticationString;
+          break;
+
+      case AuthenticateResponse.prototype.ACCEPT:
+
+         msg += 'accept';
+        break;
+
+      case AuthenticateResponse.prototype.REJECT:
+         msg += 'reject';
+         break;
     }
 
-    return msg+' client SN ' + this.clientSerialNumber;
+    return msg + ', serial number ' + this.clientSerialNumber;
   };
 
   module.exports = AuthenticateResponse;

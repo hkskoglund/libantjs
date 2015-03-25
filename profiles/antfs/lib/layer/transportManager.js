@@ -32,6 +32,7 @@ define(function(require, exports, module) {
     this.logger = this.host.log.log.bind(this.host.log);
 
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+
     this.host.on('beacon', this.onBeacon.bind(this));
     this.host.on('burst', this.onBurst.bind(this));
 
@@ -45,7 +46,7 @@ define(function(require, exports, module) {
   TransportManager.prototype.constructor = TransportManager;
 
   TransportManager.prototype.onReset = function() {
-    this.removeAllListeners('transport');
+    this.removeAllListeners();
     this.once('transport', this.onTransport);
   };
 
@@ -64,7 +65,7 @@ define(function(require, exports, module) {
 
     response = new DownloadResponse(responseData);
 
-    this.downloadSession.response.push(response);
+    this.session.response.push(response);
 
     if (this.log.logging)
      this.logger('log',response.toString());
@@ -75,31 +76,31 @@ define(function(require, exports, module) {
       case DownloadResponse.prototype.OK :
 
         if (response.offset === 0)
-          this.downloadSession.packets = new Uint8Array(response.fileSize);
+          this.session.packets = new Uint8Array(response.fileSize);
 
         // May happend if client appends to a file during download (rare case?)
 
-        if (response.fileSize > this.downloadSession.packets.byteLength) {
+        if (response.fileSize > this.session.packets.byteLength) {
 
           if (this.log.logging)
-           this.logger('warn','Client has increased file size to ' + response.fileSize + ' bytes from '+this.downloadSession.packets.byteLength);
+           this.logger('warn','Client has increased file size to ' + response.fileSize + ' bytes from '+this.session.packets.byteLength);
 
            appendArray = new Uint8Array(response.fileSize);
-           appendArray.set(this.downloadSession.packets);
-           this.downloadSession.packets = appendArray;
+           appendArray.set(this.session.packets);
+           this.session.packets = appendArray;
          }
 
-        this.downloadSession.packets.set(response.packets,response.offset);
+        this.session.packets.set(response.packets,response.offset);
 
         offset = response.offset + response.length;
 
         if (offset >= response.fileSize) {
 
-          this.emit('download', NO_ERROR, this.downloadSession.packets);
+          this.emit('download', NO_ERROR, this.session.packets);
 
         } else {
 
-          this.download(this.downloadSession.command[0].index, offset);
+          this.download(this.session.command[0].index, offset);
         }
 
         break;
@@ -145,7 +146,7 @@ define(function(require, exports, module) {
 
   TransportManager.prototype.sendDownload = function(command) {
 
-    this.downloadSession.command.push(command);
+    this.session.command.push(command);
 
     this.host.sendBurst(command, this.onSentToClient);
   };
@@ -156,7 +157,7 @@ define(function(require, exports, module) {
 
   if (typeof offset === 'function') {
 
-    this.downloadSession = {
+    this.session = {
       command: [],
       response: [],
     };
@@ -172,9 +173,9 @@ define(function(require, exports, module) {
 
     // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
 
-    crcSeed = crc.calc16(this.downloadSession.packets.subarray(0, offset));
+    crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
 
-    command.continueRequest(index, offset, crcSeed, this.downloadSession.command[0].maxBlockSize);
+    command.continueRequest(index, offset, crcSeed, this.session.command[0].maxBlockSize);
   }
 
   this.sendDownload(command);

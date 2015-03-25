@@ -12,6 +12,7 @@ define(function(require, exports, module) {
   var  EventEmitter = require('../../../../util/events'),
        ClientBeacon = require('./clientBeacon'),
        LinkCommand = require('../command-response/linkCommand'),
+       DisconnectCommand = require('../command-response/disconnectCommand'),
        State = require('./util/state');
 
   function LinkManager(host)
@@ -19,6 +20,10 @@ define(function(require, exports, module) {
     EventEmitter.call(this);
 
     this.host = host;
+
+    this.log = this.host.log;
+    this.logger = this.host.log.log.bind(this.host.log);
+
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
     this.host.on('beacon',this.onBeacon.bind(this));
 
@@ -82,9 +87,10 @@ define(function(require, exports, module) {
 
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err,repsonse)
     {
-      this.linkCommand =  new LinkCommand(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
+      var linkCommand =  new LinkCommand(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+                                          this.hostSerialNumber);
 
-      this.sendAcknowledged(this.linkCommand, onSentToClient);
+      this.sendAcknowledged(linkCommand, onSentToClient);
 
     }.bind(this.host);
 
@@ -131,6 +137,27 @@ define(function(require, exports, module) {
         callback(err,msg);
       }.bind(this.host));
     }.bind(this.host));
+  };
+
+  LinkManager.prototype.disconnect = function (callback)
+  {
+
+    var disconnectCommand = new DisconnectCommand(),
+        onSentToClient = function _onSentToClient(err,msg)
+        {
+          if (err)
+          {
+            if (this.log.logging)
+              this.log.log('log','Failed to send DISCONNECT to client');
+
+            callback(new Error('DISCONNECT failed'));
+          } else
+           {
+             callback(err,msg);
+          }
+        }.bind(this);
+
+    this.host.sendAcknowledged(disconnectCommand, onSentToClient);
   };
 
   module.exports = LinkManager;

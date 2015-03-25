@@ -33,7 +33,6 @@ define(function(require, exports, module) {
 
     this.hostName = 'antfsjs';
 
-    console.log('this before linkmanager',this);
     this.linkManager = new LinkManager(this);
 
     this.authenticationManager = new AuthenticationManager(this);
@@ -42,15 +41,13 @@ define(function(require, exports, module) {
 
     this.beacon =  new ClientBeacon();
 
-    this.passkeyDB = {};
-
     this.on('data', this.onBroadcast);
 
     this.on('burst', this.onBurst);
 
     this.on('beacon', this.onBeacon);
 
-    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset);
+    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
     this.burst = undefined;
 
@@ -61,23 +58,32 @@ define(function(require, exports, module) {
 
   Host.prototype.setPasskey = function (clientDeviceSerialNumber,passkey)
   {
-    this.passkeyDB[clientDeviceSerialNumber] = passkey;
+    this.autenticationManager.passkeyDB[clientDeviceSerialNumber] = passkey;
   };
 
-  Host.prototype.onReset = function ()
+  Host.prototype.onRxFailGoToSearch = function ()
+  {
+      this.log.log('log','Lost contact with client. Resetting.');
+      this.onReset();
+  };
+
+  Host.prototype.onReset = function (err,callback)
   {
 
-    if (this.log.logging)
-      this.log.log('log','Lost contact with client. Resetting.');
-
     if (this.frequency !== this.NET.FREQUENCY.ANTFS)
-      this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(err) {
-        if (err & this.log.logging)
+      this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
+
+        this.state.set(State.prototype.LINK);
+
+        if (e & this.log.logging)
           this.log.log('error','Failed to reset search frequency to default ANT-FS 2450 MHz');
+
+        if (typeof callback === 'function')
+          callback(e);
       }.bind(this));
 
 
-    this.state.set(State.prototype.LINK);
+
 
   };
 
@@ -100,16 +106,26 @@ define(function(require, exports, module) {
 
       if (!err)
       {
-        this.hostSerialNumber = serialNumberMsg.serialNumber;
+       this.setHostSerialNumber(serialNumberMsg.serialNumber);
       } else
           {
-            this.hostSerialNumber = 0;
+            this.setHostSerialNumber(0);
           }
 
       Channel.prototype.connect.call(this,onConnecting);
 
     }.bind(this));
 
+  };
+
+  Host.prototype.setHostSerialNumber = function (serialNumber)
+  {
+    this.hostSerialNumber = serialNumber;
+  };
+
+  Host.prototype.getHostSerialNumber = function ()
+  {
+    return this.hostSerialNumber;
   };
 
   Host.prototype.onBeacon = function (beacon)

@@ -28,6 +28,11 @@ define(function(require, exports, module) {
     return this.type === AuthenticationType.prototype.PASSTHROUGH;
   };
 
+  AuthenticationType.prototype.isPasskeyAndPairingOnly = function ()
+  {
+    return this.type === AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY;
+  };
+
   AuthenticationType.prototype.toString = function() {
 
      switch (this.type)

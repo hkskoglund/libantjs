@@ -620,13 +620,13 @@ define(function(require, exports, module) {
       }.bind(this),
 
       onTxCompleted = function(err, msg) {
-        console.timeEnd('TXCOMPLETED');
+        //console.timeEnd('TXCOMPLETED');
         removeListeners();
         cb(undefined, msg);
       },
 
       onTxStart = function(err, msg) {
-        console.time('TXCOMPLETED');
+        //console.time('TXCOMPLETED');
       },
 
       onTxFailed = function(err, msg) {

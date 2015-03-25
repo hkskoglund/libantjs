@@ -20,10 +20,24 @@ var   EventEmitter = require('../../../../util/events'),
     EventEmitter.call(this);
 
     this.host = host;
+
+    this.log = this.host.log;
+    this.logger = this.host.log.log.bind(this.host.log);
+
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+  
     this.host.on('beacon',this.onBeacon.bind(this));
+    this.host.on('burst', this.onBurst.bind(this));
 
     this.once('authenticate',this.onAuthenticate);
+
+
+    this.passkeyDB = {};
+
+    this.session = {
+      command : [],
+      response : []
+    };
   }
 
   AuthenticationManager.prototype = Object.create(EventEmitter.prototype);
@@ -31,7 +45,11 @@ var   EventEmitter = require('../../../../util/events'),
 
   AuthenticationManager.prototype.onReset = function ()
   {
-    this.removeAllListeners('authenticate');
+    this.session = {
+      command : [],
+      response : []
+    };
+    this.removeAllListeners();
     this.once('authenticate',this.onAuthenticate);
   };
 
@@ -43,21 +61,50 @@ var   EventEmitter = require('../../../../util/events'),
       }
   };
 
+  AuthenticationManager.prototype.handleResponse = function (response)
+  {
+    this.session.response.push(response);
+
+    if (this.log.logging)
+     this.logger('log',response.toString());
+
+    switch (response.type)
+    {
+      case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER:
+
+        this.emit('serialNumber',undefined,response);
+        break;
+
+      case AuthenticateResponse.prototype.ACCEPT:
+
+        this.emit('acceptOrReject',new Error(response.toString()),response);
+        break;
+
+      case AuthenticateResponse.prototype.REJECT:
+
+        this.emit('acceptOrReject',new Error(response.toString()),undefined);
+        break;
+
+    }
+  };
+
   AuthenticationManager.prototype.onBurst = function (burst)
   {
     var responseData,
         responseId,
         response;
 
-    if (!this.host.beacon.forHost(this.host.hostSerialNumber))
+    if (!this.host.beacon.forHost(this.host.getHostSerialNumber()))
        return;
 
     responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
     responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
 
     if  (responseId === AuthenticateResponse.prototype.ID) {
+
           response = new AuthenticateResponse(responseData);
-          console.log('authenticate',response);
+          this.clientSerialNumber = response.clientSerialNumber;
+          this.handleResponse(response);
         }
 
   };
@@ -80,21 +127,65 @@ var   EventEmitter = require('../../../../util/events'),
       return frequency;
   };
 
+  AuthenticationManager.prototype.sendCommand = function (command)
+  {
+    this.session.command.push(command);
+
+    if (command.authenticationStringLength)
+      this.host.sendBurst(command, this.onSentToClient);
+    else
+      this.host.sendAcknowledged(command, this.onSentToClient);
+  };
+
+  AuthenticationManager.prototype.requestClientSerialNumber = function (callback)
+  {
+    this.authenticateCommand = new AuthenticateCommand();
+    this.authenticateCommand.setRequestClientSerialNumber(this.host.getHostSerialNumber());
+
+    this.once('serialNumber', callback);
+    this.sendCommand(this.authenticateCommand);
+  };
+
+  AuthenticationManager.prototype.requestPassthrough = function (callback)
+  {
+    this.authenticateCommand = new AuthenticateCommand();
+
+    this.once('acceptOrReject', callback);
+    this.sendCommand(this.authenticateCommand);
+  };
+
+  AuthenticationManager.prototype.onSentToClient = function (err,msg)
+  {
+    if (err && this.log.logging)
+     this.log.log('error','Failed to send AUTHENTICATE command to client',err);
+  };
+
   AuthenticationManager.prototype.onAuthenticate = function ()
   {
+    var onSerialNumber = function _onSerialNumber(err,response)
+    {
+      if (!err) {
+          this.clientSerialNumber = response.clientSerialNumber;
+          console.log('got serial number',this.clientSerialNumber);
+      }
+      //if (this.host.beacon.authenticationType.isPassthrough)
 
-        this.host.state.set(State.prototype.AUTHENTICATION);
+    }.bind(this),
 
-        var onSentToANT = function _onSentToANT(err,msg)
-        {
-          if (err && this.log.logging)
-           this.log.log('error','Failed to send AUTHENTICATE command to ANT chip',err);
-        }.bind(this.host);
+    onPassthrough = function _onPassthrough(err,response)
+    {
+      if (err) // If disconect is successfully acknowledged by the client, host should get EVENT_RX_FAILED_GO_TO_SEARCH
+        this.host.linkManager.disconnect(function _onDisconnect() { }.bind(this)); // Return to LINK layer
+    }.bind(this);
 
-        this.authenticateCommand = new AuthenticateCommand();
-        //this.authenticateCommand.requestClientSerialNumber(this.hostSerialNumber);
-        if (this.host.beacon.authenticationType.isPassthrough())
-         this.host.sendAcknowledged(this.authenticateCommand, onSentToANT);
+    this.host.state.set(State.prototype.AUTHENTICATION);
+
+    //this.requestClientSerialNumber(onSerialNumber);
+
+    if (this.host.beacon.authenticationType.isPassthrough())
+      this.requestPassthrough(onPassthrough); // Should proceed to transport layer if accepted
+
+  // onPassthrough('test');
 
   };
 
