@@ -25,14 +25,14 @@ var   EventEmitter = require('../../../../util/events'),
     this.logger = this.host.log.log.bind(this.host.log);
 
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
-  
-    this.host.on('beacon',this.onBeacon.bind(this));
+
+    this.host.on('beacon', this.onBeacon.bind(this));
     this.host.on('burst', this.onBurst.bind(this));
 
     this.once('authenticate',this.onAuthenticate);
 
 
-    this.passkeyDB = {};
+    this.pairingDB = {};
 
     this.session = {
       command : [],
@@ -49,13 +49,18 @@ var   EventEmitter = require('../../../../util/events'),
       command : [],
       response : []
     };
+
     this.removeAllListeners();
+
     this.once('authenticate',this.onAuthenticate);
+
   };
 
   AuthenticationManager.prototype.onBeacon = function (beacon)
   {
-    if (beacon.clientDeviceState.isAuthentication() && beacon.forHost(this.host.hostSerialNumber))
+
+    if (beacon.clientDeviceState.isAuthentication() && beacon.forHost(this.host.getHostSerialNumber()) &&
+        this.host.state.isLink())
       {
         this.emit('authenticate');
       }
@@ -77,12 +82,12 @@ var   EventEmitter = require('../../../../util/events'),
 
       case AuthenticateResponse.prototype.ACCEPT:
 
-        this.emit('acceptOrReject',new Error(response.toString()),response);
+        this.emit('acceptOrReject',undefined, response);
         break;
 
       case AuthenticateResponse.prototype.REJECT:
 
-        this.emit('acceptOrReject',new Error(response.toString()),undefined);
+        this.emit('acceptOrReject',new Error(response.toString()), undefined);
         break;
 
     }
@@ -94,7 +99,8 @@ var   EventEmitter = require('../../../../util/events'),
         responseId,
         response;
 
-    if (!this.host.beacon.forHost(this.host.getHostSerialNumber()))
+    if (!(this.host.beacon.forHost(this.host.getHostSerialNumber()) &&
+         this.host.state.isAuthentication()))
        return;
 
     responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
@@ -103,7 +109,13 @@ var   EventEmitter = require('../../../../util/events'),
     if  (responseId === AuthenticateResponse.prototype.ID) {
 
           response = new AuthenticateResponse(responseData);
-          this.clientSerialNumber = response.clientSerialNumber;
+
+          // Handle case where client serial number is sent as 4 0 bytes in pairing response
+          // Don't know why 910XT antfs stack sends it, either a bug or for not associating passkey with client
+          // Spec 12.5.2.3; "The client device's serial number shall also be provided in the Authenticate response"
+          if (!this.clientSerialNumber && response.clientSerialNumber)
+             this.clientSerialNumber = response.clientSerialNumber;
+
           this.handleResponse(response);
         }
 
@@ -154,38 +166,114 @@ var   EventEmitter = require('../../../../util/events'),
     this.sendCommand(this.authenticateCommand);
   };
 
+
+  AuthenticationManager.prototype.requestPairing = function (callback)
+  {
+    this.authenticateCommand = new AuthenticateCommand();
+    this.authenticateCommand.setRequestPairing(this.host.getHostSerialNumber(), this.host.getHostname());
+
+    this.once('acceptOrReject', callback);
+    this.sendCommand(this.authenticateCommand);
+  };
+
+  AuthenticationManager.prototype.requestPasskeyExchange = function (clientSerialNumber,callback)
+  {
+    var passkey = this.pairingDB[clientSerialNumber];
+
+    this.authenticateCommand = new AuthenticateCommand();
+    this.authenticateCommand.setRequestPasskeyExchange(this.host.getHostSerialNumber(), passkey);
+
+    this.once('acceptOrReject', callback);
+    this.sendCommand(this.authenticateCommand);
+  };
+
   AuthenticationManager.prototype.onSentToClient = function (err,msg)
   {
     if (err && this.log.logging)
      this.log.log('error','Failed to send AUTHENTICATE command to client',err);
   };
 
+  AuthenticationManager.prototype.getPasskey = function (clientSerialNumber)
+  {
+    return this.pairingDB[clientSerialNumber];
+  };
+
+  AuthenticationManager.prototype.setPasskey = function (clientSerialNumber, passkey)
+  {
+    this.pairingDB[clientSerialNumber] = passkey;
+  };
+
   AuthenticationManager.prototype.onAuthenticate = function ()
   {
     var onSerialNumber = function _onSerialNumber(err,response)
     {
-      if (!err) {
-          this.clientSerialNumber = response.clientSerialNumber;
-          console.log('got serial number',this.clientSerialNumber);
+      if (err) {
+          this.host.linkManager.disconnect(function _onDisconnect() { }.bind(this)); // Return to LINK layer
       }
-      //if (this.host.beacon.authenticationType.isPassthrough)
+
+      passkey = this.getPasskey(this.clientSerialNumber);
+
+      if (!passkey && this.host.beacon.authenticationType.isPasskeyAndPairingOnly())
+      {
+        if (this.log.logging)
+          this.log.log('warn','No passkey available for client ' + this.clientSerialNumber +
+                        ' requesting pairing');
+
+        this.requestPairing(onPairing);
+
+      } else if (this.host.beacon.authenticationType.isPairingOnly())
+      {
+        this.requestPairing(onPairing);
+      } else  if (passkey && this.host.beacon.authenticationType.isPasskeyAndPairingOnly())
+      {
+        this.requestPasskeyExchange(this.clientSerialNumber,onPasskeyExchange);
+      }
 
     }.bind(this),
 
     onPassthrough = function _onPassthrough(err,response)
     {
-      if (err) // If disconect is successfully acknowledged by the client, host should get EVENT_RX_FAILED_GO_TO_SEARCH
+
+      // If disconnect is successfully acknowledged by the client, host should eventually get
+      // EVENT_RX_FAILED_GO_TO_SEARCH and host is reset and starts listening for client beacon in
+      // link state
+      if (err)
         this.host.linkManager.disconnect(function _onDisconnect() { }.bind(this)); // Return to LINK layer
-    }.bind(this);
+    }.bind(this),
+
+    onPairing = function _onPairing(err,response)
+    {
+
+      if (err)
+        this.host.state.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
+
+
+      if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly())
+      {
+        this.setPasskey(this.clientSerialNumber, response.authenticationString);
+
+        // Emit passkey?
+      }
+
+    }.bind(this),
+
+    onPasskeyExchange = function _onPasskeyExchange(err,response)
+    {
+
+    }.bind(this),
+
+    passkey;
 
     this.host.state.set(State.prototype.AUTHENTICATION);
 
-    //this.requestClientSerialNumber(onSerialNumber);
-
     if (this.host.beacon.authenticationType.isPassthrough())
-      this.requestPassthrough(onPassthrough); // Should proceed to transport layer if accepted
+      this.requestPassthrough(onPassthrough);
+    else if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly() ||
+            this.host.beacon.authenticationType.isPairingOnly())
+    {
+      this.requestClientSerialNumber(onSerialNumber);
+    }
 
-  // onPassthrough('test');
 
   };
 

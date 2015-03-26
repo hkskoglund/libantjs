@@ -31,7 +31,7 @@ define(function(require, exports, module) {
     this.period = this.NET.PERIOD.ANTFS;
     this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
-    this.hostName = 'antfsjs';
+    this.hostname = 'antfsjs';
 
     this.linkManager = new LinkManager(this);
 
@@ -58,7 +58,12 @@ define(function(require, exports, module) {
 
   Host.prototype.setPasskey = function (clientDeviceSerialNumber,passkey)
   {
-    this.autenticationManager.passkeyDB[clientDeviceSerialNumber] = passkey;
+    this.autenticationManager.pairingDB[clientDeviceSerialNumber] = passkey;
+  };
+
+  Host.prototype.getHostname = function ()
+  {
+    return this.hostname;
   };
 
   Host.prototype.onRxFailGoToSearch = function ()
@@ -72,8 +77,6 @@ define(function(require, exports, module) {
 
     if (this.frequency !== this.NET.FREQUENCY.ANTFS)
       this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
-
-        this.state.set(State.prototype.LINK);
 
         if (e & this.log.logging)
           this.log.log('error','Failed to reset search frequency to default ANT-FS 2450 MHz');
@@ -120,6 +123,7 @@ define(function(require, exports, module) {
 
   Host.prototype.setHostSerialNumber = function (serialNumber)
   {
+    console.log('host serial number === ',serialNumber);
     this.hostSerialNumber = serialNumber;
   };
 
@@ -134,23 +138,43 @@ define(function(require, exports, module) {
       this.log.log('log',this.beacon.toString());
   };
 
+
   Host.prototype.onBroadcast = function (broadcast)
   {
-    this.beacon.decode(broadcast.payload);
+    var res = this.beacon.decode(broadcast.payload);
+    if (res === -1)
+
+    {
+      if (this.log.logging)
+      {
+        this.log.log('warn','Previous packet retransmission, ignored');
+      }
+    } else {
 
     this.burst = undefined;
 
     this.emit('beacon',this.beacon);
+  }
 
   };
 
   Host.prototype.onBurst = function (burst)
   {
-    this.beacon.decode(burst.subarray(0,ClientBeacon.prototype.PAYLOAD_LENGTH));
+    var res = this.beacon.decode(burst.subarray(0,ClientBeacon.prototype.PAYLOAD_LENGTH));
+    if (res === -1)
+
+    {
+      if (this.log.logging)
+      {
+        this.log.log('warn','Expected client beacon as the first packet of the burst');
+      }
+    } else {
 
     this.burst = burst;
 
     this.emit('beacon', this.beacon);
+
+  }
 
   };
 
@@ -180,7 +204,6 @@ define(function(require, exports, module) {
         delayedSendFunc();
 
       }.bind(this);
-
 
     // If we received burst data in the previous transaction with client, we are optimistic
     // and try to send a new request immediatly assuming that the client will respond. Otherwise

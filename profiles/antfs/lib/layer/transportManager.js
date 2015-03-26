@@ -32,7 +32,6 @@ define(function(require, exports, module) {
     this.logger = this.host.log.log.bind(this.host.log);
 
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
-
     this.host.on('beacon', this.onBeacon.bind(this));
     this.host.on('burst', this.onBurst.bind(this));
 
@@ -51,7 +50,9 @@ define(function(require, exports, module) {
   };
 
   TransportManager.prototype.onBeacon = function(beacon) {
-    if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.hostSerialNumber)) {
+
+    if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
+        this.host.state.isAuthentication()) {
       this.emit('transport');
     }
   };
@@ -121,7 +122,8 @@ define(function(require, exports, module) {
       responseId;
 
 
-    if (!this.host.beacon.forHost(this.host.hostSerialNumber))
+    if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
+        this.host.state.isTransport()))
       return;
 
     responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);

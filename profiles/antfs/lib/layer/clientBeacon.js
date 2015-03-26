@@ -48,9 +48,12 @@ define(function(require, exports, module) {
       statusByte2;
 
     this.beaconId = payload[0]; // 0x43
+    if (this.beaconId !== 0x43)
+      return -1;
+      
     statusByte1 = payload[1];
     statusByte2 = payload[2];
-    
+
     this.authenticationType = new AuthenticationType(payload[3]);
 
     this.dataAvailable        = statusByte1 & 0x20 ? true : false; // Bit 5

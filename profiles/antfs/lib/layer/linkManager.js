@@ -25,9 +25,12 @@ define(function(require, exports, module) {
     this.logger = this.host.log.log.bind(this.host.log);
 
     this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+
     this.host.on('beacon',this.onBeacon.bind(this));
 
     this.once('link',this.onLink);
+
+    this.linkBeaconCount = 0;
   }
 
   LinkManager.prototype = Object.create(EventEmitter.prototype);
@@ -37,15 +40,23 @@ define(function(require, exports, module) {
   {
       this.removeAllListeners('link');
       this.once('link',this.onLink);
+      this.host.state.set(State.prototype.LINK);
   };
 
   LinkManager.prototype.onBeacon = function (beacon)
   {
+   var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3;
 
     if (beacon.clientDeviceState.isLink())
     {
-      this.host.state.set(State.prototype.LINK);
-      this.emit('link');
+      this.linkBeaconCount++;
+    //  this.host.state.set(State.prototype.LINK);
+      if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
+          this.linkBeaconCount = 0;
+          this.emit('link');
+       }
+       else
+         console.log('linkcounter',this.linkBeaconCount);
     }
 
   };
@@ -118,6 +129,7 @@ define(function(require, exports, module) {
 
     this.host.setFrequency(frequency, function _setFreq(err, msg)
     {
+
       if (err)
        {
          if (this.log.logging)
@@ -135,29 +147,18 @@ define(function(require, exports, module) {
          }
 
         callback(err,msg);
+
       }.bind(this.host));
     }.bind(this.host));
   };
 
   LinkManager.prototype.disconnect = function (callback)
   {
+    console.trace();
+    var disconnectCommand = new DisconnectCommand();
 
-    var disconnectCommand = new DisconnectCommand(),
-        onSentToClient = function _onSentToClient(err,msg)
-        {
-          if (err)
-          {
-            if (this.log.logging)
-              this.log.log('log','Failed to send DISCONNECT to client');
-
-            callback(new Error('DISCONNECT failed'));
-          } else
-           {
-             callback(err,msg);
-          }
-        }.bind(this);
-
-    this.host.sendAcknowledged(disconnectCommand, onSentToClient);
+    this.host.state.set(State.prototype.LINK);
+    this.host.sendAcknowledged(disconnectCommand, callback);
   };
 
   module.exports = LinkManager;

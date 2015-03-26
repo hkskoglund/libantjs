@@ -33,6 +33,11 @@ define(function(require, exports, module) {
     return this.type === AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY;
   };
 
+  AuthenticationType.prototype.isPairingOnly = function ()
+  {
+    return this.type === AuthenticationType.prototype.PAIRING_ONLY;
+  };
+
   AuthenticationType.prototype.toString = function() {
 
      switch (this.type)

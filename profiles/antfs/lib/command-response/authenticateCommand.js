@@ -33,6 +33,19 @@ define(function(require, exports, module) {
     this.request(AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, hostSerialNumber);
   };
 
+  AuthenticateCommand.prototype.setRequestPairing = function (hostSerialNumber, hostname)
+  {
+    console.log('hostname is now',hostname);
+    if (hostname)
+      this.hostname = hostname;
+    this.request(AuthenticateCommand.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
+  };
+
+  AuthenticateCommand.prototype.setRequestPasskeyExchange = function (hostSerialNumber, passkey)
+  {
+    this.request(AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
+  };
+
   AuthenticateCommand.prototype.request = function (commandType, hostSerialNumber, authenticationString)
   {
     this.commandType = commandType;
@@ -65,7 +78,7 @@ define(function(require, exports, module) {
      {
        for (byteNr=0; byteNr <= this.authenticationStringLength; byteNr++)
        {
-         command[8 + byteNr] = this.authenticationString[byteNr];
+         command[8 + byteNr] = this.authenticationString.charCodeAt(byteNr);
        }
      }
 
@@ -80,12 +93,16 @@ define(function(require, exports, module) {
     {
       case AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT : cmdType = 'proceed to transport'; break;
       case AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER : cmdType = 'get client serial number'; break;
-      case AuthenticateCommand.prototype.REQUEST_PAIRING : cmdType = 'pairing'; break;
+      case AuthenticateCommand.prototype.REQUEST_PAIRING :
+        cmdType = 'pairing';
+        if (this.authenticationStringLength)
+          cmdType += ', hostname ' + this.authenticationString;
+        break;
       case AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE : cmdType = 'passkey exchange'; break;
     }
 
 
-    return 'AUTHENTICATE '+ cmdType + ' host SN ' + this.hostSerialNumber;
+    return 'AUTHENTICATE '+ cmdType + ' host serial number ' + this.hostSerialNumber;
   };
 
   module.exports = AuthenticateCommand;
