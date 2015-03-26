@@ -22,6 +22,8 @@ define(function(require, exports, module) {
 
     Directory = require('../file/directory');
 
+    //heap = require('/usr/lib/node_modules/heapdump');
+
   function TransportManager(host) {
 
     EventEmitter.call(this);
@@ -47,6 +49,7 @@ define(function(require, exports, module) {
   TransportManager.prototype.onReset = function() {
     this.removeAllListeners();
     this.once('transport', this.onTransport);
+    this.directory = new Directory(undefined,this.host);
   };
 
   TransportManager.prototype.onBeacon = function(beacon) {
@@ -97,7 +100,11 @@ define(function(require, exports, module) {
 
         if (offset >= response.fileSize) {
 
-          this.emit('download', NO_ERROR, this.session.packets);
+        //  heap.writeSnapshot('heap'+Date.now()+'.heapsnapshot', function (err,msg)
+        //  {
+            this.emit('download', NO_ERROR, this.session.packets);
+        //  }.bind(this));
+
 
         } else {
 
