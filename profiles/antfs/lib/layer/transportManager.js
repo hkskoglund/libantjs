@@ -22,7 +22,7 @@ define(function(require, exports, module) {
 
     Directory = require('../file/directory');
 
-    //heap = require('/usr/lib/node_modules/heapdump');
+  //heap = require('/usr/lib/node_modules/heapdump');
 
   function TransportManager(host) {
 
@@ -39,7 +39,7 @@ define(function(require, exports, module) {
 
     this.once('transport', this.onTransport);
 
-    this.directory = new Directory(undefined,host);
+    this.directory = new Directory(undefined, host);
 
   }
 
@@ -49,61 +49,60 @@ define(function(require, exports, module) {
   TransportManager.prototype.onReset = function() {
     this.removeAllListeners();
     this.once('transport', this.onTransport);
-    this.directory = new Directory(undefined,this.host);
+    this.directory = new Directory(undefined, this.host);
   };
 
   TransportManager.prototype.onBeacon = function(beacon) {
 
     if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
-        this.host.state.isAuthentication()) {
+      this.host.state.isAuthentication()) {
       this.emit('transport');
     }
   };
 
-  TransportManager.prototype.handleDownloadResponse = function (responseData)
-  {
+  TransportManager.prototype.handleDownloadResponse = function(responseData) {
     var response,
-        appendArray,
-        offset,
-        NO_ERROR;
+      appendArray,
+      offset,
+      NO_ERROR;
 
     response = new DownloadResponse(responseData);
 
     this.session.response.push(response);
 
     if (this.log.logging)
-     this.logger('log',response.toString());
+      this.logger('log', response.toString());
 
-    switch (response.result)
-    {
+    switch (response.result) {
 
-      case DownloadResponse.prototype.OK :
+      case DownloadResponse.prototype.OK:
 
         if (response.offset === 0)
           this.session.packets = new Uint8Array(response.fileSize);
 
         // May happend if client appends to a file during download (rare case?)
+        // Spec. 9.5 "Host devices must be able to adapt to files being larger than listed in the directory"
 
         if (response.fileSize > this.session.packets.byteLength) {
 
           if (this.log.logging)
-           this.logger('warn','Client has increased file size to ' + response.fileSize + ' bytes from '+this.session.packets.byteLength);
+            this.logger('warn', 'Client has increased file size to ' + response.fileSize + ' bytes from ' + this.session.packets.byteLength);
 
-           appendArray = new Uint8Array(response.fileSize);
-           appendArray.set(this.session.packets);
-           this.session.packets = appendArray;
-         }
+          appendArray = new Uint8Array(response.fileSize);
+          appendArray.set(this.session.packets);
+          this.session.packets = appendArray;
+        }
 
-        this.session.packets.set(response.packets,response.offset);
+        this.session.packets.set(response.packets, response.offset);
 
         offset = response.offset + response.length;
 
         if (offset >= response.fileSize) {
 
-        //  heap.writeSnapshot('heap'+Date.now()+'.heapsnapshot', function (err,msg)
-        //  {
-            this.emit('download', NO_ERROR, this.session.packets);
-        //  }.bind(this));
+          //  heap.writeSnapshot('heap'+Date.now()+'.heapsnapshot', function (err,msg)
+          //  {
+          this.emit('download', NO_ERROR, this.session.packets);
+          //  }.bind(this));
 
 
         } else {
@@ -113,11 +112,11 @@ define(function(require, exports, module) {
 
         break;
 
-        default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
+      default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
 
-          this.emit('download', response);
+        this.emit('download', response);
 
-          break;
+        break;
 
     }
 
@@ -136,8 +135,7 @@ define(function(require, exports, module) {
     responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
     responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
 
-    switch (responseId)
-    {
+    switch (responseId) {
 
       case DownloadResponse.prototype.ID:
 
@@ -161,77 +159,72 @@ define(function(require, exports, module) {
   };
 
   TransportManager.prototype.download = function(index, offset) {
-  var command,
-    crcSeed;
+    var command,
+      crcSeed;
 
-  if (typeof offset === 'function') {
+    if (typeof offset === 'function') {
 
-    this.session = {
-      command: [],
-      response: [],
-    };
+      this.session = {
+        command: [],
+        response: [],
+      };
 
-    command = new DownloadCommand(index);
-   // TEST  command.setMaxBlockSize(8);
+      command = new DownloadCommand(index);
+      // TEST  command.setMaxBlockSize(8);
 
-    this.once('download', offset);
+      this.once('download', offset);
 
-  } else  {
+    } else {
 
-    command = new DownloadCommand();
+      command = new DownloadCommand();
 
-    // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
+      // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
 
-    crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
+      crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
 
-    command.continueRequest(index, offset, crcSeed, this.session.command[0].maxBlockSize);
-  }
+      command.continueRequest(index, offset, crcSeed, this.session.command[0].maxBlockSize);
+    }
 
-  this.sendDownload(command);
-};
+    this.sendDownload(command);
+  };
 
-  TransportManager.prototype.setIndex = function (commandType,indexArray)
-  {
+  TransportManager.prototype.setIndex = function(commandType, indexArray) {
     this[commandType + 'Index'] = indexArray;
 
     if (this.log.logging)
-      this.log.log('log',commandType.toUpperCase() + ' request for index ',indexArray);
+      this.log.log('log', commandType.toUpperCase() + ' request for index ', indexArray);
 
   };
 
-  TransportManager.prototype.setDownloadIndex = function (downloadIndex)
-  {
-    this.setIndex('download',downloadIndex);
+  TransportManager.prototype.setDownloadIndex = function(downloadIndex) {
+    this.setIndex('download', downloadIndex);
   };
 
-  TransportManager.prototype.setEraseIndex = function (downloadIndex)
-  {
-    this.setIndex('erase',eraseIndex);
+  TransportManager.prototype.setEraseIndex = function(downloadIndex) {
+    this.setIndex('erase', eraseIndex);
   };
 
   TransportManager.prototype.onTransport = function() {
 
     var index = -1;
-    var onNextDownloadIndex = function _onNextDownloadIndex(err,bytes)
-      {
-        index++;
-        if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)
-          this.download(this.downloadIndex[index], onNextDownloadIndex);
-      }.bind(this);
+    var onNextDownloadIndex = function _onNextDownloadIndex(err, bytes) {
+      index++;
+      if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)
+        this.download(this.downloadIndex[index], onNextDownloadIndex);
+    }.bind(this);
 
-    var onDirectory = function _onDirectory(err,bytes)
-    {
+    var onDirectory = function _onDirectory(err, bytes) {
 
-        if (!err)
-          this.directory.decode(bytes);
+      if (!err)
+        this.directory.decode(bytes);
 
-        onNextDownloadIndex();
+      this.downloadIndex = this.directory.getReadableFiles();
+
+      onNextDownloadIndex();
 
     }.bind(this);
 
     this.host.state.set(State.prototype.TRANSPORT);
-
-    this.setDownloadIndex([1,2,3,4,5,6,7,8,9,10,20]);
 
     this.download(DownloadCommand.prototype.FILE_INDEX.DIRECTORY, onDirectory);
 

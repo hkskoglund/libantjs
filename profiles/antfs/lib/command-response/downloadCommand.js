@@ -8,9 +8,8 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function DownloadCommand(index,offset,initialRequest,crcSeed,maxBlockSize)
-  {
-      this.request(index,offset,initialRequest,crcSeed,maxBlockSize);
+  function DownloadCommand(index, offset, initialRequest, crcSeed, maxBlockSize) {
+    this.request(index, offset, initialRequest, crcSeed, maxBlockSize);
   }
 
   DownloadCommand.prototype.CONTINUE_TRANSFER = 0x00;
@@ -19,22 +18,19 @@ define(function(require, exports, module) {
   DownloadCommand.prototype.ID = 0x09;
 
   DownloadCommand.prototype.FILE_INDEX = {
-    DIRECTORY : 0x00,
-    COMMAND_PIPE : 0xFFFE
+    DIRECTORY: 0x00,
+    COMMAND_PIPE: 0xFFFE
   };
 
-  DownloadCommand.prototype.setMaxBlockSize = function (maxBlockSize)
-  {
+  DownloadCommand.prototype.setMaxBlockSize = function(maxBlockSize) {
     this.maxBlockSize = maxBlockSize;
   };
 
-  DownloadCommand.prototype.continueRequest = function (index,offset,crcSeed,maxBlockSize)
-  {
-    this.request(index,offset,DownloadCommand.prototype.CONTINUE_TRANSFER,crcSeed,maxBlockSize);
+  DownloadCommand.prototype.continueRequest = function(index, offset, crcSeed, maxBlockSize) {
+    this.request(index, offset, DownloadCommand.prototype.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
   };
 
-  DownloadCommand.prototype.request = function (index,offset,initialRequest,crcSeed,maxBlockSize)
-  {
+  DownloadCommand.prototype.request = function(index, offset, initialRequest, crcSeed, maxBlockSize) {
     this.index = index || 0;
     this.offset = offset || 0;
 
@@ -47,27 +43,25 @@ define(function(require, exports, module) {
   };
 
   // Spec 12.7 Downloading - its a two packet burst
-  DownloadCommand.prototype.serialize = function ()
-  {
-      var command = new Uint8Array(16),
-          dv = new DataView(command.buffer);
+  DownloadCommand.prototype.serialize = function() {
+    var command = new Uint8Array(16),
+      dv = new DataView(command.buffer);
 
-      command[0] = 0x44; // ANT-FS COMMAND message
-      command[1] = this.ID;
-      dv.setUint16(2,this.index,true);
-      dv.setUint32(4,this.offset,true);
-      command[8] = 0;
-      command[9] = this.initialRequest;
-      dv.setUint16(10,this.crcSeed,true);
-      dv.setUint32(12,this.maxBlockSize,true);
+    command[0] = 0x44; // ANT-FS COMMAND message
+    command[1] = this.ID;
+    dv.setUint16(2, this.index, true);
+    dv.setUint32(4, this.offset, true);
+    command[8] = 0;
+    command[9] = this.initialRequest;
+    dv.setUint16(10, this.crcSeed, true);
+    dv.setUint32(12, this.maxBlockSize, true);
 
-      return command;
+    return command;
   };
 
-  DownloadCommand.prototype.toString = function ()
-  {
-    return 'DOWNLOAD index ' + this.index + ' offset ' + this.offset + ' initial request '  +
-            this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
+  DownloadCommand.prototype.toString = function() {
+    return 'DOWNLOAD index ' + this.index + ' offset ' + this.offset + ' initial request ' +
+      this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
   };
 
   module.exports = DownloadCommand;

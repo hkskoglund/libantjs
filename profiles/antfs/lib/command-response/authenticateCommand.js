@@ -8,11 +8,10 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function AuthenticateCommand(commandType, authenticationStringLength, hostSerialNumber)
-  {
-      this.commandType = commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
-      this.authenticationStringLength = authenticationStringLength || 0;
-      this.hostSerialNumber = hostSerialNumber || 0;
+  function AuthenticateCommand(commandType, authenticationStringLength, hostSerialNumber) {
+    this.commandType = commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
+    this.authenticationStringLength = authenticationStringLength || 0;
+    this.hostSerialNumber = hostSerialNumber || 0;
 
   }
 
@@ -23,86 +22,80 @@ define(function(require, exports, module) {
 
   AuthenticateCommand.prototype.ID = 0x04;
 
-  AuthenticateCommand.prototype.setRequestProceedToTransport = function (hostSerialNumber)
-  {
+  AuthenticateCommand.prototype.setRequestProceedToTransport = function(hostSerialNumber) {
     this.request(AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT, hostSerialNumber);
   };
 
-  AuthenticateCommand.prototype.setRequestClientSerialNumber = function (hostSerialNumber)
-  {
+  AuthenticateCommand.prototype.setRequestClientSerialNumber = function(hostSerialNumber) {
     this.request(AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, hostSerialNumber);
   };
 
-  AuthenticateCommand.prototype.setRequestPairing = function (hostSerialNumber, hostname)
-  {
-    console.log('hostname is now',hostname);
+  AuthenticateCommand.prototype.setRequestPairing = function(hostSerialNumber, hostname) {
+    console.log('hostname is now', hostname);
     if (hostname)
       this.hostname = hostname;
     this.request(AuthenticateCommand.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
   };
 
-  AuthenticateCommand.prototype.setRequestPasskeyExchange = function (hostSerialNumber, passkey)
-  {
+  AuthenticateCommand.prototype.setRequestPasskeyExchange = function(hostSerialNumber, passkey) {
     this.request(AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
   };
 
-  AuthenticateCommand.prototype.request = function (commandType, hostSerialNumber, authenticationString)
-  {
+  AuthenticateCommand.prototype.request = function(commandType, hostSerialNumber, authenticationString) {
     this.commandType = commandType;
 
     if (authenticationString) {
-     this.authenticationStringLength = authenticationString.length;
-     this.authenticationString = authenticationString;
-    }
-    else
-     this.authenticationStringLength = 0;
+      this.authenticationStringLength = authenticationString.length;
+      this.authenticationString = authenticationString;
+    } else
+      this.authenticationStringLength = 0;
 
     this.hostSerialNumber = hostSerialNumber;
   };
 
-  AuthenticateCommand.prototype.serialize = function ()
-  {
-      var command = new Uint8Array(8 + this.authenticationStringLength),
-          dv = new DataView(command.buffer),
-          byteNr;
+  AuthenticateCommand.prototype.serialize = function() {
+    var command = new Uint8Array(8 + this.authenticationStringLength),
+      dv = new DataView(command.buffer),
+      byteNr;
 
-      command[0] = 0x44; // ANT-FS COMMAND message
-      command[1] = this.ID;
-      command[2] = this.commandType;
-      command[3] = this.authenticationStringLength;
-      dv.setUint32(4,this.hostSerialNumber ,true);
+    command[0] = 0x44; // ANT-FS COMMAND message
+    command[1] = this.ID;
+    command[2] = this.commandType;
+    command[3] = this.authenticationStringLength;
+    dv.setUint32(4, this.hostSerialNumber, true);
 
-     // Host friendly name if pairing, client passkey if paskey exchange
+    // Host friendly name if pairing, client passkey if paskey exchange
 
-     if (this.authenticationStringLength)
-     {
-       for (byteNr=0; byteNr <= this.authenticationStringLength; byteNr++)
-       {
-         command[8 + byteNr] = this.authenticationString.charCodeAt(byteNr);
-       }
-     }
+    if (this.authenticationStringLength) {
+      for (byteNr = 0; byteNr <= this.authenticationStringLength; byteNr++) {
+        command[8 + byteNr] = this.authenticationString.charCodeAt(byteNr);
+      }
+    }
 
-      return command;
+    return command;
   };
 
-  AuthenticateCommand.prototype.toString = function ()
-  {
+  AuthenticateCommand.prototype.toString = function() {
     var cmdType;
 
-    switch (this.commandType)
-    {
-      case AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT : cmdType = 'proceed to transport'; break;
-      case AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER : cmdType = 'get client serial number'; break;
-      case AuthenticateCommand.prototype.REQUEST_PAIRING :
+    switch (this.commandType) {
+      case AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT:
+        cmdType = 'proceed to transport';
+        break;
+      case AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER:
+        cmdType = 'get client serial number';
+        break;
+      case AuthenticateCommand.prototype.REQUEST_PAIRING:
         cmdType = 'pairing';
         if (this.authenticationStringLength)
           cmdType += ', hostname ' + this.authenticationString;
         break;
-      case AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE : cmdType = 'passkey exchange'; break;
+      case AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE:
+        cmdType = 'passkey exchange';
+        break;
     }
 
-
-    return 'AUTHENTICATE '+ cmdType + ' host serial number ' + this.hostSerialNumber;
+    return 'AUTHENTICATE ' + cmdType + ' host serial number ' + this.hostSerialNumber;
   };
 
   module.exports = AuthenticateCommand;

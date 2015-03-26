@@ -8,32 +8,29 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function Link(frequency,period,hostSerialNumber)
-  {
+  function Link(frequency, period, hostSerialNumber) {
 
-      this.frequency = frequency;
-      this.period = period;
-      this.hostSerialNumber = hostSerialNumber;
+    this.frequency = frequency;
+    this.period = period;
+    this.hostSerialNumber = hostSerialNumber;
   }
 
   Link.prototype.ID = 0x02;
 
-  Link.prototype.serialize = function ()
-  {
-      var command = new Uint8Array(8),
-          dv = new DataView(command.buffer);
+  Link.prototype.serialize = function() {
+    var command = new Uint8Array(8),
+      dv = new DataView(command.buffer);
 
-      command[0] = 0x44; // ANT-FS COMMAND message
-      command[1] = this.ID;
-      command[2] = this.frequency;
-      command[3] = this.period;
-      dv.setUint32(4,this.hostSerialNumber,true);
+    command[0] = 0x44; // ANT-FS COMMAND message
+    command[1] = this.ID;
+    command[2] = this.frequency;
+    command[3] = this.period;
+    dv.setUint32(4, this.hostSerialNumber, true);
 
-      return command;
+    return command;
   };
 
-  Link.prototype.toString = function ()
-  {
+  Link.prototype.toString = function() {
     return 'Link ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host SN ' + this.hostSerialNumber;
   };
 

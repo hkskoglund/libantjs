@@ -9,8 +9,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function GeneralFilePermission(flags)
-  {
+  function GeneralFilePermission(flags) {
     this.flags = flags;
 
     this.crypto = this.flags & GeneralFilePermission.prototype.BIT_MASK.CRYPTO ? true : false;
@@ -23,23 +22,22 @@ define(function(require, exports, module) {
   }
 
   GeneralFilePermission.prototype.BIT_MASK = {
-    CRYPTO  : parseInt("00000100",2),
-    APPEND  : parseInt("00001000",2),
-    ARCHIVE : parseInt("00010000",2),
-    ERASE   : parseInt("00100000",2),
-    WRITE   : parseInt("01000000",2),
-    READ    : parseInt("10000000",2)
+    CRYPTO: parseInt("00000100", 2),
+    APPEND: parseInt("00001000", 2),
+    ARCHIVE: parseInt("00010000", 2),
+    ERASE: parseInt("00100000", 2),
+    WRITE: parseInt("01000000", 2),
+    READ: parseInt("10000000", 2)
   };
 
-  GeneralFilePermission.prototype.toString = function ()
-  {
+  GeneralFilePermission.prototype.toString = function() {
     var msg = ' Flags = 0x' + this.flags.toString(16) + ' ';
 
     if (this.crypto)
-     msg += 'Crypto ';
+      msg += 'Crypto ';
 
     if (this.append)
-     msg += 'Append ';
+      msg += 'Append ';
 
     if (this.archive)
       msg += 'Archive ';

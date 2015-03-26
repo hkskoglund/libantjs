@@ -10,19 +10,18 @@ define(function(require, exports, module) {
   'use strict';
 
   var Channel = require('../../channel/channel'),
-      ClientBeacon = require('./lib/layer/clientBeacon'),
-      State = require('./lib/layer/util/state'),
+    ClientBeacon = require('./lib/layer/clientBeacon'),
+    State = require('./lib/layer/util/state'),
 
-      // Layers
+    // Layers
 
-      LinkManager = require('./lib/layer/linkManager'),
-      AuthenticationManager = require('./lib/layer/authenticationManager'),
-      TransportManager = require('./lib/layer/transportManager');
+    LinkManager = require('./lib/layer/linkManager'),
+    AuthenticationManager = require('./lib/layer/authenticationManager'),
+    TransportManager = require('./lib/layer/transportManager');
 
-  function Host(options, host, channelNumber, net)
-  {
+  function Host(options, host, channelNumber, net) {
 
-    Channel.call(this,options, host, channelNumber, net);
+    Channel.call(this, options, host, channelNumber, net);
 
     // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
@@ -39,7 +38,7 @@ define(function(require, exports, module) {
 
     this.transportManager = new TransportManager(this);
 
-    this.beacon =  new ClientBeacon();
+    this.beacon = new ClientBeacon();
 
     this.on('data', this.onBroadcast);
 
@@ -49,172 +48,147 @@ define(function(require, exports, module) {
 
     this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
-    this.burst = undefined;
-
   }
 
   Host.prototype = Object.create(Channel.prototype);
   Host.prototype.constructor = Channel;
 
-  Host.prototype.setPasskey = function (clientDeviceSerialNumber,passkey)
-  {
+  Host.prototype.setPasskey = function(clientDeviceSerialNumber, passkey) {
     this.autenticationManager.pairingDB[clientDeviceSerialNumber] = passkey;
   };
 
-  Host.prototype.getHostname = function ()
-  {
+  Host.prototype.getHostname = function() {
     return this.hostname;
   };
 
-  Host.prototype.onRxFailGoToSearch = function ()
-  {
-      this.log.log('log','Lost contact with client. Resetting.');
-      this.onReset();
+  Host.prototype.onRxFailGoToSearch = function() {
+    this.log.log('log', 'Lost contact with client. Resetting.');
+    this.onReset();
   };
 
-  Host.prototype.onReset = function (err,callback)
-  {
+  Host.prototype.onReset = function(err, callback) {
 
     if (this.frequency !== this.NET.FREQUENCY.ANTFS)
-      this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS,ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
+      this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
 
         if (e & this.log.logging)
-          this.log.log('error','Failed to reset search frequency to default ANT-FS 2450 MHz');
+          this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
 
         if (typeof callback === 'function')
           callback(e);
       }.bind(this));
 
-
-
-
   };
 
-  Host.prototype.connect = function (callback)
-  {
+  Host.prototype.connect = function(callback) {
 
-    var onConnecting = function _onConnecting(err,msg)
-    {
+    var onConnecting = function _onConnecting(err, msg) {
 
       if (!err) {
         this.state = new State(State.prototype.LINK);
         if (this.log.logging)
-          this.log.log('log','Connecting, host state now '+this.state.toString());
+          this.log.log('log', 'Connecting, host state now ' + this.state.toString());
       }
-      callback(err,msg);
+      callback(err, msg);
 
-  }.bind(this);
+    }.bind(this);
 
-    this.getSerialNumber(function _getSN(err,serialNumberMsg) {
+    this.getSerialNumber(function _getSN(err, serialNumberMsg) {
 
-      if (!err)
-      {
-       this.setHostSerialNumber(serialNumberMsg.serialNumber);
-      } else
-          {
-            this.setHostSerialNumber(0);
-          }
+      if (!err) {
+        this.setHostSerialNumber(serialNumberMsg.serialNumber);
+      } else {
+        this.setHostSerialNumber(0);
+      }
 
-      Channel.prototype.connect.call(this,onConnecting);
+      Channel.prototype.connect.call(this, onConnecting);
 
     }.bind(this));
 
   };
 
-  Host.prototype.setHostSerialNumber = function (serialNumber)
-  {
-    console.log('host serial number === ',serialNumber);
+  Host.prototype.setHostSerialNumber = function(serialNumber) {
+    console.log('host serial number === ', serialNumber);
     this.hostSerialNumber = serialNumber;
   };
 
-  Host.prototype.getHostSerialNumber = function ()
-  {
+  Host.prototype.getHostSerialNumber = function() {
     return this.hostSerialNumber;
   };
 
-  Host.prototype.onBeacon = function (beacon)
-  {
+  Host.prototype.onBeacon = function(beacon) {
     if (this.log.logging)
-      this.log.log('log',this.beacon.toString());
+      this.log.log('log', this.beacon.toString());
   };
 
-
-  Host.prototype.onBroadcast = function (broadcast)
-  {
+  Host.prototype.onBroadcast = function(broadcast) {
     var res = this.beacon.decode(broadcast.payload);
+
+
     if (res === -1)
 
     {
-      if (this.log.logging)
-      {
-        this.log.log('warn','Previous packet retransmission, ignored');
+      if (this.log.logging) {
+        this.log.log('warn', 'Previous packet retransmission, ignored');
       }
     } else {
 
-    this.burst = undefined;
-
-    this.emit('beacon',this.beacon);
-  }
+      this.emit('beacon', this.beacon);
+    }
 
   };
 
-  Host.prototype.onBurst = function (burst)
-  {
-    var res = this.beacon.decode(burst.subarray(0,ClientBeacon.prototype.PAYLOAD_LENGTH));
+  Host.prototype.onBurst = function(burst) {
+    var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
     if (res === -1)
 
     {
-      if (this.log.logging)
-      {
-        this.log.log('warn','Expected client beacon as the first packet of the burst');
+      if (this.log.logging) {
+        this.log.log('warn', 'Expected client beacon as the first packet of the burst');
       }
     } else {
 
-    this.burst = burst;
+      this.emit('beacon', this.beacon);
 
-    this.emit('beacon', this.beacon);
-
-  }
+    }
 
   };
 
-  Host.prototype._sendDelayed = function (command, delayedSendFunc)
-  {
+  Host.prototype._sendDelayed = function(command, delayedSendFunc) {
 
-    var onBeacon = function _onBeacon(beacon)
-    {
+    // Spec. 9.4 "The busy state is not cleared from the client beacon until after the appropiate response has been sent"
 
-      if (!beacon.clientDeviceState.isBusy()) {
+    var onBeacon = function _onBeacon(beacon) {
+
+        if (!beacon.clientDeviceState.isBusy()) {
           sendCommand();
-      } else
-      {
+        } else {
+          if (this.log.logging)
+            this.log.log('log', 'Client is busy cannot send message right now');
+        }
+
+      }.bind(this),
+
+      sendCommand = function _sendCommand() {
         if (this.log.logging)
-          this.log.log('log','Client is busy cannot send message right now');
-      }
+          this.log.log('log', 'Sending delayed ' + command.toString());
 
-    }.bind(this),
-
-      sendCommand = function _sendCommand()
-      {
-        if (this.log.logging)
-          this.log.log('log','Sending ' + command.toString());
-
-        this.removeListener('beacon',onBeacon);
+        this.removeListener('beacon', onBeacon);
 
         delayedSendFunc();
 
       }.bind(this);
 
-    // If we received burst data in the previous transaction with client, we are optimistic
-    // and try to send a new request immediatly assuming that the client will respond. Otherwise
-    // if the client only sends a busy beacon as a broadcast, it may indicate a more lasting busy
-    // state on the client and we register a 'beacon' event listener and sends the message
-    // when the client is not busy.
+    // Spec 9.4 "The host shall not send a command to the client while the beacon indicates it is in the busy state"
 
-    if ((this.beacon.clientDeviceState.isBusy() && this.burst) || !this.beacon.clientDeviceState.isBusy())
+    if (!this.beacon.clientDeviceState.isBusy())
       sendCommand(); // Try sending immediatly
-    else
-      this.on('beacon',onBeacon); // Wait for next beacon
+    else {
+      if (this.log.logging)
+        this.log.log('log', 'Client is busy cannot send message right now');
+
+      this.on('beacon', onBeacon); // Wait for next beacon
+    }
   };
 
   // Override
@@ -223,8 +197,8 @@ define(function(require, exports, module) {
   };
 
   // Override
-  Host.prototype.sendBurst = function (command, packetsPerURB, callback) {
-     this._sendDelayed(command, Channel.prototype.sendBurst.bind(this, command.serialize(), packetsPerURB, callback));
+  Host.prototype.sendBurst = function(command, packetsPerURB, callback) {
+    this._sendDelayed(command, Channel.prototype.sendBurst.bind(this, command.serialize(), packetsPerURB, callback));
   };
 
   module.exports = Host;

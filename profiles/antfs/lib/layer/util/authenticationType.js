@@ -18,34 +18,32 @@ define(function(require, exports, module) {
   AuthenticationType.prototype.PAIRING_ONLY = 0x02;
   AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY = 0x03;
 
-  AuthenticationType.prototype.get = function ()
-  {
+  AuthenticationType.prototype.get = function() {
     return this.type;
   };
 
-  AuthenticationType.prototype.isPassthrough = function ()
-  {
+  AuthenticationType.prototype.isPassthrough = function() {
     return this.type === AuthenticationType.prototype.PASSTHROUGH;
   };
 
-  AuthenticationType.prototype.isPasskeyAndPairingOnly = function ()
-  {
+  AuthenticationType.prototype.isPasskeyAndPairingOnly = function() {
     return this.type === AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY;
   };
 
-  AuthenticationType.prototype.isPairingOnly = function ()
-  {
+  AuthenticationType.prototype.isPairingOnly = function() {
     return this.type === AuthenticationType.prototype.PAIRING_ONLY;
   };
 
   AuthenticationType.prototype.toString = function() {
 
-     switch (this.type)
-     {
-       case AuthenticationType.prototype.PASSTHROUGH : return "Pass-through (pairing & passkey optional)";
-       case AuthenticationType.prototype.PAIRING_ONLY : return "Pairing only";
-       case AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY : return "Passkey and pairing only";
-     }
+    switch (this.type) {
+      case AuthenticationType.prototype.PASSTHROUGH:
+        return "Pass-through (pairing & passkey optional)";
+      case AuthenticationType.prototype.PAIRING_ONLY:
+        return "Pairing only";
+      case AuthenticationType.prototype.PASSKEY_AND_PAIRING_ONLY:
+        return "Passkey and pairing only";
+    }
   };
 
   module.exports = AuthenticationType;

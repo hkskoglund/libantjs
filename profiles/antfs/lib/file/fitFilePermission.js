@@ -9,7 +9,6 @@ define(function(require, exports, module) {
 
   'use strict';
 
-
   function FitFilePermission(flags) {
     this.flags = flags;
 

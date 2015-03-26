@@ -8,8 +8,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function DownloadResponse(data)
-  {
+  function DownloadResponse(data) {
     if (data)
       this.deserialize(data);
   }
@@ -29,57 +28,66 @@ define(function(require, exports, module) {
   DownloadResponse.prototype.CRC_LENGTH = 2;
   DownloadResponse.prototype.PACKET_LENGTH = 8;
 
-  DownloadResponse.prototype.deserialize = function (data)
-  {
-      // overview p. 59 in spec of response format
+  DownloadResponse.prototype.deserialize = function(data) {
+    // overview p. 59 in spec of response format
 
-      var dv = new DataView(data.buffer),
-          iStart,
-          iEnd;
+    var dv = new DataView(data.buffer),
+      iStart,
+      iEnd;
 
-      // HEADER
+    // HEADER
 
-      // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
-      // data[1] should be 0x84;
+    // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
+    // data[1] should be 0x84;
 
-      this.result = data[2];
+    this.result = data[2];
 
-      // data[3] should be 0x00
+    // data[3] should be 0x00
 
-      this.length = dv.getUint32(4+data.byteOffset,true);
-      this.offset = dv.getUint32(8+data.byteOffset,true);
-      this.fileSize = dv.getUint32(12+data.byteOffset,true);
+    this.length = dv.getUint32(4 + data.byteOffset, true);
+    this.offset = dv.getUint32(8 + data.byteOffset, true);
+    this.fileSize = dv.getUint32(12 + data.byteOffset, true);
 
-      // DATA
+    // DATA
 
-      iStart = DownloadResponse.prototype.HEADER_LENGTH;
-      iEnd = DownloadResponse.prototype.HEADER_LENGTH + this.length; // we are optimistic and trust length
+    iStart = DownloadResponse.prototype.HEADER_LENGTH;
+    iEnd = DownloadResponse.prototype.HEADER_LENGTH + this.length; // we are optimistic and trust length
 
-      this.packets = data.subarray(iStart,iEnd);
+    this.packets = data.subarray(iStart, iEnd);
 
-      // FOOTER
+    // FOOTER
 
-      this.CRC = data[data.byteLength-1] << 8 | data[data.byteLength - 2];
+    this.CRC = data[data.byteLength - 1] << 8 | data[data.byteLength - 2];
 
   };
 
-  DownloadResponse.prototype.toString = function ()
-  {
+  DownloadResponse.prototype.toString = function() {
 
     var msg = 'DOWNLOAD ';
 
-    switch (this.result)
-    {
-      case DownloadResponse.prototype.OK : msg += 'Request OK'; break;
-      case DownloadResponse.prototype.NOT_EXIST : msg += 'Does not exist'; break;
-      case DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE : msg += 'Exists, but is not downloadable'; break;
-      case DownloadResponse.prototype.NOT_READY_TO_DOWNLOAD : msg += 'Not ready to download'; break;
-      case DownloadResponse.prototype.INVALID : msg += 'Invalid request'; break;
-      case DownloadResponse.prototype.CRC_INCORRECT : msg += 'CRC incorrect'; break;
+    switch (this.result) {
+      case DownloadResponse.prototype.OK:
+        msg += 'Request OK';
+        break;
+      case DownloadResponse.prototype.NOT_EXIST:
+        msg += 'Does not exist';
+        break;
+      case DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE:
+        msg += 'Exists, but is not downloadable';
+        break;
+      case DownloadResponse.prototype.NOT_READY_TO_DOWNLOAD:
+        msg += 'Not ready to download';
+        break;
+      case DownloadResponse.prototype.INVALID:
+        msg += 'Invalid request';
+        break;
+      case DownloadResponse.prototype.CRC_INCORRECT:
+        msg += 'CRC incorrect';
+        break;
     }
 
     return msg + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
-           this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
+      this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
   };
 

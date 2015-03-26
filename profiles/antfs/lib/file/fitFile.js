@@ -24,15 +24,15 @@ define(function(require, exports, module) {
     // FIT SDK - FIT File Types D00001309 FIT File Types Description - Rev 1.6
     // http://www.thisisant.com/developer/resources/downloads/#software_tab
 
-     1: "Device",
-     2: "Settings",
-     3: "Sport settings",
-     4: "Activity",
-     5: "Workout",
-     6: "Course",
-     7: "Schedule",
-     8: "Locations",
-     9: "Weight",
+    1: "Device",
+    2: "Settings",
+    3: "Sport settings",
+    4: "Activity",
+    5: "Workout",
+    6: "Course",
+    7: "Schedule",
+    8: "Locations",
+    9: "Weight",
     10: "Totals",
     11: "Goals",
     14: "Blood Pressure",
@@ -60,8 +60,7 @@ define(function(require, exports, module) {
 
   };
 
-  FitFile.prototype.getFileName = function ()
-  {
+  FitFile.prototype.getFileName = function() {
     var dateStr;
 
     function formatDate(fDate) {
@@ -85,7 +84,7 @@ define(function(require, exports, module) {
   };
 
   FitFile.prototype.toString = function(timeFormat) {
-    return File.prototype.toString.call(this,timeFormat) + ' | Fit permission : ' + this.fitPermission.toString() +
+    return File.prototype.toString.call(this, timeFormat) + ' | Fit permission : ' + this.fitPermission.toString() +
       ' | Sub type : ' + this.subType + ' ' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
       ' | File number : ' + this.fileNumber;
 

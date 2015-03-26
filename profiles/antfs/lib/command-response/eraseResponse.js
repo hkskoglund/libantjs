@@ -8,8 +8,7 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function EraseResponse(data)
-  {
+  function EraseResponse(data) {
     if (data)
       this.deserialize(data);
   }
@@ -20,33 +19,36 @@ define(function(require, exports, module) {
 
   EraseResponse.prototype.ID = 0x8B;
 
-  EraseResponse.prototype.deserialize = function (data)
-  {
-      // overview p. 59 in spec of response format
+  EraseResponse.prototype.deserialize = function(data) {
+    // overview p. 59 in spec of response format
 
-      var dv = new DataView(data.buffer),
-          iStart,
-          iEnd;
+    var dv = new DataView(data.buffer),
+      iStart,
+      iEnd;
 
-      // HEADER
+    // HEADER
 
-      // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
-      // data[1] should be 0x84;
+    // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
+    // data[1] should be 0x84;
 
-      this.result = data[2];
+    this.result = data[2];
 
   };
 
-  EraseResponse.prototype.toString = function ()
-  {
+  EraseResponse.prototype.toString = function() {
 
     var msg = 'ERASE ';
 
-    switch (this.result)
-    {
-      case EraseResponse.prototype.SUCCESS : msg += 'OK'; break;
-      case EraseResponse.prototype.NOT_EXIST : msg += 'failed'; break;
-      case EraseResponse.prototype.NOT_READY : msg += 'not ready'; break;
+    switch (this.result) {
+      case EraseResponse.prototype.SUCCESS:
+        msg += 'OK';
+        break;
+      case EraseResponse.prototype.NOT_EXIST:
+        msg += 'failed';
+        break;
+      case EraseResponse.prototype.NOT_READY:
+        msg += 'not ready';
+        break;
 
     }
 

@@ -8,10 +8,9 @@ define(function(require, exports, module) {
 
   'use strict';
 
-  function DisconnectCommand(timeDuration,appSpecificDuration)
-  {
-      this.timeDuration = timeDuration || DisconnectCommand.prototype.DISABLE;
-      this.appSpecificDuration = appSpecificDuration || DisconnectCommand.prototype.DISABLE;
+  function DisconnectCommand(timeDuration, appSpecificDuration) {
+    this.timeDuration = timeDuration || DisconnectCommand.prototype.DISABLE;
+    this.appSpecificDuration = appSpecificDuration || DisconnectCommand.prototype.DISABLE;
 
   }
 
@@ -22,20 +21,18 @@ define(function(require, exports, module) {
 
   DisconnectCommand.prototype.ID = 0x03;
 
-  DisconnectCommand.prototype.serialize = function ()
-  {
-      var command = new Uint8Array(4);
+  DisconnectCommand.prototype.serialize = function() {
+    var command = new Uint8Array(4);
 
-      command[0] = 0x44; // ANT-FS COMMAND message
-      command[1] = this.ID;
-      command[2] = this.timeDuration;
-      command[3] = this.appSpecificDuration;
+    command[0] = 0x44; // ANT-FS COMMAND message
+    command[1] = this.ID;
+    command[2] = this.timeDuration;
+    command[3] = this.appSpecificDuration;
 
-      return command;
+    return command;
   };
 
-  DisconnectCommand.prototype.toString = function ()
-  {
+  DisconnectCommand.prototype.toString = function() {
     return 'DISCONNECT ' + ' time duration ' + this.timeDuration + ' app specific duration ' + this.appSpecificDuration;
   };
 
