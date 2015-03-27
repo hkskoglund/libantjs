@@ -32,6 +32,17 @@ define(function(require, exports, module) {
 
     this.hostname = 'antfsjs';
 
+    this.on('data', this.onBroadcast); // decodes client beacon
+
+    this.on('burst', this.onBurst); // decodes client beacon
+
+    this.on('beacon', this.onBeacon);
+
+    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+
+    // Initialize layer specific event handlers at the tail of event callbacks
+    // Host has priority (in front of event callbacks) because it handles decoding of the client beacon
+
     this.linkManager = new LinkManager(this);
 
     this.authenticationManager = new AuthenticationManager(this);
@@ -39,14 +50,6 @@ define(function(require, exports, module) {
     this.transportManager = new TransportManager(this);
 
     this.beacon = new ClientBeacon();
-
-    this.on('data', this.onBroadcast);
-
-    this.on('burst', this.onBurst);
-
-    this.on('beacon', this.onBeacon);
-
-    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
   }
 
@@ -161,6 +164,11 @@ define(function(require, exports, module) {
     var onBeacon = function _onBeacon(beacon) {
 
         if (!beacon.clientDeviceState.isBusy()) {
+
+          if (this.log.logging)
+            this.log.log('log', 'Delayed sending ' + command.toString() + ' client ' +
+                        this.beacon.clientDeviceState.toString());
+
           sendCommand();
         } else {
           if (this.log.logging)
@@ -170,8 +178,6 @@ define(function(require, exports, module) {
       }.bind(this),
 
       sendCommand = function _sendCommand() {
-        if (this.log.logging)
-          this.log.log('log', 'Sending delayed ' + command.toString());
 
         this.removeListener('beacon', onBeacon);
 
@@ -182,12 +188,19 @@ define(function(require, exports, module) {
     // Spec 9.4 "The host shall not send a command to the client while the beacon indicates it is in the busy state"
 
     if (!this.beacon.clientDeviceState.isBusy())
-      sendCommand(); // Try sending immediatly
-    else {
+    {
       if (this.log.logging)
-        this.log.log('log', 'Client is busy cannot send message right now');
+        this.log.log('log', 'Sending ' + command.toString() + ' client ' +
+                      this.beacon.clientDeviceState.toString());
 
-      this.on('beacon', onBeacon); // Wait for next beacon
+      sendCommand(); // Try sending immediatly
+
+    }
+    else {
+        if (this.log.logging)
+          this.log.log('log', 'Client is busy cannot send message right now. Delaying message.');
+
+        this.on('beacon', onBeacon); // Wait for next beacon
     }
   };
 

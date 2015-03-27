@@ -537,6 +537,8 @@ define(function(require, exports, module) {
 
     msg.encode(sequenceChannel, packet);
 
+    // TEST FAIL this.channel[0].emit('EVENT_TRANSFER_TX_FAILED',undefined,'EVENT_TRANSFER_TX_FAILED');
+    // TEST FAIL callback(undefined,'test');
     this.sendMessage(msg, callback);
   };
 
@@ -555,15 +557,25 @@ define(function(require, exports, module) {
       tmpPacket,
       retryNr = 0,
       MAX_BURST_RETRIES = 3,
-      txFailed = false,
+      burstResponseTimeout,
+      //txFailed = false,
 
       sendPacket = function() {
 
         if (sequenceNr > 3) // Roll over sequence nr
           sequenceNr = 1;
 
-        if (packetNr === (numberOfPackets - 1))
+        if (packetNr === (numberOfPackets - 1)) {
           sequenceNr = sequenceNr | 0x04; // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
+
+          burstResponseTimeout = setTimeout (function _onBurstResponseTimeout()
+          {
+            if (this.log.logging)
+              this.log.log('error','Has not received TX_COMPLETED/TX_FAILED for burst');
+            removeEventListeners();
+            callback(new Error('Has not received TX_COMPLETED/TX_FAILED for burst'));
+          }.bind(this),2000);
+        }
 
         packet = data.subarray(packetNr * packetLength, (packetNr + 1) * packetLength);
 
@@ -579,14 +591,14 @@ define(function(require, exports, module) {
 
         this.sendBurstTransferPacket(sequenceChannel, packet, function _sendBurstTransferPacket(err, msg) {
 
-          if (txFailed)
+        /*  if (txFailed)
           {
 
             if (retryNr <= MAX_BURST_RETRIES)
               txFailed = false; // Reset for retry
 
             return;
-          }
+          } */
 
           if (!err) {
 
@@ -607,9 +619,9 @@ define(function(require, exports, module) {
       }.bind(this),
 
       addListeners = function() {
-        this.channel[channel].once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
-        this.channel[channel].once('EVENT_TRANSFER_TX_FAILED', onTxFailed);
-        this.channel[channel].once('EVENT_TRANSFER_TX_START', onTxStart);
+        this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
+        this.channel[channel].on('EVENT_TRANSFER_TX_FAILED', onTxFailed);
+        this.channel[channel].on('EVENT_TRANSFER_TX_START', onTxStart);
 
       }.bind(this),
 
@@ -621,6 +633,7 @@ define(function(require, exports, module) {
 
       onTxCompleted = function(err, msg) {
         //console.timeEnd('TXCOMPLETED');
+        clearTimeout(burstResponseTimeout);
         removeListeners();
         cb(undefined, msg);
       },
@@ -631,7 +644,8 @@ define(function(require, exports, module) {
 
       onTxFailed = function(err, msg) {
 
-        txFailed = true;
+        clearTimeout(burstResponseTimeout);
+        //txFailed = true;
 
         retryNr++;
 

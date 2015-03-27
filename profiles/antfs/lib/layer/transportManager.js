@@ -41,6 +41,8 @@ define(function(require, exports, module) {
 
     this.directory = new Directory(undefined, host);
 
+    this.commandResponseTimeout = undefined;
+
   }
 
   TransportManager.prototype = Object.create(EventEmitter.prototype);
@@ -57,6 +59,32 @@ define(function(require, exports, module) {
     if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
       this.host.state.isAuthentication()) {
       this.emit('transport');
+    }
+  };
+
+  TransportManager.prototype.onBurst = function(burst) {
+
+    var responseData,
+      responseId;
+
+
+    if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
+        this.host.state.isTransport()))
+      return;
+
+    clearTimeout(this.commandResponseTimeout);
+
+    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+    responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+
+    switch (responseId) {
+
+      case DownloadResponse.prototype.ID:
+
+        this.handleDownloadResponse(responseData);
+
+        break;
+
     }
   };
 
@@ -122,40 +150,39 @@ define(function(require, exports, module) {
 
   };
 
-  TransportManager.prototype.onBurst = function(burst) {
+  TransportManager.prototype.onCommandSentToClient = function(err, msg) {
+    if (err && this.log.logging)
+      this.log.log('error', 'Failed to send command to client (EVENT_TRANSFER_TX_FAILED)', err);
+    else if (!err)
+    {
+      this.commandResponseTimeout = setTimeout(function () {
+        var onBeacon = function _onBeacon(beacon)
+        {
+          var command = this.session.command[this.session.command.length - 1];
 
-    var responseData,
-      responseId;
+          if (command)
+           {
+             if (this.log.logging)
+               this.log.log('log','Retry sending last command to client');
 
+             this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
+           }
+        }.bind(this);
 
-    if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
-        this.host.state.isTransport()))
-      return;
+        if (this.log.logging)
+          this.log.log('log','Command sent, but no response from client (EVENT_TRANSFER_TX_COMPLETED)');
 
-    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
-    responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+        this.once('beacon', onBeacon);
 
-    switch (responseId) {
-
-      case DownloadResponse.prototype.ID:
-
-        this.handleDownloadResponse(responseData);
-
-        break;
-
+      }.bind(this),2000);
     }
   };
 
-  TransportManager.prototype.onSentToClient = function(err, msg) {
-    if (err && this.log.logging)
-      this.log.log('error', 'Failed to send command to client', err);
-  };
-
-  TransportManager.prototype.sendDownload = function(command) {
+  TransportManager.prototype.sendCommand = function(command) {
 
     this.session.command.push(command);
 
-    this.host.sendBurst(command, this.onSentToClient);
+    this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
   };
 
   TransportManager.prototype.download = function(index, offset) {
@@ -185,7 +212,7 @@ define(function(require, exports, module) {
       command.continueRequest(index, offset, crcSeed, this.session.command[0].maxBlockSize);
     }
 
-    this.sendDownload(command);
+    this.sendCommand(command);
   };
 
   TransportManager.prototype.setIndex = function(commandType, indexArray) {
@@ -219,6 +246,7 @@ define(function(require, exports, module) {
         this.directory.decode(bytes);
 
       this.downloadIndex = this.directory.getReadableFiles();
+      this.downloadIndex = [49,50,51,52,53];
 
       onNextDownloadIndex();
 

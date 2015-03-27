@@ -134,9 +134,9 @@ define(function(require, exports, module) {
     this.session.command.push(command);
 
     if (command.authenticationStringLength)
-      this.host.sendBurst(command, this.onSentToClient);
+      this.host.sendBurst(command, this.onSentToClient.bind(this));
     else
-      this.host.sendAcknowledged(command, this.onSentToClient);
+      this.host.sendAcknowledged(command, this.onSentToClient.bind(this));
   };
 
   AuthenticationManager.prototype.requestClientSerialNumber = function(callback) {
