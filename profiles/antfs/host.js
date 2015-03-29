@@ -1,12 +1,6 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
-
   'use strict';
 
   var Channel = require('../../channel/channel'),
@@ -132,7 +126,7 @@ define(function(require, exports, module) {
 
     {
       if (this.log.logging) {
-        this.log.log('warn', 'Previous packet retransmission, ignored');
+        this.log.log('log', 'Broadcast not a valid beacon, retransmission of last packet. Ignoring.');
       }
     } else {
 
@@ -216,4 +210,3 @@ define(function(require, exports, module) {
 
   module.exports = Host;
   return module.exports;
-});

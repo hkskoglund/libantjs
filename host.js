@@ -1,14 +1,8 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
-
   'use strict';
 
-  var EventEmitter = require('./util/events'),
+  var EventEmitter = require('events'),
 
     // Data
 
@@ -558,7 +552,6 @@ define(function(require, exports, module) {
       retryNr = 0,
       MAX_BURST_RETRIES = 3,
       burstResponseTimeout,
-      //txFailed = false,
 
       sendPacket = function() {
 
@@ -591,15 +584,6 @@ define(function(require, exports, module) {
 
         this.sendBurstTransferPacket(sequenceChannel, packet, function _sendBurstTransferPacket(err, msg) {
 
-        /*  if (txFailed)
-          {
-
-            if (retryNr <= MAX_BURST_RETRIES)
-              txFailed = false; // Reset for retry
-
-            return;
-          } */
-
           if (!err) {
 
             sequenceNr++;
@@ -609,6 +593,8 @@ define(function(require, exports, module) {
               sendPacket();
             // else (call callback on TX_COMPLETED/FAILED)
           } else {
+
+            clearTimeout(burstResponseTimeout);
 
             removeListeners();
 
@@ -898,4 +884,3 @@ define(function(require, exports, module) {
 
   module.exports = Host;
   return module.exports;
-});

@@ -1,12 +1,6 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
-
   'use strict';
 
   var FitFile = require('./fitFile'),
@@ -19,7 +13,7 @@ define(function(require, exports, module) {
     this.file = [];
 
     this.host = host;
-    
+
     this.log = this.host.log;
     this.logger = this.host.log.log.bind(this.host.log);
 
@@ -132,5 +126,3 @@ define(function(require, exports, module) {
 
   module.exports = Directory;
   return module.exports;
-
-});

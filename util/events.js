@@ -1,12 +1,5 @@
-/* global define: true */
-
-// Simplification of https://github.com/joyent/node/blob/828f14556e0daeae7fdac08fceaa90952de63f73/lib/events.js
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function _requireDefineEventEmitter(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   'use strict';
 
@@ -135,5 +128,3 @@ define(function _requireDefineEventEmitter(require, exports, module) {
   module.export = EventEmitter;
 
   return module.export;
-
-});

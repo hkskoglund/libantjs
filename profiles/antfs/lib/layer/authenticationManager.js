@@ -1,15 +1,9 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
-
   'use strict';
 
-  var EventEmitter = require('../../../../util/events'),
+  var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
     AuthenticateCommand = require('../command-response/authenticateCommand'),
     AuthenticateResponse = require('../command-response/authenticateResponse'),
@@ -196,7 +190,7 @@ define(function(require, exports, module) {
 
         if (!passkey && this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
           if (this.log.logging)
-            this.log.log('warn', 'No passkey available for client ' + this.clientSerialNumber +
+            this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber +
               ' requesting pairing');
 
           this.requestPairing(onPairing);
@@ -223,11 +217,13 @@ define(function(require, exports, module) {
         if (err)
           this.host.state.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
 
+        else
+        {
+          if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
+            this.setPasskey(this.clientSerialNumber, response.authenticationString);
+            // Emit passkey?
+          }
 
-        if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
-          this.setPasskey(this.clientSerialNumber, response.authenticationString);
-
-          // Emit passkey?
         }
 
       }.bind(this),
@@ -251,5 +247,3 @@ define(function(require, exports, module) {
 
   module.exports = AuthenticationManager;
   return module.exports;
-
-});

@@ -1,15 +1,10 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
 
   'use strict';
 
-  var EventEmitter = require('../../../../util/events'),
+  var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
 
     DownloadCommand = require('../command-response/downloadCommand'),
@@ -22,7 +17,7 @@ define(function(require, exports, module) {
 
     Directory = require('../file/directory');
 
-  //heap = require('/usr/lib/node_modules/heapdump');
+  // heap = require('/usr/lib/node_modules/heapdump');
 
   function TransportManager(host) {
 
@@ -42,6 +37,8 @@ define(function(require, exports, module) {
     this.directory = new Directory(undefined, host);
 
     this.commandResponseTimeout = undefined;
+
+    this.boundOnTransferRxFailed = undefined;
 
   }
 
@@ -122,15 +119,16 @@ define(function(require, exports, module) {
         }
 
         this.session.packets.set(response.packets, response.offset);
+        response.packets = null; // Don't cache in session
 
         offset = response.offset + response.length;
 
         if (offset >= response.fileSize) {
 
-          //  heap.writeSnapshot('heap'+Date.now()+'.heapsnapshot', function (err,msg)
-          //  {
+            //heap.writeSnapshot('heap'+Date.now()+'.heapsnapshot', function (err,msg)
+            //{
           this.emit('download', NO_ERROR, this.session.packets);
-          //  }.bind(this));
+            //}.bind(this));
 
 
         } else {
@@ -178,9 +176,27 @@ define(function(require, exports, module) {
     }
   };
 
+  TransportManager.prototype.onTransferRxFailed = function (command,err,response)
+  {
+    if (this.log.logging)
+      this.log.log('log','Failed burst received from client. Retrying');
+
+      this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
+
+  };
+
   TransportManager.prototype.sendCommand = function(command) {
 
     this.session.command.push(command);
+
+   // Assume client will not try to retransmit failed burst...
+
+     if (this.boundOnTransferRxFailed)
+        this.host.removeListener('EVENT_TRANSFER_RX_FAILED',this.boundOnTransferRxFailed);
+
+    this.boundOnTransferRxFailed = this.onTransferRxFailed.bind(this, command);
+
+    this.host.on('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
     this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
   };
@@ -246,7 +262,6 @@ define(function(require, exports, module) {
         this.directory.decode(bytes);
 
       this.downloadIndex = this.directory.getReadableFiles();
-      this.downloadIndex = [49,50,51,52,53];
 
       onNextDownloadIndex();
 
@@ -260,5 +275,3 @@ define(function(require, exports, module) {
 
   module.exports = TransportManager;
   return module.exports;
-
-});

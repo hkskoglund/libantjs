@@ -1,15 +1,10 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
 
   'use strict';
 
-  var EventEmitter = require('../../../../util/events'),
+  var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
     LinkCommand = require('../command-response/linkCommand'),
     DisconnectCommand = require('../command-response/disconnectCommand'),
@@ -158,5 +153,3 @@ define(function(require, exports, module) {
 
   module.exports = LinkManager;
   return module.exports;
-
-});

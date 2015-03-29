@@ -1,12 +1,6 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
-
   'use strict';
 
   var File = require('./file'),
@@ -92,5 +86,3 @@ define(function(require, exports, module) {
 
   module.exports = FitFile;
   return module.exports;
-
-});

@@ -1,14 +1,10 @@
-/* global define: true */
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-define(function(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   'use strict';
 
   var Logger = require('../util/logger'),
-    EventEmitter = require('../util/events');
+    EventEmitter = require('events');
 
   // Abstract USB device
   function USBDevice(options) {
@@ -90,5 +86,3 @@ define(function(require, exports, module) {
 
   module.exports = USBDevice;
   return module.exports;
-
-});

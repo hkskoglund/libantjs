@@ -1,12 +1,5 @@
-/* global define: true, console: true, Uint8Array: true */
-// Allows using define in node.js without requirejs
-// Require.js : require({moduleId}) -> {moduleId} translated to a path (using baseUrl+path configuration)
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   function Logger(options) {
 
@@ -125,8 +118,5 @@ define(function(require, exports, module) {
       this.console.timeEnd(name);
   };
 
-  module.export = Logger;
-
-  return module.export;
-
-});
+  module.exports = Logger;
+  return module.exports;

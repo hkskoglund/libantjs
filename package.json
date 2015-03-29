@@ -24,7 +24,6 @@
   },
   "homepage": "https://github.com/hkskoglund/libantjs",
   "dependencies": {
-    "amdefine": ">=0.1.0",
     "usb": ">=1.0.3"
   }
 }

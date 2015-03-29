@@ -1,10 +1,5 @@
-/* global define: true */
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-
-define(function _requireDefineBikePage0(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   'use strict';
 
@@ -54,5 +49,3 @@ define(function _requireDefineBikePage0(require, exports, module) {
 
   module.exports = BikePage0;
   return module.exports;
-
-});

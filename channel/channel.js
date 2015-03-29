@@ -1,14 +1,9 @@
-/* global define: true */
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-define(function(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   'use strict';
 
   var Logger = require('../util/logger'),
-    EventEmitter = require('../util/events'),
+    EventEmitter = require('events'),
     ChannelId = require('./channelId');
 
   function Channel(options, host, channelNumber, net, type) {
@@ -356,7 +351,5 @@ define(function(require, exports, module) {
     return msg;
   };
 
-  module.export = Channel;
-  return module.export;
-
-});
+  module.exports = Channel;
+  return module.exports;

@@ -1,9 +1,5 @@
-/* global define: true, Int8Array: true, DataView: true, Uint8Array: true */
-
-if (typeof define !== 'function') {
-  var define = require('amdefine')(module);
-}
-define(function(require, exports, module) {
+/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
   'use strict';
   // Function names based on Dynastram Android SDK v 4.00 documentation
@@ -60,4 +56,3 @@ define(function(require, exports, module) {
 
   module.exports = RSSI;
   return module.exports;
-});
