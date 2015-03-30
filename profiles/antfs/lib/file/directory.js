@@ -87,12 +87,29 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  Directory.prototype.getReadableFiles = function() {
-    var readable = [];
+  Directory.prototype.getFile = function (index)
+  {
+    return this.file[index - 1]; // Files in directory structure always start at 1
+  };
+
+  Directory.prototype.getFITfiles = function(newOnly) {
+    var readable = [],
+        addCondition;
 
     this.file.forEach(function(file, index, arr) {
-      if (file.permission.read)
+
+      if (newOnly)
+      {
+        addCondition = !file.permission.archive && file.permission.read && file instanceof FitFile;
+
+      } else
+      {
+        addCondition =  file.permission.read && file instanceof FitFile;
+      }
+
+      if (addCondition)
         readable.push(file.index);
+
     }.bind(this));
 
     return readable;

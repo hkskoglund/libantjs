@@ -11,6 +11,8 @@ console.log('antfs channel',antfsChannel);
 var slavePort = 0;
 var devices;
 
+var fs = require('fs');
+
 function onError(error) {
   console.trace();
   console.error('error', error);
@@ -22,6 +24,20 @@ function onConnect(error)
     console.log('onConnect',error);
     return;
   }
+
+  antfsChannel.on('download', onDownload);
+
+}
+
+function onDownload(error, session)
+{
+  if (!error && session && session.index)
+    fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
+      if (err)
+        console.log(Date.now() + " Error writing " + session.filename, err);
+      else
+        console.log(Date.now() + " Saved " + session.filename);
+    });
 
 }
 

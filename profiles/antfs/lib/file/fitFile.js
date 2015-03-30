@@ -54,7 +54,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  FitFile.prototype.getFileName = function() {
+  FitFile.prototype.getFileName = function(clientSerialNumber) {
     var dateStr;
 
     function formatDate(fDate) {
@@ -74,7 +74,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     else
       dateStr = formatDate(this.date);
 
-    return 'FIT-' + this.subType + '-' + this.index + '-' + dateStr + '.FIT';
+    return 'fit-' + clientSerialNumber + '-' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
+            '-' + this.index + '-' + dateStr + '.fit';
   };
 
   FitFile.prototype.toString = function(timeFormat) {
