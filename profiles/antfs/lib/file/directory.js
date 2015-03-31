@@ -134,6 +134,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
+  Directory.prototype.getNewFITfiles = function ()
+  {
+    return this.getFITfiles(true);
+  };
+
   Directory.prototype.getFITfiles = function(newOnly) {
     var readable = [],
         addCondition;

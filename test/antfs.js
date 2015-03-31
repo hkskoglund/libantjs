@@ -33,10 +33,7 @@ function onConnect(error)
 
 function onDownloadProgress(error, session)
 {
-  this.on('download_progress', function (err,session) {
     console.log('progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
-  });
-
 }
 
 function onDownload(error, session)

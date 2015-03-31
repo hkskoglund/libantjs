@@ -221,11 +221,15 @@ TransportManager.prototype.onCommandSentToClient = function(err, msg) {
   if (err && this.log.logging)
     this.log.log('error', 'Failed to send command to client (EVENT_TRANSFER_TX_FAILED)', err);
   else if (!err) {
+
     this.commandResponseTimeout = setTimeout(function() {
+
       var onBeacon = function _onBeacon(beacon) {
+
         var command = this.session.command[this.session.command.length - 1];
 
         if (command) {
+
           if (this.log.logging)
             this.log.log('log', 'Retry sending last command to client');
 
@@ -236,7 +240,7 @@ TransportManager.prototype.onCommandSentToClient = function(err, msg) {
       if (this.log.logging)
         this.log.log('log', 'Command sent, but no response from client (EVENT_TRANSFER_TX_COMPLETED)');
 
-      this.once('beacon', onBeacon);
+      this.host.once('beacon', onBeacon);
 
     }.bind(this), 2000);
   }
@@ -333,11 +337,9 @@ TransportManager.prototype.onTransport = function() {
 
   var index = -1;
   var onNextDownloadIndex = function _onNextDownloadIndex(err, session) {
-    var bytes;
 
-    if (session)
+    if (!err && session)
     {
-      bytes = session.packets;
       if (this.log.logging)
         this.log.log('log','Downloaded '+ session.filename + ' (' + session.packets.byteLength + ' bytes)');
 
@@ -345,10 +347,13 @@ TransportManager.prototype.onTransport = function() {
 
     index++;
 
+    if (index === 1) // First iteration downloads directory at index 0
+      this.concatDownloadIndex(this.directory.getNewFITfiles());
+
     if (err)
     {
       if (this.log.logging)
-        this.log.log('log','Failed to download file at index ' + index + ' ' + err.toString());
+        this.log.log('log','Failed to download file at index ' + this.downloadIndex[index - 1] + ' ' + err.toString());
     }
 
     if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)

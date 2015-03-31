@@ -7,8 +7,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   var File = require('./file'),
     FitFilePermission = require('./fitFilePermission');
 
-  function FitFile(data) {
-    File.call(this, data);
+  function FitFile(data, directory) {
+    File.call(this, data, directory);
   }
 
   FitFile.prototype = Object.create(File.prototype);
@@ -19,22 +19,22 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     // FIT SDK - FIT File Types D00001309 FIT File Types Description - Rev 1.6
     // http://www.thisisant.com/developer/resources/downloads/#software_tab
 
-    1: "Device",
-    2: "Settings",
-    3: "Sport settings",
-    4: "Activity",
-    5: "Workout",
-    6: "Course",
-    7: "Schedule",
-    8: "Locations",
-    9: "Weight",
-    10: "Totals",
-    11: "Goals",
-    14: "Blood Pressure",
-    15: "MonitoringA",
-    20: "Activity Summary",
-    28: "Daily Monitoring",
-    32: "MonitoringB"
+    1:  'Device capabilities',
+    2:  'Settings',
+    3:  'Sport settings',
+    4:  'Activity',
+    5:  'Workout',
+    6:  'Course',
+    7:  'Schedule',
+    8:  'Locations',
+    9:  'Weight',
+    10: 'Totals',
+    11: 'Goals',
+    14: 'Blood Pressure',
+    15: 'MonitoringA',
+    20: 'Activity Summary',
+    28: 'Daily Monitoring',
+    32: 'MonitoringB'
 
   };
 
@@ -64,15 +64,15 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       // Remove millisec.
       // ISO : 1989-12-31T00:00:00.000Z
       dateAsString = dateAsString.substring(0, dateAsString.length - 5);
-      dateAsString = dateAsString.replace(new RegExp(":", "g"), "-");
-      //dateAsString = dateAsString.replace("T", "-");
+      dateAsString = dateAsString.replace(new RegExp(':', 'g'), '-');
+      //dateAsString = dateAsString.replace('T', '-');
       return dateAsString;
     }
 
     if (this.date === 0xFFFFFFFF)
-      dateStr = "UnknownDate";
+      dateStr = 'UnknownDate';
     else if (this.date < 0x0FFFFFFF)
-      dateStr = "SystemDate" + this.date;
+      dateStr = 'SystemDate-' + this.date;
     else
       dateStr = formatDate(this.date);
 
