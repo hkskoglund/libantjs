@@ -63,7 +63,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     // Host friendly name if pairing, client passkey if paskey exchange
 
     if (this.authenticationStringLength) {
-      console.log('auth!!!!!!!!!!',this.authenticationStringLength,this.authenticationString);
       for (byteNr = 0; byteNr <= this.authenticationStringLength; byteNr++) {
         command[8 + byteNr] = this.authenticationString.charCodeAt(byteNr);
       }

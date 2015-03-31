@@ -8,10 +8,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     File = require('./file');
 
   function Directory(data, host) {
-    if (data)
-      this.decode(data);
 
-    this.file = [];
+    File.call(this,data);
+
+    this.file = [this]; // Directory is a file at index 0
+    this.index = 0;
 
     this.host = host;
 
@@ -19,6 +20,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.logger = this.host.log.log.bind(this.host.log);
 
   }
+
+  Directory.prototype = Object.create(File.prototype);
+  Directory.prototype.constructor = Directory;
 
   Directory.prototype.SYSTEM_TIME_NOT_USED = 0xFFFFFFFF;
   Directory.prototype.UNKNOWN_DATE = 0xFFFFFFFF;
@@ -30,6 +34,16 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   Directory.prototype.HEADER_LENGTH = 16;
+
+  Directory.prototype.getFileName = function ()
+  {
+    return 'directory-' + this.host.getClientSerialNumber();
+  };
+
+  Directory.prototype.getFile = function (index)
+  {
+    return this.file[index];
+  };
 
   Directory.prototype.decode = function(data) {
     var dv = new DataView(data.buffer),
@@ -75,12 +89,12 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         case File.prototype.TYPE.FIT:
 
-          file = new FitFile(fileMetaData);
+          file = new FitFile(fileMetaData,this);
           break;
 
         default:
 
-          file = new File(fileMetaData);
+          file = new File(fileMetaData,this);
           break;
       }
 
@@ -104,7 +118,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       }
 
    return directoryIndex;
-  
+
   };
 
   Directory.prototype.eraseFile = function (index)
@@ -114,7 +128,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
      if (directoryIndex !== -1) {
        if (this.log.logging)
-         this.log.log('log','Removing file at directory index ' + directoryIndex + ' real file index is ' + index);
+         this.log.log('log','Removing file at directory index ' + directoryIndex + ' requested index ' + index);
        this.file.splice(directoryIndex,1);
      }
 
@@ -128,11 +142,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
       if (newOnly)
       {
-        addCondition = !file.permission.archive && file.permission.read && file instanceof FitFile;
+        addCondition = file instanceof FitFile && !file.permission.archive && file.permission.read;
 
       } else
       {
-        addCondition =  file.permission.read && file instanceof FitFile;
+        addCondition =  file instanceof FitFile && file.permission.read;
       }
 
       if (addCondition)

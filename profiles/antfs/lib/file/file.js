@@ -6,9 +6,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   var GeneralFilePermission = require('./generalFilePermission');
 
-  function File(data) {
+  function File(data, directory) {
     if (data)
       this.decode(data);
+
+    this.directory = directory;
 
   }
 

@@ -44,6 +44,8 @@ function TransportManager(host) {
 
   this.boundOnTransferRxFailed = undefined;
 
+  this.downloadIndex = [0]; // Always download directory
+  this.eraseIndex = [];
 
 }
 
@@ -149,10 +151,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
         this.session.packets = new Uint8Array(response.fileSize);
 
-        if (this.session.index === 0)
-          this.session.filename = 'directory-' + this.host.getClientSerialNumber();
-         else
-          this.session.filename = this.directory.getFile(this.session.index).getFileName(this.host.getClientSerialNumber());
+        this.session.filename = this.directory.getFile(this.session.index).getFileName();
 
         if (this.session.command[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
@@ -197,6 +196,12 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
         this.download(this.session.index, offset);
       } else
        {
+
+         if (this.session.index === 0)
+         {
+           this.directory.decode(this.session.packets);
+         }
+
          this.emit('download', NO_ERROR, this.session);
        }
 
@@ -308,20 +313,20 @@ TransportManager.prototype.erase = function (index, callback)
   this.sendCommand(command);
 };
 
-TransportManager.prototype.setIndex = function(commandType, indexArray) {
-  this[commandType + 'Index'] = indexArray;
+TransportManager.prototype.concatIndex = function(commandType, indexArray) {
+  this[commandType + 'Index'] = this[commandType + 'Index'].concat(indexArray);
 
   if (this.log.logging)
     this.log.log('log', commandType.toUpperCase() + ' request for index ', indexArray);
 
 };
 
-TransportManager.prototype.setDownloadIndex = function(indexArray) {
-  this.setIndex('download', indexArray);
+TransportManager.prototype.concatDownloadIndex = function(indexArray) {
+  this.concatIndex('download', indexArray);
 };
 
-TransportManager.prototype.setEraseIndex = function(indexArray) {
-  this.setIndex('erase', indexArray);
+TransportManager.prototype.concatEraseIndex = function(indexArray) {
+  this.concatIndex('erase', indexArray);
 };
 
 TransportManager.prototype.onTransport = function() {
@@ -351,35 +356,10 @@ TransportManager.prototype.onTransport = function() {
 
   }.bind(this);
 
-  var onDirectory = function _onDirectory(err, session) {
-
-    var bytes = session.packets;
-
-    if (!err) {
-      this.directory.decode(bytes);
-
-    //  console.log('directory',this.directory);
-
-  //  this.downloadIndex = this.directory.getReadableFiles();
-
-    this.setDownloadIndex(this.directory.getFITfiles(true));
-
-  //  onNextDownloadIndex();
-    this.erase(1500, onErased);
-  } else {
-    if (this.log.logging)
-      this.log.log('Failed to get directory',err);
-  }
-
-}.bind(this),
-
-  onErased = function _onErased (err, session) {
-   console.log('after erase',err,session);
-  };
 
   this.host.state.set(State.prototype.TRANSPORT);
 
-  this.download(DownloadCommand.prototype.FILE_INDEX.DIRECTORY, onDirectory);
+  onNextDownloadIndex();
 
 };
 

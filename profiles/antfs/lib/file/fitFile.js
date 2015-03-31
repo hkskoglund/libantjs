@@ -55,8 +55,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  FitFile.prototype.getFileName = function(clientSerialNumber) {
-    var dateStr;
+  FitFile.prototype.getFileName = function() {
+    var dateStr,
+    clientSerialNumber = this.directory.host.getClientSerialNumber();
 
     function formatDate(fDate) {
       var dateAsString = (new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + fDate * 1000)).toISOString();
