@@ -9,7 +9,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     ClientBeacon = require('./clientBeacon'),
     AuthenticateCommand = require('../command-response/authenticateCommand'),
     AuthenticateResponse = require('../command-response/authenticateResponse'),
-    State = require('./util/state');
+    State = require('./util/state'),
+    fs = require('fs');
 
   function AuthenticationManager(host) {
     EventEmitter.call(this);
@@ -181,6 +182,56 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.pairingDB[clientSerialNumber] = passkey;
   };
 
+  AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber, passkey) {
+    var authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+
+    this.setPasskey(this.clientSerialNumber, passkey);
+
+    if (!this.isNode())
+      return;
+
+    if (this.log.logging)
+      this.log.log('log','Trying to write passkey for client serial number ' + clientDeviceSerialNumber);
+
+    try {
+      fs.writeFileSync(authorizationFile, passkey, {
+        mode: 432
+      });
+    } catch (e) {
+      if (this.log.logging)
+        this.log.log('error', 'Failed to write passkey to ' + authorizationFile, e);
+    }
+  };
+
+  AuthenticationManager.prototype.isNode = function() {
+    return typeof process !== 'undefined' && process.title === 'node';
+  };
+
+  AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber) {
+    var passkey,
+      authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+
+    if (!this.isNode())
+      return;
+
+    if (this.log.logging)
+      this.log.log('log','Trying to read passkey for client serial number ' + clientDeviceSerialNumber);
+
+    try {
+      passkey = fs.readFileSync(authorizationFile, { encoding : 'utf8'});
+    } catch (e) {
+      if (this.log.logging)
+        this.log.log('error', 'Failed to read passkey from ' + authorizationFile, e);
+
+    }
+
+    if (passkey)
+     this.setPasskey(this.clientSerialNumber, passkey);
+
+    return passkey;
+
+  };
+
   AuthenticationManager.prototype.onAuthenticate = function() {
     var onSerialNumber = function _onSerialNumber(err, response) {
         if (err) {
@@ -188,8 +239,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         }
 
         passkey = this.getPasskey(this.clientSerialNumber);
-        if (!passkey)
-          passkey = this.host.readPasskey(this.clientSerialNumber);
+        if (!passkey) {
+          passkey = this.readPasskey(this.clientSerialNumber);
+        }
 
         if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
           if (this.log.logging)
@@ -223,8 +275,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         else
         {
           if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
-            this.setPasskey(this.clientSerialNumber, response.authenticationString);
-            this.host.writePasskey(this.clientSerialNumber, response.authenticationString); 
+
+            this.writePasskey(this.clientSerialNumber, response.authenticationString);
           }
 
         }

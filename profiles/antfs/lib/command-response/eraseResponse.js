@@ -9,8 +9,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       this.deserialize(data);
   }
 
-  EraseResponse.prototype.SUCCESS = 0x00;
-  EraseResponse.prototype.FAILED = 0x01;
+  EraseResponse.prototype.OK = 0x00;
+  EraseResponse.prototype.NOT_EXIST = 0x01;
   EraseResponse.prototype.NOT_READY = 0x03;
 
   EraseResponse.prototype.ID = 0x8B;
@@ -36,11 +36,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var msg = 'ERASE ';
 
     switch (this.result) {
-      case EraseResponse.prototype.SUCCESS:
+      case EraseResponse.prototype.OK:
         msg += 'OK';
         break;
       case EraseResponse.prototype.NOT_EXIST:
-        msg += 'failed';
+        msg += 'file does not exist';
         break;
       case EraseResponse.prototype.NOT_READY:
         msg += 'not ready';

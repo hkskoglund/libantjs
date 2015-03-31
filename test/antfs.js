@@ -6,7 +6,7 @@ var antHost = new(require('../host'))({
 });
 
 var antfsHost = new (require('../profiles/antfs/host'))({
-  log : false
+  log : true
 },antHost,0,0);
 
 var slavePort = 0;

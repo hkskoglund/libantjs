@@ -45,7 +45,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.minorRevision = data[0] & 0x0F;
 
     this.structureLength = data[1];
-    this.timeFormat = data[2];
+    this.timeFormat      = data[2];
 
     // Reserved 5 bytes = 0x00
 
@@ -66,16 +66,20 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     for (fileNr = 0; fileNr < numberOfFiles; fileNr++) {
 
-      iStart = this.HEADER_LENGTH + fileNr * this.structureLength;
-      iEnd = this.HEADER_LENGTH + (fileNr + 1) * this.structureLength;
-      fileType = data[iStart + 2];
+      iStart       = this.HEADER_LENGTH + fileNr * this.structureLength;
+      iEnd         = this.HEADER_LENGTH + (fileNr + 1) * this.structureLength;
+      fileType     = data[iStart + 2];
       fileMetaData = data.subarray(iStart, iEnd);
 
       switch (fileType) {
+
         case File.prototype.TYPE.FIT:
+
           file = new FitFile(fileMetaData);
           break;
+
         default:
+
           file = new File(fileMetaData);
           break;
       }
@@ -88,9 +92,32 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  Directory.prototype.getFile = function (index)
+  Directory.prototype.indexOf = function (index)
   {
-    return this.file[index - 1]; // Files in directory structure always start at 1
+    var directoryIndex = -1,
+        i;
+
+    for (i=0; i < this.file.length; i++)
+     if (this.file[i].index === index) {
+        directoryIndex = i;
+        break;
+      }
+
+   return directoryIndex;
+  
+  };
+
+  Directory.prototype.eraseFile = function (index)
+  {
+
+    var directoryIndex = this.indexOf(index);
+
+     if (directoryIndex !== -1) {
+       if (this.log.logging)
+         this.log.log('log','Removing file at directory index ' + directoryIndex + ' real file index is ' + index);
+       this.file.splice(directoryIndex,1);
+     }
+
   };
 
   Directory.prototype.getFITfiles = function(newOnly) {

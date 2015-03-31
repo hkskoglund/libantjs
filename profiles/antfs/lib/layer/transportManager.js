@@ -11,6 +11,9 @@ var EventEmitter = require('events'),
   DownloadCommand = require('../command-response/downloadCommand'),
   DownloadResponse = require('../command-response/downloadResponse'),
 
+  EraseCommand = require('../command-response/eraseCommand'),
+  EraseResponse = require('../command-response/eraseResponse'),
+
   CRC = require('./util/crc'),
   crc = new CRC(),
 
@@ -86,8 +89,43 @@ TransportManager.prototype.onBurst = function(burst) {
 
       break;
 
+   case EraseResponse.prototype.ID:
+
+      this.handleEraseResponse(responseData);
+
+      break;
+
   }
 };
+
+TransportManager.prototype.handleEraseResponse = function(responseData) {
+  var response,
+    NO_ERROR,
+    lastIndex;
+
+  response = new EraseResponse(responseData);
+
+  this.session.response.push(response);
+
+  if (this.log.logging)
+    this.logger('log', response.toString());
+
+    switch (response.result) {
+
+      case EraseResponse.prototype.OK:
+
+        lastIndex = this.session.command[this.session.command.length-1].index;
+        this.directory.eraseFile(lastIndex);
+
+        this.emit('erase', NO_ERROR, this.session);
+
+        break;
+
+      default:
+
+        this.emit('erase', response, this.session);
+      }
+    };
 
 TransportManager.prototype.handleDownloadResponse = function(responseData) {
   var response,
@@ -166,7 +204,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
     default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
 
-      this.emit('download', response);
+      this.emit('download', response, this.session);
 
       break;
 
@@ -254,6 +292,22 @@ TransportManager.prototype.download = function(index, offset) {
   this.sendCommand(command);
 };
 
+TransportManager.prototype.erase = function (index, callback)
+{
+  var command;
+
+  this.session = {
+    index : index,
+    command: [],
+    response: [],
+  };
+
+  command = new EraseCommand(index);
+  this.once('erase', callback);
+
+  this.sendCommand(command);
+};
+
 TransportManager.prototype.setIndex = function(commandType, indexArray) {
   this[commandType + 'Index'] = indexArray;
 
@@ -304,17 +358,24 @@ TransportManager.prototype.onTransport = function() {
     if (!err) {
       this.directory.decode(bytes);
 
+    //  console.log('directory',this.directory);
+
   //  this.downloadIndex = this.directory.getReadableFiles();
 
     this.setDownloadIndex(this.directory.getFITfiles(true));
 
-    onNextDownloadIndex();
+  //  onNextDownloadIndex();
+    this.erase(1500, onErased);
   } else {
     if (this.log.logging)
       this.log.log('Failed to get directory',err);
   }
 
-  }.bind(this);
+}.bind(this),
+
+  onErased = function _onErased (err, session) {
+   console.log('after erase',err,session);
+  };
 
   this.host.state.set(State.prototype.TRANSPORT);
 
