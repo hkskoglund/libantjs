@@ -1,7 +1,8 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   function State(state) {
     this.state = state || State.prototype.LINK;
@@ -24,7 +25,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var prevState = this.state;
     if (state !== prevState) {
       this.state = state;
-      console.log('State transition ' + new State(prevState).toString() + ' to ' + this.toString());
+    //  console.log('State transition ' + new State(prevState).toString() + ' to ' + this.toString());
     }
   };
 

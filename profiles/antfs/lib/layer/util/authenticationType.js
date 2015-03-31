@@ -2,7 +2,8 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   function AuthenticationType(type) {
     this.type = type;

@@ -1,5 +1,6 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true, module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
+/*jshint -W097 */
 'use strict';
 
 var EventEmitter = require('events'),
@@ -68,7 +69,6 @@ var EventEmitter = require('events'),
 
   RxScanModeProfile = require('./profiles/RxScanMode'),
 
-  UsbLib = require('./usb/usb'),
   usb, // Don't expose usb interface to higher level code, use wrappers instead on host
 
   MAX_CHAN = 8,
@@ -96,7 +96,7 @@ function Host(options) {
     this.channel[channel] = new Channel(this.options, this, channel);
   }
 
-  usb = new UsbLib({
+  usb = new (options.usb)({
     log: options.log,
     debugLevel: options.debugLevel
   });

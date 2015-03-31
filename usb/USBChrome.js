@@ -2,7 +2,8 @@
 
 define(['usb/USBDevice'], function(USBDevice) {
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   function USBChrome(options) {
 

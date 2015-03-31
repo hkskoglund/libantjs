@@ -2,7 +2,8 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true, ArrayBuffer: true,
 Buffer: true */
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   var USBDevice = require('./USBDevice.js'),
     usb = require('usb');

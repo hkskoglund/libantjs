@@ -1,12 +1,13 @@
+var usbHost = require('../usb/USBNode');
+
 var antHost = new(require('../host'))({
-  log: true
+  log: false,
+  usb: usbHost
 });
 
-var antfsChannel = new (require('../profiles/antfs/host'))({
-  log : true
+var antfsHost = new (require('../profiles/antfs/host'))({
+  log : false
 },antHost,0,0);
-
-console.log('antfs channel',antfsChannel);
 
 var slavePort = 0;
 var devices;
@@ -25,7 +26,16 @@ function onConnect(error)
     return;
   }
 
-  antfsChannel.on('download', onDownload);
+  antfsHost.on('download', onDownload);
+  antfsHost.on('download_progress', onDownloadProgress);
+
+}
+
+function onDownloadProgress(error, session)
+{
+  this.on('download_progress', function (err,session) {
+    console.log('progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
+  });
 
 }
 
@@ -47,8 +57,8 @@ function onANTInited(error) {
    console.log('onantinited',error);
    return;
  }
-  antHost.setChannel(antfsChannel);
-  antfsChannel.connect(onConnect);
+  antHost.setChannel(antfsHost);
+  antfsHost.connect(onConnect);
  }
 
 

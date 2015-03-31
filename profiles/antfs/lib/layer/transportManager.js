@@ -2,6 +2,7 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 
+/*jshint -W097 */
 'use strict';
 
 var EventEmitter = require('events'),
@@ -107,12 +108,17 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
     case DownloadResponse.prototype.OK:
 
       if (response.offset === 0) {
+
         this.session.packets = new Uint8Array(response.fileSize);
+
         if (this.session.index === 0)
           this.session.filename = 'directory-' + this.host.getClientSerialNumber();
          else
           this.session.filename = this.directory.getFile(this.session.index).getFileName(this.host.getClientSerialNumber());
-        this.session.startTimestamp = Date.now();
+
+        if (this.session.command[0].maxBlockSize === 0) // Infer client block length
+          this.session.maxBlockSize = response.length;
+
       }
 
       // May happend if client appends to a file during download (rare case?)
@@ -153,7 +159,6 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
         this.download(this.session.index, offset);
       } else
        {
-         this.session.endTimestamp = Date.now();
          this.emit('download', NO_ERROR, this.session);
        }
 
@@ -312,10 +317,6 @@ TransportManager.prototype.onTransport = function() {
   }.bind(this);
 
   this.host.state.set(State.prototype.TRANSPORT);
-
-  this.on('download_progress', function (err,session) {
-    console.log('progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
-  });
 
   this.download(DownloadCommand.prototype.FILE_INDEX.DIRECTORY, onDirectory);
 

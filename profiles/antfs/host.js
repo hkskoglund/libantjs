@@ -1,6 +1,7 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
+/*jshint -W097 */
 'use strict';
 
 var Channel = require('../../channel/channel'),
@@ -11,7 +12,9 @@ var Channel = require('../../channel/channel'),
 
   LinkManager = require('./lib/layer/linkManager'),
   AuthenticationManager = require('./lib/layer/authenticationManager'),
-  TransportManager = require('./lib/layer/transportManager');
+  TransportManager = require('./lib/layer/transportManager'),
+
+  fs = require('fs');
 
 function Host(options, host, channelNumber, net) {
 
@@ -53,26 +56,64 @@ function Host(options, host, channelNumber, net) {
 Host.prototype = Object.create(Channel.prototype);
 Host.prototype.constructor = Channel;
 
-Host.prototype.onDownloadProgress = function (err, session)
-{
-  this.emit('download_progress',err,session);
+Host.prototype.onDownloadProgress = function(err, session) {
+  this.emit('download_progress', err, session);
 };
 
-Host.prototype.onDownload = function (err, session)
-{
-  this.emit('download',err,session);
+Host.prototype.onDownload = function(err, session) {
+  this.emit('download', err, session);
 };
 
-Host.prototype.setPasskey = function(clientDeviceSerialNumber, passkey) {
-  this.autenticationManager.pairingDB[clientDeviceSerialNumber] = passkey;
+Host.prototype.writePasskey = function(clientDeviceSerialNumber, passkey) {
+  var authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+
+  if (!this.isNode())
+    return;
+
+  if (this.log.logging)
+    this.log.log('Trying to write passkey for client serial number ' + clientDeviceSerialNumber);
+
+  try {
+    fs.writeFileSync(authorizationFile, passkey, {
+      mode: 432
+    });
+  } catch (e) {
+    if (this.log.logging)
+      this.log.log('error', 'Failed to write passkey to ' + authorizationFile, e);
+  }
+};
+
+Host.prototype.isNode = function() {
+  return typeof process !== 'undefined' && process.title === 'node';
+};
+
+Host.prototype.readPasskey = function(clientDeviceSerialNumber) {
+  var passkey,
+    authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+
+  if (!this.isNode())
+    return;
+
+  if (this.log.logging)
+    this.log.log('Trying to read passkey for client serial number ' + clientDeviceSerialNumber);
+
+  try {
+    passkey = fs.readFileSync(authorizationFile);
+  } catch (e) {
+    if (this.log.logging)
+      this.log.log('error', 'Failed to read passkey from ' + authorizationFile, e);
+
+  }
+
+  return passkey;
+
 };
 
 Host.prototype.getHostname = function() {
   return this.hostname;
 };
 
-Host.prototype.getClientSerialNumber = function ()
-{
+Host.prototype.getClientSerialNumber = function() {
   return this.authenticationManager.clientSerialNumber;
 };
 

@@ -1,7 +1,9 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-  'use strict';
+/*jshint -W097 */
+/*jshint -W097 */
+'use strict';
 
   var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
@@ -23,7 +25,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.host.on('burst', this.onBurst.bind(this));
 
     this.once('authenticate', this.onAuthenticate);
-
 
     this.pairingDB = {};
 
@@ -187,17 +188,19 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         }
 
         passkey = this.getPasskey(this.clientSerialNumber);
+        if (!passkey)
+          passkey = this.host.readPasskey(this.clientSerialNumber);
 
-        if (!passkey && this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
+        if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
           if (this.log.logging)
             this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber +
               ' requesting pairing');
 
           this.requestPairing(onPairing);
 
-        } else if (this.host.beacon.authenticationType.isPairingOnly()) {
+        } else if (authenticationType.isPairingOnly()) {
           this.requestPairing(onPairing);
-        } else if (passkey && this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
+        } else if (passkey && authenticationType.isPasskeyAndPairingOnly()) {
           this.requestPasskeyExchange(this.clientSerialNumber, onPasskeyExchange);
         }
 
@@ -221,7 +224,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         {
           if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
             this.setPasskey(this.clientSerialNumber, response.authenticationString);
-            // Emit passkey?
+            this.host.writePasskey(this.clientSerialNumber, response.authenticationString); 
           }
 
         }
@@ -232,16 +235,17 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
       }.bind(this),
 
-      passkey;
+      passkey,
+
+      authenticationType = this.host.beacon.authenticationType;
 
     this.host.state.set(State.prototype.AUTHENTICATION);
 
-    if (this.host.beacon.authenticationType.isPassthrough())
+    if (authenticationType.isPassthrough())
       this.requestPassthrough(onPassthrough);
-    else if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly() ||
-      this.host.beacon.authenticationType.isPairingOnly()) {
+
+    else if (authenticationType.isPasskeyAndPairingOnly() || authenticationType.isPairingOnly())
       this.requestClientSerialNumber(onSerialNumber);
-    }
 
   };
 

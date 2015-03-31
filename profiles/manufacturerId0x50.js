@@ -3,7 +3,8 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   var BackgroundPage = require('./backgroundPage');
 

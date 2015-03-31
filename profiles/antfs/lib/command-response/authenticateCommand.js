@@ -1,7 +1,8 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   function AuthenticateCommand(commandType, authenticationStringLength, hostSerialNumber) {
     this.commandType = commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
@@ -26,7 +27,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   AuthenticateCommand.prototype.setRequestPairing = function(hostSerialNumber, hostname) {
-    console.log('hostname is now', hostname);
+    
     if (hostname)
       this.hostname = hostname;
     this.request(AuthenticateCommand.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);

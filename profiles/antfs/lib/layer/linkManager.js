@@ -2,7 +2,8 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
 
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
@@ -45,8 +46,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
         this.linkBeaconCount = 0;
         this.emit('link');
-      } else
-        console.log('linkcounter', this.linkBeaconCount);
+      } 
     }
 
   };

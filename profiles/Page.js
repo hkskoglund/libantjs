@@ -1,7 +1,8 @@
 /* global define: true */
 
 
-  'use strict';
+  /*jshint -W097 */
+'use strict';
 
   var Logger = require('../util/logger');
 

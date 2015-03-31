@@ -1,4 +1,5 @@
 ﻿
+/*jshint -W097 */
 'use strict';
 //console.log(module);
 
