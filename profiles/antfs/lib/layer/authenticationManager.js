@@ -7,8 +7,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
-    AuthenticateCommand = require('../command-response/authenticateCommand'),
-    AuthenticateResponse = require('../command-response/authenticateResponse'),
+    AuthenticateRequest = require('../request-response/authenticateRequest'),
+    AuthenticateResponse = require('../request-response/authenticateResponse'),
     State = require('./util/state'),
     fs = require('fs');
 
@@ -30,7 +30,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.pairingDB = {};
 
     this.session = {
-      command: [],
+      request: [],
       response: []
     };
   }
@@ -40,7 +40,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   AuthenticationManager.prototype.onReset = function() {
     this.session = {
-      command: [],
+      request: [],
       response: []
     };
 
@@ -126,52 +126,52 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return frequency;
   };
 
-  AuthenticationManager.prototype.sendCommand = function(command) {
-    this.session.command.push(command);
+  AuthenticationManager.prototype.sendRequest = function(request) {
+    this.session.request.push(request);
 
-    if (command.authenticationStringLength)
-      this.host.sendBurst(command, this.onSentToClient.bind(this));
+    if (request.authenticationStringLength)
+      this.host.sendBurst(request, this.onSentToClient.bind(this));
     else
-      this.host.sendAcknowledged(command, this.onSentToClient.bind(this));
+      this.host.sendAcknowledged(request, this.onSentToClient.bind(this));
   };
 
-  AuthenticationManager.prototype.requestClientSerialNumber = function(callback) {
-    this.authenticateCommand = new AuthenticateCommand();
-    this.authenticateCommand.setRequestClientSerialNumber(this.host.getHostSerialNumber());
+  AuthenticationManager.prototype.requestSerialNumber = function(callback) {
+    this.authenticateRequest = new AuthenticateRequest();
+    this.authenticateRequest.requestSerialNumber(this.host.getHostSerialNumber());
 
     this.once('serialNumber', callback);
-    this.sendCommand(this.authenticateCommand);
+    this.sendRequest(this.authenticateRequest);
   };
 
   AuthenticationManager.prototype.requestPassthrough = function(callback) {
-    this.authenticateCommand = new AuthenticateCommand();
+    this.authenticateRequest = new AuthenticateRequest();
 
     this.once('acceptOrReject', callback);
-    this.sendCommand(this.authenticateCommand);
+    this.sendRequest(this.authenticateRequest);
   };
 
 
   AuthenticationManager.prototype.requestPairing = function(callback) {
-    this.authenticateCommand = new AuthenticateCommand();
-    this.authenticateCommand.setRequestPairing(this.host.getHostSerialNumber(), this.host.getHostname());
+    this.authenticateRequest = new AuthenticateRequest();
+    this.authenticateRequest.requestPairing(this.host.getHostSerialNumber(), this.host.getHostname());
 
     this.once('acceptOrReject', callback);
-    this.sendCommand(this.authenticateCommand);
+    this.sendRequest(this.authenticateRequest);
   };
 
   AuthenticationManager.prototype.requestPasskeyExchange = function(clientSerialNumber, callback) {
     var passkey = this.pairingDB[clientSerialNumber];
 
-    this.authenticateCommand = new AuthenticateCommand();
-    this.authenticateCommand.setRequestPasskeyExchange(this.host.getHostSerialNumber(), passkey);
+    this.authenticateRequest = new AuthenticateRequest();
+    this.authenticateRequest.setRequestPasskeyExchange(this.host.getHostSerialNumber(), passkey);
 
     this.once('acceptOrReject', callback);
-    this.sendCommand(this.authenticateCommand);
+    this.sendRequest(this.authenticateRequest);
   };
 
   AuthenticationManager.prototype.onSentToClient = function(err, msg) {
     if (err && this.log.logging)
-      this.log.log('error', 'Failed to send AUTHENTICATE command to client', err);
+      this.log.log('error', 'Failed to send AUTHENTICATE request to client', err);
   };
 
   AuthenticationManager.prototype.getPasskey = function(clientSerialNumber) {
@@ -244,6 +244,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         }
 
         if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
+          
           if (this.log.logging)
             this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber +
               ' requesting pairing');
@@ -252,6 +253,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         } else if (authenticationType.isPairingOnly()) {
           this.requestPairing(onPairing);
+
         } else if (passkey && authenticationType.isPasskeyAndPairingOnly()) {
           this.requestPasskeyExchange(this.clientSerialNumber, onPasskeyExchange);
         }
@@ -297,7 +299,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       this.requestPassthrough(onPassthrough);
 
     else if (authenticationType.isPasskeyAndPairingOnly() || authenticationType.isPairingOnly())
-      this.requestClientSerialNumber(onSerialNumber);
+      this.requestSerialNumber(onSerialNumber);
 
   };
 

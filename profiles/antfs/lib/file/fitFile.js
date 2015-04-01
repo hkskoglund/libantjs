@@ -55,35 +55,48 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  FitFile.prototype.getFileName = function() {
-    var dateStr,
-    clientSerialNumber = this.directory.host.getClientSerialNumber();
+  FitFile.prototype._formatDate = function(fDate) {
+    var dateAsString = this.getDateFrom31Dec1989().toISOString();
+    // Remove millisec.
+    // ISO : 1989-12-31T00:00:00.000Z
+    dateAsString = dateAsString.substring(0, dateAsString.length - 5);
+    dateAsString = dateAsString.replace(new RegExp(':', 'g'), '-');
+    //dateAsString = dateAsString.replace('T', '-');
+    return dateAsString;
+  };
 
-    function formatDate(fDate) {
-      var dateAsString = (new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + fDate * 1000)).toISOString();
-      // Remove millisec.
-      // ISO : 1989-12-31T00:00:00.000Z
-      dateAsString = dateAsString.substring(0, dateAsString.length - 5);
-      dateAsString = dateAsString.replace(new RegExp(':', 'g'), '-');
-      //dateAsString = dateAsString.replace('T', '-');
-      return dateAsString;
-    }
+  FitFile.prototype.getFileName = function(unixFormat) {
+    var dateStr,
+    clientSerialNumber = this.directory.host.getClientSerialNumber(),
+    filename;
 
     if (this.date === 0xFFFFFFFF)
       dateStr = 'UnknownDate';
     else if (this.date < 0x0FFFFFFF)
       dateStr = 'SystemDate-' + this.date;
     else
-      dateStr = formatDate(this.date);
+      dateStr = this._formatDate(this.date);
 
-    return 'fit-' + clientSerialNumber + '-' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
-            '-' + this.index + '-' + dateStr + '.fit';
+   filename = FitFile.prototype.FIT_FILE_TYPES[this.subType] + '-' + this.index;
+
+    if (!unixFormat) {
+      filename +=  '-' + dateStr + '.fit';
+      return 'fit-' + clientSerialNumber + '-' + filename;
+    }
+    else
+      return filename + '.fit';
   };
 
-  FitFile.prototype.toString = function(timeFormat) {
-    return File.prototype.toString.call(this, timeFormat) + ' | Fit permission : ' + this.fitPermission.toString() +
+  FitFile.prototype.toString = function()
+  {
+    return File.prototype.toString.call(this) + ' | Fit permission : ' + this.fitPermission.toString() +
       ' | Sub type : ' + this.subType + ' ' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
       ' | File number : ' + this.fileNumber;
+  };
+
+  FitFile.prototype.toUnixString = function() {
+
+    return File.prototype.toUnixString.call(this)  + this.getFileName(true);
 
   };
 

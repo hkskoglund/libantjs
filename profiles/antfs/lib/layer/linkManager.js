@@ -7,8 +7,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   var EventEmitter = require('events'),
     ClientBeacon = require('./clientBeacon'),
-    LinkCommand = require('../command-response/linkCommand'),
-    DisconnectCommand = require('../command-response/disconnectCommand'),
+    LinkRequest = require('../request-response/linkRequest'),
+    DisconnectRequest = require('../request-response/disconnectRequest'),
     State = require('./util/state');
 
   function LinkManager(host) {
@@ -46,7 +46,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
         this.linkBeaconCount = 0;
         this.emit('link');
-      } 
+      }
     }
 
   };
@@ -59,13 +59,13 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         if (err) {
 
           if (this.log.logging)
-            this.log.log('error', 'Failed to send LINK command to client', err);
+            this.log.log('error', 'Failed to send LINK request to client', err);
 
 
         } else {
 
           // LINK is received by client ANT stack now, and client will switch frequency to
-          // the requested frequency by the link command and start advertising the authentication beacon
+          // the requested frequency by the link request and start advertising the authentication beacon
 
           if (this.host.frequency !== authentication_RF) {
 
@@ -85,10 +85,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       }.bind(this),
 
       onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err, repsonse) {
-        var linkCommand = new LinkCommand(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+        var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
           this.hostSerialNumber);
 
-        this.sendAcknowledged(linkCommand, onSentToClient);
+        this.sendAcknowledged(linkRequest, onSentToClient);
 
       }.bind(this.host);
 
@@ -105,18 +105,23 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var newPeriod;
 
     switch (period) {
+
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz05:
         newPeriod = 65535;
         break;
+
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz1:
         newPeriod = 32768;
         break;
+
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz2:
         newPeriod = 16384;
         break;
+
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz4:
         newPeriod = 8192;
         break;
+
       case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8:
         newPeriod = 4096;
         break;
@@ -144,11 +149,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   LinkManager.prototype.disconnect = function(callback) {
-    console.trace();
-    var disconnectCommand = new DisconnectCommand();
+  
+    var disconnectRequest = new DisconnectRequest();
 
     this.host.state.set(State.prototype.LINK);
-    this.host.sendAcknowledged(disconnectCommand, callback);
+    this.host.sendAcknowledged(disconnectRequest, callback);
   };
 
   module.exports = LinkManager;

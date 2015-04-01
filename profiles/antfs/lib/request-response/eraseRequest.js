@@ -4,14 +4,14 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   /*jshint -W097 */
 'use strict';
 
-  function EraseCommand(index) {
+  function EraseRequest(index) {
     this.index = index;
   }
 
-  EraseCommand.prototype.ID = 0x0B;
+  EraseRequest.prototype.ID = 0x0B;
 
   // Spec 12.7 Downloading - its a two packet burst
-  EraseCommand.prototype.serialize = function() {
+  EraseRequest.prototype.serialize = function() {
     var command = new Uint8Array(4),
       dv = new DataView(command.buffer);
 
@@ -22,9 +22,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return command;
   };
 
-  EraseCommand.prototype.toString = function() {
+  EraseRequest.prototype.toString = function() {
     return 'ERASE index ' + this.index;
   };
 
-  module.exports = EraseCommand;
+  module.exports = EraseRequest;
   return module.exports;

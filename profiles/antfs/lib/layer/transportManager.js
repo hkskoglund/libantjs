@@ -8,11 +8,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 var EventEmitter = require('events'),
   ClientBeacon = require('./clientBeacon'),
 
-  DownloadCommand = require('../command-response/downloadCommand'),
-  DownloadResponse = require('../command-response/downloadResponse'),
+  DownloadRequest = require('../request-response/downloadRequest'),
+  DownloadResponse = require('../request-response/downloadResponse'),
 
-  EraseCommand = require('../command-response/eraseCommand'),
-  EraseResponse = require('../command-response/eraseResponse'),
+  EraseRequest = require('../request-response/eraseRequest'),
+  EraseResponse = require('../request-response/eraseResponse'),
 
   CRC = require('./util/crc'),
   crc = new CRC(),
@@ -116,7 +116,7 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
       case EraseResponse.prototype.OK:
 
-        lastIndex = this.session.command[this.session.command.length-1].index;
+        lastIndex = this.session.request[this.session.request.length-1].index;
         this.directory.eraseFile(lastIndex);
 
         this.emit('erase', NO_ERROR, this.session);
@@ -151,9 +151,12 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
         this.session.packets = new Uint8Array(response.fileSize);
 
-        this.session.filename = this.directory.getFile(this.session.index).getFileName();
+       if (this.session.index !== 0)
+         this.session.filename = this.directory.getFile(this.session.index).getFileName();
+       else
+         this.session.filename = this.directory.getFileName();
 
-        if (this.session.command[0].maxBlockSize === 0) // Infer client block length
+        if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
 
       }
@@ -200,6 +203,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
          if (this.session.index === 0)
          {
            this.directory.decode(this.session.packets);
+           this.directory.ls();
          }
 
          this.emit('download', NO_ERROR, this.session);
@@ -217,23 +221,23 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
 };
 
-TransportManager.prototype.onCommandSentToClient = function(err, msg) {
+TransportManager.prototype.onRequestSent = function(err, msg) {
   if (err && this.log.logging)
-    this.log.log('error', 'Failed to send command to client (EVENT_TRANSFER_TX_FAILED)', err);
+    this.log.log('error', 'Failed to send request to client (EVENT_TRANSFER_TX_FAILED)', err);
   else if (!err) {
 
     this.commandResponseTimeout = setTimeout(function() {
 
       var onBeacon = function _onBeacon(beacon) {
 
-        var command = this.session.command[this.session.command.length - 1];
+        var request = this.session.request[this.session.request.length - 1];
 
-        if (command) {
+        if (request) {
 
           if (this.log.logging)
-            this.log.log('log', 'Retry sending last command to client');
+            this.log.log('log', 'Retry sending last request to client');
 
-          this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
+          this.host.sendBurst(request, this.onRequestSent.bind(this));
         }
       }.bind(this);
 
@@ -246,75 +250,75 @@ TransportManager.prototype.onCommandSentToClient = function(err, msg) {
   }
 };
 
-TransportManager.prototype.onTransferRxFailed = function(command, err, response) {
+TransportManager.prototype.onTransferRxFailed = function(request, err, response) {
   if (this.log.logging)
     this.log.log('log', 'Failed burst received from client. Retrying');
 
-  this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
+  this.host.sendBurst(request, this.onRequestSent.bind(this));
 
 };
 
-TransportManager.prototype.sendCommand = function(command) {
+TransportManager.prototype.sendRequest = function(request) {
 
-  this.session.command.push(command);
+  this.session.request.push(request);
 
   // Assume client will not try to retransmit failed burst...
 
   if (this.boundOnTransferRxFailed)
     this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
-  this.boundOnTransferRxFailed = this.onTransferRxFailed.bind(this, command);
+  this.boundOnTransferRxFailed = this.onTransferRxFailed.bind(this, request);
 
   this.host.on('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
-  this.host.sendBurst(command, this.onCommandSentToClient.bind(this));
+  this.host.sendBurst(request, this.onRequestSent.bind(this));
 };
 
 TransportManager.prototype.download = function(index, offset) {
-  var command,
+  var request,
     crcSeed;
 
   if (typeof offset === 'function') {
 
     this.session = {
       index : index,
-      command: [],
+      request: [],
       response: [],
     };
 
-    command = new DownloadCommand(index);
-    // TEST  command.setMaxBlockSize(8);
+    request = new DownloadRequest(index);
+    // TEST  request.setMaxBlockSize(8);
 
     this.once('download', offset);
 
   } else {
 
-    command = new DownloadCommand();
+    request = new DownloadRequest();
 
     // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
 
     crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
 
-    command.continueRequest(index, offset, crcSeed, this.session.command[0].maxBlockSize);
+    request.continueRequest(index, offset, crcSeed, this.session.request[0].maxBlockSize);
   }
 
-  this.sendCommand(command);
+  this.sendRequest(request);
 };
 
 TransportManager.prototype.erase = function (index, callback)
 {
-  var command;
+  var request;
 
   this.session = {
     index : index,
-    command: [],
+    request: [],
     response: [],
   };
 
-  command = new EraseCommand(index);
+  request = new EraseRequest(index);
   this.once('erase', callback);
 
-  this.sendCommand(command);
+  this.sendRequest(request);
 };
 
 TransportManager.prototype.concatIndex = function(commandType, indexArray) {

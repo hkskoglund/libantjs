@@ -4,16 +4,16 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   /*jshint -W097 */
 'use strict';
 
-  function Link(frequency, period, hostSerialNumber) {
+  function LinkRequest(frequency, period, hostSerialNumber) {
 
     this.frequency = frequency;
     this.period = period;
     this.hostSerialNumber = hostSerialNumber;
   }
 
-  Link.prototype.ID = 0x02;
+  LinkRequest.prototype.ID = 0x02;
 
-  Link.prototype.serialize = function() {
+  LinkRequest.prototype.serialize = function() {
     var command = new Uint8Array(8),
       dv = new DataView(command.buffer);
 
@@ -26,9 +26,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return command;
   };
 
-  Link.prototype.toString = function() {
-    return 'Link ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host SN ' + this.hostSerialNumber;
+  LinkRequest.prototype.toString = function() {
+    return 'LinkRequest ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host SN ' + this.hostSerialNumber;
   };
 
-  module.exports = Link;
+  module.exports = LinkRequest;
   return module.exports;

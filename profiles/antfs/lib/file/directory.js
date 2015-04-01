@@ -9,10 +9,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   function Directory(data, host) {
 
-    File.call(this,data);
-
-    this.file = [this]; // Directory is a file at index 0
-    this.index = 0;
+    this.file = [];
 
     this.host = host;
 
@@ -20,9 +17,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.logger = this.host.log.log.bind(this.host.log);
 
   }
-
-  Directory.prototype = Object.create(File.prototype);
-  Directory.prototype.constructor = Directory;
 
   Directory.prototype.SYSTEM_TIME_NOT_USED = 0xFFFFFFFF;
   Directory.prototype.UNKNOWN_DATE = 0xFFFFFFFF;
@@ -106,6 +100,21 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
+  Directory.prototype.getTotalBlocks = function (maxBlockSize)
+  {
+    var i,
+        totalBytes=0,
+        DEFAULT_CLIENT_BLOCK_SIZE = 512;
+
+    for (i=0;i<this.file.length;i++)
+    {
+      totalBytes += this.file[i].size;
+    }
+
+    if (!maxBlockSize)
+      return Math.ceil(totalBytes / DEFAULT_CLIENT_BLOCK_SIZE);
+  };
+
   Directory.prototype.indexOf = function (index)
   {
     var directoryIndex = -1,
@@ -160,6 +169,19 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     }.bind(this));
 
     return readable;
+  };
+
+  Directory.prototype.ls = function ()
+  {
+    var i;
+
+    debugger;
+
+    console.log('totals ' + this.getTotalBlocks());
+
+    for (i=0;i < this.file.length; i++)
+      console.log(this.file[i].toUnixString());
+
   };
 
   Directory.prototype.toString = function() {

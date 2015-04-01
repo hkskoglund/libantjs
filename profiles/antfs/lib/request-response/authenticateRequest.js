@@ -4,40 +4,40 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   /*jshint -W097 */
 'use strict';
 
-  function AuthenticateCommand(commandType, authenticationStringLength, hostSerialNumber) {
-    this.commandType = commandType || AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT;
+  function AuthenticateRequest(commandType, authenticationStringLength, hostSerialNumber) {
+    this.commandType = commandType || AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT;
     this.authenticationStringLength = authenticationStringLength || 0;
     this.hostSerialNumber = hostSerialNumber || 0;
 
   }
 
-  AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT = 0x00; // Pass-through
-  AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER = 0x01;
-  AuthenticateCommand.prototype.REQUEST_PAIRING = 0x02;
-  AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE = 0x03;
+  AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT = 0x00; // Pass-through
+  AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER = 0x01;
+  AuthenticateRequest.prototype.REQUEST_PAIRING = 0x02;
+  AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE = 0x03;
 
-  AuthenticateCommand.prototype.ID = 0x04;
+  AuthenticateRequest.prototype.ID = 0x04;
 
-  AuthenticateCommand.prototype.setRequestProceedToTransport = function(hostSerialNumber) {
-    this.request(AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT, hostSerialNumber);
+  AuthenticateRequest.prototype.requestProceedToTransport = function(hostSerialNumber) {
+    this.request(AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT, hostSerialNumber);
   };
 
-  AuthenticateCommand.prototype.setRequestClientSerialNumber = function(hostSerialNumber) {
-    this.request(AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, hostSerialNumber);
+  AuthenticateRequest.prototype.requestSerialNumber = function(hostSerialNumber) {
+    this.request(AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, hostSerialNumber);
   };
 
-  AuthenticateCommand.prototype.setRequestPairing = function(hostSerialNumber, hostname) {
+  AuthenticateRequest.prototype.requestPairing = function(hostSerialNumber, hostname) {
 
     if (hostname)
       this.hostname = hostname;
-    this.request(AuthenticateCommand.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
+    this.request(AuthenticateRequest.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
   };
 
-  AuthenticateCommand.prototype.setRequestPasskeyExchange = function(hostSerialNumber, passkey) {
-    this.request(AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
+  AuthenticateRequest.prototype.setRequestPasskeyExchange = function(hostSerialNumber, passkey) {
+    this.request(AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
   };
 
-  AuthenticateCommand.prototype.request = function(commandType, hostSerialNumber, authenticationString) {
+  AuthenticateRequest.prototype.request = function(commandType, hostSerialNumber, authenticationString) {
     this.commandType = commandType;
 
     if (authenticationString) {
@@ -49,7 +49,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.hostSerialNumber = hostSerialNumber;
   };
 
-  AuthenticateCommand.prototype.serialize = function() {
+  AuthenticateRequest.prototype.serialize = function() {
     var command = new Uint8Array(8 + this.authenticationStringLength),
       dv = new DataView(command.buffer),
       byteNr;
@@ -71,22 +71,22 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return command;
   };
 
-  AuthenticateCommand.prototype.toString = function() {
+  AuthenticateRequest.prototype.toString = function() {
     var cmdType;
 
     switch (this.commandType) {
-      case AuthenticateCommand.prototype.PROCEED_TO_TRANSPORT:
+      case AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT:
         cmdType = 'proceed to transport';
         break;
-      case AuthenticateCommand.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER:
+      case AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER:
         cmdType = 'get client serial number';
         break;
-      case AuthenticateCommand.prototype.REQUEST_PAIRING:
+      case AuthenticateRequest.prototype.REQUEST_PAIRING:
         cmdType = 'pairing';
         if (this.authenticationStringLength)
           cmdType += ', hostname ' + this.authenticationString;
         break;
-      case AuthenticateCommand.prototype.REQUEST_PASSKEY_EXCHANGE:
+      case AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE:
         cmdType = 'passkey exchange';
         break;
     }
@@ -94,5 +94,5 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return 'AUTHENTICATE ' + cmdType + ' host serial number ' + this.hostSerialNumber;
   };
 
-  module.exports = AuthenticateCommand;
+  module.exports = AuthenticateRequest;
   return module.exports;

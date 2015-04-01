@@ -4,34 +4,34 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   /*jshint -W097 */
 'use strict';
 
-  function DownloadCommand(index, offset, initialRequest, crcSeed, maxBlockSize) {
+  function DownloadRequest(index, offset, initialRequest, crcSeed, maxBlockSize) {
     this.request(index, offset, initialRequest, crcSeed, maxBlockSize);
   }
 
-  DownloadCommand.prototype.CONTINUE_TRANSFER = 0x00;
-  DownloadCommand.prototype.NEW_TRANSFER = 0x01;
+  DownloadRequest.prototype.CONTINUE_TRANSFER = 0x00;
+  DownloadRequest.prototype.NEW_TRANSFER = 0x01;
 
-  DownloadCommand.prototype.ID = 0x09;
+  DownloadRequest.prototype.ID = 0x09;
 
-  DownloadCommand.prototype.FILE_INDEX = {
+  DownloadRequest.prototype.FILE_INDEX = {
     DIRECTORY: 0x00,
     COMMAND_PIPE: 0xFFFE
   };
 
-  DownloadCommand.prototype.setMaxBlockSize = function(maxBlockSize) {
+  DownloadRequest.prototype.setMaxBlockSize = function(maxBlockSize) {
     this.maxBlockSize = maxBlockSize;
   };
 
-  DownloadCommand.prototype.continueRequest = function(index, offset, crcSeed, maxBlockSize) {
-    this.request(index, offset, DownloadCommand.prototype.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
+  DownloadRequest.prototype.continueRequest = function(index, offset, crcSeed, maxBlockSize) {
+    this.request(index, offset, DownloadRequest.prototype.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
   };
 
-  DownloadCommand.prototype.request = function(index, offset, initialRequest, crcSeed, maxBlockSize) {
+  DownloadRequest.prototype.request = function(index, offset, initialRequest, crcSeed, maxBlockSize) {
     this.index = index || 0;
     this.offset = offset || 0;
 
     if (initialRequest === undefined)
-      initialRequest = DownloadCommand.prototype.NEW_TRANSFER;
+      initialRequest = DownloadRequest.prototype.NEW_TRANSFER;
 
     this.initialRequest = initialRequest;
     this.crcSeed = crcSeed || 0;
@@ -39,7 +39,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   // Spec 12.7 Downloading - its a two packet burst
-  DownloadCommand.prototype.serialize = function() {
+  DownloadRequest.prototype.serialize = function() {
     var command = new Uint8Array(16),
       dv = new DataView(command.buffer);
 
@@ -55,10 +55,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return command;
   };
 
-  DownloadCommand.prototype.toString = function() {
+  DownloadRequest.prototype.toString = function() {
     return 'DOWNLOAD index ' + this.index + ' offset ' + this.offset + ' initial request ' +
       this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
   };
 
-  module.exports = DownloadCommand;
+  module.exports = DownloadRequest;
   return module.exports;

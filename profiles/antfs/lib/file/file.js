@@ -11,6 +11,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       this.decode(data);
 
     this.directory = directory;
+    this.timeFormat = this.directory.timeFormat;
 
   }
 
@@ -43,7 +44,13 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return this.type;
   };
 
-  File.prototype.toString = function(timeFormat) {
+  File.prototype.getDateFrom31Dec1989 = function ()
+  {
+    return new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + this.date * 1000);
+  };
+
+  File.prototype.toString = function (timeFormat)
+  {
     var typeStr,
       dateStr;
 
@@ -56,7 +63,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     switch (timeFormat) {
       case File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989:
-        dateStr = (new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + this.date * 1000)).toLocaleString();
+        dateStr = this.getDateFrom31Dec1989().toLocaleString();
         break;
 
       case File.prototype.TIME_FORMAT.SYSTEM_TIME:
@@ -71,6 +78,86 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return 'Index : ' + this.index + ' | Type : ' + typeStr + ' | Identifier : ' +
       this.identifier + ' | Type flags : 0x' + this.typeFlags.toString(16) + ' | Permissions : ' +
       this.permission.toString() + ' | Size : ' + this.size + ' | Date ' + dateStr;
+
+  };
+
+  File.prototype.getFilename = function ()
+  {
+    if (this.type <= File.prototype.TYPE.MANUFACTURER_MAX)
+      return 'Manufacturer-' + this.index;
+    else
+      return '';
+
+  };
+
+  File.prototype.toUnixString = function() {
+  var  filetype = '-', // Regular file = -
+    ownerPermission = filetype,
+    groupPermission = '-rw',
+    otherPermission = '---',
+    owner = this.directory.host.getHostname(),
+    group = 'antfs',
+    permission,
+    size = Number(this.size).toString(),
+    MAXLEN_SIZE = 12,
+    prefix_size = '',
+    i,
+    date,
+    dateSplit,
+    month,
+    day,
+    year,
+    dateStr='',
+    timeSplit,
+    hour,
+    min,
+    halfYearInMilliseconds = 182.5*24*60*60*1000,
+    iNodes = 1; // 16-bytes meta data in antfs
+
+   if (this.permission.read)
+     ownerPermission += 'r';
+   else
+     ownerPermission += '-';
+
+   if (this.permission.write)
+     ownerPermission += 'w';
+    else
+      ownerPermission += '-';
+
+   for (i=0; i< MAXLEN_SIZE-size.length; i++)
+     prefix_size += ' ';
+
+   size = prefix_size + size;
+
+   if (this.timeFormat === File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989) {
+     date = this.getDateFrom31Dec1989();
+     /*
+     'Wed Apr 01 2015'
+     > d.toDateString().split(' ')
+    [ 'Wed', 'Apr', '01', '2015' ]
+    */
+
+     dateSplit = date.toDateString().split(' ');
+     month = dateSplit[1];
+     day = dateSplit[2];
+     year = dateSplit[3];
+
+     timeSplit = date.toLocaleTimeString().split(':');
+     hour = timeSplit[0];
+     min = timeSplit[1];
+
+     dateStr = month + ' ' + day + ' ';
+
+     if (date.getTime() <= Date.now()-halfYearInMilliseconds)
+       dateStr += year;
+     else
+       dateStr += hour + ':' + min;
+   }
+
+   permission = ownerPermission + groupPermission + otherPermission + ' '+ iNodes + ' ' + owner +
+               ' ' + group + size + ' ' + dateStr + ' ' + File.prototype.getFilename.call(this);
+
+    return permission;
   };
 
   module.exports = File;
