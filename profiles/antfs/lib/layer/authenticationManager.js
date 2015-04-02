@@ -39,6 +39,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   AuthenticationManager.prototype.constructor = AuthenticationManager;
 
   AuthenticationManager.prototype.onReset = function() {
+
     this.session = {
       request: [],
       response: []
@@ -59,13 +60,25 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   AuthenticationManager.prototype.handleResponse = function(response) {
+
     this.session.response.push(response);
 
     if (this.log.logging)
       this.logger('log', response.toString());
 
+    // Handle case where client serial number is sent as 4 0 bytes in pairing response
+    // Don't know why 910XT antfs stack sends it, either a bug or for not associating passkey with client
+    // Spec 12.5.2.3; "The client device's serial number shall also be provided in the Authenticate response"
+    if (!this.clientSerialNumber && response.clientSerialNumber)
+      this.clientSerialNumber = response.clientSerialNumber;
+
+
     switch (response.type) {
+
       case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER:
+
+        if (response.authenticationStringLength)
+          this.clientFriendlyname = response.authenticationString;
 
         this.emit('serialNumber', undefined, response);
         break;
@@ -98,12 +111,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     if (responseId === AuthenticateResponse.prototype.ID) {
 
       response = new AuthenticateResponse(responseData);
-
-      // Handle case where client serial number is sent as 4 0 bytes in pairing response
-      // Don't know why 910XT antfs stack sends it, either a bug or for not associating passkey with client
-      // Spec 12.5.2.3; "The client device's serial number shall also be provided in the Authenticate response"
-      if (!this.clientSerialNumber && response.clientSerialNumber)
-        this.clientSerialNumber = response.clientSerialNumber;
 
       this.handleResponse(response);
     }
@@ -150,7 +157,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.sendRequest(this.authenticateRequest);
   };
 
-
   AuthenticationManager.prototype.requestPairing = function(callback) {
     this.authenticateRequest = new AuthenticateRequest();
     this.authenticateRequest.requestPairing(this.host.getHostSerialNumber(), this.host.getHostname());
@@ -163,7 +169,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var passkey = this.pairingDB[clientSerialNumber];
 
     this.authenticateRequest = new AuthenticateRequest();
-    this.authenticateRequest.setRequestPasskeyExchange(this.host.getHostSerialNumber(), passkey);
+    this.authenticateRequest.requestPasskeyExchange(this.host.getHostSerialNumber(), passkey);
 
     this.once('acceptOrReject', callback);
     this.sendRequest(this.authenticateRequest);
@@ -195,7 +201,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     try {
       fs.writeFileSync(authorizationFile, passkey, {
-        mode: 432
+        mode: 432 // -rw-rw---
       });
     } catch (e) {
       if (this.log.logging)
@@ -244,7 +250,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         }
 
         if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
-          
+
           if (this.log.logging)
             this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber +
               ' requesting pairing');
@@ -256,7 +262,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         } else if (passkey && authenticationType.isPasskeyAndPairingOnly()) {
           this.requestPasskeyExchange(this.clientSerialNumber, onPasskeyExchange);
-        }
+        } else if (authenticationType.isPassthrough())
+          this.requestPassthrough(onPassthrough);
 
       }.bind(this),
 
@@ -295,11 +302,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     this.host.state.set(State.prototype.AUTHENTICATION);
 
-    if (authenticationType.isPassthrough())
-      this.requestPassthrough(onPassthrough);
-
-    else if (authenticationType.isPasskeyAndPairingOnly() || authenticationType.isPairingOnly())
-      this.requestSerialNumber(onSerialNumber);
+    this.requestSerialNumber(onSerialNumber); 
 
   };
 

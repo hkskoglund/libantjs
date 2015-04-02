@@ -35,6 +35,8 @@ function Host(options, host, channelNumber, net) {
 
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
+  this.on('directory', function _onDirectory (lsl) { console.log(lsl);});
+
   // Initialize layer specific event handlers at the tail of event callbacks
   // Host has priority (in front of event callbacks) because it handles decoding of the client beacon
 
@@ -43,9 +45,6 @@ function Host(options, host, channelNumber, net) {
   this.authenticationManager = new AuthenticationManager(this);
 
   this.transportManager = new TransportManager(this);
-  this.transportManager.on('download_progress', this.onDownloadProgress.bind(this));
-  this.transportManager.on('download', this.onDownload.bind(this));
-
 
   this.beacon = new ClientBeacon();
 
@@ -54,21 +53,16 @@ function Host(options, host, channelNumber, net) {
 Host.prototype = Object.create(Channel.prototype);
 Host.prototype.constructor = Channel;
 
-Host.prototype.onDownloadProgress = function(err, session) {
-  this.emit('download_progress', err, session);
-};
-
-Host.prototype.onDownload = function(err, session) {
-  this.emit('download', err, session);
-};
-
-
 Host.prototype.getHostname = function() {
   return this.hostname;
 };
 
 Host.prototype.getClientSerialNumber = function() {
   return this.authenticationManager.clientSerialNumber;
+};
+
+Host.prototype.getClientFriendlyname = function() {
+  return this.authenticationManager.clientFriendlyname;
 };
 
 Host.prototype.onRxFailGoToSearch = function() {

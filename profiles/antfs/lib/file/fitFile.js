@@ -68,6 +68,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   FitFile.prototype.getFileName = function(unixFormat) {
     var dateStr,
     clientSerialNumber = this.directory.host.getClientSerialNumber(),
+    clientFriendlyname = this.directory.host.getClientFriendlyname(),
     filename;
 
     if (this.date === 0xFFFFFFFF)
@@ -81,7 +82,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     if (!unixFormat) {
       filename +=  '-' + dateStr + '.fit';
-      return 'fit-' + clientSerialNumber + '-' + filename;
+      if (!clientFriendlyname)
+         return  'client-' + clientSerialNumber + '-' + filename;
+      else
+        return clientFriendlyname + '-' + filename;
     }
     else
       return filename + '.fit';

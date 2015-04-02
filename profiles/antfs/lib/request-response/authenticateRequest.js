@@ -33,7 +33,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.request(AuthenticateRequest.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
   };
 
-  AuthenticateRequest.prototype.setRequestPasskeyExchange = function(hostSerialNumber, passkey) {
+  AuthenticateRequest.prototype.requestPasskeyExchange = function(hostSerialNumber, passkey) {
     this.request(AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
   };
 
@@ -75,18 +75,26 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var cmdType;
 
     switch (this.commandType) {
+
       case AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT:
+
         cmdType = 'proceed to transport';
         break;
+
       case AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER:
+
         cmdType = 'get client serial number';
         break;
+
       case AuthenticateRequest.prototype.REQUEST_PAIRING:
+
         cmdType = 'pairing';
         if (this.authenticationStringLength)
           cmdType += ', hostname ' + this.authenticationString;
         break;
+
       case AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE:
+
         cmdType = 'passkey exchange';
         break;
     }

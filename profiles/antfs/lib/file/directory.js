@@ -16,6 +16,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.log = this.host.log;
     this.logger = this.host.log.log.bind(this.host.log);
 
+    if (data)
+      this.decode(data);
+
   }
 
   Directory.prototype.SYSTEM_TIME_NOT_USED = 0xFFFFFFFF;
@@ -34,9 +37,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return 'directory-' + this.host.getClientSerialNumber();
   };
 
-  Directory.prototype.getFile = function (index)
+  Directory.prototype.getFile = function (directoryIndex)
   {
-    return this.file[index];
+    return this.file[directoryIndex - 1]; // directoryIndex 1 starts at index 0
   };
 
   Directory.prototype.decode = function(data) {
@@ -113,6 +116,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     if (!maxBlockSize)
       return Math.ceil(totalBytes / DEFAULT_CLIENT_BLOCK_SIZE);
+    else
+      return Math.ceil(totalBytes / maxBlockSize);
   };
 
   Directory.prototype.indexOf = function (index)
@@ -173,14 +178,15 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   Directory.prototype.ls = function ()
   {
-    var i;
+    var i,
+        str;
 
-    debugger;
-
-    console.log('totals ' + this.getTotalBlocks());
+    str = 'totals ' + this.getTotalBlocks() + '\n';
 
     for (i=0;i < this.file.length; i++)
-      console.log(this.file[i].toUnixString());
+      str += this.file[i].toUnixString() + '\n';
+
+    return str;
 
   };
 

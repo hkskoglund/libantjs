@@ -151,11 +151,6 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
         this.session.packets = new Uint8Array(response.fileSize);
 
-       if (this.session.index !== 0)
-         this.session.filename = this.directory.getFile(this.session.index).getFileName();
-       else
-         this.session.filename = this.directory.getFileName();
-
         if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
 
@@ -191,7 +186,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
            this.session.progress = this.session.offset /  response.fileSize * 100;
 
-           this.emit('download_progress', NO_ERROR, this.session);
+           this.host.emit('download_progress', NO_ERROR, this.session);
         }
 
       if (offset < response.fileSize) {
@@ -202,18 +197,23 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
          if (this.session.index === 0)
          {
-           this.directory.decode(this.session.packets);
-           this.directory.ls();
+           this.directory = new Directory(this.session.packets, this.host);
+           this.session.filename = this.directory.getFileName();
+           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
+         } else
+         {
+           this.session.filename = this.directory.getFile(this.session.index).getFileName();
          }
 
-         this.emit('download', NO_ERROR, this.session);
+
+         this.host.emit('download', NO_ERROR, this.session);
        }
 
       break;
 
     default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
 
-      this.emit('download', response, this.session);
+      this.host.emit('download', response, this.session);
 
       break;
 
@@ -246,7 +246,7 @@ TransportManager.prototype.onRequestSent = function(err, msg) {
 
       this.host.once('beacon', onBeacon);
 
-    }.bind(this), 2000);
+    }.bind(this), 1000);
   }
 };
 
@@ -289,7 +289,7 @@ TransportManager.prototype.download = function(index, offset) {
     request = new DownloadRequest(index);
     // TEST  request.setMaxBlockSize(8);
 
-    this.once('download', offset);
+    this.host.once('download', offset);
 
   } else {
 
