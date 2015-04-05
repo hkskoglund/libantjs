@@ -2,498 +2,482 @@
 module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true, ArrayBuffer: true,
 Buffer: true */
 
-  /*jshint -W097 */
+/*jshint -W097 */
 'use strict';
 
-  var USBDevice = require('./USBDevice.js'),
-    usb = require('usb');
+var USBDevice = require('./USBDevice.js'),
+  usb = require('usb');
 
-  function USBNode(options) {
+function USBNode(options) {
 
-    USBDevice.call(this, options);
+  USBDevice.call(this, options);
 
-    usb.addListener('attach', this._onAttach.bind(this)); // USB listen for attached listener 'newListener' and  enableHotplugEvents for any devices
-    usb.addListener('detach', this._onDetach.bind(this)); // USB listen for detached listener 'removedListener' and disableHotplugEvents for any devices
+  this.usb = usb;
 
-    usb.addListener('error', this._onError.bind(this));
+  if (this.options.debugLevel)
+    this.usb.setDebugLevel(this.options.debugLevel);
 
-    this.devices = this.getDevices();
+}
 
-    this.deviceInterface = undefined;
+USBNode.prototype = Object.create(USBDevice.prototype);
+USBNode.prototype.constructor = USBNode;
 
-    this.inEndpoint = undefined;
-    this.outEndpoint = undefined;
+USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64; // Based on info in nRF24AP2 data sheet
 
-    this._needsKernelDriverAttach = undefined; // For unix/linux
-
+USBNode.prototype._onError = function(error) {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.ERROR, error);
   }
+};
 
-  USBNode.prototype = Object.create(USBDevice.prototype, {
-    constructor: {
-      value: USBNode,
-      enumerable: false,
-      writeable: true,
-      configurable: true
+USBNode.prototype._onAttach = function(device) {
+  if (this._isANTDevice(device)) {
+
+    device.open(); // Device must be open to execute getDescriptorString call on device object
+
+    this._deviceToString(device, function(err, str) {
+      device.close();
+      if (this.log.logging) {
+        this.log.log(USBDevice.prototype.EVENT.LOG, 'Attached device ' + str);
+      }
+    }.bind(this));
+
+    this.getDevices();
+
+    this.emit('attach', device);
+  }
+};
+
+USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
+
+  var manufacturer,
+    product;
+
+  device.getStringDescriptor(device.deviceDescriptor.iManufacturer, function _manufacturer(error, data) {
+
+    if (!error) {
+
+      manufacturer = data;
     }
-  });
 
+    // THEN
 
-  USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64; // Based on info in nRF24AP2 data sheet
-
-  USBNode.prototype._onError = function(error) {
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.ERROR, error);
-    }
-  };
-
-  USBNode.prototype._onAttach = function(device) {
-    if (this._isANTDevice(device)) {
-      device.open(); // Device must be open to execute getDescriptorString call on device object
-
-      this._deviceToString(device, function(err, str) {
-        device.close();
-        if (this.log.logging) {
-          this.log.log(USBDevice.prototype.EVENT.LOG, 'Attached device ' + str);
-        }
-      }.bind(this));
-
-      this.getDevices();
-    }
-  };
-
-  USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
-
-    var manufacturer,
-      product;
-
-    device.getStringDescriptor(device.deviceDescriptor.iManufacturer, function _manufacturer(error, data) {
+    device.getStringDescriptor(device.deviceDescriptor.iProduct, function _product(error, data) {
 
       if (!error) {
 
-        manufacturer = data;
+        product = data;
       }
 
-      // THEN
-
-      device.getStringDescriptor(device.deviceDescriptor.iProduct, function _product(error, data) {
-
-        if (!error) {
-
-          product = data;
-        }
-
-        retrn(error, {
-          'manufacturer': manufacturer,
-          'product': product
-        });
+      retrn(error, {
+        'manufacturer': manufacturer,
+        'product': product
       });
     });
-  };
+  });
+};
 
-  USBNode.prototype._onDetach = function(device) {
-    if (this._isANTDevice(device)) {
+USBNode.prototype._onDetach = function(device) {
+  if (this._isANTDevice(device)) {
 
-
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached device ' + this._deviceToString(device));
-      }
-      this.getDevices();
+    if (this.log.logging) {
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached device ' + this._deviceToString(device));
     }
-  };
 
+    this.getDevices();
 
-  USBNode.prototype._deviceToString = function(device, retrn) {
-    var str = 'Bus ' + device.busNumber + ' Number ' + device.deviceAddress + ': ID ' + device.deviceDescriptor.idVendor.toString(16) + ':' + device.deviceDescriptor.idProduct.toString(16);
+    this.emit('detach', device);
+  }
+};
 
-    if (!retrn)
-      return str; // Synchronous call doesnt get manufacturer/product descriptor
+USBNode.prototype._deviceToString = function(device, retrn) {
+  var str = 'Bus ' + device.busNumber + ' Number ' + device.deviceAddress + ': ID ' + device.deviceDescriptor.idVendor.toString(16) + ':' + device.deviceDescriptor.idProduct.toString(16);
 
-    // Like lsusb
-    this._getManufacturerAndProduct(device,
-      function(error, dev) {
+  if (!retrn)
+    return str; // Synchronous call doesnt get manufacturer/product descriptor
 
-        if (!error) {
-          if (dev.manufacturer !== undefined) {
-            str += ' ' + dev.manufacturer + ',';
-          }
+  // Like lsusb
+  this._getManufacturerAndProduct(device,
+    function(error, dev) {
 
-          if (dev.product !== undefined) {
-            str += ' ' + dev.product;
-          }
-          retrn(undefined, str);
-        } else {
-          retrn(error, str);
+      if (!error) {
+        if (dev.manufacturer !== undefined) {
+          str += ' ' + dev.manufacturer + ',';
         }
 
-      });
-  };
-
-  USBNode.prototype._isANTDevice = function(usbDevice, index, arr) {
-    var knownANTdevices = this.getDevicesFromManifest(),
-      match = false,
-      descriptor = usbDevice.deviceDescriptor;
-
-    for (var devNr = 0; devNr < knownANTdevices.length; devNr++) {
-      if (knownANTdevices[devNr].vendorId === descriptor.idVendor && knownANTdevices[devNr].productId === descriptor.idProduct) {
-
-        match = true;
-        break;
+        if (dev.product !== undefined) {
+          str += ' ' + dev.product;
+        }
+        retrn(undefined, str);
+      } else {
+        retrn(error, str);
       }
+
+    });
+};
+
+USBNode.prototype._isANTDevice = function(usbDevice, index, arr) {
+  var knownANTdevices = this.getDevicesFromManifest(),
+    match = false,
+    descriptor = usbDevice.deviceDescriptor;
+
+  for (var devNr = 0; devNr < knownANTdevices.length; devNr++) {
+    if (knownANTdevices[devNr].vendorId === descriptor.idVendor && knownANTdevices[devNr].productId === descriptor.idProduct) {
+
+      match = true;
+      break;
     }
+  }
 
-    return match;
-  };
+  return match;
+};
 
 
-  USBNode.prototype.getDevices = function() {
-    var devices;
+USBNode.prototype.getDevices = function() {
+  var devices;
 
-    devices = usb.getDeviceList().filter(this._isANTDevice.bind(this));
+  devices = this.usb.getDeviceList().filter(this._isANTDevice.bind(this));
 
-    this.emit(this.EVENT.ENUMERATION_COMPLETE);
+  this.emit(this.EVENT.ENUMERATION_COMPLETE);
 
-    return devices;
-  };
+  return devices;
+};
 
-  USBNode.prototype._getINEndpointPacketSize = function() {
-    return this.inEndpoint.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
-  };
+USBNode.prototype._getINEndpointPacketSize = function() {
+  return this.inEndpoint.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+};
 
-  USBNode.prototype._getOUTEndpointPacketSize = function() {
-    return this.outEndpoint.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
-  };
+USBNode.prototype._getOUTEndpointPacketSize = function() {
+  return this.outEndpoint.descriptor.wMaxPacketSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+};
 
-  USBNode.prototype.getDirectANTChipCommunicationTimeout = function() {
-    return USBNode.prototype.ANT_DEVICE_TIMEOUT;
-  };
+USBNode.prototype.setDeviceTimeout = function(timeout) {
+  this.device.timeout = timeout;
+};
 
-  // ANT CHIP serial interface configured at 57600 baud (BR pins 1 2 3 = 111) = 57600 bit/s = 57.6 bit/ms
-  // Sends : 1 start bit + 8 data bits + 1 stop bits = 10 bit/byte
-  // 57.6 bit/ms / 10 bit/byte = 5.76 byte/ms
-  // So, f.ex SYNC + MSG L. + MSG ID + 8 bytes payload + CRC = 12 bytes -> 12 bytes / 5.76 bytes/ms = 2.083 ms transfer time
-  // 32 bytes transfer : 32 / 5.76 = 5.55 ms, 64 bytes : 2*5.55 = 11.11 ms
-  // So a sensible timeout value could be >= 11.11 ms. It's possible to set a dynamic timeout based on how much bytes to transfer, but that needs some computations that takes time
-  // dynamictimeout = parseInt(Math.Ceil(chunk/5.76),10)
-  USBNode.prototype.setDirectANTChipCommunicationTimeout = function(timeout) {
-    this.setDeviceTimeout(timeout || USBNode.prototype.ANT_DEVICE_TIMEOUT);
-  };
+USBNode.prototype.isTimeoutError = function(error) {
 
-  USBNode.prototype.setDeviceTimeout = function(timeout) {
-    this.device.timeout = timeout;
-  };
+  return (error.errno === this.usb.LIBUSB_TRANSFER_TIMED_OUT);
+};
 
-  USBNode.prototype.isTimeoutError = function(error) {
+USBNode.prototype._generateError = function(e, retrn) {
+  var err;
 
-    return (error.errno === usb.LIBUSB_TRANSFER_TIMED_OUT);
-  };
+  if (!(e instanceof Error)) // USBNode specific error
+  {
+    err = new Error(e.message);
+    err.code = e.code;
+  }
 
-  USBNode.prototype._generateError = function(e, retrn) {
-    var err;
+  this.emit(USBDevice.prototype.EVENT.ERROR, err);
 
-    if (!(e instanceof Error)) // USBNode specific error
-    {
-      err = new Error(e.message);
-      err.code = e.code;
+  retrn(err);
+
+};
+
+USBNode.prototype.ERROR = {
+  NO_DEVICE: {
+    message: 'No device',
+    code: -1
+  },
+  NO_INTERFACE: {
+    message: 'No interface',
+    code: -2
+  },
+
+  USB_TIMEOUT: {
+    message: 'Timeout',
+    code: -3
+  },
+
+  NO_ALLOWDETACHKERNELDRIVER: {
+    message: 'OS kernel driver present on interface, no allowDetachKernelDriver option specified, cannot release it',
+    code: -4
+  }
+
+};
+
+USBNode.prototype._claimInterface = function(retrn) {
+
+  this.deviceInterface = this.device.interface();
+
+  // Linux can have kernel driver attached to ANT USB; "usb_serial_simple"
+  // Can be verified with lsmod | grep usb
+
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', this.deviceInterface.isKernelDriverActive());
+  }
+
+  if (this.deviceInterface.isKernelDriverActive()) {
+
+    if (this.options.allowDetachKernelDriver) {
+      if (this.log.logging) {
+        this.log.log(USBDevice.prototype.EVENT.LOG, 'Detaching kernel driver');
+      }
+
+      this.deviceInterface.detachKernelDriver();
+
+      this.once('attachKernelDriver', function _detachKernelDriver() {
+
+        if (this.log.logging) {
+          this.log.log(USBDevice.prototype.EVENT.LOG, 'Reattaching kernel driver');
+        }
+
+        this.deviceInterface.attachKernelDriver();
+
+      }.bind(this));
+
+    } else {
+
+      if (this.log.logging) {
+        this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message);
+      }
+      retrn(new Error(USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message));
+      return;
     }
+  }
 
-    this.emit(USBDevice.prototype.EVENT.ERROR, err);
+  // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
-    retrn(err);
+  this.inEndpoint = this.deviceInterface.endpoints[0];
+  this.inEndpoint.on('error', this._onInEndpointError.bind(this));
+  this.inEndpoint.addListener('end', this._onInEndpointEnd.bind(this));
 
-  };
+  this.outEndpoint = this.deviceInterface.endpoints[1];
+  this.outEndpoint.addListener('error', this._onOutEndpointError.bind(this));
+  this.outEndpoint.addListener('end', this._onOutEndpointEnd.bind(this));
 
-  USBNode.prototype.ERROR = {
-    NO_DEVICE: {
-      message: 'No device',
-      code: -1
-    },
-    NO_INTERFACE: {
-      message: 'No interface',
-      code: -2
-    },
+  this.deviceInterface.claim(); // Must be called before attempting transfer on endpoints
 
-    USB_TIMEOUT: {
-      message: 'Timeout',
-      code: -3
-    },
+  retrn();
 
-    NO_ALLOWDETACHKERNELDRIVER: {
-      message: 'OS kernel driver present on interface, no allowDetachKernelDriver option specified, cannot release it',
-      code: -4
-    }
+};
 
-  };
+USBNode.prototype._onOutEndpointError = function(error) {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.ERROR, 'Out endpoint', error);
+  }
+};
 
+USBNode.prototype._onOutEndpointEnd = function() {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.ERROR, 'Out endpoint stopped/cancelled');
+  }
+};
 
-  USBNode.prototype._claimInterface = function(retrn) {
+USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
+
+  var antInterface,
+    err,
+    antDevices;
+
+  this.usb.on('attach', this._onAttach.bind(this)); // USB listen for attached listener 'newListener' and  enableHotplugEvents for any devices
+  this.usb.on('detach', this._onDetach.bind(this)); // USB listen for detached listener 'removedListener' and disableHotplugEvents for any devices
+
+  this.usb.on('error', this._onError.bind(this));
+
+  this.device = this.getDevices()[preferredDeviceIndex];
+
+  if (this.device) {
 
     this.device.open();
 
-    this.deviceInterface = this.device.interface();
+    this._claimInterface(retrn);
 
-    // Linux can have kernel driver attached to ANT USB; "usb_serial_simple"
-    // Can be verified with lsmod | grep usb
+  } else {
+    this._generateError(this.ERROR.NO_DEVICE, retrn);
+  }
 
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', this.deviceInterface.isKernelDriverActive());
-    }
+};
 
-    if (this.deviceInterface.isKernelDriverActive()) {
+USBNode.prototype._onInterfaceReleased = function(error) {
 
-      if (this.options.allowDetachKernelDriver) {
-        if (this.log.logging) {
-          this.log.log(USBDevice.prototype.EVENT.LOG, 'Detaching kernel driver');
-        }
+  this.emit('attachKernelDriver');
 
-        this.deviceInterface.detachKernelDriver();
+  this.device.close();
 
-        this._needsKernelDriverAttach = true; // Flag indicates that kernel driver should be reattached on exit
-      } else {
+  this.emit(USBDevice.prototype.EVENT.CLOSED);
 
-        if (this.log.logging) {
-          this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message);
-        }
-        retrn(new Error(USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message));
-        return;
-      }
-    }
+  this.usb.removeAllListeners();
 
-    // http://www.beyondlogic.org/usbnutshell/usb5.shtml
+  this.removeAllListeners();
 
-    this.inEndpoint = this.deviceInterface.endpoints[0];
-    this.inEndpoint.on('error', this._onInEndpointError.bind(this));
-    this.inEndpoint.addListener('end', this._onInEndpointEnd.bind(this));
+};
 
-    this.outEndpoint = this.deviceInterface.endpoints[1];
-    this.outEndpoint.addListener('error', this._onOutEndpointError.bind(this));
-    this.outEndpoint.addListener('end', this._onOutEndpointEnd.bind(this));
+USBNode.prototype.exit = function(retrn) {
 
-    this.deviceInterface.claim(); // Must be called before attempting transfer on endpoints
+  var onReleased = function _onReleased(err) {
+    this._onInterfaceReleased.call(this); // Close device
 
-    retrn();
+    this.deviceInterface = null;
+    this.inEndpoint = null;
+    this.outEndpoint = null;
+    this.device = null;
 
-  };
+    retrn(err);
+  }.bind(this);
 
-  USBNode.prototype._onOutEndpointError = function(error) {
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.ERROR, 'Out endpoint', error);
-    }
-  };
+  if (this.device === undefined) {
+    retrn(this.ERROR.NO_DEVICE);
+  } else {
 
-  USBNode.prototype._onOutEndpointEnd = function() {
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.ERROR, 'Out endpoint stopped/cancelled');
-    }
-  };
+    if (this.deviceInterface) {
 
-  USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
+      this.inEndpoint.lastTransfer.cancel(); // Returns immediately, but is asynchronous!
 
-    var antInterface,
-      err,
-      antDevices;
+      //this.inEndpoint.cancel();
 
-    if (this.options.debugLevel)
-      usb.setDebugLevel(this.options.debugLevel);
+      setTimeout( function () {
 
-    this.device = this.devices[preferredDeviceIndex];
+      this.inEndpoint.removeAllListeners();
 
-    if (this.device) {
-      this._claimInterface(retrn);
-    } else {
-      this._generateError(this.ERROR.NO_DEVICE, retrn);
-    }
+      this.outEndpoint.removeAllListeners();
 
-  };
+      // Arguments to bind precedes actual arguments from passed by calling function
+      // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
+      this.deviceInterface.release(true, onReleased);
+    }.bind(this),10); // Wait some time on cancelling/run in endpoint callback
 
-  USBNode.prototype._onInterfaceReleased = function(retrn, error) {
-
-    if (error) {
-      this.emit(USBDevice.prototype.EVENT.ERROR, error);
-      retrn(error);
     } else {
 
-      try {
-
-        if (this._needsKernelDriverAttach) {
-          if (this.log.logging) {
-            this.log.log(USBDevice.prototype.EVENT.LOG, 'Reattaching kernel driver');
-          }
-          this.deviceInterface.attachKernelDriver();
-          this._needsKernelDriverAttach = false;
-
-        }
-
-        this.device.close();
-        this.emit(USBDevice.prototype.EVENT.CLOSED);
-
-        this.removeAllListeners();
-        this.inEndpoint.removeAllListeners();
-        this.outEndpoint.removeAllListeners();
-        console.log('usb', this);
-
-        retrn();
-
-      } catch (e) {
-        retrn(e);
-      }
-
+      onReleased();
     }
-  };
 
-  USBNode.prototype.exit = function(retrn) {
+  }
+};
 
-    if (this.device === undefined) {
-      retrn(this.ERROR.NO_DEVICE);
-    } else {
+USBNode.prototype._onInEndpointEnd = function() {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling cancelled');
+  }
+};
 
-      if (this.inEndpoint) {
+USBNode.prototype._onInEndpointError = function(error) {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.ERROR, 'In endpoint error', error);
+  }
+};
 
-         usb.setDebugLevel(4);
-         this.inEndpoint.currentTransfer.cancel();
-        // Arguments to bind precedes actual arguments from passed by calling function
-        // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
-        this.deviceInterface.release(true, this._onInterfaceReleased.bind(this, retrn));
+USBNode.prototype._onInEndpointData = function(error, data) {
 
-      }
 
-    }
-  };
+};
 
-  USBNode.prototype._onInEndpointEnd = function() {
+USBNode.prototype.setInEndpointTimeout = function(timeout) {
+
+  var prevTimeout = this.inEndpoint.timeout;
+
+  if (prevTimeout !== timeout) {
+
+    this.inEndpoint.timeout = timeout;
+
     if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling cancelled');
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'In endpoint timeout changed from', prevTimeout, 'to', timeout);
     }
-  };
-
-  USBNode.prototype._onInEndpointError = function(error) {
+  } else {
     if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.ERROR, 'In endpoint error', error);
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'In endpoint timeout no change, still', this.inEndpoint.timeout);
     }
-  };
+  }
+};
 
-  USBNode.prototype._onInEndpointData = function(error,data) {
-    /*
-            if (error)
-            {
+USBNode.prototype.setOutEndpointTimeout = function(timeout) {
 
-              if (this.isTimeoutError(error)){ // Allow timeout, just reschedule listening
-                if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.USB_TIMEOUT.message); }
-                   this.listen(undefined,retrn);
-              } else {
+  var prevTimeout = this.outEndpoint.timeout;
 
-                  retrn(error);
+  if (prevTimeout !== timeout) {
+    this.outEndpoint.timeout = timeout;
+    if (this.log.logging) {
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'Out endpoint timeout changed from', prevTimeout, 'to', timeout);
+    }
+  } else {
+    if (this.log.logging) {
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'Out endpoint timeout no change, still', this.outEndpoint.timeout);
+    }
+  }
+};
+
+USBNode.prototype.listen = function() {
+
+  var endpointPacketSize = 8 * this.inEndpoint.descriptor.wMaxPacketSize,
+
+    deserialize = function _deserialize() {
+
+      this.inEndpoint.transfer(endpointPacketSize, function _transferInEndpoint(error, data) {
+
+        /*
+                if (error)
+                {
+
+                  if (this.isTimeoutError(error)){ // Allow timeout, just reschedule listening
+                    if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.USB_TIMEOUT.message); }
+                       this.listen(undefined,retrn);
+                  } else {
+
+                      retrn(error);
+                    }
                 }
-            }
-             */
+                 */
+        if (error)
+        {
+          if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, error); }
+        }
 
-    if (data && data.length > 0) {
+        if (data && data.length > 0) {
 
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
-      }
+          if (this.log.logging) {
+            this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
+          }
 
-      this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
+          this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
 
-    }
+        }
 
-  };
+        if (!error)
+          deserialize();
 
-  USBNode.prototype.setInEndpointTimeout = function(timeout) {
+      }.bind(this));
 
-    var prevTimeout = this.inEndpoint.timeout;
+    }.bind(this);
 
-    if (prevTimeout !== timeout) {
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.LOG, 'Listening in endpoint transfer packet size ' + endpointPacketSize + ' bytes' + ' device max packet size ' + this.inEndpoint.descriptor.wMaxPacketSize + ' bytes');
+  }
 
-      this.inEndpoint.timeout = timeout;
+  deserialize();
 
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'In endpoint timeout changed from', prevTimeout, 'to', timeout);
-      }
-    } else {
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'In endpoint timeout no change, still', this.inEndpoint.timeout);
-      }
-    }
-  };
+};
 
-  USBNode.prototype.setOutEndpointTimeout = function(timeout) {
+USBNode.prototype.transfer = function(chunk, retrn) {
 
-    var prevTimeout = this.outEndpoint.timeout;
+  var nodeBuf = Util.prototype.toNodeBuffer(chunk);
 
-    if (prevTimeout !== timeout) {
-      this.outEndpoint.timeout = timeout;
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'Out endpoint timeout changed from', prevTimeout, 'to', timeout);
-      }
-    } else {
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'Out endpoint timeout no change, still', this.outEndpoint.timeout);
-      }
-    }
-  };
+  if (this.log.logging) {
+    this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf);
+  }
 
-  USBNode.prototype.listen = function() {
+  this.outEndpoint.transfer(nodeBuf, retrn);
+};
 
-    var endpointPacketSize = 8 * this.inEndpoint.descriptor.wMaxPacketSize,
+function Util() {}
 
-       deserialize = function _deserialize()
-                      {
-                        this.inEndpoint.transfer(endpointPacketSize, function _transferInEndpoint(error,data) {
-                          this._onInEndpointData.call(this,error,data);
-                          if (!error)
-                            deserialize();
-                        }.bind(this));
+Util.prototype.toNodeBuffer = function(chunk) {
 
-                      }.bind(this);
+  return new Buffer(chunk);
 
-    //this.setInEndpointTimeout(1000);
+};
 
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'Listening in endpoint transfer packet size ' + endpointPacketSize + ' bytes' + ' device max packet size ' + this.inEndpoint.descriptor.wMaxPacketSize + ' bytes');
-    }
+// http://stackoverflow.com/questions/8609289/convert-a-binary-nodejs-buffer-to-javascript-arraybuffer
+Util.prototype.toUint8Array = function(buffer) {
+  var ab = new ArrayBuffer(buffer.length),
+    view = new Uint8Array(ab);
 
-    //http://www.beyondlogic.org/usbnutshell/usb4.shtml#Bulk
-    //  this.inEndpoint.transfer(endpointPacketSize,this._onData.bind(this,retrn));
+  for (var i = 0; i < buffer.length; ++i) {
+    view[i] = buffer[i];
+  }
 
-    //this.inEndpoint.on('data', this._onInEndpointData.bind(this));
+  return view;
+};
 
-    //this.inEndpoint.startPoll(1, endpointPacketSize);
-
-     deserialize();
-
-  };
-
-  USBNode.prototype.transfer = function(chunk, retrn) {
-
-    //this.setOutEndpointTimeout(1000);
-    var nodeBuf = Util.prototype.toNodeBuffer(chunk);
-
-    if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf);
-    }
-
-    this.outEndpoint.transfer(nodeBuf, retrn);
-  };
-
-  function Util() {}
-
-  Util.prototype.toNodeBuffer = function(chunk) {
-
-    return new Buffer(chunk);
-
-  };
-
-  // http://stackoverflow.com/questions/8609289/convert-a-binary-nodejs-buffer-to-javascript-arraybuffer
-  Util.prototype.toUint8Array = function(buffer) {
-    var ab = new ArrayBuffer(buffer.length),
-      view = new Uint8Array(ab);
-
-    for (var i = 0; i < buffer.length; ++i) {
-      view[i] = buffer[i];
-    }
-
-    return view;
-  };
-
-  module.exports = USBNode;
-  return module.exports;
+module.exports = USBNode;
+return module.exports;

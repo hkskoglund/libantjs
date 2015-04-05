@@ -20,11 +20,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   }
 
-  // Inherit from event emitter
   USBDevice.prototype = Object.create(EventEmitter.prototype);
   USBDevice.prototype.constructor = USBDevice;
 
-  // for event emitter
   USBDevice.prototype.EVENT = {
 
     DATA: 'data',
@@ -34,8 +32,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     CLOSED: 'closed'
 
   };
-
-  USBDevice.prototype.ANT_DEVICE_TIMEOUT = 12; // 11.11 ms to transfer 64 bytes (max. endpoint size) at 57600 bit/sec  -> 64 * 10 (1+8+1) bit = 640bit -> (640 / 57600 ) *1000 ms = 11.11 ms
 
   USBDevice.prototype.init = function(callback) {
     throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');

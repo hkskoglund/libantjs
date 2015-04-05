@@ -149,7 +149,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
      dateStr = month + ' ' + day + ' ';
 
      if (date.getTime() <= Date.now()-halfYearInMilliseconds)
-       dateStr += year;
+       dateStr += ' ' + year;
      else
        dateStr += hour + ':' + min;
    }

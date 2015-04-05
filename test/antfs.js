@@ -1,8 +1,9 @@
 var usbHost = require('../usb/USBNode');
 
 var antHost = new(require('../host'))({
-  log: false,
-  usb: usbHost
+  log: true,
+  usb: usbHost,
+  debugLevel : 0
 });
 
 var antfsHost = new (require('../profiles/antfs/host'))({
@@ -48,7 +49,13 @@ function onDownload(error, session)
 
 }
 
-function onANTInited(error) {
+function onANTexited (err)
+{
+  if (!err)
+    console.log(Date.now() + 'Exited from ANT',antHost.usb);
+}
+
+function onANTInited(error, notificationStartup) {
 
  if (error) {
    console.log('onantinited',error);
@@ -56,6 +63,9 @@ function onANTInited(error) {
  }
   antHost.setChannel(antfsHost);
   antfsHost.connect(onConnect);
+
+  //antHost.exit(onANTexited);
+
  }
 
 
