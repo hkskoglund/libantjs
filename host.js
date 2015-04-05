@@ -134,21 +134,28 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
       }
 
-      if (!event)
+      if (!event) { // i.e send acknowledged data
         callback(error, msg);
+      }
 
 
     }.bind(this);
 
   if (event) {
+
     if (typeof channel !== 'number') {
+
       this.once(event, callback);
+
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - host');
+
     } else {
+
       this.channel[channel].once(event + '_0x' + message.id.toString(16), callback);
+
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + event + ' - id 0x' + message.id.toString(16) + ' - channel ' + channel);
+        this.log.log('log', 'Waiting for ' + event + '_0x' + message.id.toString(16) + ' channel ' + channel);
     }
 
   }
@@ -231,7 +238,7 @@ Host.prototype.exit = function(callback) {
 
   // TO DO? Close open channels? Exit channels/profiles?
 
-  this.resetSystem(function _onReset(err,notificationStartup) {
+  this.resetSystem(function _onReset(err, notificationStartup) {
 
     for (var c = 0; c < Host.prototype.MAX_CHAN; c++) {
       this.channel[c].removeAllListeners();
@@ -251,11 +258,11 @@ Host.prototype.exit = function(callback) {
 Host.prototype.resetSystem = function(callback) {
 
   var onNotificationStartup = function _onNotificationStartup(err, notificationStartup) {
-                              var DELAY = 500;
-                                  if (this.log.logging)
-                                    this.log.log('log','Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
-                                  setTimeout(callback.bind(this, err, notificationStartup), DELAY);
-                              }.bind(this);
+    var DELAY = 500;
+    if (this.log.logging)
+      this.log.log('log', 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
+    setTimeout(callback.bind(this, err, notificationStartup), DELAY);
+  }.bind(this);
 
   this.sendMessage(new ResetSystemMessage(), Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, onNotificationStartup);
 };
@@ -458,11 +465,11 @@ Host.prototype.closeChannel = function(channel, callback) {
 
 };
 
-Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, ack) {
+Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, acknowledge) {
   var data = broadcastData,
     msg;
 
-  if (!ack)
+  if (!acknowledge)
     msg = new BroadcastDataMessage();
   else
     msg = new AcknowledgedDataMessage();
@@ -472,17 +479,29 @@ Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, ac
 
   msg.encode(channel, data);
 
-  this.sendMessage(msg, undefined, undefined, callback);
+  this.sendMessage(msg, undefined, channel, callback);
 };
 
 // p. 96 ANT Message protocol and usave rev. 5.0
 // Event TRANSFER_TX_COMPLETED channel event if successfull,
 // Event TRANSFER_TX_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
 // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
+Host.prototype.sendAcknowledgedData = function(channel, acknowledgedData, callback) {
 
   var retry = 0,
     MAX_RETRIES = 3,
+
+    onSentToANT = function _onSentToANT(err,msg)
+    {
+      if (err)
+        {
+          this.channel[channel].removeListener(this.EVENT.FAILED, onTxFailed);
+          this.channel[channel].removeListener(this.EVENT.COMPLETED, onTxCompleted);
+          
+          callback(err,msg);
+        }
+
+    }.bind(this),
 
     onTxCompleted = function _onTxCompleted(RFevent) {
 
@@ -498,7 +517,7 @@ Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
 
       if (retry <= MAX_RETRIES) {
 
-        this.sendBroadcastData(channel, ackData, callback, true);
+        this.sendBroadcastData(channel, acknowledgedData, onSentToANT, true);
 
       } else {
 
@@ -511,9 +530,7 @@ Host.prototype.sendAcknowledgedData = function(channel, ackData, callback) {
   this.channel[channel].once(this.EVENT.FAILED, onTxFailed);
   this.channel[channel].once(this.EVENT.COMPLETED, onTxCompleted);
 
-  this.sendBroadcastData(channel, ackData, function _onSentToANT(err, msg) {
-    if (err) callback(err, msg);
-  }, true);
+  this.sendBroadcastData(channel, acknowledgedData, onSentToANT, true);
 
 };
 
@@ -688,7 +705,8 @@ Host.prototype.deserialize = function(data) {
     iStartOfMessage = 0,
     metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
     message,
-    bufferUtil = new Concat();
+    bufferUtil = new Concat(),
+    event;
 
   if (previousPacket && previousPacket.byteLength)
   // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
@@ -750,7 +768,6 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.CAPABILITIES:
 
         message = new CapabilitiesMessage(msgBytes);
-
         this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
         break;
@@ -758,7 +775,6 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.DEVICE_SERIAL_NUMBER:
 
         message = new DeviceSerialNumberMessage(msgBytes);
-
         this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
         break;
@@ -801,7 +817,6 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.BROADCAST_DATA:
 
         message = new BroadcastDataMessage(msgBytes);
-
         this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], message);
 
         break;
@@ -840,20 +855,29 @@ Host.prototype.deserialize = function(data) {
 
         break;
 
-        // Channel responses or RF event
+      // Channel responses or RF event
 
       case Message.prototype.CHANNEL_RESPONSE:
 
         message = new ChannelResponseMessage(msgBytes);
 
-        this.channel[message.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16), undefined, message.response);
+        if (!message.isRFevent())
+          event = ChannelResponseEvent.prototype.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16);
+        else
+          event = ChannelResponseEvent.prototype.MESSAGE[message.response.code];
+
+        if (this.log.logging) {
+          this.log.log('log','Emitting event ' + event + ' channel ' + message.response.channel);
+        //  this.log.log('log','Event handlers channel ' + message.response.channel,this.channel[message.response.channel]._events);
+        }
+
+        this.channel[message.response.channel].emit(event, undefined, message.response);
 
         break;
 
       default:
 
         message = 'Unable to parse received msg id ' + msgBytes[Message.prototype.iID];
-
         this.emit(this.EVENT.ERROR, message);
 
         break;

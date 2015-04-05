@@ -27,7 +27,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   LinkRequest.prototype.toString = function() {
-    return 'LinkRequest ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host SN ' + this.hostSerialNumber;
+    return 'LinkRequest ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host ' + this.hostSerialNumber;
   };
 
   module.exports = LinkRequest;

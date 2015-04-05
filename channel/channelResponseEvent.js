@@ -87,6 +87,10 @@
     0x39: "ENCRYPT_NEGOTIATION_FAIL",
   };
 
+  ChannelResponse.prototype.isRFevent = function ()
+  {
+    return this.initiatingId === 0x01;
+  };
 
   ChannelResponse.prototype.toString = function() {
     var msg = 'Ch ' + this.channel + ' ';

@@ -85,8 +85,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       }.bind(this),
 
       onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err, repsonse) {
-        var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-          this.hostSerialNumber);
+        
+        var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
         this.sendAcknowledged(linkRequest, onSentToClient);
 
@@ -149,7 +149,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   LinkManager.prototype.disconnect = function(callback) {
-  
+
     var disconnectRequest = new DisconnectRequest();
 
     this.host.state.set(State.prototype.LINK);

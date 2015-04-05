@@ -24,6 +24,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
+  ChannelResponseMessage.prototype.isRFevent = function ()
+  {
+    return this.response.isRFevent();
+  };
+
   ChannelResponseMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " " + this.response.toString();
   };

@@ -117,21 +117,27 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     statusByte1Str += ' | Tch ';
 
     switch (this.beaconChannelPeriod) {
+
       case 0x00:
         statusByte1Str += '0.5 Hz';
         break;
+
       case 0x01:
         statusByte1Str += '1.0 Hz';
         break;
+
       case 0x02:
         statusByte1Str += '2.0 Hz';
         break;
+
       case 0x03:
         statusByte1Str += '4.0 Hz';
         break;
+
       case 0x04:
         statusByte1Str += '8.0 Hz';
         break;
+        
       case 0x07:
         statusByte1Str += 'Match Established Channel Period';
     }
@@ -139,10 +145,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     str = statusByte1Str + ' | State ' + this.clientDeviceState.toString();
 
     if (this.clientDeviceState.isLink()) {
-      str += ' | Device type ' + this.deviceType + ' by ' + this.deviceTypeManagedBy + ' Manuf. ID ' +
+      str += ' | Device type ' + this.deviceType + ' by ' + this.deviceTypeManagedBy + ' Manufacturer ' +
         this.manufacturerID + ' | ' + this.authenticationType.toString();
     } else
-      str += ' | Host SN. ' + this.hostSerialNumber + ' | ' + this.authenticationType.toString();
+      str += ' | Host ' + this.hostSerialNumber + ' | ' + this.authenticationType.toString();
 
     return str;
   };
