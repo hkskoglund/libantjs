@@ -162,9 +162,9 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - host');
     } else {
-      this.channel[channel].once(event, onResponse);
+      this.channel[channel].once(event + '_0x' + message.id.toString(16), onResponse);
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + event + ' - channel ' + channel);
+        this.log.log('log', 'Waiting for ' + event + ' - id 0x' + message.id.toString(16) + ' - channel ' + channel);
     }
 
   }
@@ -867,7 +867,7 @@ Host.prototype.deserialize = function(data) {
 
         message = new ChannelResponseMessage(msgBytes);
 
-        this.channel[message.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[message.response.code], undefined, message.response);
+        this.channel[message.response.channel].emit(ChannelResponseEvent.prototype.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16), undefined, message.response);
 
         break;
 
