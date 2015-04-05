@@ -118,13 +118,6 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
   var msgBytes,
     messageStr,
-    responseTimeout,
-
-    onResponse = function _onResponse()
-    {
-      clearTimeout(responseTimeout);
-      callback.apply(this, arguments);
-    }.bind(this),
 
     onSentToANT = function _onSentToANT(error, msg) {
 
@@ -143,26 +136,17 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
       if (!event)
         callback(error, msg);
-      else
-      {
-        responseTimeout = setTimeout(function _onNoResponse()
-             {
-               if (this.log.logging)
-                 this.log.log('warn','No response for ' + event);
 
-             }.bind(this),500);
-
-      }
 
     }.bind(this);
 
   if (event) {
     if (typeof channel !== 'number') {
-      this.once(event, onResponse);
+      this.once(event, callback);
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - host');
     } else {
-      this.channel[channel].once(event + '_0x' + message.id.toString(16), onResponse);
+      this.channel[channel].once(event + '_0x' + message.id.toString(16), callback);
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - id 0x' + message.id.toString(16) + ' - channel ' + channel);
     }
@@ -182,7 +166,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
 Host.prototype.EVENT = {
 
-  ERROR: 'error', // For example notification serial error
+  ERROR: 'error',
 
   // Data
 
@@ -759,9 +743,6 @@ Host.prototype.deserialize = function(data) {
 
         message = new VersionMessage(msgBytes);
 
-        if (this.log.logging)
-          this.log.log('log', message.toString());
-
         this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
         break;
@@ -770,9 +751,6 @@ Host.prototype.deserialize = function(data) {
 
         message = new CapabilitiesMessage(msgBytes);
 
-        if (this.log.logging)
-          this.log.log('log', message.toString());
-
         this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
         break;
@@ -780,9 +758,6 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.DEVICE_SERIAL_NUMBER:
 
         message = new DeviceSerialNumberMessage(msgBytes);
-
-        if (this.log.logging)
-          this.log.log('log', message.toString());
 
         this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
 
@@ -798,10 +773,14 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.ADVANCED_BURST_CAPABILITIES:
 
         switch (msgBytes[Message.prototype.iLENGTH]) {
+
           case 0x04:
+
             message = new AdvancedBurstCapabilitiesMessage(msgBytes);
             break;
+
           case 0x0A:
+
             message = new AdvancedBurstCurrentConfigurationMessage(msgBytes);
             break;
         }
