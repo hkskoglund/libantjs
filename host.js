@@ -118,6 +118,13 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
   var msgBytes,
     messageStr,
+    responseTimeout,
+
+    onResponse = function _onResponse()
+    {
+      clearTimeout(responseTimeout);
+      callback.apply(this, arguments);
+    }.bind(this),
 
     onSentToANT = function _onSentToANT(error, msg) {
 
@@ -136,16 +143,26 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
       if (!event)
         callback(error, msg);
+      else
+      {
+        responseTimeout = setTimeout(function _onNoResponse()
+             {
+               if (this.log.logging)
+                 this.log.log('warn','No response for ' + event);
+
+             }.bind(this),500);
+
+      }
 
     }.bind(this);
 
   if (event) {
     if (typeof channel !== 'number') {
-      this.once(event, callback);
+      this.once(event, onResponse);
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - host');
     } else {
-      this.channel[channel].once(event, callback);
+      this.channel[channel].once(event, onResponse);
       if (this.log.logging)
         this.log.log('log', 'Waiting for ' + event + ' - channel ' + channel);
     }
