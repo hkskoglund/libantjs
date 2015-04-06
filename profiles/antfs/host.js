@@ -35,7 +35,9 @@ function Host(options, host, channelNumber, net) {
 
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
-  this.on('directory', function _onDirectory (lsl) { console.log(lsl);});
+  this.on('directory', function _onDirectory(lsl) {
+    console.log(lsl);
+  });
 
   // Initialize layer specific event handlers at the tail of event callbacks
   // Host has priority (in front of event callbacks) because it handles decoding of the client beacon
@@ -122,6 +124,9 @@ Host.prototype.getHostSerialNumber = function() {
 Host.prototype.onBeacon = function(beacon) {
   if (this.log.logging)
     this.log.log('log', this.beacon.toString());
+
+  if (!this.beacon.clientDeviceState.isBusy())
+    this.emit('delayedsend'); // In case requests could not be sent when client is busy
 };
 
 Host.prototype.onBroadcast = function(broadcast) {
@@ -142,6 +147,7 @@ Host.prototype.onBroadcast = function(broadcast) {
 };
 
 Host.prototype.onBurst = function(burst) {
+  clearTimeout(this.burstResponseTimeout);
   var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
   if (res === -1)
 
@@ -157,59 +163,82 @@ Host.prototype.onBurst = function(burst) {
 
 };
 
-Host.prototype._sendDelayed = function(command, delayedSendFunc) {
+Host.prototype._sendDelayed = function(request, boundSendFunc) {
 
   // Spec. 9.4 "The busy state is not cleared from the client beacon until after the appropiate response has been sent"
 
-  var onBeacon = function _onBeacon(beacon) {
+  // Spec 9.4 "The host shall not send a request to the client while the beacon indicates it is in the busy state"
 
-      if (!beacon.clientDeviceState.isBusy()) {
+  var sendRequest = function _sendRequest()
+  {
+    if (this.log.logging)
+      this.log.log('log', 'Sending ' + request.toString() + ' client state ' + this.beacon.clientDeviceState.toString());
 
+    // Spec 12.2 "If a client responds with one of the ANT-FS response messages listed below,
+    // this response will be appended to the beacon and sent as a burst transfer"
+
+    // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
+
+    if ([0x04,0x09,0x0A,0x0B,0x0C].indexOf(request.ID) !== -1)
+    {
+
+      this.burstResponseTimeout = setTimeout(function _onBurstResponseTimeout()
+            {
+
+              if (this.log.logging)
+                this.log.log('log','No burst response received, retrying');
+
+              this._sendDelayed(request, boundSendFunc);
+
+            }.bind(this),1000);
+
+      // In case failed burst. Assume client will not try to retransmit failed burst...
+
+      if (this.boundOnTransferRxFailed)
+        this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+
+      this.boundOnTransferRxFailed = function _boundOnTransferRxFailed()
+      {
         if (this.log.logging)
-          this.log.log('log', 'Delayed sending ' + command.toString() + ' client ' +
-            this.beacon.clientDeviceState.toString());
+          this.log.log('log', 'Failed burst received from client. Retrying');
 
-        sendCommand();
-      } else {
-        if (this.log.logging)
-          this.log.log('log', 'Client still busy, waiting to send delayed message');
-      }
+        this._sendDelayed.call(this, request, boundSendFunc);
 
-    }.bind(this),
+      }.bind(this);
 
-    sendCommand = function _sendCommand() {
+      this.host.on('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
-      this.removeListener('beacon', onBeacon);
+    } else
+       delete this.burstResponseTimeout;
 
-      delayedSendFunc();
+    boundSendFunc();
 
-    }.bind(this);
-
-  // Spec 9.4 "The host shall not send a command to the client while the beacon indicates it is in the busy state"
+  }.bind(this);
 
   if (!this.beacon.clientDeviceState.isBusy()) {
-    if (this.log.logging)
-      this.log.log('log', 'Sending ' + command.toString() + ' client ' +
-        this.beacon.clientDeviceState.toString());
 
-    sendCommand(); // Try sending immediatly
+    sendRequest();
 
   } else {
+
     if (this.log.logging)
       this.log.log('log', 'Client is busy, delaying message.');
 
-    this.on('beacon', onBeacon); // Wait for next beacon
+    this.once('delayedsend', sendRequest); // Wait for next beacon and client not busy
   }
+
 };
 
-// Override
-Host.prototype.sendAcknowledged = function(command, callback) {
-  this._sendDelayed(command, Channel.prototype.sendAcknowledged.bind(this, command.serialize(), callback));
+// Override Channel
+Host.prototype.sendAcknowledged = function(request, callback) {
+  this._sendDelayed(request, Channel.prototype.sendAcknowledged.bind(this, request.serialize(), callback));
+
 };
 
-// Override
-Host.prototype.sendBurst = function(command, packetsPerURB, callback) {
-  this._sendDelayed(command, Channel.prototype.sendBurst.bind(this, command.serialize(), packetsPerURB, callback));
+// Override Channel
+Host.prototype.sendBurst = function(request, packetsPerURB, callback) {
+  this._sendDelayed(request, Channel.prototype.sendBurst.bind(this, request.serialize(), packetsPerURB, callback));
+
 };
 
 module.exports = Host;

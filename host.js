@@ -497,7 +497,7 @@ Host.prototype.sendAcknowledgedData = function(channel, acknowledgedData, callba
         {
           this.channel[channel].removeListener(this.EVENT.FAILED, onTxFailed);
           this.channel[channel].removeListener(this.EVENT.COMPLETED, onTxCompleted);
-          
+
           callback(err,msg);
         }
 
@@ -866,10 +866,10 @@ Host.prototype.deserialize = function(data) {
         else
           event = ChannelResponseEvent.prototype.MESSAGE[message.response.code];
 
-        if (this.log.logging) {
+      /*  if (this.log.logging) {
           this.log.log('log','Emitting event ' + event + ' channel ' + message.response.channel);
         //  this.log.log('log','Event handlers channel ' + message.response.channel,this.channel[message.response.channel]._events);
-        }
+      } */
 
         this.channel[message.response.channel].emit(event, undefined, message.response);
 

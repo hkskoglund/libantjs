@@ -40,10 +40,6 @@ function TransportManager(host) {
 
   this.directory = new Directory(undefined, host);
 
-  this.commandResponseTimeout = undefined;
-
-  this.boundOnTransferRxFailed = undefined;
-
   this.downloadIndex = [0]; // Always download directory
   this.eraseIndex = [];
 
@@ -78,7 +74,7 @@ TransportManager.prototype.onBurst = function(burst) {
       this.host.state.isTransport()))
     return;
 
-  clearTimeout(this.commandResponseTimeout);
+  //clearTimeout(this.commandResponseTimeout);
 
   responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
   responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
@@ -224,52 +220,12 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 TransportManager.prototype.onRequestSent = function(err, msg) {
   if (err && this.log.logging)
     this.log.log('error', 'Failed to send request to client (EVENT_TRANSFER_TX_FAILED)', err);
-  else if (!err) {
-
-    this.commandResponseTimeout = setTimeout(function() {
-
-      var onBeacon = function _onBeacon(beacon) {
-
-        var request = this.session.request[this.session.request.length - 1];
-
-        if (request) {
-
-          if (this.log.logging)
-            this.log.log('log', 'Retry sending last request to client');
-
-          this.host.sendBurst(request, this.onRequestSent.bind(this));
-        }
-      }.bind(this);
-
-      if (this.log.logging)
-        this.log.log('log', 'Command sent, but no response from client (EVENT_TRANSFER_TX_COMPLETED)');
-
-      this.host.once('beacon', onBeacon);
-
-    }.bind(this), 1000);
-  }
 };
 
-TransportManager.prototype.onTransferRxFailed = function(request, err, response) {
-  if (this.log.logging)
-    this.log.log('log', 'Failed burst received from client. Retrying');
-
-  this.host.sendBurst(request, this.onRequestSent.bind(this));
-
-};
 
 TransportManager.prototype.sendRequest = function(request) {
 
   this.session.request.push(request);
-
-  // Assume client will not try to retransmit failed burst...
-
-  if (this.boundOnTransferRxFailed)
-    this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
-
-  this.boundOnTransferRxFailed = this.onTransferRxFailed.bind(this, request);
-
-  this.host.on('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
   this.host.sendBurst(request, this.onRequestSent.bind(this));
 };
@@ -351,8 +307,10 @@ TransportManager.prototype.onTransport = function() {
 
     index++;
 
-    if (index === 1) // First iteration downloads directory at index 0
+    if (index === 1) {// First iteration downloads directory at index 0
       this.concatDownloadIndex(this.directory.getNewFITfiles());
+      this.concatDownloadIndex([15]);
+}
 
     if (err)
     {
