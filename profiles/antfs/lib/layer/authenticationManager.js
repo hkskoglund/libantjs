@@ -197,7 +197,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       return;
 
     if (this.log.logging)
-      this.log.log('log','Trying to write passkey for client serial number ' + clientDeviceSerialNumber);
+      this.log.log('log','Write passkey for client serial number ' + clientDeviceSerialNumber + ' to ' + authorizationFile);
 
     try {
       fs.writeFileSync(authorizationFile, passkey, {
@@ -217,7 +217,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       return;
 
     if (this.log.logging)
-      this.log.log('log','Trying to read passkey for client serial number ' + clientDeviceSerialNumber);
+      this.log.log('log','Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + authorizationFile);
 
     try {
       passkey = fs.readFileSync(authorizationFile, { encoding : 'utf8'});
@@ -248,8 +248,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
 
           if (this.log.logging)
-            this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber +
-              ' requesting pairing');
+            this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber + ' requesting pairing');
 
           this.requestPairing(onPairing);
 
@@ -278,7 +277,14 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
           this.host.state.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
 
         else
+
         {
+
+          debugger;
+
+          if (this.log.logging)
+             this.log.log('log','Pairing response',response);
+
           if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
 
             this.writePasskey(this.clientSerialNumber, response.authenticationString);

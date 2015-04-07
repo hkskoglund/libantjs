@@ -59,7 +59,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         break;
     }
 
-    return msg + ', serial number ' + this.clientSerialNumber;
+    return msg + ', client serial number ' + this.clientSerialNumber;
   };
 
   module.exports = AuthenticateResponse;

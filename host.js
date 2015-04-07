@@ -109,7 +109,7 @@ Host.prototype = Object.create(EventEmitter.prototype);
 Host.prototype.constuctor = Host;
 
 Host.prototype.isNode = function() {
-  return typeof process !== 'undefined' && process.title === 'node';
+  return typeof process !== 'undefined' && (process.title.indexOf('node') !== -1 || process.title.indexOf('iojs') !== -1);
 };
 
 Host.prototype.MAX_CHAN = 8;
@@ -196,12 +196,12 @@ Host.prototype.EVENT = {
 
 };
 
-Host.prototype.connectANTFS = function (channel,net,deviceNumber,onSearching)
+Host.prototype.connectANTFS = function (channel,net,deviceNumber, hostname,onSearching)
 {
 
   var antfsHost = new ANTFSHost({
     log : this.options.log
-  },this,channel,net, deviceNumber);
+  },this,channel,net, deviceNumber, hostname);
 
   this.setChannel(antfsHost);
   antfsHost.connect(onSearching);

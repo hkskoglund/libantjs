@@ -12,9 +12,11 @@ var Channel = require('../../channel/channel'),
 
   LinkManager = require('./lib/layer/linkManager'),
   AuthenticationManager = require('./lib/layer/authenticationManager'),
-  TransportManager = require('./lib/layer/transportManager');
+  TransportManager = require('./lib/layer/transportManager'),
 
-function Host(options, host, channel, net, deviceNumber) {
+  AuthenticateRequest = require('./lib/request-response/authenticateRequest');
+
+function Host(options, host, channel, net, deviceNumber, hostname) {
 
   Channel.call(this, options, host, channel, net);
 
@@ -28,7 +30,13 @@ function Host(options, host, channel, net, deviceNumber) {
   if (typeof deviceNumber === 'number') // Search for specific device
    this.setId(deviceNumber,0,0);
 
-  this.hostname = 'antfsjs';
+  if (typeof hostname === 'string')
+   this.hostname = hostname;
+  else
+   this.hostname = 'antfsjs';
+
+  if (this.log.logging)
+    this.log.log('log','Hostname ' + this.hostname);
 
   this.on('data', this.onBroadcast); // decodes client beacon
 
@@ -193,8 +201,11 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
     {
 
       // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
+      // During pairing, user intervention is necessary, so don't enable timeout
+      
+      if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
 
-      this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
+         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
 
       this.boundOnTransferRxFailed = this._sendDelayed.bind(this, request, boundSendFunc);
 

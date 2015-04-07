@@ -37,7 +37,7 @@ function onANTInited(error, notificationStartup) {
    return;
  }
 
- antHost.connectANTFS(channel,net,deviceNumber,onConnect);
+ antHost.connectANTFS(channel,net,deviceNumber,'getfit',onConnect);
 
 
   // TEST exit antHost.exit(onANTexited);

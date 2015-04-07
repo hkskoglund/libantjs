@@ -19,9 +19,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     // FIT SDK - FIT File Types D00001309 FIT File Types Description - Rev 1.6
     // http://www.thisisant.com/developer/resources/downloads/#software_tab
 
-    1:  'Device capabilities',
+    1:  'DeviceCapabilities',
     2:  'Settings',
-    3:  'Sport settings',
+    3:  'SportSettings',
     4:  'Activity',
     5:  'Workout',
     6:  'Course',
@@ -30,10 +30,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     9:  'Weight',
     10: 'Totals',
     11: 'Goals',
-    14: 'Blood Pressure',
+    14: 'BloodPressure',
     15: 'MonitoringA',
-    20: 'Activity Summary',
-    28: 'Daily Monitoring',
+    20: 'ActivitySummary',
+    28: 'DailyMonitoring',
     32: 'MonitoringB'
 
   };
