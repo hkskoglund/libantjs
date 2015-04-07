@@ -240,12 +240,15 @@ USBNode.prototype._claimInterface = function(retrn) {
   // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
   this.inEndpoint = this.deviceInterface.endpoints[0];
+
   this.inEndpoint.on('error', this._onInEndpointError.bind(this));
-  this.inEndpoint.addListener('end', this._onInEndpointEnd.bind(this));
+
+  this.inEndpoint.on('data', this._onInEndpointData.bind(this));
 
   this.outEndpoint = this.deviceInterface.endpoints[1];
-  this.outEndpoint.addListener('error', this._onOutEndpointError.bind(this));
-  this.outEndpoint.addListener('end', this._onOutEndpointEnd.bind(this));
+
+  this.outEndpoint.on('error', this._onOutEndpointError.bind(this));
+  this.outEndpoint.on('end', this._onOutEndpointEnd.bind(this));
 
   this.deviceInterface.claim(); // Must be called before attempting transfer on endpoints
 
@@ -307,6 +310,7 @@ USBNode.prototype._onInterfaceReleased = function(error) {
 USBNode.prototype.exit = function(retrn) {
 
   var onReleased = function _onReleased(err) {
+
     this._onInterfaceReleased.call(this); // Close device
 
     this.deviceInterface = null;
@@ -323,20 +327,18 @@ USBNode.prototype.exit = function(retrn) {
 
     if (this.deviceInterface) {
 
-      this.inEndpoint.lastTransfer.cancel(); // Returns immediately, but is asynchronous!
+      this.inEndpoint.stopPoll(function _onEnd() {
 
-      //this.inEndpoint.cancel();
+        if (this.log.logging)
+          this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling ended (no transfers pending)');
 
-      setTimeout( function () {
+        this.inEndpoint.removeAllListeners();
 
-      this.inEndpoint.removeAllListeners();
+        this.outEndpoint.removeAllListeners();
 
-      this.outEndpoint.removeAllListeners();
-
-      // Arguments to bind precedes actual arguments from passed by calling function
-      // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
-      this.deviceInterface.release(true, onReleased);
-    }.bind(this),10); // Wait some time on cancelling/run in endpoint callback
+        // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
+        this.deviceInterface.release(true, onReleased);
+      }.bind(this));
 
     } else {
 
@@ -346,11 +348,6 @@ USBNode.prototype.exit = function(retrn) {
   }
 };
 
-USBNode.prototype._onInEndpointEnd = function() {
-  if (this.log.logging) {
-    this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling cancelled');
-  }
-};
 
 USBNode.prototype._onInEndpointError = function(error) {
   if (this.log.logging) {
@@ -358,8 +355,16 @@ USBNode.prototype._onInEndpointError = function(error) {
   }
 };
 
-USBNode.prototype._onInEndpointData = function(error, data) {
+USBNode.prototype._onInEndpointData = function(data) {
 
+ if (data && data.length > 0) {
+
+    if (this.log.logging) {
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
+    }
+
+    this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
+  }
 
 };
 
@@ -399,52 +404,7 @@ USBNode.prototype.setOutEndpointTimeout = function(timeout) {
 
 USBNode.prototype.listen = function() {
 
-  var endpointPacketSize = 8 * this.inEndpoint.descriptor.wMaxPacketSize,
-
-    deserialize = function _deserialize() {
-
-      this.inEndpoint.transfer(endpointPacketSize, function _transferInEndpoint(error, data) {
-
-        /*
-                if (error)
-                {
-
-                  if (this.isTimeoutError(error)){ // Allow timeout, just reschedule listening
-                    if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.USB_TIMEOUT.message); }
-                       this.listen(undefined,retrn);
-                  } else {
-
-                      retrn(error);
-                    }
-                }
-                 */
-        if (error)
-        {
-          if (this.log.logging){ this.log.log(USBDevice.prototype.EVENT.LOG, error); }
-        }
-
-        if (data && data.length > 0) {
-
-          if (this.log.logging) {
-            this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
-          }
-
-          this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
-
-        }
-
-        if (!error)
-          deserialize();
-
-      }.bind(this));
-
-    }.bind(this);
-
-  if (this.log.logging) {
-    this.log.log(USBDevice.prototype.EVENT.LOG, 'Listening in endpoint transfer packet size ' + endpointPacketSize + ' bytes' + ' device max packet size ' + this.inEndpoint.descriptor.wMaxPacketSize + ' bytes');
-  }
-
-  deserialize();
+  this.inEndpoint.startPoll();
 
 };
 

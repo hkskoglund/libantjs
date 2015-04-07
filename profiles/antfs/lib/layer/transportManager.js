@@ -308,9 +308,8 @@ TransportManager.prototype.onTransport = function() {
     index++;
 
     if (index === 1) {// First iteration downloads directory at index 0
-      this.concatDownloadIndex(this.directory.getNewFITfiles());
-      this.concatDownloadIndex([15]);
-}
+     this.concatDownloadIndex(this.directory.getNewFITfiles());
+    }
 
     if (err)
     {
@@ -320,6 +319,7 @@ TransportManager.prototype.onTransport = function() {
 
     if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)
       this.download(this.downloadIndex[index], onNextDownloadIndex);
+
 
   }.bind(this);
 

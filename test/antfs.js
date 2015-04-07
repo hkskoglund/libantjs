@@ -75,6 +75,7 @@ devices = antHost.getDevices();
 try {
 
   console.log('antfs device', devices[slavePort]);
+  debugger;
   antHost.init(slavePort, onANTInited);
 } catch (err) {
   onError(err);

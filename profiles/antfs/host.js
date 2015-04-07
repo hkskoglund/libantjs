@@ -126,12 +126,12 @@ Host.prototype.onBeacon = function(beacon) {
     this.log.log('log', this.beacon.toString());
 
   if (!this.beacon.clientDeviceState.isBusy())
-    this.emit('delayedsend'); // In case requests could not be sent when client is busy
+    this.emit('delayedsend'); // In case requests could not be sent when client was busy
 };
 
 Host.prototype.onBroadcast = function(broadcast) {
-  var res = this.beacon.decode(broadcast.payload);
 
+  var res = this.beacon.decode(broadcast.payload);
 
   if (res === -1)
 
@@ -147,7 +147,12 @@ Host.prototype.onBroadcast = function(broadcast) {
 };
 
 Host.prototype.onBurst = function(burst) {
+
   clearTimeout(this.burstResponseTimeout);
+
+  if (this.boundOnTransferRxFailed)
+    this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+
   var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
   if (res === -1)
 
@@ -171,42 +176,26 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
 
   var sendRequest = function _sendRequest()
   {
-    if (this.log.logging)
+
+    if (this.log.logging) {
+
       this.log.log('log', 'Sending ' + request.toString() + ' client state ' + this.beacon.clientDeviceState.toString());
+
+    }
 
     // Spec 12.2 "If a client responds with one of the ANT-FS response messages listed below,
     // this response will be appended to the beacon and sent as a burst transfer"
 
-    // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
-
     if ([0x04,0x09,0x0A,0x0B,0x0C].indexOf(request.ID) !== -1)
     {
 
-      this.burstResponseTimeout = setTimeout(function _onBurstResponseTimeout()
-            {
+      // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
 
-              if (this.log.logging)
-                this.log.log('log','No burst response received, retrying');
+      this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
 
-              this._sendDelayed(request, boundSendFunc);
+      this.boundOnTransferRxFailed = this._sendDelayed.bind(this, request, boundSendFunc);
 
-            }.bind(this),1000);
-
-      // In case failed burst. Assume client will not try to retransmit failed burst...
-
-      if (this.boundOnTransferRxFailed)
-        this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
-
-      this.boundOnTransferRxFailed = function _boundOnTransferRxFailed()
-      {
-        if (this.log.logging)
-          this.log.log('log', 'Failed burst received from client. Retrying');
-
-        this._sendDelayed.call(this, request, boundSendFunc);
-
-      }.bind(this);
-
-      this.host.on('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+      this.host.once('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
     } else
        delete this.burstResponseTimeout;
