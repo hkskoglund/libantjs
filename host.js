@@ -196,14 +196,15 @@ Host.prototype.EVENT = {
 
 };
 
-Host.prototype.connectANTFS = function (channel,net,onConnected)
+Host.prototype.connectANTFS = function (channel,net,deviceNumber,onSearching)
 {
+
   var antfsHost = new ANTFSHost({
     log : this.options.log
-  },this,channel,net);
+  },this,channel,net, deviceNumber);
 
   this.setChannel(antfsHost);
-  antfsHost.connect(onConnected);
+  antfsHost.connect(onSearching);
 };
 
 Host.prototype.setChannel = function(channel) {

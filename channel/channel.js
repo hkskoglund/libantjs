@@ -239,7 +239,8 @@
       cb = callback;
     }
 
-    this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType, cb);
+    if (cb) // Just update state if no callback is provide
+      this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType, cb);
   };
 
   Channel.prototype.getId = function(callback) {

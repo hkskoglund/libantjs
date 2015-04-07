@@ -14,9 +14,9 @@ var Channel = require('../../channel/channel'),
   AuthenticationManager = require('./lib/layer/authenticationManager'),
   TransportManager = require('./lib/layer/transportManager');
 
-function Host(options, host, channelNumber, net) {
+function Host(options, host, channel, net, deviceNumber) {
 
-  Channel.call(this, options, host, channelNumber, net);
+  Channel.call(this, options, host, channel, net);
 
   // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
@@ -24,6 +24,9 @@ function Host(options, host, channelNumber, net) {
   this.frequency = this.NET.FREQUENCY.ANTFS;
   this.period = this.NET.PERIOD.ANTFS;
   this.lowPrioritySearchTimeout = 0xFF; // INFINITE
+
+  if (typeof deviceNumber === 'number') // Search for specific device
+   this.setId(deviceNumber,0,0);
 
   this.hostname = 'antfsjs';
 

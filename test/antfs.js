@@ -3,7 +3,11 @@ var antHost = new(require('../host'))({
   debugLevel : 0
 });
 
-var slavePort = 0;
+var slavePort = 0,
+    channel = 0,
+    net = 0,
+    deviceNumber = 0;
+
 var devices;
 
 function onError(error) {
@@ -33,7 +37,7 @@ function onANTInited(error, notificationStartup) {
    return;
  }
 
- antHost.connectANTFS(0,0,onConnect);
+ antHost.connectANTFS(channel,net,deviceNumber,onConnect);
 
 
   // TEST exit antHost.exit(onANTexited);
