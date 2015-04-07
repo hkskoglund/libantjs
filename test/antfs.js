@@ -1,19 +1,10 @@
-var usbHost = require('../usb/USBNode');
-
 var antHost = new(require('../host'))({
   log: true,
-  usb: usbHost,
   debugLevel : 0
 });
 
-var antfsHost = new (require('../profiles/antfs/host'))({
-  log : true
-},antHost,0,0);
-
 var slavePort = 0;
 var devices;
-
-var fs = require('fs');
 
 function onError(error) {
   console.trace();
@@ -26,26 +17,6 @@ function onConnect(error)
     console.log('onConnect',error);
     return;
   }
-
-  antfsHost.on('download', onDownload);
-  antfsHost.on('download_progress', onDownloadProgress);
-
-}
-
-function onDownloadProgress(error, session)
-{
-    console.log('progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
-}
-
-function onDownload(error, session)
-{
-  if (!error && session && session.index)
-    fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
-      if (err)
-        console.log(Date.now() + " Error writing " + session.filename, err);
-      else
-        console.log(Date.now() + " Saved " + session.filename);
-    });
 
 }
 
@@ -61,10 +32,11 @@ function onANTInited(error, notificationStartup) {
    console.log('onantinited',error);
    return;
  }
-  antHost.setChannel(antfsHost);
-  antfsHost.connect(onConnect);
 
-  //antHost.exit(onANTexited);
+ antHost.connectANTFS(0,0,onConnect);
+
+
+  // TEST exit antHost.exit(onANTexited);
 
  }
 
@@ -75,7 +47,7 @@ devices = antHost.getDevices();
 try {
 
   console.log('antfs device', devices[slavePort]);
-  debugger;
+
   antHost.init(slavePort, onANTInited);
 } catch (err) {
   onError(err);

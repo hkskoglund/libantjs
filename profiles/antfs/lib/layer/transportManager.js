@@ -19,7 +19,9 @@ var EventEmitter = require('events'),
 
   State = require('./util/state'),
 
-  Directory = require('../file/directory');
+  Directory = require('../file/directory'),
+
+  fs = require('fs');
 
 // heap = require('/usr/lib/node_modules/heapdump');
 
@@ -35,6 +37,11 @@ function TransportManager(host) {
   this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
   this.host.on('beacon', this.onBeacon.bind(this));
   this.host.on('burst', this.onBurst.bind(this));
+
+
+  this.host.on('download', this.onDownload.bind(this));
+  this.host.on('download_progress', this.onDownloadProgress.bind(this));
+
 
   this.once('transport', this.onTransport);
 
@@ -329,6 +336,30 @@ TransportManager.prototype.onTransport = function() {
   onNextDownloadIndex();
 
 };
+
+TransportManager.prototype.onDownloadProgress = function (error, session)
+{
+  if (this.log.logging)
+    this.log.log('log','progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
+};
+
+TransportManager.prototype.onDownload = function(error, session)
+{
+  if (this.host.host.isNode() && !error && session && session.index)
+    fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
+      if (err) {
+        if (this.log.logging)
+          this.log.log('error'," Error writing " + session.filename, err);
+      }
+      else {
+        if (this.log.logging)
+          this.log.log('log'," Saved " + session.filename);
+      }
+
+    });
+
+};
+
 
 module.exports = TransportManager;
 return module.exports;

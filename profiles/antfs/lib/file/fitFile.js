@@ -72,16 +72,19 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     filename;
 
     if (this.date === 0xFFFFFFFF)
-      dateStr = 'UnknownDate';
+      dateStr = '';
     else if (this.date < 0x0FFFFFFF)
-      dateStr = 'SystemDate-' + this.date;
+      if (this.date)
+        dateStr = '-SystemDate-' + this.date;
+      else
+        dateStr = ''; // Ignore when 0
     else
       dateStr = this._formatDate(this.date);
 
    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType] + '-' + this.index;
 
     if (!unixFormat) {
-      filename +=  '-' + dateStr + '.fit';
+      filename += dateStr + '.fit';
       if (!clientFriendlyname)
          return  'client-' + clientSerialNumber + '-' + filename;
       else

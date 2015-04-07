@@ -68,10 +68,11 @@ var EventEmitter = require('events'),
   // Profiles
 
   RxScanModeProfile = require('./profiles/RxScanMode'),
+  ANTFSHost = require('./profiles/antfs/host'),
 
-  previousPacket;
+  // USB hosts
 
-// Host for USB ANT communication
+  USBNode = require('./usb/USBNode.js');
 
 function Host(options) {
 
@@ -93,15 +94,23 @@ function Host(options) {
     this.channel[channel] = new Channel(this.options, this, channel);
   }
 
-  this.usb = new(options.usb)({
-    log: options.log,
-    debugLevel: options.debugLevel
-  });
+  if (this.isNode())
+    this.usb = new USBNode({
+      log: options.log,
+      debugLevel: options.debugLevel
+    });
+  else
+    if (this.log.logging)
+      this.log.log('error','No USB host available');
 
 }
 
 Host.prototype = Object.create(EventEmitter.prototype);
 Host.prototype.constuctor = Host;
+
+Host.prototype.isNode = function() {
+  return typeof process !== 'undefined' && process.title === 'node';
+};
 
 Host.prototype.MAX_CHAN = 8;
 
@@ -185,6 +194,16 @@ Host.prototype.EVENT = {
 
   OK: 'RESPONSE_NO_ERROR'
 
+};
+
+Host.prototype.connectANTFS = function (channel,net,onConnected)
+{
+  var antfsHost = new ANTFSHost({
+    log : this.options.log
+  },this,channel,net);
+
+  this.setChannel(antfsHost);
+  antfsHost.connect(onConnected);
 };
 
 Host.prototype.setChannel = function(channel) {
@@ -708,10 +727,10 @@ Host.prototype.deserialize = function(data) {
     bufferUtil = new Concat(),
     event;
 
-  if (previousPacket && previousPacket.byteLength)
+  if (this.previousPacket && this.previousPacket.byteLength)
   // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
   {
-    data = bufferUtil.concat(previousPacket, data);
+    data = bufferUtil.concat(this.previousPacket, data);
   }
 
   iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
@@ -892,7 +911,7 @@ Host.prototype.deserialize = function(data) {
     if (iStartOfMessage + data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength <= data.byteLength) {
       iEndOfMessage += (data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength);
     } else {
-      previousPacket = data.subarray(iStartOfMessage);
+      this.previousPacket = data.subarray(iStartOfMessage);
 
       iEndOfMessage = iStartOfMessage;
     }

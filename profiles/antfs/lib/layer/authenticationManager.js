@@ -193,7 +193,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     this.setPasskey(this.clientSerialNumber, passkey);
 
-    if (!this.isNode())
+    if (!this.host.host.isNode())
       return;
 
     if (this.log.logging)
@@ -209,15 +209,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     }
   };
 
-  AuthenticationManager.prototype.isNode = function() {
-    return typeof process !== 'undefined' && process.title === 'node';
-  };
-
   AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber) {
     var passkey,
       authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
 
-    if (!this.isNode())
+    if (!this.host.host.isNode())
       return;
 
     if (this.log.logging)
@@ -302,7 +298,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     this.host.state.set(State.prototype.AUTHENTICATION);
 
-    this.requestSerialNumber(onSerialNumber); 
+    this.requestSerialNumber(onSerialNumber);
 
   };
 
