@@ -1,5 +1,5 @@
 /* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
-module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
+module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true, Buffer: true */
 
 
 /*jshint -W097 */
@@ -38,22 +38,34 @@ function TransportManager(host) {
   this.host.on('beacon', this.onBeacon.bind(this));
   this.host.on('burst', this.onBurst.bind(this));
 
-
   this.host.on('download', this.onDownload.bind(this));
   this.host.on('download_progress', this.onDownloadProgress.bind(this));
-
 
   this.once('transport', this.onTransport);
 
   this.directory = new Directory(undefined, host);
 
-  this.downloadIndex = [0]; // Always download directory
-  this.eraseIndex = [];
+  this.task = [];
+  this.addDownloadTask(0);
 
 }
 
 TransportManager.prototype = Object.create(EventEmitter.prototype);
 TransportManager.prototype.constructor = TransportManager;
+
+TransportManager.prototype.addDownloadTask = function(index) {
+  this.task.push({
+    request: DownloadRequest.prototype.ID,
+    index: index
+  });
+};
+
+TransportManager.prototype.addEraseTask = function(index) {
+  this.task.push({
+    request: EraseRequest.prototype.ID,
+    index: index
+  });
+};
 
 TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE = 1000;
 
@@ -76,12 +88,9 @@ TransportManager.prototype.onBurst = function(burst) {
   var responseData,
     responseId;
 
-
   if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
       this.host.state.isTransport()))
     return;
-
-  //clearTimeout(this.commandResponseTimeout);
 
   responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
   responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
@@ -94,7 +103,7 @@ TransportManager.prototype.onBurst = function(burst) {
 
       break;
 
-   case EraseResponse.prototype.ID:
+    case EraseResponse.prototype.ID:
 
       this.handleEraseResponse(responseData);
 
@@ -115,22 +124,22 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
   if (this.log.logging)
     this.logger('log', response.toString());
 
-    switch (response.result) {
+  switch (response.result) {
 
-      case EraseResponse.prototype.OK:
+    case EraseResponse.prototype.OK:
 
-        lastIndex = this.session.request[this.session.request.length-1].index;
-        this.directory.eraseFile(lastIndex);
+      lastIndex = this.session.request[this.session.request.length - 1].index;
+      this.directory.eraseFile(lastIndex);
 
-        this.emit('erase', NO_ERROR, this.session);
+      this.emit('erase', NO_ERROR, this.session);
 
-        break;
+      break;
 
-      default:
+    default:
 
-        this.emit('erase', response, this.session);
-      }
-    };
+      this.emit('erase', response, this.session);
+  }
+};
 
 TransportManager.prototype.handleDownloadResponse = function(responseData) {
   var response,
@@ -181,36 +190,31 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
       if (response.offset === 0 ||
         (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE) ||
-        offset >= response.fileSize)
-        {
-           this.session.timestamp = now;
+        offset >= response.fileSize) {
+        this.session.timestamp = now;
 
-           this.session.offset = offset;
+        this.session.offset = offset;
 
-           this.session.progress = this.session.offset /  response.fileSize * 100;
+        this.session.progress = this.session.offset / response.fileSize * 100;
 
-           this.host.emit('download_progress', NO_ERROR, this.session);
-        }
+        this.host.emit('download_progress', NO_ERROR, this.session);
+      }
 
       if (offset < response.fileSize) {
 
         this.download(this.session.index, offset);
-      } else
-       {
+      } else {
 
-         if (this.session.index === 0)
-         {
-           this.directory = new Directory(this.session.packets, this.host);
-           this.session.filename = this.directory.getFileName();
-           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
-         } else
-         {
-           this.session.filename = this.directory.getFile(this.session.index).getFileName();
-         }
+        if (this.session.index === 0) {
+          this.directory = new Directory(this.session.packets, this.host);
+          this.session.filename = this.directory.getFileName();
+          this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
+        } else {
+          this.session.filename = this.directory.getFile(this.session.index).getFileName();
+        }
 
-
-         this.host.emit('download', NO_ERROR, this.session);
-       }
+        this.host.emit('download', NO_ERROR, this.session);
+      }
 
       break;
 
@@ -229,7 +233,6 @@ TransportManager.prototype.onRequestSent = function(err, msg) {
     this.log.log('error', 'Failed to send request to client (EVENT_TRANSFER_TX_FAILED)', err);
 };
 
-
 TransportManager.prototype.sendRequest = function(request) {
 
   this.session.request.push(request);
@@ -244,7 +247,7 @@ TransportManager.prototype.download = function(index, offset) {
   if (typeof offset === 'function') {
 
     this.session = {
-      index : index,
+      index: index,
       request: [],
       response: [],
     };
@@ -268,12 +271,11 @@ TransportManager.prototype.download = function(index, offset) {
   this.sendRequest(request);
 };
 
-TransportManager.prototype.erase = function (index, callback)
-{
+TransportManager.prototype.erase = function(index, callback) {
   var request;
 
   this.session = {
-    index : index,
+    index: index,
     request: [],
     response: [],
   };
@@ -284,82 +286,62 @@ TransportManager.prototype.erase = function (index, callback)
   this.sendRequest(request);
 };
 
-TransportManager.prototype.concatIndex = function(commandType, indexArray) {
-  this[commandType + 'Index'] = this[commandType + 'Index'].concat(indexArray);
-
-  if (this.log.logging)
-    this.log.log('log', commandType.toUpperCase() + ' request for index ', indexArray);
-
-};
-
-TransportManager.prototype.concatDownloadIndex = function(indexArray) {
-  this.concatIndex('download', indexArray);
-};
-
-TransportManager.prototype.concatEraseIndex = function(indexArray) {
-  this.concatIndex('erase', indexArray);
-};
-
 TransportManager.prototype.onTransport = function() {
 
-  var index = -1;
-  var onNextDownloadIndex = function _onNextDownloadIndex(err, session) {
+  var taskNr = -1;
 
-    if (!err && session)
-    {
-      if (this.log.logging)
-        this.log.log('log','Downloaded '+ session.filename + ' (' + session.packets.byteLength + ' bytes)');
+  var onNextTask = function _onNextTask(err, session) {
 
+    taskNr++;
+
+    if (taskNr === 1) { // First iteration downloads directory at index 0
+      this.directory.getNewFITfiles().forEach(function (index) { this.addDownloadTask(index);}.bind(this));
     }
 
-    index++;
+    if (taskNr < this.task.length)
 
-    if (index === 1) {// First iteration downloads directory at index 0
-     this.concatDownloadIndex(this.directory.getNewFITfiles());
+      switch (this.task[taskNr].request)
+      {
+        case DownloadRequest.prototype.ID :
+
+          this.download(this.task[taskNr].index, onNextTask);
+          break;
+
+      }
+
+    else {
+      this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
     }
-
-    if (err)
-    {
-      if (this.log.logging)
-        this.log.log('log','Failed to download file at index ' + this.downloadIndex[index - 1] + ' ' + err.toString());
-    }
-
-    if (this.downloadIndex && this.downloadIndex.length && index < this.downloadIndex.length)
-      this.download(this.downloadIndex[index], onNextDownloadIndex);
-
 
   }.bind(this);
 
-
   this.host.state.set(State.prototype.TRANSPORT);
 
-  onNextDownloadIndex();
+  onNextTask();
 
 };
 
-TransportManager.prototype.onDownloadProgress = function (error, session)
-{
+TransportManager.prototype.onDownloadProgress = function(error, session) {
+
   if (this.log.logging)
-    this.log.log('log','progress ' + Number(session.progress).toFixed(1)+'% ' + session.filename);
+    this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + session.filename);
 };
 
-TransportManager.prototype.onDownload = function(error, session)
-{
+TransportManager.prototype.onDownload = function(error, session) {
+
   if (this.host.host.isNode() && !error && session && session.index)
     fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
-          this.log.log('error'," Error writing " + session.filename, err);
-      }
-      else {
+          this.log.log('error', " Error writing " + session.filename, err);
+      } else {
         if (this.log.logging)
-          this.log.log('log'," Saved " + session.filename);
+          this.log.log('log', " Saved " + session.filename + ' (' + session.packets.byteLength + ' bytes)');
       }
 
-    });
+    }.bind(this));
 
 };
-
 
 module.exports = TransportManager;
 return module.exports;

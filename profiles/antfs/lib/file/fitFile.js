@@ -56,13 +56,16 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   FitFile.prototype._formatDate = function(fDate) {
-    var dateAsString = this.getDateFrom31Dec1989().toISOString();
-    // Remove millisec.
+    var  date1989 = this.getDateFrom31Dec1989(),
+         iso = date1989.toISOString(),
+         date,
+         time;
+
     // ISO : 1989-12-31T00:00:00.000Z
-    dateAsString = dateAsString.substring(0, dateAsString.length - 5);
-    dateAsString = dateAsString.replace(new RegExp(':', 'g'), '-');
-    //dateAsString = dateAsString.replace('T', '-');
-    return dateAsString;
+    date = iso.substring(0, 10);
+    time = date1989.toLocaleTimeString().replace(new RegExp(':', 'g'), '-');
+
+    return date + ' ' + time;
   };
 
   FitFile.prototype.getFileName = function(unixFormat) {
@@ -75,7 +78,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       dateStr = '';
     else if (this.date < 0x0FFFFFFF)
       if (this.date)
-        dateStr = '-SystemDate-' + this.date;
+        dateStr = ' System Date ' + this.date;
       else
         dateStr = ''; // Ignore when 0
     else
@@ -84,11 +87,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType] + '-' + this.index;
 
     if (!unixFormat) {
-      filename += dateStr + '.fit';
+      filename += ' ' + dateStr + '.fit';
       if (!clientFriendlyname)
-         return  'client-' + clientSerialNumber + '-' + filename;
+         return  'client-' + clientSerialNumber + ' ' + filename;
       else
-        return clientFriendlyname + '-' + filename;
+        return clientFriendlyname + ' ' + filename;
     }
     else
       return filename + '.fit';

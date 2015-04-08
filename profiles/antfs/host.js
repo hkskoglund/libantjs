@@ -202,7 +202,7 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
 
       // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
       // During pairing, user intervention is necessary, so don't enable timeout
-      
+
       if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
 
          this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
@@ -242,6 +242,17 @@ Host.prototype.sendAcknowledged = function(request, callback) {
 Host.prototype.sendBurst = function(request, packetsPerURB, callback) {
   this._sendDelayed(request, Channel.prototype.sendBurst.bind(this, request.serialize(), packetsPerURB, callback));
 
+};
+
+Host.prototype.disconnect = function (callback)
+{
+  var onDisconnect = function _onDisconnect()
+  {
+    if (typeof callback === 'function')
+      callback.call(this,arguments);
+  }.bind(this);
+
+  this.linkManager.disconnect(onDisconnect);
 };
 
 module.exports = Host;

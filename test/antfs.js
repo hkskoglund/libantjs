@@ -1,58 +1,58 @@
 var antHost = new(require('../host'))({
-  log: true,
-  debugLevel : 0
-});
+    log: false,
+    debugLevel: 0 // 0 - 4 enables libusb debug info.
+  }),
 
-var slavePort = 0,
-    channel = 0,
-    net = 0,
-    deviceNumber = 0;
-
-var devices;
+  usbPort = 0,
+  channel = 0,
+  net = 0,
+  deviceNumber = 0, // 0 for any device
+  devices,
+  hostname = 'getfit';
 
 function onError(error) {
   console.trace();
   console.error('error', error);
 }
 
-function onConnect(error)
-{
+function onConnect(error) {
   if (error) {
-    console.log('onConnect',error);
+    console.log('onConnect', error);
     return;
   }
 
 }
 
-function onANTexited (err)
-{
-  if (!err)
-    console.log(Date.now() + 'Exited from ANT',antHost.usb);
+function onANTexited(err) {
+//  if (!err)
+//    console.log(Date.now() + ' Exit ANT');
 }
 
 function onANTInited(error, notificationStartup) {
 
- if (error) {
-   console.log('onantinited',error);
-   return;
- }
+  if (error) {
+    console.log('onantinited', error);
+    return;
+  }
 
- antHost.connectANTFS(channel,net,deviceNumber,'getfit',onConnect);
+  antHost.on('transport_end', function() {
+    antHost.exit(onANTexited);
+  });
 
+  antHost.on('open', function (ch) { console.log('Host ' + hostname + ' connecting to antfs device on channel ' + ch); });
 
-  // TEST exit antHost.exit(onANTexited);
+  antHost.connectANTFS(channel, net, deviceNumber, hostname, onConnect);
 
- }
-
+}
 
 devices = antHost.getDevices();
 //console.log('devices',antHost.getDevices());
 
 try {
 
-  console.log('antfs device', devices[slavePort]);
+  //console.log('antfs device', devices[usbPort]);
 
-  antHost.init(slavePort, onANTInited);
+  antHost.init(usbPort, onANTInited);
 } catch (err) {
   onError(err);
 }

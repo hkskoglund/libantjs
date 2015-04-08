@@ -348,7 +348,6 @@ USBNode.prototype.exit = function(retrn) {
   }
 };
 
-
 USBNode.prototype._onInEndpointError = function(error) {
   if (this.log.logging) {
     this.log.log(USBDevice.prototype.EVENT.ERROR, 'In endpoint error', error);
@@ -357,7 +356,7 @@ USBNode.prototype._onInEndpointError = function(error) {
 
 USBNode.prototype._onInEndpointData = function(data) {
 
- if (data && data.length > 0) {
+  if (data && data.length > 0) {
 
     if (this.log.logging) {
       this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
@@ -404,6 +403,9 @@ USBNode.prototype.setOutEndpointTimeout = function(timeout) {
 
 USBNode.prototype.listen = function() {
 
+  if (this.log.logging)
+    this.log.log('log','Start polling on in endpoint');
+    
   this.inEndpoint.startPoll();
 
 };

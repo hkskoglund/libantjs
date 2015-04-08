@@ -275,6 +275,7 @@
   };
 
   Channel.prototype.open = function(callback) {
+    this.host.emit('open', this.channel);
     this.host.openChannel(this.channel, callback);
   };
 
