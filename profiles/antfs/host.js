@@ -16,7 +16,7 @@ var Channel = require('../../channel/channel'),
 
   AuthenticateRequest = require('./lib/request-response/authenticateRequest');
 
-function Host(options, host, channel, net, deviceNumber, hostname) {
+function Host(options, host, channel, net, deviceNumber, hostname, download, erase,ls) {
 
   Channel.call(this, options, host, channel, net);
 
@@ -47,7 +47,8 @@ function Host(options, host, channel, net, deviceNumber, hostname) {
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
 
   this.on('directory', function _onDirectory(lsl) {
-    console.log(lsl);
+   if (ls)
+      console.log(lsl);
   });
 
   // Initialize layer specific event handlers at the tail of event callbacks
@@ -57,7 +58,7 @@ function Host(options, host, channel, net, deviceNumber, hostname) {
 
   this.authenticationManager = new AuthenticationManager(this);
 
-  this.transportManager = new TransportManager(this);
+  this.transportManager = new TransportManager(this, download,erase,ls);
 
   this.beacon = new ClientBeacon();
 

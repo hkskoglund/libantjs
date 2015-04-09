@@ -35,7 +35,7 @@ USBNode.prototype._onAttach = function(device) {
 
     device.open(); // Device must be open to execute getDescriptorString call on device object
 
-    this._deviceToString(device, function(err, str) {
+    this.deviceToString(device, function(err, str) {
       device.close();
       if (this.log.logging) {
         this.log.log(USBDevice.prototype.EVENT.LOG, 'Attached device ' + str);
@@ -81,7 +81,7 @@ USBNode.prototype._onDetach = function(device) {
   if (this._isANTDevice(device)) {
 
     if (this.log.logging) {
-      this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached device ' + this._deviceToString(device));
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'Detached device ' + this.deviceToString(device));
     }
 
     this.getDevices();
@@ -90,7 +90,7 @@ USBNode.prototype._onDetach = function(device) {
   }
 };
 
-USBNode.prototype._deviceToString = function(device, retrn) {
+USBNode.prototype.deviceToString = function(device, retrn) {
   var str = 'Bus ' + device.busNumber + ' Number ' + device.deviceAddress + ': ID ' + device.deviceDescriptor.idVendor.toString(16) + ':' + device.deviceDescriptor.idProduct.toString(16);
 
   if (!retrn)
@@ -283,6 +283,9 @@ USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
 
   if (this.device) {
 
+    if (this.log.logging)
+      this.log.log('log','Init device '  + preferredDeviceIndex + ' ' + this.deviceToString(this.device));
+
     this.device.open();
 
     this._claimInterface(retrn);
@@ -405,7 +408,7 @@ USBNode.prototype.listen = function() {
 
   if (this.log.logging)
     this.log.log('log','Start polling on in endpoint');
-    
+
   this.inEndpoint.startPoll();
 
 };

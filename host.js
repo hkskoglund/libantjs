@@ -196,12 +196,12 @@ Host.prototype.EVENT = {
 
 };
 
-Host.prototype.connectANTFS = function (channel,net,deviceNumber, hostname,onSearching)
+Host.prototype.connectANTFS = function (channel,net,deviceNumber, hostname, download, erase, ls, onSearching)
 {
 
   var antfsHost = new ANTFSHost({
     log : this.options.log
-  },this,channel,net, deviceNumber, hostname);
+  },this,channel,net, deviceNumber, hostname, download, erase,ls);
 
   this.setChannel(antfsHost);
   antfsHost.connect(onSearching);
@@ -214,6 +214,15 @@ Host.prototype.setChannel = function(channel) {
 Host.prototype.getDevices = function() {
   return this.usb.getDevices();
 
+};
+
+Host.prototype.listDevices = function ()
+{
+  var str = '';
+
+  this.usb.getDevices().forEach (function (device,index) { str += index + ' ' + this.usb.deviceToString(device) + '\n'; }.bind(this));
+
+  return str;
 };
 
 Host.prototype.init = function(iDevice, onInit) {

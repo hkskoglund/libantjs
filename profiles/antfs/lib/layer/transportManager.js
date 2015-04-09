@@ -25,7 +25,7 @@ var EventEmitter = require('events'),
 
 // heap = require('/usr/lib/node_modules/heapdump');
 
-function TransportManager(host) {
+function TransportManager(host, download,erase,ls) {
 
   EventEmitter.call(this);
 
@@ -41,6 +41,8 @@ function TransportManager(host) {
   this.host.on('download', this.onDownload.bind(this));
   this.host.on('download_progress', this.onDownloadProgress.bind(this));
 
+  this.host.on('erase', this.onErase.bind(this));
+
   this.once('transport', this.onTransport);
 
   this.directory = new Directory(undefined, host);
@@ -48,10 +50,22 @@ function TransportManager(host) {
   this.task = [];
   this.addDownloadTask(0);
 
+  this.addDownloadTask(download);
+  this.addEraseTask(erase);
+
 }
 
 TransportManager.prototype = Object.create(EventEmitter.prototype);
 TransportManager.prototype.constructor = TransportManager;
+
+TransportManager.prototype.onErase = function (error,session)
+{
+  if (!error)
+    console.log('Erased file index ' + this.session.index + ' ' + this.directory.file[this.session.index - 1].getFileName());
+  else
+   console.log('Failed file erase index ' + this.session.index + ' ' + this.directory.file[this.session.index - 1].getFileName());
+
+};
 
 TransportManager.prototype.addTask = function (request,index)
 {
@@ -59,6 +73,9 @@ TransportManager.prototype.addTask = function (request,index)
     index.forEach(function (i) { this.addTask(request,i);}.bind(this));
     return;
   }
+
+  if (typeof index !== 'number')
+    return;
 
   var task = {
     request: request,
@@ -90,6 +107,8 @@ TransportManager.prototype.onReset = function() {
   this.removeAllListeners();
   this.once('transport', this.onTransport);
   this.directory = new Directory(undefined, this.host);
+  this.task = [];
+  this.addDownloadTask(0);
 };
 
 TransportManager.prototype.onBeacon = function(beacon) {
@@ -146,13 +165,13 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
       this.directory.eraseFile(this.session.index);
 
-      this.emit('erase', NO_ERROR, this.session);
+      this.host.emit('erase', NO_ERROR, this.session);
 
       break;
 
     default:
 
-      this.emit('erase', response, this.session);
+      this.host.emit('erase', response, this.session);
   }
 };
 
@@ -184,7 +203,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
       }
 
       // May happend if client appends to a file during download (rare case?)
-      // Spec. 9.5 "Host devices must be able to adapt to files being larger than listed in the directory"
+      // Spec. 9.5 'Host devices must be able to adapt to files being larger than listed in the directory'
 
       if (response.fileSize > this.session.packets.byteLength) {
 
@@ -276,7 +295,7 @@ TransportManager.prototype.download = function(index, offset) {
 
     request = new DownloadRequest();
 
-    // "The seed value should equal the CRC value of the data received prior to the requested data offset" Spec. section 12.7.1
+    // 'The seed value should equal the CRC value of the data received prior to the requested data offset' Spec. section 12.7.1
 
     crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
 
@@ -296,7 +315,7 @@ TransportManager.prototype.erase = function(index, callback) {
   };
 
   request = new EraseRequest(index);
-  this.once('erase', callback);
+  this.host.once('erase', callback);
 
   this.sendRequest(request);
 };
@@ -354,8 +373,6 @@ TransportManager.prototype.onTransport = function() {
 
   this.host.state.set(State.prototype.TRANSPORT);
 
-  this.addEraseTask([10,11,12,13]);
-
   onNextTask();
 
 };
@@ -372,10 +389,9 @@ TransportManager.prototype.onDownload = function(error, session) {
     fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
-          this.log.log('error', " Error writing " + session.filename, err);
+          this.log.log('error', 'Error writing ' + session.filename, err);
       } else {
-        if (this.log.logging)
-          this.log.log('log', " Saved " + session.filename + ' (' + session.packets.byteLength + ' bytes)');
+        console.log('Downloaded ' + session.filename + ' (' + session.packets.byteLength + ' bytes)');
       }
 
     }.bind(this));
