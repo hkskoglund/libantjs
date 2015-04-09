@@ -1,5 +1,5 @@
 var antHost = new(require('../host'))({
-    log: false,
+    log: true,
     debugLevel: 0 // 0 - 4 enables libusb debug info.
   }),
 

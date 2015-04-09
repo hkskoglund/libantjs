@@ -280,8 +280,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         {
 
-          debugger;
-
           if (this.log.logging)
              this.log.log('log','Pairing response',response);
 

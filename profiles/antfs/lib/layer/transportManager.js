@@ -53,21 +53,38 @@ function TransportManager(host) {
 TransportManager.prototype = Object.create(EventEmitter.prototype);
 TransportManager.prototype.constructor = TransportManager;
 
-TransportManager.prototype.addDownloadTask = function(index) {
-  this.task.push({
-    request: DownloadRequest.prototype.ID,
+TransportManager.prototype.addTask = function (request,index)
+{
+  if (typeof index === 'object' && index.constructor === Array) {// Allow [1,2,3]
+    index.forEach(function (i) { this.addTask(request,i);}.bind(this));
+    return;
+  }
+
+  var task = {
+    request: request,
     index: index
-  });
+  };
+
+  if (this.log.logging)
+    this.log.log('log','Adding task',task);
+
+  if (request === DownloadRequest.prototype.ID)
+    this.task.splice(1,0,task); // Insert at front (erase tasks should follow download tasks)
+  else
+    this.task.push(task);
+};
+
+TransportManager.prototype.addDownloadTask = function(index) {
+
+  this.addTask(DownloadRequest.prototype.ID,index);
 };
 
 TransportManager.prototype.addEraseTask = function(index) {
-  this.task.push({
-    request: EraseRequest.prototype.ID,
-    index: index
-  });
+
+  this.addTask(EraseRequest.prototype.ID,index);
 };
 
-TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE = 1000;
+TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
 
 TransportManager.prototype.onReset = function() {
   this.removeAllListeners();
@@ -114,8 +131,7 @@ TransportManager.prototype.onBurst = function(burst) {
 
 TransportManager.prototype.handleEraseResponse = function(responseData) {
   var response,
-    NO_ERROR,
-    lastIndex;
+    NO_ERROR;
 
   response = new EraseResponse(responseData);
 
@@ -128,8 +144,7 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
     case EraseResponse.prototype.OK:
 
-      lastIndex = this.session.request[this.session.request.length - 1].index;
-      this.directory.eraseFile(lastIndex);
+      this.directory.eraseFile(this.session.index);
 
       this.emit('erase', NO_ERROR, this.session);
 
@@ -189,7 +204,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
       now = Date.now();
 
       if (response.offset === 0 ||
-        (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE) ||
+        (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL) ||
         offset >= response.fileSize) {
         this.session.timestamp = now;
 
@@ -292,19 +307,41 @@ TransportManager.prototype.onTransport = function() {
 
   var onNextTask = function _onNextTask(err, session) {
 
+    var newFiles;
+
     taskNr++;
 
     if (taskNr === 1) { // First iteration downloads directory at index 0
-      this.directory.getNewFITfiles().forEach(function (index) { this.addDownloadTask(index);}.bind(this));
+
+      newFiles = this.directory.getNewFITfiles();
+      if (newFiles && newFiles.length)
+      {
+        if (this.log.logging)
+          this.log.log('log','New files available at index ',newFiles);
+      }
+
+      newFiles.forEach(function (index) { this.addDownloadTask(index);}.bind(this));
+
+      if (this.log.logging)
+        this.log.log('log','Task',this.task);
+
     }
 
     if (taskNr < this.task.length)
 
       switch (this.task[taskNr].request)
       {
+
         case DownloadRequest.prototype.ID :
 
           this.download(this.task[taskNr].index, onNextTask);
+          break;
+
+        case EraseRequest.prototype.ID:
+
+          // Removing a file on the device updates the directory, so erasing index 10, moves all indexes - 1
+          this.erase(this.directory.indexOf(this.task[taskNr].index) + 1, onNextTask);
+
           break;
 
       }
@@ -316,6 +353,8 @@ TransportManager.prototype.onTransport = function() {
   }.bind(this);
 
   this.host.state.set(State.prototype.TRANSPORT);
+
+  this.addEraseTask([10,11,12,13]);
 
   onNextTask();
 
