@@ -162,10 +162,8 @@ Host.prototype.onBurst = function(burst) {
 
   clearTimeout(this.burstResponseTimeout);
 
-  if (this.boundOnTransferRxFailed)
-    this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
-
   var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
+  
   if (res === -1)
 
   {
@@ -207,6 +205,9 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
       if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
 
          this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
+
+     if (this.boundOnTransferRxFailed)
+      this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
 
       this.boundOnTransferRxFailed = this._sendDelayed.bind(this, request, boundSendFunc);
 
