@@ -60,15 +60,34 @@ TransportManager.prototype.constructor = TransportManager;
 
 TransportManager.prototype.onErase = function (error,session)
 {
+  var filename = String(this.session.index),
+      file = this.directory.file[this.session.index - 1];
+
+  if (file)
+      filename += ' ' + file.getFileName();
+
   if (!error)
-    console.log('Erased file index ' + this.session.index + ' ' + this.directory.file[this.session.index - 1].getFileName());
+    console.log('Erased file index ' +  filename);
   else
-   console.log('Failed file erase index ' + this.session.index + ' ' + this.directory.file[this.session.index - 1].getFileName());
+   console.log('Failed file erase index ' + filename + ' ' + error.toString());
 
 };
 
 TransportManager.prototype.addTask = function (request,index)
 {
+  var split,
+      filteredSplit;
+
+  if (typeof index === 'string') //In case '10,11'-format or '10 11'
+  {
+       split = index.split(/[\s,]+/);
+       split.forEach(function (e,i) { split[i] = Number(e); });
+       filteredSplit = split.filter(function (e) { return !isNaN(e); });
+       //if (this.log.logging)
+       // this.log.log('log','Filtered split',filteredSplit);
+       this.addTask(request,filteredSplit);
+  }
+
   if (typeof index === 'object' && index.constructor === Array) {// Allow [1,2,3]
     index.forEach(function (i) { this.addTask(request,i);}.bind(this));
     return;
@@ -395,6 +414,11 @@ TransportManager.prototype.onDownload = function(error, session) {
       }
 
     }.bind(this));
+  else
+    if (error)
+    {
+      console.error('Failed download index ' + session.index + ' ' + error.toString());
+    }
 
 };
 

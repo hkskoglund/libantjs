@@ -62,21 +62,27 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var msg = 'DOWNLOAD ';
 
     switch (this.result) {
+
       case DownloadResponse.prototype.OK:
-        msg += 'Request OK';
+        msg += 'OK';
         break;
+
       case DownloadResponse.prototype.NOT_EXIST:
         msg += 'Does not exist';
         break;
+
       case DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE:
         msg += 'Exists, but is not downloadable';
         break;
+
       case DownloadResponse.prototype.NOT_READY_TO_DOWNLOAD:
         msg += 'Not ready to download';
         break;
+
       case DownloadResponse.prototype.INVALID:
         msg += 'Invalid request';
         break;
+
       case DownloadResponse.prototype.CRC_INCORRECT:
         msg += 'CRC incorrect';
         break;

@@ -38,18 +38,18 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     switch (this.result) {
 
       case EraseResponse.prototype.OK:
-        
+
         msg += 'OK';
         break;
 
       case EraseResponse.prototype.FAILED:
 
-        msg += 'FAILED';
+        msg += 'Failed';
         break;
 
       case EraseResponse.prototype.NOT_READY:
 
-        msg += 'NOT READY';
+        msg += 'Not ready to erase';
         break;
 
     }
