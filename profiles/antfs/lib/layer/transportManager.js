@@ -176,8 +176,6 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
     case EraseResponse.prototype.OK:
 
-      this.session.filename = this.directory.getFile(this.session.index).getFileName();
-
       this.directory.eraseFile(this.session.index);
 
       this.host.emit('erase', NO_ERROR, this.session);
@@ -214,6 +212,9 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
         if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
+
+        if (this.session.index !== 0)
+          this.session.file = this.directory.getFile(this.session.index);
 
       }
 
@@ -258,9 +259,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
           this.directory = new Directory(this.session.packets, this.host);
           this.session.file = this.directory;
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
-        } else {
-          this.session.file = this.directory.getFile(this.session.index);
-        }
+        } 
 
         this.host.emit('download', NO_ERROR, this.session);
       }
