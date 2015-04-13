@@ -285,24 +285,29 @@ TransportManager.prototype.sendRequest = function(request) {
   this.host.sendBurst(request, this.onRequestSent.bind(this));
 };
 
+TransportManager.prototype._setupSession = function (index)
+{
+  this.session = {
+    index: index,
+    request: [],
+    response: [],
+  };
+
+  if (index === 0) {
+      this.directory = new Directory(undefined, this.host);
+      this.session.file = this.directory;
+  } else {
+      this.session.file = this.directory.getFile(index);
+    }
+};
+
 TransportManager.prototype.download = function(index, offset) {
   var request,
     crcSeed;
 
   if (typeof offset === 'function') {
 
-    this.session = {
-      index: index,
-      request: [],
-      response: [],
-    };
-
-    if (index === 0) {
-        this.directory = new Directory(undefined, this.host);
-        this.session.file = this.directory;
-    } else {
-        this.session.file = this.directory.getFile(index);
-      }
+    this._setupSession(index);
 
     request = new DownloadRequest(index);
     // TEST  request.setMaxBlockSize(8);
@@ -326,11 +331,7 @@ TransportManager.prototype.download = function(index, offset) {
 TransportManager.prototype.erase = function(index, callback) {
   var request;
 
-  this.session = {
-    index: index,
-    request: [],
-    response: [],
-  };
+  this._setupSession(index);
 
   request = new EraseRequest(index);
   this.host.once('erase', callback);
