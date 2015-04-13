@@ -61,7 +61,7 @@ TransportManager.prototype.onErase = function (error,session)
   var filename = session.file.getFileName();
 
   if (!error)
-    console.log('Erased file index ' + session.index + ' ' + filename);
+    console.log('Erased ' + filename);
   else
    console.log('Failed file erase index ' + session.index + ' ' + error.toString());
 
