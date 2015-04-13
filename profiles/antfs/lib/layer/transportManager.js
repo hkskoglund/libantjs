@@ -45,8 +45,6 @@ function TransportManager(host, download,erase,ls) {
 
   this.once('transport', this.onTransport);
 
-  this.directory = new Directory(undefined, host);
-
   this.task = [];
   this.addDownloadTask(0);
 
@@ -60,16 +58,12 @@ TransportManager.prototype.constructor = TransportManager;
 
 TransportManager.prototype.onErase = function (error,session)
 {
-  var filename = String(this.session.index),
-      file = this.directory.file[this.session.index - 1];
-
-  if (file)
-      filename += ' ' + file.getFileName();
+  var filename = session.file.getFileName();
 
   if (!error)
-    console.log('Erased file index ' +  filename);
+    console.log('Erased file index ' + session.index + ' ' + filename);
   else
-   console.log('Failed file erase index ' + filename + ' ' + error.toString());
+   console.log('Failed file erase index ' + session.index + ' ' + error.toString());
 
 };
 
@@ -182,6 +176,8 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
     case EraseResponse.prototype.OK:
 
+      this.session.filename = this.directory.getFile(this.session.index).getFileName();
+
       this.directory.eraseFile(this.session.index);
 
       this.host.emit('erase', NO_ERROR, this.session);
@@ -260,10 +256,10 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
 
         if (this.session.index === 0) {
           this.directory = new Directory(this.session.packets, this.host);
-          this.session.filename = this.directory.getFileName();
+          this.session.file = this.directory;
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
         } else {
-          this.session.filename = this.directory.getFile(this.session.index).getFileName();
+          this.session.file = this.directory.getFile(this.session.index);
         }
 
         this.host.emit('download', NO_ERROR, this.session);
@@ -398,19 +394,22 @@ TransportManager.prototype.onTransport = function() {
 
 TransportManager.prototype.onDownloadProgress = function(error, session) {
 
+var filename = session.file.getFileName();
   if (this.log.logging)
-    this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + session.filename);
+    this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
 };
 
 TransportManager.prototype.onDownload = function(error, session) {
 
+var filename = session.file.getFileName();
+
   if (this.host.host.isNode() && !error && session && session.index)
-    fs.writeFile(session.filename, new Buffer(session.packets), function(err) {
+    fs.writeFile(filename, new Buffer(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
-          this.log.log('error', 'Error writing ' + session.filename, err);
+          this.log.log('error', 'Error writing ' + filename, err);
       } else {
-        console.log('Downloaded ' + session.filename + ' (' + session.packets.byteLength + ' bytes)');
+        console.log('Downloaded ' + filename + ' (' + session.packets.byteLength + ' bytes)');
       }
 
     }.bind(this));

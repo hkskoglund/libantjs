@@ -139,10 +139,12 @@ Directory.prototype._showFileIndex = function ()
 
 Directory.prototype.eraseFile = function(index) {
 
-    this.file.splice(index - 1, 1);
+    var removedFiles = this.file.splice(index - 1, 1);
 
      if (this.log.logging)
       this.log.log('log','Directory file index after removal of index ' + index,this._showFileIndex());
+
+    return removedFiles[0];
 
 };
 

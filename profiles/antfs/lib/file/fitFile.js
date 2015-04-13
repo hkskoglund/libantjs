@@ -87,7 +87,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType] + '-' + this.index;
 
     if (!unixFormat) {
-      filename += ' ' + dateStr + '.fit';
+      if (dateStr !== '')
+        filename += ' ' + dateStr + '.fit';
+      else
+        filename += dateStr + '.fit';
       if (!clientFriendlyname)
          return  'client-' + clientSerialNumber + ' ' + filename;
       else
