@@ -594,8 +594,6 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
     sequenceChannel, // 7:5 bits = sequence nr (000 = first packet, 7 bit high on last packet) - transfer integrity, 0:4 bits channel nr
     packet,
     tmpPacket,
-    retryNr = 0,
-    MAX_BURST_RETRIES = 3,
     burstResponseTimeout,
 
     sendPacket = function() {
@@ -675,26 +673,10 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
     onTxFailed = function(err, msg) {
 
       clearTimeout(burstResponseTimeout);
-      //txFailed = true;
 
-      retryNr++;
+      removeListeners();
+      cb(msg, undefined); // error msg should be EVENT_TRANSFER_TX_FAILED
 
-      if (retryNr <= MAX_BURST_RETRIES) {
-
-        packetNr = 0;
-        sequenceNr = 0;
-
-        if (this.log.logging)
-          this.log.log('log', 'Retry ' + retryNr + ' burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
-
-        sendPacket();
-
-      } else {
-
-        removeListeners();
-        cb(msg, undefined); // error msg should be EVENT_TRANSFER_TX_FAILED
-
-      }
 
     }.bind(this);
 

@@ -38,7 +38,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   LinkManager.prototype.onBeacon = function(beacon) {
-    var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3;
+    var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 2;
 
     if (beacon.clientDeviceState.isLink()) {
       this.linkBeaconCount++;
@@ -85,7 +85,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       }.bind(this),
 
       onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err, repsonse) {
-        
+
         var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
         this.sendAcknowledged(linkRequest, onSentToClient);
