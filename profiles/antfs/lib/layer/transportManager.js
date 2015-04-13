@@ -213,9 +213,6 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
         if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
 
-        if (this.session.index !== 0)
-          this.session.file = this.directory.getFile(this.session.index);
-
       }
 
       // May happend if client appends to a file during download (rare case?)
@@ -256,10 +253,10 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
       } else {
 
         if (this.session.index === 0) {
-          this.directory = new Directory(this.session.packets, this.host);
-          this.session.file = this.directory;
+
+          this.directory.decode(this.session.packets);
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
-        } 
+        }
 
         this.host.emit('download', NO_ERROR, this.session);
       }
@@ -299,6 +296,13 @@ TransportManager.prototype.download = function(index, offset) {
       request: [],
       response: [],
     };
+
+    if (index === 0) {
+        this.directory = new Directory(undefined, this.host);
+        this.session.file = this.directory;
+    } else {
+        this.session.file = this.directory.getFile(index);
+      }
 
     request = new DownloadRequest(index);
     // TEST  request.setMaxBlockSize(8);
