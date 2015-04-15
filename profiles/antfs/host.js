@@ -44,7 +44,7 @@ function Host(options, host, channel, net, deviceNumber, hostname, download, era
 
   this.on('beacon', this.onBeacon);
 
-  this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+  this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch.bind(this));
 
   this.on('directory', function _onDirectory(lsl) {
    if (ls)
@@ -80,11 +80,16 @@ Host.prototype.getClientFriendlyname = function() {
 };
 
 Host.prototype.onRxFailGoToSearch = function() {
-  this.log.log('log', 'Lost contact with client. Resetting.');
+  if (this.log.logging)
+     this.log.log('log', 'Too many missed broadcasts from client, resetting.');
+
   this.onReset();
 };
 
 Host.prototype.onReset = function(err, callback) {
+
+  this.removeAllListeners('delayedsend');
+  clearTimeout(this.burstResponseTimeout);
 
   if (this.frequency !== this.NET.FREQUENCY.ANTFS)
     this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
@@ -134,11 +139,16 @@ Host.prototype.getHostSerialNumber = function() {
 };
 
 Host.prototype.onBeacon = function(beacon) {
+
   if (this.log.logging)
     this.log.log('log', this.beacon.toString());
 
   if (!this.beacon.clientDeviceState.isBusy())
+  {
+    if (this.log.logging)
+      this.log.log('log','Listeners for delayedsend',this.listeners('delayedsend'));
     this.emit('delayedsend'); // In case requests could not be sent when client was busy
+  }
 };
 
 Host.prototype.onBroadcast = function(broadcast) {
@@ -163,7 +173,7 @@ Host.prototype.onBurst = function(burst) {
   clearTimeout(this.burstResponseTimeout);
 
   var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
-  
+
   if (res === -1)
 
   {
@@ -202,16 +212,31 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
       // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
       // During pairing, user intervention is necessary, so don't enable timeout
 
-      if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
+      /*  if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
+        {
+           this.burstResponseTimeout = setTimeout(function _burstResponseTimeout()
+                                                  {
+                                                    console.log(Date.now() + 'BURST RESPONSE TIMEOUT',this._events);
+                                                    this._sendDelayed.call(this, request, boundSendFunc);
+                                                  }.bind(this), 2000);
+        } */
 
-         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, boundSendFunc), 1000);
+       if (this.boundOnTransferRxFailed) {
+        this.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+       }
 
-     if (this.boundOnTransferRxFailed)
-      this.host.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+      this.boundOnTransferRxFailed = function _boundOnTransferRXFailed(err,msg)
+      {
+        if (this.log.logging)
+          this.log.log('log','Transfer RX failed, retrying last request',request);
 
-      this.boundOnTransferRxFailed = this._sendDelayed.bind(this, request, boundSendFunc);
+        this._sendDelayed.call(this, request, boundSendFunc);
+      }.bind(this);
 
-      this.host.once('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+      this.once('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+
+      if (this.log.logging)
+        this.log.log('log','Listeners for RX_FAILED',this.listeners('EVENT_TRANSFER_RX_FAILED'));
 
     } else
        delete this.burstResponseTimeout;

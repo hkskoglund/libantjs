@@ -56,7 +56,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   DownloadRequest.prototype.toString = function() {
-    return 'DOWNLOAD index ' + this.index + ' offset ' + this.offset + ' initial request ' +
+    return 'DOWNLOAD id 0x' + this.ID.toString(16) + ' index ' + this.index + ' offset ' + this.offset + ' initial request ' +
       this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
   };
 

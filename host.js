@@ -67,7 +67,7 @@ var EventEmitter = require('events'),
 
   // Profiles
 
-  RxScanModeProfile = require('./profiles/RxScanMode'),
+  //RxScanModeProfile = require('./profiles/RxScanMode'),
   ANTFSHost = require('./profiles/antfs/host'),
 
   // USB hosts
@@ -604,12 +604,8 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
       if (packetNr === (numberOfPackets - 1)) {
         sequenceNr = sequenceNr | 0x04; // Set most significant bit high for last packet, i.e sequenceNr 000 -> 100
 
-        burstResponseTimeout = setTimeout(function _onBurstResponseTimeout() {
-          if (this.log.logging)
-            this.log.log('error', 'Has not received TX_COMPLETED/TX_FAILED for burst');
-          removeListeners();
-          callback(new Error('Has not received TX_COMPLETED/TX_FAILED for burst'));
-        }.bind(this), 2000);
+        burstResponseTimeout = setTimeout(exit.bind(this,new Error('Has not received TX_COMPLETED/TX_FAILED for burst'),
+                                          undefined, 'Has not received TX_COMPLETED/TX_FAILED for burst'), 2000);
       }
 
       packet = data.subarray(packetNr * packetLength, (packetNr + 1) * packetLength);
@@ -636,11 +632,7 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
           // else (call callback on TX_COMPLETED/FAILED)
         } else {
 
-          clearTimeout(burstResponseTimeout);
-
-          removeListeners();
-
-          cb(err);
+          exit(err);
         }
 
       });
@@ -649,21 +641,19 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
     addListeners = function() {
       this.channel[channel].on('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
       this.channel[channel].on('EVENT_TRANSFER_TX_FAILED', onTxFailed);
-      this.channel[channel].on('EVENT_TRANSFER_TX_START', onTxStart);
+      //this.channel[channel].on('EVENT_TRANSFER_TX_START', onTxStart);
 
     }.bind(this),
 
     removeListeners = function() {
       this.channel[channel].removeListener('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
       this.channel[channel].removeListener('EVENT_TRANSFER_TX_FAILED', onTxFailed);
-      this.channel[channel].removeListener('EVENT_TRANSFER_TX_START', onTxStart);
+      //this.channel[channel].removeListener('EVENT_TRANSFER_TX_START', onTxStart);
     }.bind(this),
 
     onTxCompleted = function(err, msg) {
       //console.timeEnd('TXCOMPLETED');
-      clearTimeout(burstResponseTimeout);
-      removeListeners();
-      cb(undefined, msg);
+      exit(err,msg);
     },
 
     onTxStart = function(err, msg) {
@@ -672,15 +662,20 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
 
     onTxFailed = function(err, msg) {
 
+      exit(msg);
+
+    }.bind(this),
+
+    exit = function (err,msg,logMsg)
+    {
+      if (logMsg & this.log.logging)
+        this.log.log('log',logMsg);
+
       clearTimeout(burstResponseTimeout);
-
       removeListeners();
-      cb(msg, undefined); // error msg should be EVENT_TRANSFER_TX_FAILED
-
+      cb(err, msg);
 
     }.bind(this);
-
-  addListeners();
 
   if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
     data = new Uint8Array(data);
@@ -700,6 +695,7 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
   if (this.log.logging)
     this.log.log('log', 'Sending burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
+  addListeners();
   sendPacket();
 
 };

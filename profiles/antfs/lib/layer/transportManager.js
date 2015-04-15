@@ -46,6 +46,7 @@ function TransportManager(host, download,erase,ls) {
   this.once('transport', this.onTransport);
 
   this.task = [];
+  this.execTaskIndex = -1;
   this.addDownloadTask(0);
 
   this.addDownloadTask(download);
@@ -92,7 +93,9 @@ TransportManager.prototype.addTask = function (request,index)
 
   var task = {
     request: request,
-    index: index
+    index: index,
+    done : false,
+    retry : 0
   };
 
   if (this.log.logging)
@@ -118,10 +121,15 @@ TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
 
 TransportManager.prototype.onReset = function() {
   this.removeAllListeners();
+  this.execTaskIndex = -1;
   this.once('transport', this.onTransport);
-  this.directory = new Directory(undefined, this.host);
-  this.task = [];
-  this.addDownloadTask(0);
+  this.host.removeAllListeners('download');
+  this.host.on('download', this.onDownload.bind(this)); // Save file when downloaded
+  this.host.removeAllListeners('erase');
+  //this.directory = new Directory(undefined, this.host);
+  //this.task = [];
+  //this.addDownloadTask(0);
+
 };
 
 TransportManager.prototype.onBeacon = function(beacon) {
@@ -148,20 +156,20 @@ TransportManager.prototype.onBurst = function(burst) {
 
     case DownloadResponse.prototype.ID:
 
-      this.handleDownloadResponse(responseData);
+      this.onDownloadResponse(responseData);
 
       break;
 
     case EraseResponse.prototype.ID:
 
-      this.handleEraseResponse(responseData);
+      this.onEraseResponse(responseData);
 
       break;
 
   }
 };
 
-TransportManager.prototype.handleEraseResponse = function(responseData) {
+TransportManager.prototype.onEraseResponse = function(responseData) {
   var response,
     NO_ERROR;
 
@@ -178,17 +186,21 @@ TransportManager.prototype.handleEraseResponse = function(responseData) {
 
       this.directory.eraseFile(this.session.index);
 
+      this.task[this.execTaskIndex].done  = true;
+
       this.host.emit('erase', NO_ERROR, this.session);
 
       break;
 
     default:
 
+      this.task[this.execTaskIndex].done = (response.result !== EraseResponse.prototype.NOT_READY);
+
       this.host.emit('erase', response, this.session);
   }
 };
 
-TransportManager.prototype.handleDownloadResponse = function(responseData) {
+TransportManager.prototype.onDownloadResponse = function(responseData) {
   var response,
     appendArray,
     offset,
@@ -196,6 +208,7 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
     now;
 
   response = new DownloadResponse(responseData);
+// TEST response.result = DownloadResponse.prototype.NOT_READY;
 
   this.session.response.push(response);
 
@@ -258,12 +271,18 @@ TransportManager.prototype.handleDownloadResponse = function(responseData) {
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
         }
 
+        this.task[this.execTaskIndex].done  = true;
+
         this.host.emit('download', NO_ERROR, this.session);
       }
 
       break;
 
     default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
+
+      //console.error(response, this.session);
+
+      this.task[this.execTaskIndex].done = (response.result !== DownloadResponse.prototype.NOT_READY);
 
       this.host.emit('download', response, this.session);
 
@@ -299,6 +318,8 @@ TransportManager.prototype._setupSession = function (index)
   } else {
       this.session.file = this.directory.getFile(index);
     }
+
+  this.task[this.execTaskIndex].retry++;
 };
 
 TransportManager.prototype.download = function(index, offset) {
@@ -341,51 +362,66 @@ TransportManager.prototype.erase = function(index, callback) {
 
 TransportManager.prototype.onTransport = function() {
 
-  var taskNr = -1;
-
   var onNextTask = function _onNextTask(err, session) {
 
-    var newFiles;
+    var newFiles,
+        inCompleteTask;
 
-    taskNr++;
+    this.execTaskIndex++;
 
-    if (taskNr === 1) { // First iteration downloads directory at index 0
+    if (this.execTaskIndex === 1) { // First iteration downloads directory at index 0
 
       newFiles = this.directory.getNewFITfiles();
+
       if (newFiles && newFiles.length)
       {
         if (this.log.logging)
-          this.log.log('log','New files available at index ',newFiles);
+          this.log.log('log','New files available',newFiles);
       }
 
       newFiles.forEach(function (index) { this.addDownloadTask(index);}.bind(this));
 
-      if (this.log.logging)
-        this.log.log('log','Task',this.task);
-
     }
 
-    if (taskNr < this.task.length)
+    if (this.execTaskIndex < this.task.length && !this.task[this.execTaskIndex].done) {
 
-      switch (this.task[taskNr].request)
+      if (this.log.logging)
+        this.log.log('log','Executing task ' + this.execTaskIndex,this.task[this.execTaskIndex]);
+
+      switch (this.task[this.execTaskIndex].request)
       {
 
         case DownloadRequest.prototype.ID :
 
-          this.download(this.task[taskNr].index, onNextTask);
+          this.download(this.task[this.execTaskIndex].index, onNextTask);
+
           break;
 
         case EraseRequest.prototype.ID:
 
           // Removing a file on the device updates the directory, so erasing index 10, moves all indexes - 1
-          this.erase(this.directory.indexOf(this.task[taskNr].index) + 1, onNextTask);
+          this.erase(this.directory.indexOf(this.task[this.execTaskIndex].index) + 1, onNextTask);
 
           break;
 
       }
 
-    else {
-      this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
+    } else {
+
+      inCompleteTask = this.task.filter(function _taskFilter(task)  {  return !task.done && task.retry < 3; });
+
+      //if (inCompleteTask.length) {
+
+         setTimeout(function ()
+                     {
+                       this.execTaskIndex = -1; // Retry task if client was "not ready"
+                       this.task[0].done = false;
+                       onNextTask();
+                     }.bind(this),100);
+      //} else
+      //   {
+      //     this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
+      //   }
     }
 
   }.bind(this);
@@ -398,16 +434,22 @@ TransportManager.prototype.onTransport = function() {
 
 TransportManager.prototype.onDownloadProgress = function(error, session) {
 
-var filename = session.file.getFileName();
-  if (this.log.logging)
-    this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
+var filename;
+
+  if (!error && session && session.file) {
+    filename = session.file.getFileName();
+
+    if (this.log.logging)
+      this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
+  }
 };
 
 TransportManager.prototype.onDownload = function(error, session) {
 
-var filename = session.file.getFileName();
+var filename;
 
-  if (this.host.host.isNode() && !error && session && session.index)
+  if (this.host.host.isNode() && !error && session && session.index) { // Won't save directory at index 0
+    filename = session.file.getFileName();
     fs.writeFile(filename, new Buffer(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
@@ -417,7 +459,7 @@ var filename = session.file.getFileName();
       }
 
     }.bind(this));
-  else
+  } else
     if (error)
     {
       console.error('Failed download index ' + session.index + ' ' + error.toString());

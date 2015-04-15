@@ -12,6 +12,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     State = require('./util/state');
 
   function LinkManager(host) {
+
     EventEmitter.call(this);
 
     this.host = host;
@@ -23,7 +24,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     this.host.on('beacon', this.onBeacon.bind(this));
 
-    this.once('link', this.onLink);
+    this.once('link', this.onLink.bind(this));
 
     this.linkBeaconCount = 0;
   }
@@ -33,19 +34,24 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   LinkManager.prototype.onReset = function() {
     this.removeAllListeners('link');
-    this.once('link', this.onLink);
+    this.once('link', this.onLink.bind(this));
     this.host.state.set(State.prototype.LINK);
   };
 
   LinkManager.prototype.onBeacon = function(beacon) {
-    var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 2;
+    var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3;
 
     if (beacon.clientDeviceState.isLink()) {
       this.linkBeaconCount++;
+      console.log('lcount',this.linkBeaconCount);
       //  this.host.state.set(State.prototype.LINK);
       if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
-        this.linkBeaconCount = 0;
+        this.linkBeaconCount = -1;
         this.emit('link');
+      } else
+      {
+        if (this.log.logging)
+          this.log.log('log','Waiting for ' + MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP +' LINK beacons from client, now at ' + this.linkBeaconCount);
       }
     }
 
@@ -80,7 +86,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         // In case client drops to link layer again we must be prepared again
 
-        this.once('link', this.onLink);
+        this.once('link', this.onLink.bind(this));
 
       }.bind(this),
 
@@ -91,6 +97,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         this.sendAcknowledged(linkRequest, onSentToClient);
 
       }.bind(this.host);
+
 
     if (this.host.frequency !== this.host.NET.FREQUENCY.ANTFS)
     // In case client drops to link layer from higher layers (communicating on the agreed upon authentication RF)

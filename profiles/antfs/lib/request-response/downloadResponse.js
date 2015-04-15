@@ -12,7 +12,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   DownloadResponse.prototype.OK = 0x00;
   DownloadResponse.prototype.NOT_EXIST = 0x01;
   DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE = 0x02;
-  DownloadResponse.prototype.NOT_READY_TO_DOWNLOAD = 0x03;
+  DownloadResponse.prototype.NOT_READY = 0x03;
   DownloadResponse.prototype.INVALID = 0x04;
   DownloadResponse.prototype.CRC_INCORRECT = 0x05;
 
