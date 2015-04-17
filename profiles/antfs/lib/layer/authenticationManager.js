@@ -54,7 +54,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   AuthenticationManager.prototype.onBeacon = function(beacon) {
 
     if (beacon.clientDeviceState.isAuthentication() && beacon.forHost(this.host.getHostSerialNumber()) &&
-      this.host.state.isLink()) {
+      this.host.layerState.isLink()) {
       this.emit('authenticate');
     }
   };
@@ -102,7 +102,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       response;
 
     if (!(this.host.beacon.forHost(this.host.getHostSerialNumber()) &&
-        this.host.state.isAuthentication()))
+        this.host.layerState.isAuthentication()))
       return;
 
     responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
@@ -137,9 +137,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.session.request.push(request);
 
     if (request.authenticationStringLength)
-      this.host.sendBurst(request, this.onSentToClient.bind(this));
+      this.host.sendBurst(request, this.onSentToANT.bind(this));
     else
-      this.host.sendAcknowledged(request, this.onSentToClient.bind(this));
+      this.host.sendAcknowledged(request, this.onSentToANT.bind(this));
   };
 
   AuthenticationManager.prototype.requestSerialNumber = function(callback) {
@@ -175,9 +175,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.sendRequest(this.authenticateRequest);
   };
 
-  AuthenticationManager.prototype.onSentToClient = function(err, msg) {
+  AuthenticationManager.prototype.onSentToANT = function(err, msg) {
     if (err && this.log.logging)
-      this.log.log('error', 'Failed to send AUTHENTICATE request to client', err);
+      this.log.log('error', 'Failed to send AUTHENTICATE request to ANT', err);
   };
 
   AuthenticationManager.prototype.getPasskey = function(clientSerialNumber) {
@@ -274,7 +274,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       onPairing = function _onPairing(err, response) {
 
         if (err)
-          this.host.state.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
+          this.host.layerState.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
 
         else
 
@@ -300,7 +300,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
       authenticationType = this.host.beacon.authenticationType;
 
-    this.host.state.set(State.prototype.AUTHENTICATION);
+    this.host.layerState.set(State.prototype.AUTHENTICATION);
 
     this.requestSerialNumber(onSerialNumber);
 

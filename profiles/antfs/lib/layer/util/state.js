@@ -48,12 +48,16 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   State.prototype.toString = function() {
 
     switch (this.state) {
+
       case State.prototype.LINK:
         return "LINK";
+
       case State.prototype.AUTHENTICATION:
         return "AUTHENTICATION";
+
       case State.prototype.TRANSPORT:
         return "TRANSPORT";
+        
       case State.prototype.BUSY:
         return "BUSY";
     }

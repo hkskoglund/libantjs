@@ -35,7 +35,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   LinkManager.prototype.onReset = function() {
     this.removeAllListeners('link');
     this.once('link', this.onLink.bind(this));
-    this.host.state.set(State.prototype.LINK);
+    this.host.layerState.set(State.prototype.LINK);
   };
 
   LinkManager.prototype.onBeacon = function(beacon) {
@@ -61,11 +61,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     var authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
 
-      onSentToClient = function _onSentToClient(err, RFevent) {
+      onSentToANT = function _onSentToANT(err, RFevent) {
         if (err) {
 
           if (this.log.logging)
-            this.log.log('error', 'Failed to send LINK request to client', err);
+            this.log.log('error', 'Failed to send LINK request to ANT', err);
 
 
         } else {
@@ -94,7 +94,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
         var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
-        this.sendAcknowledged(linkRequest, onSentToClient);
+        this.sendAcknowledged(linkRequest, onSentToANT);
 
       }.bind(this.host);
 
@@ -159,7 +159,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     var disconnectRequest = new DisconnectRequest();
 
-    this.host.state.set(State.prototype.LINK);
+    this.host.layerState.set(State.prototype.LINK);
     this.host.sendAcknowledged(disconnectRequest, callback);
   };
 

@@ -80,18 +80,27 @@ Host.prototype.getClientFriendlyname = function() {
 };
 
 Host.prototype.onRxFailGoToSearch = function() {
+  this.state = this.SEARCHING;
   if (this.log.logging)
-     this.log.log('log', 'Too many missed broadcasts from client, resetting.');
+     this.log.log('log', 'Lost contact with client, searching.');
 
-  this.onReset();
+  //this.onReset();
 };
 
 Host.prototype.onReset = function(err, callback) {
 
   this.removeAllListeners('delayedsend');
-  clearTimeout(this.burstResponseTimeout);
 
-  if (this.frequency !== this.NET.FREQUENCY.ANTFS)
+
+  if (this.boundOnTransferTxFailed)
+    this.removeListener('EVENT_TRANSFER_TX_FAILED', this.boundOnTransferTxFailed);
+
+  if (this.boundOnTransferRxFailed) {
+   this.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+  }
+
+// TO DO : Wait until beacon timeout, or received beacon with client link state
+/*  if (this.frequency !== this.NET.FREQUENCY.ANTFS)
     this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
 
       if (e & this.log.logging)
@@ -99,7 +108,7 @@ Host.prototype.onReset = function(err, callback) {
 
       if (typeof callback === 'function')
         callback(e);
-    }.bind(this));
+    }.bind(this)); */
 
 };
 
@@ -108,9 +117,9 @@ Host.prototype.connect = function(callback) {
   var onConnecting = function _onConnecting(err, msg) {
 
     if (!err) {
-      this.state = new State(State.prototype.LINK);
+      this.layerState = new State(State.prototype.LINK);
       if (this.log.logging)
-        this.log.log('log', 'Connecting, host state now ' + this.state.toString());
+        this.log.log('log', 'Connecting, host state now ' + this.layerState.toString());
     }
     callback(err, msg);
 
@@ -139,6 +148,17 @@ Host.prototype.getHostSerialNumber = function() {
 };
 
 Host.prototype.onBeacon = function(beacon) {
+
+  this.state = this.TRACKING;
+
+  clearTimeout(this.beaconTimeout);
+  clearTimeout(this.burstResponseTimeout);
+
+  this.beaconTimeout = setTimeout(function _beaconTimeout ()
+  {
+    if (this.log.logging)
+      this.log.log('Beacon timeout');
+  }.bind(this), 25000);
 
   if (this.log.logging)
     this.log.log('log', this.beacon.toString());
@@ -188,23 +208,35 @@ Host.prototype.onBurst = function(burst) {
 
 };
 
-Host.prototype._sendDelayed = function(request, boundSendFunc) {
+Host.prototype._sendDelayed = function(request, callback, retryNr, retryMsg) {
+
+  var serializedMsg;
+
+  if (retryNr === undefined)
+    retryNr = 0;
+
+  if (retryMsg === undefined)
+    retryMsg = '';
 
   // Spec. 9.4 "The busy state is not cleared from the client beacon until after the appropiate response has been sent"
-
-  // Spec 9.4 "The host shall not send a request to the client while the beacon indicates it is in the busy state"
+  // "The host shall not send a request to the client while the beacon indicates it is in the busy state"
 
   var sendRequest = function _sendRequest()
   {
+    var retryIntro;
 
     if (this.log.logging) {
-
-      this.log.log('log', 'Sending ' + request.toString() + ' client state ' + this.beacon.clientDeviceState.toString());
+      if (retryNr)
+        retryIntro = 'Retry ' + retryNr + ' ' + retryMsg + ' ';
+      else
+        retryIntro = '';
+      this.log.log('log', retryIntro + 'Sending ' + request.toString() + ' client state ' + this.beacon.clientDeviceState.toString());
 
     }
 
     // Spec 12.2 "If a client responds with one of the ANT-FS response messages listed below,
-    // this response will be appended to the beacon and sent as a burst transfer"
+    // this response will be appended to the beacon and sent as a burst transfer" -> there
+    // is a possibility of failed receive of burst (EVENT_TRANSFER_RX_FAILED)
 
     if ([0x04,0x09,0x0A,0x0B,0x0C].indexOf(request.ID) !== -1)
     {
@@ -212,38 +244,41 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
       // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
       // During pairing, user intervention is necessary, so don't enable timeout
 
-      /*  if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
-        {
-           this.burstResponseTimeout = setTimeout(function _burstResponseTimeout()
-                                                  {
-                                                    console.log(Date.now() + 'BURST RESPONSE TIMEOUT',this._events);
-                                                    this._sendDelayed.call(this, request, boundSendFunc);
-                                                  }.bind(this), 2000);
-        } */
-
-       if (this.boundOnTransferRxFailed) {
-        this.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
-       }
-
-      this.boundOnTransferRxFailed = function _boundOnTransferRXFailed(err,msg)
+      if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
       {
-        if (this.log.logging)
-          this.log.log('log','Transfer RX failed, retrying last request',request);
+        // Set at least after 16 EVENT_RX_FAIL > 2 second with 8 Hz (125 ms period)
+         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, callback, retryNr + 1,'No burst from client'), 16 * this.period / 32768 * 1000 + 500);
+      }
 
-        this._sendDelayed.call(this, request, boundSendFunc);
-      }.bind(this);
+     if (this.boundOnTransferRxFailed) {
+       this.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+     }
 
-      this.once('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+     this.boundOnTransferRxFailed = this._sendDelayed.bind(this, request, callback, retryNr + 1, 'Transfer RX failed');
 
-      if (this.log.logging)
-        this.log.log('log','Listeners for RX_FAILED',this.listeners('EVENT_TRANSFER_RX_FAILED'));
+     this.once('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
+    }
 
-    } else
-       delete this.burstResponseTimeout;
+    if (this.boundOnTransferTxFailed)
+      this.removeListener('EVENT_TRANSFER_TX_FAILED', this.boundOnTransferTxFailed);
 
-    boundSendFunc();
+    this.boundOnTransferTxFailed = this._sendDelayed.bind(this, request, callback, retryNr  + 1,'Transfer TX failed');
+
+    this.once('EVENT_TRANSFER_TX_FAILED', this.boundOnTransferTxFailed);
+
+    serializedMsg = request.serialize();
+
+    if (serializedMsg.length <= 8)
+      Channel.prototype.sendAcknowledged.call(this, serializedMsg, callback);
+    else
+      Channel.prototype.sendBurst.call(this, serializedMsg, callback);
 
   }.bind(this);
+
+  clearTimeout(this.burstResponseTimeout);
+
+  if (this.state !== this.TRACKING)
+    console.error('NOT TRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
 
   if (!this.beacon.clientDeviceState.isBusy()) {
 
@@ -261,14 +296,12 @@ Host.prototype._sendDelayed = function(request, boundSendFunc) {
 
 // Override Channel
 Host.prototype.sendAcknowledged = function(request, callback) {
-  this._sendDelayed(request, Channel.prototype.sendAcknowledged.bind(this, request.serialize(), callback));
-
+  this._sendDelayed(request, callback);
 };
 
 // Override Channel
-Host.prototype.sendBurst = function(request, packetsPerURB, callback) {
-  this._sendDelayed(request, Channel.prototype.sendBurst.bind(this, request.serialize(), packetsPerURB, callback));
-
+Host.prototype.sendBurst = function(request, callback) {
+  this._sendDelayed(request,callback);
 };
 
 Host.prototype.disconnect = function (callback)

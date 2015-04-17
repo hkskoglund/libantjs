@@ -135,7 +135,7 @@ TransportManager.prototype.onReset = function() {
 TransportManager.prototype.onBeacon = function(beacon) {
 
   if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
-    this.host.state.isAuthentication()) {
+    this.host.layerState.isAuthentication()) {
     this.emit('transport');
   }
 };
@@ -146,7 +146,7 @@ TransportManager.prototype.onBurst = function(burst) {
     responseId;
 
   if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
-      this.host.state.isTransport()))
+      this.host.layerState.isTransport()))
     return;
 
   responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
@@ -294,7 +294,7 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
 
 TransportManager.prototype.onRequestSent = function(err, msg) {
   if (err && this.log.logging)
-    this.log.log('error', 'Failed to send request to client (EVENT_TRANSFER_TX_FAILED)', err);
+    this.log.log('error', 'Failed to send request to ANT', err);
 };
 
 TransportManager.prototype.sendRequest = function(request) {
@@ -426,7 +426,7 @@ TransportManager.prototype.onTransport = function() {
 
   }.bind(this);
 
-  this.host.state.set(State.prototype.TRANSPORT);
+  this.host.layerState.set(State.prototype.TRANSPORT);
 
   onNextTask();
 
