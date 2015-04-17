@@ -1,6 +1,6 @@
 {
   "name": "libantjs",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "ANT wireless USB library",
   "main": "host.js",
   "scripts": {
