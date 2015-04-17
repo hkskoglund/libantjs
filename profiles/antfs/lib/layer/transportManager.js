@@ -34,7 +34,7 @@ function TransportManager(host, download,erase,ls) {
   this.log = this.host.log;
   this.logger = this.host.log.log.bind(this.host.log);
 
-  this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+  this.host.on('reset', this.onReset.bind(this));
   this.host.on('beacon', this.onBeacon.bind(this));
   this.host.on('burst', this.onBurst.bind(this));
 
@@ -126,6 +126,7 @@ TransportManager.prototype.onReset = function() {
   this.host.removeAllListeners('download');
   this.host.on('download', this.onDownload.bind(this)); // Save file when downloaded
   this.host.removeAllListeners('erase');
+
   //this.directory = new Directory(undefined, this.host);
   //this.task = [];
   //this.addDownloadTask(0);
@@ -147,7 +148,11 @@ TransportManager.prototype.onBurst = function(burst) {
 
   if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
       this.host.layerState.isTransport()))
-    return;
+      {
+        if (this.log.logging)
+          this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
+          return;
+       }
 
   responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
   responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response

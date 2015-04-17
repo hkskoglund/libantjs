@@ -46,6 +46,8 @@ function Host(options, host, channel, net, deviceNumber, hostname, download, era
 
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch.bind(this));
 
+  this.on('reset', this.onReset.bind(this));
+
   this.on('directory', function _onDirectory(lsl) {
    if (ls)
       console.log(lsl);
@@ -80,17 +82,27 @@ Host.prototype.getClientFriendlyname = function() {
 };
 
 Host.prototype.onRxFailGoToSearch = function() {
+
   this.state = this.SEARCHING;
+
   if (this.log.logging)
      this.log.log('log', 'Lost contact with client, searching.');
 
-  //this.onReset();
+
 };
 
 Host.prototype.onReset = function(err, callback) {
 
-  this.removeAllListeners('delayedsend');
+  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e,m)
+  {
+    if (e & this.log.logging)
+      this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
 
+    if (typeof callback === 'function')
+      callback(e);
+  }.bind(this);
+
+  this.removeAllListeners('delayedsend');
 
   if (this.boundOnTransferTxFailed)
     this.removeListener('EVENT_TRANSFER_TX_FAILED', this.boundOnTransferTxFailed);
@@ -100,15 +112,8 @@ Host.prototype.onReset = function(err, callback) {
   }
 
 // TO DO : Wait until beacon timeout, or received beacon with client link state
-/*  if (this.frequency !== this.NET.FREQUENCY.ANTFS)
-    this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, function _switchFreqPeriod(e) {
 
-      if (e & this.log.logging)
-        this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
-
-      if (typeof callback === 'function')
-        callback(e);
-    }.bind(this)); */
+  this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onSwitchedFreqPeriod);
 
 };
 
@@ -152,12 +157,12 @@ Host.prototype.onBeacon = function(beacon) {
   this.state = this.TRACKING;
 
   clearTimeout(this.beaconTimeout);
-  clearTimeout(this.burstResponseTimeout);
 
   this.beaconTimeout = setTimeout(function _beaconTimeout ()
   {
     if (this.log.logging)
-      this.log.log('Beacon timeout');
+      this.log.log('log','Client beacon timeout');
+    this.emit('reset');
   }.bind(this), 25000);
 
   if (this.log.logging)
@@ -247,7 +252,7 @@ Host.prototype._sendDelayed = function(request, callback, retryNr, retryMsg) {
       if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
       {
         // Set at least after 16 EVENT_RX_FAIL > 2 second with 8 Hz (125 ms period)
-         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, callback, retryNr + 1,'No burst from client'), 16 * this.period / 32768 * 1000 + 500);
+         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, callback, retryNr + 1,'No burst from client'), 2000);
       }
 
      if (this.boundOnTransferRxFailed) {
@@ -275,21 +280,34 @@ Host.prototype._sendDelayed = function(request, callback, retryNr, retryMsg) {
 
   }.bind(this);
 
-  clearTimeout(this.burstResponseTimeout);
+  switch (this.state)
+  {
+    case this.TRACKING :
 
-  if (this.state !== this.TRACKING)
-    console.error('NOT TRACKING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+      if (!this.beacon.clientDeviceState.isBusy()) {
 
-  if (!this.beacon.clientDeviceState.isBusy()) {
+        sendRequest();
 
-    sendRequest();
+      } else {
 
-  } else {
+        if (this.log.logging)
+          this.log.log('log', 'Client is busy, delaying message.');
 
-    if (this.log.logging)
-      this.log.log('log', 'Client is busy, delaying message.');
+        if (!this.listeners('delayedsend').length)
+         this.once('delayedsend', sendRequest); // Wait for next beacon and client not busy
+      }
 
-    this.once('delayedsend', sendRequest); // Wait for next beacon and client not busy
+      break;
+
+   case this.SEARCHING :
+
+     if (!this.listeners('delayedsend').length)
+     {
+       if (this.log.logging)
+         this.log.log('log','Searching for client, send on next client beacon',request);
+       this.once('delayedsend', sendRequest); // Wait for next beacon and client not busy
+     }
+
   }
 
 };

@@ -20,7 +20,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.log = this.host.log;
     this.logger = this.host.log.log.bind(this.host.log);
 
-    this.host.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onReset.bind(this));
+    this.host.on('reset', this.onReset.bind(this));
 
     this.host.on('beacon', this.onBeacon.bind(this));
     this.host.on('burst', this.onBurst.bind(this));
