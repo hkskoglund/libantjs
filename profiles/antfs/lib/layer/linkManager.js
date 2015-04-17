@@ -35,10 +35,22 @@ LinkManager.prototype = Object.create(EventEmitter.prototype);
 LinkManager.prototype.constructor = LinkManager;
 
 LinkManager.prototype.onReset = function() {
+
+  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e,m)
+  {
+    if (e & this.log.logging)
+      this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
+
+    //if (typeof callback === 'function')
+    //  callback(e);
+  }.bind(this);
+
   this.removeAllListeners('link');
   this.once('link', this.onLink.bind(this));
   this.linkBeaconCount = 0;
   this.host.layerState.set(State.prototype.LINK);
+  this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onSwitchedFreqPeriod);
+
 };
 
 LinkManager.prototype.onBeacon = function(beacon) {
@@ -46,7 +58,7 @@ LinkManager.prototype.onBeacon = function(beacon) {
 
   if (beacon.clientDeviceState.isLink()) {
     this.linkBeaconCount++;
-    console.log('lcount', this.linkBeaconCount);
+    //console.log('lcount', this.linkBeaconCount);
     //  this.host.state.set(State.prototype.LINK);
     if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
       this.linkBeaconCount = -1;

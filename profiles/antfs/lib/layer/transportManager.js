@@ -57,6 +57,20 @@ function TransportManager(host, download,erase,ls) {
 TransportManager.prototype = Object.create(EventEmitter.prototype);
 TransportManager.prototype.constructor = TransportManager;
 
+TransportManager.prototype.onReset = function() {
+  this.removeAllListeners();
+
+  this.once('transport', this.onTransport);
+  this.host.removeAllListeners('download');
+  this.host.on('download', this.onDownload.bind(this)); // Save file when downloaded
+  this.host.removeAllListeners('erase');
+
+  //this.directory = new Directory(undefined, this.host);
+  //this.task = [];
+  //this.addDownloadTask(0);
+
+};
+
 TransportManager.prototype.onErase = function (error,session)
 {
   var filename = session.file.getFileName();
@@ -119,24 +133,13 @@ TransportManager.prototype.addEraseTask = function(index) {
 
 TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
 
-TransportManager.prototype.onReset = function() {
-  this.removeAllListeners();
-  this.execTaskIndex = -1;
-  this.once('transport', this.onTransport);
-  this.host.removeAllListeners('download');
-  this.host.on('download', this.onDownload.bind(this)); // Save file when downloaded
-  this.host.removeAllListeners('erase');
 
-  //this.directory = new Directory(undefined, this.host);
-  //this.task = [];
-  //this.addDownloadTask(0);
-
-};
 
 TransportManager.prototype.onBeacon = function(beacon) {
 
   if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
     this.host.layerState.isAuthentication()) {
+    //console.log('Listener for transport-ev',this.listeners('transport'));
     this.emit('transport');
   }
 };
@@ -149,8 +152,8 @@ TransportManager.prototype.onBurst = function(burst) {
   if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
       this.host.layerState.isTransport()))
       {
-        if (this.log.logging)
-          this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
+        //if (this.log.logging)
+        //  this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
           return;
        }
 
@@ -231,6 +234,9 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
         if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
 
+        if (this.session.index)
+          console.log('Downloading ' + this.session.file.getFileName() + ' (' + response.fileSize + ' bytes)');
+
       }
 
       // May happend if client appends to a file during download (rare case?)
@@ -256,6 +262,7 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
       if (response.offset === 0 ||
         (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL) ||
         offset >= response.fileSize) {
+
         this.session.timestamp = now;
 
         this.session.offset = offset;
@@ -365,6 +372,41 @@ TransportManager.prototype.erase = function(index, callback) {
   this.sendRequest(request);
 };
 
+TransportManager.prototype.onDownloadProgress = function(error, session) {
+
+var filename;
+
+  if (!error && session && session.file) {
+    filename = session.file.getFileName();
+
+    if (this.log.logging)
+      this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
+  }
+};
+
+TransportManager.prototype.onDownload = function(error, session) {
+
+var filename;
+
+  if (this.host.host.isNode() && !error && session && session.index) { // Won't save directory at index 0
+    filename = session.file.getFileName();
+    fs.writeFile(filename, new Buffer(session.packets), function(err) {
+      if (err) {
+        if (this.log.logging)
+          this.log.log('error', 'Error writing ' + filename, err);
+      } else {
+        //console.log('Downloaded ' + filename + ' (' + session.packets.byteLength + ' bytes)');
+      }
+
+    }.bind(this));
+  } else
+    if (error)
+    {
+      console.error('Failed download index ' + session.index + ' ' + error.toString());
+    }
+
+};
+
 TransportManager.prototype.onTransport = function() {
 
   var onNextTask = function _onNextTask(err, session) {
@@ -411,64 +453,35 @@ TransportManager.prototype.onTransport = function() {
 
       }
 
-    } else {
+    }
+    else {
 
       inCompleteTask = this.task.filter(function _taskFilter(task)  {  return !task.done && task.retry < 3; });
 
-      //if (inCompleteTask.length) {
+      if (inCompleteTask.length) {
 
-         setTimeout(function ()
+         setTimeout(function _retryIncompleteTask()
                      {
-                       this.execTaskIndex = -1; // Retry task if client was "not ready"
-                       this.task[0].done = false;
+                       // TEST continous download dir. this.execTaskIndex = -1;
+                       // TEST continous download dir. this.task[0].done = false;
                        onNextTask();
                      }.bind(this),100);
-      //} else
-      //   {
-      //     this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
-      //   }
+      } else
+         {
+           this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
+         }
     }
 
   }.bind(this);
 
   this.host.layerState.set(State.prototype.TRANSPORT);
 
+  this.execTaskIndex = -1;
+
+  if (this.log.logging)
+   this.log.log('log','Starting with task', this.task);
+
   onNextTask();
-
-};
-
-TransportManager.prototype.onDownloadProgress = function(error, session) {
-
-var filename;
-
-  if (!error && session && session.file) {
-    filename = session.file.getFileName();
-
-    if (this.log.logging)
-      this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
-  }
-};
-
-TransportManager.prototype.onDownload = function(error, session) {
-
-var filename;
-
-  if (this.host.host.isNode() && !error && session && session.index) { // Won't save directory at index 0
-    filename = session.file.getFileName();
-    fs.writeFile(filename, new Buffer(session.packets), function(err) {
-      if (err) {
-        if (this.log.logging)
-          this.log.log('error', 'Error writing ' + filename, err);
-      } else {
-        console.log('Downloaded ' + filename + ' (' + session.packets.byteLength + ' bytes)');
-      }
-
-    }.bind(this));
-  } else
-    if (error)
-    {
-      console.error('Failed download index ' + session.index + ' ' + error.toString());
-    }
 
 };
 

@@ -38,11 +38,11 @@ function Host(options, host, channel, net, deviceNumber, hostname, download, era
   if (this.log.logging)
     this.log.log('log','Hostname ' + this.hostname);
 
-  this.on('data', this.onBroadcast); // decodes client beacon
+  this.on('data', this.onBroadcast.bind(this)); // decodes client beacon
 
-  this.on('burst', this.onBurst); // decodes client beacon
+  this.on('burst', this.onBurst.bind(this)); // decodes client beacon
 
-  this.on('beacon', this.onBeacon);
+  this.on('beacon', this.onBeacon.bind(this));
 
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch.bind(this));
 
@@ -88,19 +88,12 @@ Host.prototype.onRxFailGoToSearch = function() {
   if (this.log.logging)
      this.log.log('log', 'Lost contact with client, searching.');
 
-
 };
 
 Host.prototype.onReset = function(err, callback) {
 
-  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e,m)
-  {
-    if (e & this.log.logging)
-      this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
-
-    if (typeof callback === 'function')
-      callback(e);
-  }.bind(this);
+  clearTimeout(this.beaconTimeout);
+  clearTimeout(this.burstResponseTimeout);
 
   this.removeAllListeners('delayedsend');
 
@@ -110,10 +103,6 @@ Host.prototype.onReset = function(err, callback) {
   if (this.boundOnTransferRxFailed) {
    this.removeListener('EVENT_TRANSFER_RX_FAILED', this.boundOnTransferRxFailed);
   }
-
-// TO DO : Wait until beacon timeout, or received beacon with client link state
-
-  this.linkManager.switchFrequencyAndPeriod(this.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onSwitchedFreqPeriod);
 
 };
 
@@ -162,16 +151,27 @@ Host.prototype.onBeacon = function(beacon) {
   {
     if (this.log.logging)
       this.log.log('log','Client beacon timeout');
+
     this.emit('reset');
   }.bind(this), 25000);
 
   if (this.log.logging)
     this.log.log('log', this.beacon.toString());
 
-  if (!this.beacon.clientDeviceState.isBusy())
+
+  // Client dropped to link
+  if (!this.layerState.isLink() && this.beacon.clientDeviceState.isLink())
+  {
+    if (this.log.logging)
+      this.log.log('log','Client dropped to LINK, Host ',this.layerState.toString(),'Client',this.beacon.clientDeviceState.toString());
+
+    this.emit('reset');
+  }
+  else if (!this.beacon.clientDeviceState.isBusy())
   {
     if (this.log.logging)
       this.log.log('log','Listeners for delayedsend',this.listeners('delayedsend'));
+
     this.emit('delayedsend'); // In case requests could not be sent when client was busy
   }
 };
@@ -249,10 +249,11 @@ Host.prototype._sendDelayed = function(request, callback, retryNr, retryMsg) {
       // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
       // During pairing, user intervention is necessary, so don't enable timeout
 
-      if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
+      if (!(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING) ||
+          !(request instanceof AuthenticateRequest && request.commandType === AuthenticateRequest.prototype.CLIENT_SERIAL_NUMBER))
       {
         // Set at least after 16 EVENT_RX_FAIL > 2 second with 8 Hz (125 ms period)
-         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, callback, retryNr + 1,'No burst from client'), 2000);
+         this.burstResponseTimeout = setTimeout(this._sendDelayed.bind(this, request, callback, retryNr + 1,'No burst from client'), 16 * ( this.period / 32768) * 1000 + 1000);
       }
 
      if (this.boundOnTransferRxFailed) {
@@ -326,6 +327,10 @@ Host.prototype.disconnect = function (callback)
 {
   var onDisconnect = function _onDisconnect()
   {
+    this.removeAllListeners('beacon');
+
+    this.emit('reset');
+
     if (typeof callback === 'function')
       callback.call(this,arguments);
   }.bind(this);
