@@ -92,6 +92,16 @@
     return this.initiatingId === 0x01;
   };
 
+  ChannelResponse.prototype.isTransferTxFailed = function ()
+  {
+    return this.isRFevent() && this.code === ChannelResponse.prototype.EVENT_TRANSFER_TX_FAILED;
+  };
+
+  ChannelResponse.prototype.isTransferRxFailed = function ()
+  {
+    return this.isRFevent() && this.code === ChannelResponse.prototype.EVENT_TRANSFER_RX_FAILED;
+  };
+
   ChannelResponse.prototype.toString = function() {
     var msg = 'Ch ' + this.channel + ' ';
 

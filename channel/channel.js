@@ -36,6 +36,12 @@
 
     this.burst = undefined; // Contains aggregated burst data
 
+    this.on('EVENT_TRANSFER_TX_COMPLETED', Channel.prototype.onTxCompleted);
+    this.on('EVENT_TRANSFER_TX_FAILED', Channel.prototype.onTxFailed);
+    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', Channel.prototype.onRxFailGoToSearch);
+    this.on('data', Channel.prototype.onBroadcast);
+    this.on('burst', Channel.prototype.onBurst);
+
   }
 
   Channel.prototype = Object.create(EventEmitter.prototype);
@@ -121,6 +127,47 @@
   };
 
   Channel.prototype.MAX_RF = 124;
+
+  Channel.prototype.onBurst = function (burst)
+  {
+     this.state = this.TRACKING;
+  };
+
+  Channel.prototype.onBroadcast = function (broadcast)
+  {
+     this.state = this.TRACKING;
+  };
+
+  Channel.prototype.onRxFailGoToSearch = function() {
+
+    this.state = this.SEARCHING;
+
+    if (this.log.logging)
+       this.log.log('log', 'Lost contact with client, searching.');
+
+  };
+
+
+
+  Channel.prototype.onTxCompleted = function (e,m)
+  {
+    this.transferInProgress = false;
+  };
+
+  Channel.prototype.onTxFailed = function (e,m)
+  {
+    this.transferInProgress = false;
+  };
+
+  Channel.prototype.isTransferInProgress = function ()
+  {
+    return this.transferInProgress;
+  };
+
+  Channel.prototype.isTracking = function ()
+  {
+    return this.state === this.TRACKING;
+  };
 
   Channel.prototype.getWildcardId = function ()
   {
@@ -313,17 +360,32 @@
   };
 
   Channel.prototype.sendAcknowledged = function(ackData, callback) {
-    this.host.sendAcknowledgedData(this.channel, ackData, callback);
+    var cb = function _sendAcknowledgedCB(e,m) {
+      if (e)
+        this.transferInProgress = false;
+      callback(e,m);
+    }.bind(this);
+
+    this.transferInProgress = true;
+
+    this.host.sendAcknowledgedData(this.channel, ackData, cb);
   };
 
   Channel.prototype.sendBurst = function(burstData, packetsPerURB,callback) {
+    var cb = function _sendBurstCB(e,m) {
+      if (e)
+        this.transferInProgress = false;
+      callback(e,m);
+    }.bind(this);
 
     if (typeof packetsPerURB === 'function') {
       callback = packetsPerURB;
       packetsPerURB = 1;
     }
 
-    this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB,callback);
+    this.transferInProgress = true;
+
+    this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB,cb);
   };
 
   Channel.prototype.toString = function() {

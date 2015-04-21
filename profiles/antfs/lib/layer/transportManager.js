@@ -38,11 +38,6 @@ function TransportManager(host, download,erase,ls) {
   this.host.on('beacon', this.onBeacon.bind(this));
   this.host.on('burst', this.onBurst.bind(this));
 
-  this.host.on('download', this.onDownload.bind(this));
-  this.host.on('download_progress', this.onDownloadProgress.bind(this));
-
-  this.host.on('erase', this.onErase.bind(this));
-
   this.once('transport', this.onTransport);
 
   this.task = [];
@@ -57,23 +52,69 @@ function TransportManager(host, download,erase,ls) {
 TransportManager.prototype = Object.create(EventEmitter.prototype);
 TransportManager.prototype.constructor = TransportManager;
 
+TransportManager.prototype.onBeacon = function(beacon) {
+
+  if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
+    this.host.layerState.isAuthentication()) {
+    //console.log('Listener for transport-ev',this.listeners('transport'));
+    this.emit('transport');
+  }
+};
+
+TransportManager.prototype.onBurst = function(burst) {
+
+  var responseData,
+    responseId;
+
+  if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
+      this.host.layerState.isTransport()))
+      {
+        //if (this.log.logging)
+        //  this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
+          return;
+       }
+
+  responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+  responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
+
+  switch (responseId) {
+
+    case DownloadResponse.prototype.ID:
+
+      this.onDownloadResponse(responseData);
+
+      break;
+
+    case EraseResponse.prototype.ID:
+
+      this.onEraseResponse(responseData);
+
+      break;
+
+  }
+};
+
 TransportManager.prototype.onReset = function() {
+
+  clearTimeout(this.incompleteTaskTimeout);
+
   this.removeAllListeners();
 
-  this.once('transport', this.onTransport);
+  this.host.removeAllListeners('download_progress');
   this.host.removeAllListeners('download');
-  this.host.on('download', this.onDownload.bind(this)); // Save file when downloaded
   this.host.removeAllListeners('erase');
 
-  //this.directory = new Directory(undefined, this.host);
-  //this.task = [];
-  //this.addDownloadTask(0);
+  this.once('transport', this.onTransport);
 
 };
 
 TransportManager.prototype.onErase = function (error,session)
 {
-  var filename = session.file.getFileName();
+  var filename;
+
+  session = session || this.session;
+
+  filename = session.file.getFileName();
 
   if (!error)
     console.log('Erased ' + filename);
@@ -132,50 +173,6 @@ TransportManager.prototype.addEraseTask = function(index) {
 };
 
 TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
-
-
-
-TransportManager.prototype.onBeacon = function(beacon) {
-
-  if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
-    this.host.layerState.isAuthentication()) {
-    //console.log('Listener for transport-ev',this.listeners('transport'));
-    this.emit('transport');
-  }
-};
-
-TransportManager.prototype.onBurst = function(burst) {
-
-  var responseData,
-    responseId;
-
-  if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
-      this.host.layerState.isTransport()))
-      {
-        //if (this.log.logging)
-        //  this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
-          return;
-       }
-
-  responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
-  responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
-
-  switch (responseId) {
-
-    case DownloadResponse.prototype.ID:
-
-      this.onDownloadResponse(responseData);
-
-      break;
-
-    case EraseResponse.prototype.ID:
-
-      this.onEraseResponse(responseData);
-
-      break;
-
-  }
-};
 
 TransportManager.prototype.onEraseResponse = function(responseData) {
   var response,
@@ -283,6 +280,7 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
         }
 
+        // TEST this.task[this.execTaskIndex].done  = false;
         this.task[this.execTaskIndex].done  = true;
 
         this.host.emit('download', NO_ERROR, this.session);
@@ -305,8 +303,20 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
 };
 
 TransportManager.prototype.onRequestSent = function(err, msg) {
-  if (err && this.log.logging)
-    this.log.log('error', 'Failed to send request to ANT', err);
+  var message;
+
+  if (err) {
+     message = 'Failed to send request to ANT';
+
+    if (this.log.logging)
+      this.log.log('error', message, err);
+
+    if (this.session.request[0] instanceof DownloadRequest)
+       this.emit('download', err); // Continue with next task
+    else if (this.session.request[0] instanceof EraseRequest)
+      this.emit('erase', err);
+  }
+
 };
 
 TransportManager.prototype.sendRequest = function(request) {
@@ -336,7 +346,13 @@ TransportManager.prototype._setupSession = function (index)
 
 TransportManager.prototype.download = function(index, offset) {
   var request,
-    crcSeed;
+    crcSeed,
+    downloadProgressFunc = this.onDownloadProgress.bind(this),
+    onDownload = function _onDownload(e,m)
+    {
+      this.host.removeListener('download_progress',downloadProgressFunc);
+      this.onDownload.call(this,e,m);
+    }.bind(this);
 
   if (typeof offset === 'function') {
 
@@ -346,6 +362,10 @@ TransportManager.prototype.download = function(index, offset) {
     // TEST  request.setMaxBlockSize(8);
 
     this.host.once('download', offset);
+
+    this.host.on('download_progress', downloadProgressFunc);
+
+    this.host.once('download', onDownload);
 
   } else {
 
@@ -368,6 +388,7 @@ TransportManager.prototype.erase = function(index, callback) {
 
   request = new EraseRequest(index);
   this.host.once('erase', callback);
+  this.host.once('erase', this.onErase.bind(this));
 
   this.sendRequest(request);
 };
@@ -387,6 +408,8 @@ var filename;
 TransportManager.prototype.onDownload = function(error, session) {
 
 var filename;
+
+   session = session || this.session; // In case .emit('download'/'erase') without reference to session (when max retries reached in host sendrequest)
 
   if (this.host.host.isNode() && !error && session && session.index) { // Won't save directory at index 0
     filename = session.file.getFileName();
@@ -413,6 +436,12 @@ TransportManager.prototype.onTransport = function() {
 
     var newFiles,
         inCompleteTask;
+
+    if (err)
+    {
+      if (this.log.logging)
+      this.log.log('error',err);
+    }
 
     this.execTaskIndex++;
 
@@ -460,14 +489,15 @@ TransportManager.prototype.onTransport = function() {
 
       if (inCompleteTask.length) {
 
-         setTimeout(function _retryIncompleteTask()
+        this.incompleteTaskTimeout =  setTimeout(function _retryIncompleteTask()
                      {
-                       // TEST continous download dir. this.execTaskIndex = -1;
-                       // TEST continous download dir. this.task[0].done = false;
+                       this.execTaskIndex = -1;
                        onNextTask();
                      }.bind(this),100);
       } else
          {
+           // TEST  this.execTaskIndex = -1;
+           // TEST   onNextTask();
            this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
          }
     }

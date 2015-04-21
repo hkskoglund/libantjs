@@ -75,26 +75,28 @@ LinkManager.prototype.onLink = function() {
 
   var authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
 
+    onTxCompleted = function _onTxCompleted(e,m)
+    {
+      // LINK is received by client ANT stack now, and client will switch frequency to
+      // the requested frequency by the link request and start advertising the authentication beacon
+
+      if (this.host.frequency !== authentication_RF) {
+
+        this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
+          function _switchFreq(err, msg) {
+            if (!err && this.log.logging)
+              this.log.log('log', 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
+          }.bind(this.host));
+      }
+
+    }.bind(this),
+
     onSentToANT = function _onSentToANT(err, RFevent) {
+
       if (err) {
 
         if (this.log.logging)
           this.log.log('error', 'Failed to send LINK request to ANT', err);
-
-
-      } else {
-
-        // LINK is received by client ANT stack now, and client will switch frequency to
-        // the requested frequency by the link request and start advertising the authentication beacon
-
-        if (this.host.frequency !== authentication_RF) {
-
-          this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-            function _switchFreq(err, msg) {
-              if (!err && this.log.logging)
-                this.log.log('log', 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
-            }.bind(this.host));
-        }
 
       }
 
@@ -107,6 +109,8 @@ LinkManager.prototype.onLink = function() {
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err, repsonse) {
 
       var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
+
+      this.once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
 
       this.sendAcknowledged(linkRequest, onSentToANT);
 
@@ -184,10 +188,29 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
 
 LinkManager.prototype.disconnect = function(callback) {
 
-  var disconnectRequest = new DisconnectRequest();
+  var disconnectRequest = new DisconnectRequest(),
+        onSentToANT = function _onSentToANT(e,m)
+        {
+          if (e)
+          {
+            if (this.log.logging)
+              this.log.log('error','Failed to send disconnect request to ANT');
+          }
+        };
 
   this.host.layerState.set(State.prototype.LINK);
-  this.host.sendAcknowledged(disconnectRequest, callback);
+
+  this.host.once('EVENT_TRANSFER_TX_COMPLETED', callback);
+  this.host.once('EVENT_TRANSFER_TX_FAILED', function _disconnectFailed (){
+    var msg = 'Failed to send disconnect request to client, letting client timeout on session';
+    this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED',callback);
+    if (this.log.logging)
+      this.log.log('log',msg);
+    callback(new Error(msg));
+
+  }.bind(this));
+
+  this.host.sendAcknowledged(disconnectRequest, onSentToANT);
 };
 
 module.exports = LinkManager;

@@ -517,50 +517,7 @@ Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, ac
 // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
 Host.prototype.sendAcknowledgedData = function(channel, acknowledgedData, callback) {
 
-  var retry = 0,
-    MAX_RETRIES = 3,
-
-    onSentToANT = function _onSentToANT(err,msg)
-    {
-      if (err)
-        {
-          this.channel[channel].removeListener(this.EVENT.FAILED, onTxFailed);
-          this.channel[channel].removeListener(this.EVENT.COMPLETED, onTxCompleted);
-
-          callback(err,msg);
-        }
-
-    }.bind(this),
-
-    onTxCompleted = function _onTxCompleted(RFevent) {
-
-      this.channel[channel].removeListener(this.EVENT.FAILED, onTxFailed);
-
-      callback(undefined, RFevent);
-
-    }.bind(this),
-
-    onTxFailed = function _onTxFailed(RFevent) {
-
-      retry++;
-
-      if (retry <= MAX_RETRIES) {
-
-        this.sendBroadcastData(channel, acknowledgedData, onSentToANT, true);
-
-      } else {
-
-        this.channel[channel].removeListener(this.EVENT.COMPLETED, onTxCompleted);
-
-        callback(RFevent, undefined);
-      }
-    }.bind(this);
-
-  this.channel[channel].once(this.EVENT.FAILED, onTxFailed);
-  this.channel[channel].once(this.EVENT.COMPLETED, onTxCompleted);
-
-  this.sendBroadcastData(channel, acknowledgedData, onSentToANT, true);
-
+  this.sendBroadcastData(channel, acknowledgedData, callback, true);
 };
 
 // Send an individual packet as part of a burst transfer
@@ -595,7 +552,7 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
     packet,
     tmpPacket,
 
-    sendPacket = function() {
+    sendPacket = function _sendPacket() {
 
       if (sequenceNr > 3) // Roll over sequence nr
         sequenceNr = 1;
@@ -671,7 +628,8 @@ Host.prototype.deserialize = function(data) {
     metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
     message,
     bufferUtil = new Concat(),
-    event;
+    event,
+    NO_ERROR;
 
   if (this.previousPacket && this.previousPacket.byteLength)
   // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
@@ -702,14 +660,14 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.NOTIFICATION_STARTUP:
 
         message = new NotificationStartup(msgBytes);
-        this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, message);
+        this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], NO_ERROR, message);
 
         break;
 
       case Message.prototype.NOTIFICATION_SERIAL_ERROR:
 
         message = new NotificationSerialError(msgBytes);
-        this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_SERIAL_ERROR], undefined, message);
+        this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_SERIAL_ERROR], NO_ERROR, message);
 
         break;
 
@@ -718,7 +676,7 @@ Host.prototype.deserialize = function(data) {
       case Message.prototype.CHANNEL_STATUS:
 
         message = new ChannelStatusMessage(msgBytes);
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
@@ -726,28 +684,28 @@ Host.prototype.deserialize = function(data) {
 
         message = new VersionMessage(msgBytes);
 
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
       case Message.prototype.CAPABILITIES:
 
         message = new CapabilitiesMessage(msgBytes);
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
       case Message.prototype.DEVICE_SERIAL_NUMBER:
 
         message = new DeviceSerialNumberMessage(msgBytes);
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
       case Message.prototype.EVENT_BUFFER_CONFIGURATION:
 
         message = new ConfigureEventBufferMessage(msgBytes);
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
@@ -766,14 +724,14 @@ Host.prototype.deserialize = function(data) {
             break;
         }
 
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
       case Message.prototype.SET_CHANNEL_ID:
 
         message = new ChannelIdMessage(msgBytes);
-        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], undefined, message);
+        this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
 
         break;
 
@@ -836,7 +794,7 @@ Host.prototype.deserialize = function(data) {
         //  this.log.log('log','Event handlers channel ' + message.response.channel,this.channel[message.response.channel]._events);
       } */
 
-        this.channel[message.response.channel].emit(event, undefined, message.response);
+        this.channel[message.response.channel].emit(event, NO_ERROR, message.response);
 
         break;
 

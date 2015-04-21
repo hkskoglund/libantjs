@@ -30,10 +30,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     if (this.sequenceNr === 0)
     {
-      sequence = 'first';
+      sequence = 'FIRST';
     } else if (this.sequenceNr & 0x4)
     {
-      sequence = 'last';
+      sequence = 'LAST';
     }
 
     return AcknowledgedDataMessage.prototype.toString.call(this) + ' CH ' + (this.channel & 0x1F) +
