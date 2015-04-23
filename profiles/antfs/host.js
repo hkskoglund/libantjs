@@ -19,9 +19,9 @@ var Channel = require('../../channel/channel'),
   DownloadRequest  = require('./lib/request-response/downloadRequest'),
   EraseRequest = require('./lib/request-response/eraseRequest');
 
-function Host(options, host, channel, net, deviceNumber, hostname, download, erase,ls) {
+function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, erase,ls, skipNewFiles, ignoreBusyState) {
 
-  Channel.call(this, options, host, channel, net);
+  Channel.call(this, options, ANTHost, channel, net);
 
   // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
@@ -62,13 +62,15 @@ function Host(options, host, channel, net, deviceNumber, hostname, download, era
 
   this.authenticationManager = new AuthenticationManager(this);
 
-  this.transportManager = new TransportManager(this, download,erase,ls);
+  this.transportManager = new TransportManager(this, download, erase, ls, skipNewFiles);
 
   this.beacon = new ClientBeacon();
 
   this.on('EVENT_TRANSFER_TX_FAILED', this.sendRequest);
   this.on('EVENT_TRANSFER_RX_FAILED', this.sendRequest);
   this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
+
+  this.option.ignoreBusyState = ignoreBusyState;
 
 }
 
@@ -90,7 +92,6 @@ Host.prototype.onBeacon = function(beacon) {
 
   if (this.log.logging)
     this.log.log('log', this.beacon.toString());
-
 
   // Client dropped to link
   if (!this.layerState.isLink() && this.beacon.clientDeviceState.isLink())
@@ -177,6 +178,7 @@ Host.prototype.connect = function(callback) {
       if (this.log.logging)
         this.log.log('log', 'Connecting, host state now ' + this.layerState.toString());
     }
+
     callback(err, msg);
 
   }.bind(this);
@@ -252,7 +254,8 @@ Host.prototype.sendRequest = function (e,m)
 
     // Don't send new request if another request is in progress
 
-    if (!client.isBusy() && this.isTracking() && !this.isTransferInProgress() && this.session && this.session.request &&
+    //if (!client.isBusy() && this.isTracking() && !this.isTransferInProgress() && this.session && this.session.request &&
+    if ((!client.isBusy() || (client.isBusy() && this.option.ignoreBusyState)) && this.isTracking() && !this.isTransferInProgress() && this.session && this.session.request &&
          (
            ( this.session.hasBurstResponse && !this.session.response && !this.session.TxCompleted) ||
            (!this.session.hasBurstResponse &&                           !this.session.TxCompleted) ||
@@ -302,6 +305,14 @@ Host.prototype.sendRequest = function (e,m)
            clearTimeout(this.burstResponseTimeout);
            this.burstResponseTimeout = undefined;
          }
+
+         // Try sending request as soon as possible, even before client reset busy state (not recommended)
+         if (client.isBusy() && this.option.ignoreBusyState)
+         {
+           if (this.log.logging)
+             this.log.log('log','Client is busy, ignoring busy state optimization of transfer');
+         }
+
 
         this.session.sendFunc();
       }

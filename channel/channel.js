@@ -16,6 +16,8 @@
 
     options.logSource = this;
 
+    this.option = options;
+
     this.log = options.logger || new Logger(options);
 
     this.host = host; // Allows access to host API for channel (wrappers)
@@ -322,8 +324,17 @@
   };
 
   Channel.prototype.open = function(callback) {
-    this.host.emit('open', this.channel);
-    this.host.openChannel(this.channel, callback);
+
+    var cb = function _openCB (e,m)
+    {
+        if (!e)
+         this.host.emit('open', this.channel);
+
+        callback.apply(this,arguments);
+
+    }.bind(this);
+
+    this.host.openChannel(this.channel, cb);
   };
 
   Channel.prototype.openScan = function(callback) {

@@ -25,9 +25,16 @@ var EventEmitter = require('events'),
 
 // heap = require('/usr/lib/node_modules/heapdump');
 
-function TransportManager(host, download,erase,ls) {
+function TransportManager(host, download,erase,ls,skipNewFiles) {
 
   EventEmitter.call(this);
+
+  this.option = {
+    download : download,
+    erase : erase,
+    ls : ls,
+    skipNewFiles : skipNewFiles
+  };
 
   this.host = host;
 
@@ -46,6 +53,9 @@ function TransportManager(host, download,erase,ls) {
 
   this.addDownloadTask(download);
   this.addEraseTask(erase);
+
+  if (this.log.logging)
+    this.log.log('log','Transport option',this.option);
 
 }
 
@@ -445,7 +455,7 @@ TransportManager.prototype.onTransport = function() {
 
     this.execTaskIndex++;
 
-    if (this.execTaskIndex === 1) { // First iteration downloads directory at index 0
+    if (this.execTaskIndex === 1 && !this.option.skipNewFiles) { // First iteration downloads directory at index 0
 
       newFiles = this.directory.getNewFITfiles();
 
@@ -498,6 +508,7 @@ TransportManager.prototype.onTransport = function() {
          {
            // TEST  this.execTaskIndex = -1;
            // TEST   onNextTask();
+           // TEST ignore busy state console.timeEnd('transport');
            this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
          }
     }
@@ -510,6 +521,8 @@ TransportManager.prototype.onTransport = function() {
 
   if (this.log.logging)
    this.log.log('log','Starting with task', this.task);
+
+  // TEST ignore busy state console.time('transport');
 
   onNextTask();
 
