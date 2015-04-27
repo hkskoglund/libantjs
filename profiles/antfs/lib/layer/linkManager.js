@@ -54,18 +54,17 @@ LinkManager.prototype.onReset = function() {
 };
 
 LinkManager.prototype.onBeacon = function(beacon) {
-  var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3;
+  var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3; // Require client not sending a couple of LINK beacons and then closes channel
 
   if (beacon.clientDeviceState.isLink()) {
     this.linkBeaconCount++;
     //console.log('lcount', this.linkBeaconCount);
     //  this.host.state.set(State.prototype.LINK);
-    if (this.linkBeaconCount >= MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
-      this.linkBeaconCount = -1;
+    if (this.linkBeaconCount === MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
       this.emit('link');
     } else {
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP + ' LINK beacons from client, now at ' + this.linkBeaconCount);
+        this.log.log('log', 'Waiting for ' + MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP + ' client LINK before host LINK request, now at ' + this.linkBeaconCount);
     }
   }
 
@@ -115,6 +114,8 @@ LinkManager.prototype.onLink = function() {
       this.sendAcknowledged(linkRequest, onSentToANT);
 
     }.bind(this.host);
+
+
 
 
   if (this.host.frequency !== this.host.NET.FREQUENCY.ANTFS)

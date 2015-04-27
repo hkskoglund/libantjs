@@ -14,6 +14,9 @@ var EventEmitter = require('events'),
   EraseRequest = require('../request-response/eraseRequest'),
   EraseResponse = require('../request-response/eraseResponse'),
 
+  UploadRequest = require('../request-response/uploadRequest'),
+  UploadResponse = require('../request-response/uploadRequestResponse'),
+
   CRC = require('./util/crc'),
   crc = new CRC(),
 
@@ -98,6 +101,12 @@ TransportManager.prototype.onBurst = function(burst) {
     case EraseResponse.prototype.ID:
 
       this.onEraseResponse(responseData);
+
+      break;
+
+    case UploadResponse.prototype.ID:
+
+      this.onUploadResponse(responseData);
 
       break;
 
@@ -213,6 +222,15 @@ TransportManager.prototype.onEraseResponse = function(responseData) {
 
       this.host.emit('erase', response, this.session);
   }
+};
+
+TransportManager.prototype.onUploadResponse = function(responseData)
+{
+  var response;
+
+  response = new UploadResponse(responseData);
+
+  console.log('upload response',response, response.toString());
 };
 
 TransportManager.prototype.onDownloadResponse = function(responseData) {
@@ -525,6 +543,18 @@ TransportManager.prototype.onTransport = function() {
   // TEST ignore busy state console.time('transport');
 
   onNextTask();
+
+/*
+  var req = new UploadRequest(UploadRequest.prototype.COMMAND_PIPE,16384,0);
+  console.log('upload req',req);
+
+  this.session = {
+    index: UploadRequest.prototype.COMMAND_PIPE,
+    request: [],
+    response: [],
+  };
+
+  this.sendRequest(req); */
 
 };
 

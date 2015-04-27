@@ -59,7 +59,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   DownloadResponse.prototype.toString = function() {
 
-    var msg = 'DOWNLOAD ';
+    var msg = '';
 
     switch (this.result) {
 
@@ -75,7 +75,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         msg += 'Exists, but is not downloadable';
         break;
 
-      case DownloadResponse.prototype.NOT_READY_TO_DOWNLOAD:
+      case DownloadResponse.prototype.NOT_READY:
         msg += 'Not ready to download';
         break;
 
@@ -88,7 +88,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         break;
     }
 
-    return msg + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
+    return this.constructor.name + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
       this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
   };

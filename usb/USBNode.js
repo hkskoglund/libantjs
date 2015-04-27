@@ -15,7 +15,7 @@ function USBNode(options) {
   this.usb = usb;
 
   if (this.options.debugLevel)
-    this.usb.setDebugLevel(this.options.debugLevel);
+    this.usb.setDebugLevel(this.options.debugLevel || 0);
 
 }
 
