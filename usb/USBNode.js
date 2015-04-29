@@ -51,13 +51,33 @@ USBNode.prototype._onAttach = function(device) {
 USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
 
   var manufacturer,
-    product;
+    product,
+    filter = function _strfiltler (str)
+    {
+      var i,charCode,newStr='';
+
+      for (i=0;i<str.length;i++)
+      {
+        charCode = str.charCodeAt(i);
+        if (!(charCode >= 65 && charCode <= 90 ||
+           charCode >= 48 && charCode <= 57 ||
+           charCode >= 97 && charCode <= 122 ||
+           charCode >= 44 && charCode <= 46
+           {
+             newStr += ' ';
+           }
+        else
+          newStr += str[i];
+      }
+
+      return newStr.trimLeft().trimRight();
+    }
 
   device.getStringDescriptor(device.deviceDescriptor.iManufacturer, function _manufacturer(error, data) {
 
     if (!error) {
 
-      manufacturer = data;
+      manufacturer = filter(data);
     }
 
     // THEN
@@ -66,7 +86,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
 
       if (!error) {
 
-        product = data;
+        product = filter(data);
       }
 
       retrn(error, {
