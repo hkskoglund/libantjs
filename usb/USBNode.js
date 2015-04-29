@@ -52,12 +52,11 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
 
   var manufacturer,
     product,
-    filter = function _strfiltler (str)
-    {
+    filter = function _strfiltler(str) {
       var i = str.indexOf('\u0000');
       // Descriptor is a null terminated string
       if (i !== -1)
-        return str.substring(0,i); // ignore characters after null
+        return str.substring(0, i); // ignore characters after null
       else
         return str;
     };
@@ -212,36 +211,34 @@ USBNode.prototype._claimInterface = function(retrn) {
 
   // Issue : Windows driver may not support API call isKernelDriverActive
 
-  try
-  {
+  try {
     isKernelDriverActive = this.deviceInterface.isKernelDriverActive();
-  } catch (e)
-  {
+
+  } catch (e) {
     if (this.log.logging)
-      this.log.log('error','isKernelDriverActive API call failed ' + process.platform + '-' + process.arch,e);
+      this.log.log('error', 'isKernelDriverActive API call failed ' + process.platform + '-' + process.arch, e);
 
-  }
-
-  if (this.log.logging) {
-    this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', isKernelDriverActive);
   }
 
   if (isKernelDriverActive) {
 
-      this.deviceInterface.detachKernelDriver();
+    if (this.log.logging) {
+      this.log.log(USBDevice.prototype.EVENT.LOG, 'Detaching kernel driver');
+    }
 
-      this.once('attachKernelDriver', function _detachKernelDriver() {
+    this.deviceInterface.detachKernelDriver();
 
-        if (this.log.logging) {
-          this.log.log(USBDevice.prototype.EVENT.LOG, 'Reattaching kernel driver');
-        }
+    this.once('attachKernelDriver', function _attachKernelDriver() {
 
-        this.deviceInterface.attachKernelDriver();
+      if (this.log.logging) {
+        this.log.log(USBDevice.prototype.EVENT.LOG, 'Reattaching kernel driver');
+      }
 
-      }.bind(this));
+      this.deviceInterface.attachKernelDriver();
 
-}
+    }.bind(this));
 
+  }
 
   // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
@@ -290,7 +287,7 @@ USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
   if (this.device) {
 
     if (this.log.logging)
-      this.log.log('log','Init device '  + preferredDeviceIndex + ' ' + this.deviceToString(this.device));
+      this.log.log('log', 'Init device ' + preferredDeviceIndex + ' ' + this.deviceToString(this.device));
 
     this.device.open();
 
@@ -413,7 +410,7 @@ USBNode.prototype.setOutEndpointTimeout = function(timeout) {
 USBNode.prototype.listen = function() {
 
   if (this.log.logging)
-    this.log.log('log','Start polling on in endpoint');
+    this.log.log('log', 'Start polling on in endpoint');
 
   this.inEndpoint.startPoll();
 
