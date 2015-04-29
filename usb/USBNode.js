@@ -59,6 +59,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
       for (i=0;i<str.length;i++)
       {
         charCode = str.charCodeAt(i);
+        console.log(str[i],charCode);
         if (!(charCode >= 65 && charCode <= 90 ||
            charCode >= 48 && charCode <= 57 ||
            charCode >= 97 && charCode <= 122 ||
