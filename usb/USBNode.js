@@ -214,14 +214,15 @@ USBNode.prototype._claimInterface = function(retrn) {
   } catch (e)
   {
     if (this.log.logging)
-      this.log.log('error','isKernelDriverActive API call failed',e);
+      this.log.log('error','isKernelDriverActive API call failed ' + process.platform + '-' + process.arch,e);
+
   }
 
   if (this.log.logging) {
-    this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', this.deviceInterface.isKernelDriverActive());
+    this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', isKernelDriverActive);
   }
 
-  if (this.deviceInterface.isKernelDriverActive()) {
+  if (isKernelDriverActive) {
 
     if (this.options.allowDetachKernelDriver) {
       if (this.log.logging) {
