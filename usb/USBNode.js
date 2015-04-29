@@ -199,10 +199,23 @@ USBNode.prototype.ERROR = {
 
 USBNode.prototype._claimInterface = function(retrn) {
 
+  var isKernelDriverActive;
+
   this.deviceInterface = this.device.interface();
 
   // Linux can have kernel driver attached to ANT USB; "usb_serial_simple"
   // Can be verified with lsmod | grep usb
+
+  // Issue : Windows driver may not support API call isKernelDriverActive
+
+  try
+  {
+    isKernelDriverActive = this.deviceInterface.isKernelDriverActive();
+  } catch (e)
+  {
+    if (this.log.logging)
+      this.log.log('error','isKernelDriverActive API call failed',e);
+  }
 
   if (this.log.logging) {
     this.log.log(USBDevice.prototype.EVENT.LOG, 'isKernelDriverActive', this.deviceInterface.isKernelDriverActive());
