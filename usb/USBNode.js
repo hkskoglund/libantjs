@@ -57,7 +57,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
       var i = str.indexOf('\u0000');
       // Descriptor is a null terminated string
       if (i !== -1)
-        return str.substring(0,i);
+        return str.substring(0,i); // ignore characters after null
       else
         return str;
     };
@@ -199,11 +199,6 @@ USBNode.prototype.ERROR = {
     code: -3
   },
 
-  NO_ALLOWDETACHKERNELDRIVER: {
-    message: 'OS kernel driver present on interface, no allowDetachKernelDriver option specified, cannot release it',
-    code: -4
-  }
-
 };
 
 USBNode.prototype._claimInterface = function(retrn) {
@@ -233,11 +228,6 @@ USBNode.prototype._claimInterface = function(retrn) {
 
   if (isKernelDriverActive) {
 
-    if (this.options.allowDetachKernelDriver) {
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, 'Detaching kernel driver');
-      }
-
       this.deviceInterface.detachKernelDriver();
 
       this.once('attachKernelDriver', function _detachKernelDriver() {
@@ -250,15 +240,8 @@ USBNode.prototype._claimInterface = function(retrn) {
 
       }.bind(this));
 
-    } else {
+}
 
-      if (this.log.logging) {
-        this.log.log(USBDevice.prototype.EVENT.LOG, USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message);
-      }
-      retrn(new Error(USBNode.prototype.ERROR.NO_ALLOWDETACHKERNELDRIVER.message));
-      return;
-    }
-  }
 
   // http://www.beyondlogic.org/usbnutshell/usb5.shtml
 
