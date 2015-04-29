@@ -62,7 +62,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
         if (!(charCode >= 65 && charCode <= 90 ||
            charCode >= 48 && charCode <= 57 ||
            charCode >= 97 && charCode <= 122 ||
-           charCode >= 44 && charCode <= 46
+           charCode >= 44 && charCode <= 46))
            {
              newStr += ' ';
            }
@@ -71,7 +71,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
       }
 
       return newStr.trimLeft().trimRight();
-    }
+    };
 
   device.getStringDescriptor(device.deviceDescriptor.iManufacturer, function _manufacturer(error, data) {
 
