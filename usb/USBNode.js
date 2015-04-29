@@ -54,24 +54,12 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
     product,
     filter = function _strfiltler (str)
     {
-      var i,charCode,newStr='';
-
-      for (i=0;i<str.length;i++)
-      {
-        charCode = str.charCodeAt(i);
-        console.log(str[i],charCode);
-        if (!(charCode >= 65 && charCode <= 90 ||
-           charCode >= 48 && charCode <= 57 ||
-           charCode >= 97 && charCode <= 122 ||
-           charCode >= 44 && charCode <= 46))
-           {
-             newStr += ' ';
-           }
-        else
-          newStr += str[i];
-      }
-
-      return newStr.trimLeft().trimRight();
+      var i = str.indexOf('\u0000');
+      // Descriptor is a null terminated string
+      if (i !== -1)
+        return str.subString(0,i);
+      else
+        return str;
     };
 
   device.getStringDescriptor(device.deviceDescriptor.iManufacturer, function _manufacturer(error, data) {
