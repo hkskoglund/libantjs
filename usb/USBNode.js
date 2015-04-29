@@ -57,7 +57,7 @@ USBNode.prototype._getManufacturerAndProduct = function(device, retrn) {
       var i = str.indexOf('\u0000');
       // Descriptor is a null terminated string
       if (i !== -1)
-        return str.subString(0,i);
+        return str.substring(0,i);
       else
         return str;
     };
