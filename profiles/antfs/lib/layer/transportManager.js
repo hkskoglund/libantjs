@@ -489,8 +489,9 @@ TransportManager.prototype.onTransport = function() {
 
     }
 
-    // TEST if (this.task[this.execTaskIndex])
-    // TEST  this.task[this.execTaskIndex].done = false;
+    /* TEST  if (this.task[this.execTaskIndex])
+            this.task[this.execTaskIndex].done = false;
+    */
 
     if (this.execTaskIndex < this.task.length && !this.task[this.execTaskIndex].done) {
 
@@ -520,7 +521,7 @@ TransportManager.prototype.onTransport = function() {
 
       inCompleteTask = this.task.filter(function _taskFilter(task)  {  return !task.done && task.retry < 3; });
 
-      // TEST inCompleteTask = { length : 1};
+    // TEST inCompleteTask = { length : 1};
 
       if (inCompleteTask.length) {
 

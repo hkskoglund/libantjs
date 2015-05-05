@@ -148,7 +148,7 @@ Host.prototype.onBurst = function(burst) {
 
 Host.prototype.onTxCompleted = function ()
 {
-  var BURST_RERSPONSE_TIMEOUT = 3000,
+  var BURST_RERSPONSE_TIMEOUT = this.period / 32768 * 1000 * 8,
       NO_ERROR;
 
     this.session.TxCompleted = true;
@@ -158,11 +158,6 @@ Host.prototype.onTxCompleted = function ()
     {
     // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
     // During pairing, user intervention is necessary, so don't enable timeout
-
-          /*||
-
-          (this.session.request instanceof AuthenticateRequest &&
-          this.session.request.commandType === AuthenticateRequest.prototype.CLIENT_SERIAL_NUMBER); */
 
      this.session.burstResponseTimeout =  setTimeout(this.sendRequest.bind(this,NO_ERROR,'Client burst response timeout ' + BURST_RERSPONSE_TIMEOUT + ' ms'),
                                                      BURST_RERSPONSE_TIMEOUT);
@@ -256,7 +251,7 @@ Host.prototype.initRequest = function (request, callback)
 
 Host.prototype.sendRequest = function (e,m)
 {
-  var MAX_RETRIES = 10,
+  var MAX_RETRIES = 15,
       err;
 
   if (this.isTransferInProgress() || !this.isTracking()) // Channel can drop to search state (RX_FAIL_GOTO_SEARCH), we have to check for tracking
