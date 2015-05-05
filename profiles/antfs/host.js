@@ -43,7 +43,7 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
 
   this.on('data', this.onBroadcast.bind(this)); // decodes client beacon
 
-  this.on('burst', this.onBurst.bind(this)); // decodes client beacon
+  this.on('burst', this.onBurst.bind(this)); // decodes client beacon - 1 packet of burst
 
   this.on('beacon', this.onBeacon.bind(this));
 
@@ -71,6 +71,8 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
   this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
 
   this.option.ignoreBusyState = ignoreBusyState;
+
+  this.session = {};
 
 }
 
@@ -101,8 +103,8 @@ Host.prototype.onBeacon = function(beacon) {
 
     this.emit('reset');
   }
-  else
-    this.sendRequest(NO_ERROR,'Next client beacon');
+  else if (this.session.request && !this.session.TxCompleted && !this.session.response)
+    this.sendRequest(NO_ERROR,'onBeacon');
 };
 
 Host.prototype.onBroadcast = function(broadcast) {
@@ -124,7 +126,7 @@ Host.prototype.onBroadcast = function(broadcast) {
 
 Host.prototype.onBurst = function(burst) {
 
-  clearTimeout(this.burstResponseTimeout);
+  clearTimeout(this.session.burstResponseTimeout);
 
   this.session.response = burst;
 
@@ -146,7 +148,28 @@ Host.prototype.onBurst = function(burst) {
 
 Host.prototype.onTxCompleted = function ()
 {
-  this.session.TxCompleted = true;
+  var BURST_RERSPONSE_TIMEOUT = 3000,
+      NO_ERROR;
+
+    this.session.TxCompleted = true;
+
+    if (this.session.hasBurstResponse && !(this.session.request instanceof AuthenticateRequest &&
+          this.session.request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
+    {
+    // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
+    // During pairing, user intervention is necessary, so don't enable timeout
+
+          /*||
+
+          (this.session.request instanceof AuthenticateRequest &&
+          this.session.request.commandType === AuthenticateRequest.prototype.CLIENT_SERIAL_NUMBER); */
+
+     this.session.burstResponseTimeout =  setTimeout(this.sendRequest.bind(this,NO_ERROR,'Client burst response timeout ' + BURST_RERSPONSE_TIMEOUT + ' ms'),
+                                                     BURST_RERSPONSE_TIMEOUT);
+
+     if (this.log.logging)
+       this.log.log('log', 'Burst response timeout running', this.session.burstResponseTimeout);
+     }
 };
 
 Host.prototype.getHostname = function() {
@@ -164,7 +187,7 @@ Host.prototype.getClientFriendlyname = function() {
 Host.prototype.onReset = function(err, callback) {
 
   clearTimeout(this.beaconTimeout);
-  clearTimeout(this.burstResponseTimeout);
+  clearTimeout(this.session.burstResponseTimeout);
   this.session = {};
 
 };
@@ -207,9 +230,8 @@ Host.prototype.getHostSerialNumber = function() {
 
 Host.prototype.initRequest = function (request, callback)
 {
-  var NO_ERROR;
-
-  var serializedRequest = request.serialize();
+  var NO_ERROR,
+      serializedRequest = request.serialize();
 
   this.session = {};
 
@@ -220,116 +242,64 @@ Host.prototype.initRequest = function (request, callback)
   // is a possibility of failed receive of burst (EVENT_TRANSFER_RX_FAILED)
 
   this.session.hasBurstResponse = [0x04,0x09,0x0A,0x0B,0x0C].indexOf(request.ID) !== -1;
-  if (this.session.hasBurstResponse)
-   this.session.burstResponseTimeoutFired = false;
 
   this.session.retry = -1;
 
-  this.session.TxCompleted = false; // set to true in onTxCompleted callback
-
   if (serializedRequest.length <= 8)
-    this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, serializedRequest, callback);
+   this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, serializedRequest, callback);
   else
-    this.session.sendFunc = Channel.prototype.sendBurst.bind(this, serializedRequest, callback);
+   this.session.sendFunc = Channel.prototype.sendBurst.bind(this, serializedRequest, callback);
 
-  if (this.log.logging)
-    this.log.log('log','Init request',this.session);
 
-  this.sendRequest(NO_ERROR,'Init request');
+  this.sendRequest(NO_ERROR,request);
 };
 
 Host.prototype.sendRequest = function (e,m)
 {
-  var err,
-      NO_ERROR,
-      MAX_RETRIES = 7,
-      client = this.beacon.clientDeviceState,
-      retryMsg,
-      burstResponseTimeout = 16 * ( this.period / 32768) * 1000 + 1000;
+  var MAX_RETRIES = 10,
+      err;
 
-    // Spec. 9.4 "The busy state is not cleared from the client beacon until after the appropiate response has been sent"
-    // "The host shall not send a request to the client while the beacon indicates it is in the busy state"
+  if (this.isTransferInProgress() || !this.isTracking()) // Channel can drop to search state (RX_FAIL_GOTO_SEARCH), we have to check for tracking
+    return;
 
-    // Check for tracking channel - Channel has infinite timeout, only drops to search in EVENT_RX_FAILED_GOTO_SEARCH
+  if (this.beacon.clientDeviceState.isBusy() && !this.option.ignoreBusyState)
+  {
+    if (this.log.logging)
+      this.log.log('log','Client is busy, cannot send request now', this.session);
 
-    // Don't send new request if another request is in progress
+    return;
+  }
 
-    //if (!client.isBusy() && this.isTracking() && !this.isTransferInProgress() && this.session && this.session.request &&
-    if ((!client.isBusy() || (client.isBusy() && this.option.ignoreBusyState)) && this.isTracking() && !this.isTransferInProgress() && this.session && this.session.request &&
-         (
-           ( this.session.hasBurstResponse && !this.session.response && !this.session.TxCompleted) ||
-           (!this.session.hasBurstResponse &&                           !this.session.TxCompleted) ||
-           ( this.session.hasBurstResponse && !this.session.response &&  this.session.TxCompleted && this.session.burstResponseTimeoutFired) ||
-           ( this.session.hasBurstResponse && !this.session.response &&  this.session.TxCompleted && (m instanceof ChannelResponseEvent && m.isTransferRxFailed()))
-         )
-       )
-    {
+  clearTimeout(this.session.burstResponseTimeout);
 
-      if (++this.session.retry <= MAX_RETRIES)
-      {
+  if (++this.session.retry <= MAX_RETRIES)
+  {
 
-        if (this.session.retry)
-        {
+    if (this.log.logging)
+      this.log.log('log','Sending request, retry '  + this.session.retry +' ' + m.toString());
 
-          if (this.log.logging) {
-            retryMsg = 'Retry ' + this.session.retry + ' sending request';
-            if (m)
-              retryMsg += ' ' + m.toString();
+   this.session.TxCompleted = false;
 
-            this.log.log('log',retryMsg,this.session,m);
-          }
-
-        }
-
-        clearTimeout(this.burstResponseTimeout);
-
-        if (this.session.hasBurstResponse)
-        {
-
-          // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
-          // During pairing, user intervention is necessary, so don't enable timeout
-
-          if (!(this.session.request instanceof AuthenticateRequest && this.session.request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING) ||
-              !(this.session.request instanceof AuthenticateRequest && this.session.request.commandType === AuthenticateRequest.prototype.CLIENT_SERIAL_NUMBER))
-          {
-
-             this.session.burstResponseTimeoutFired = false;
-             this.burstResponseTimeout = setTimeout(function _burstResponseTimeout ()
-                                                    {
-                                                      this.session.burstResponseTimeoutFired = true;
-                                                      this.sendRequest.call(this,NO_ERROR,'Client burst response timeout ' + burstResponseTimeout + ' ms');
-                                                    }.bind(this), burstResponseTimeout);
-          }
-        } else
-         {
-           clearTimeout(this.burstResponseTimeout);
-           this.burstResponseTimeout = undefined;
-         }
-
-         // Try sending request as soon as possible, even before client reset busy state (not recommended)
-         if (client.isBusy() && this.option.ignoreBusyState)
-         {
-           if (this.log.logging)
-             this.log.log('log','Client is busy, ignoring busy state optimization of transfer');
-         }
-
-
-        this.session.sendFunc();
-      }
-
-      else
-        {
-          err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
-
-          if (this.session.request instanceof DownloadRequest)
-            this.emit('download', err);
-          else if (this.session.request instanceof EraseRequest)
-            this.emit('erase',err);
-        }
+    this.session.sendFunc(); // Acknowleded or burst setup in initRequest
 
   }
 
-};
+  else
+
+  {
+
+      err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
+
+      if (this.session.request instanceof DownloadRequest)
+
+        this.emit('download', err);
+
+      else if (this.session.request instanceof EraseRequest)
+
+        this.emit('erase',err);
+
+  }
+}
 
 // Override Channel
 Host.prototype.sendAcknowledged = function(request, callback) {

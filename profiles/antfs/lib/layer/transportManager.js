@@ -136,9 +136,9 @@ TransportManager.prototype.onErase = function (error,session)
   filename = session.file.getFileName();
 
   if (!error)
-    console.log('Erased ' + filename);
+    if (this.log.logging) this.log.log('log','Erased ' + filename);
   else
-   console.log('Failed file erase index ' + session.index + ' ' + error.toString());
+   if (this.log.logging) this.log.log('log','Failed file erase index ' + session.index + ' ' + error.toString());
 
 };
 
@@ -259,8 +259,10 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
         if (this.session.request[0].maxBlockSize === 0) // Infer client block length
           this.session.maxBlockSize = response.length;
 
-        if (this.session.index)
-          console.log('Downloading ' + this.session.file.getFileName() + ' (' + response.fileSize + ' bytes)');
+        if (this.session.index) {
+          if (this.log.logging)
+          this.log.log('log','Downloading ' + this.session.file.getFileName() + ' (' + response.fileSize + ' bytes)');
+        }
 
       }
 
@@ -453,7 +455,7 @@ var filename;
   } else
     if (error)
     {
-      console.error('Failed download index ' + session.index + ' ' + error.toString());
+      if (this.log.logging) this.log.log('error','Failed download index ' + session.index + ' ' + error.toString());
     }
 
 };
@@ -487,6 +489,9 @@ TransportManager.prototype.onTransport = function() {
 
     }
 
+    // TEST if (this.task[this.execTaskIndex])
+    // TEST  this.task[this.execTaskIndex].done = false;
+
     if (this.execTaskIndex < this.task.length && !this.task[this.execTaskIndex].done) {
 
       if (this.log.logging)
@@ -515,6 +520,8 @@ TransportManager.prototype.onTransport = function() {
 
       inCompleteTask = this.task.filter(function _taskFilter(task)  {  return !task.done && task.retry < 3; });
 
+      // TEST inCompleteTask = { length : 1};
+
       if (inCompleteTask.length) {
 
         this.incompleteTaskTimeout =  setTimeout(function _retryIncompleteTask()
@@ -526,7 +533,9 @@ TransportManager.prototype.onTransport = function() {
          {
            // TEST  this.execTaskIndex = -1;
            // TEST   onNextTask();
-           // TEST ignore busy state console.timeEnd('transport');
+           // TEST ignore busy state
+           if (this.log.loggging)
+             console.timeEnd('Transport');
            this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
          }
     }
@@ -540,7 +549,9 @@ TransportManager.prototype.onTransport = function() {
   if (this.log.logging)
    this.log.log('log','Starting with task', this.task);
 
-  // TEST ignore busy state console.time('transport');
+  // TEST ignore busy state
+  if (this.log.logging)
+    console.time('Transport');
 
   onNextTask();
 
