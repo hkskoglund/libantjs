@@ -12,7 +12,7 @@ var EventEmitter = require('events'),
   fs = require('fs');
 
 function AuthenticationManager(host) {
-  
+
   EventEmitter.call(this);
 
   this.host = host;
@@ -289,8 +289,11 @@ AuthenticationManager.prototype.onAuthenticate = function() {
 
     onPairing = function _onPairing(err, response) {
 
-      if (err)
+      if (err) {
         this.host.layerState.setLink(); // Client will return to LINK layer immediatly, no need to send DISCONNECT
+        this.host.emit('reset'); // clear timeouts
+        this.host.host.emit('transport_end'); // i.e exit ant host in event handler
+      }
 
       else
 

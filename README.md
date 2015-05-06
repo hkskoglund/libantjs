@@ -4,13 +4,12 @@ A javascript implementation of the ANT protocol that interfaces with ANT USB sti
 
 Tested on platform:
 
-    1. Fedora 21 - 3.18.8-201.fc21.x86_64
-    2. iojs 1.4.1
-    3. libusbx 1.0.19
+    1. Fedora
+    2. iojs
 
 Used utilities:
 
-    1. Atom.io editor 0.186
+    1. Atom.io editor
 
 #### Message support matrix
 
