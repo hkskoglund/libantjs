@@ -262,6 +262,41 @@ Host.prototype.initRequest = function (request, callback)
   this.sendRequest(NO_ERROR,request);
 };
 
+Host.prototype.sendNow = function (e,m)
+{
+  var MAX_RETRIES = 15,
+      err;
+
+  if (!this.isTracking()) // in case RX_FAIL_GOTO_SEARCH
+    return;
+
+  clearTimeout(this.session.burstResponseTimeout);
+
+  if (++this.session.retry <= MAX_RETRIES)
+  {
+
+    if (this.log.logging)
+      this.log.log('log','Sending request, retry '  + this.session.retry +' ' + m.toString());
+
+    this.session.sendFunc(); // Acknowleded or burst setup in initRequest
+
+  }
+  else
+  {
+
+    err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
+
+    if (this.session.request instanceof DownloadRequest)
+
+      this.emit('download', err);
+
+    else if (this.session.request instanceof EraseRequest)
+
+      this.emit('erase',err);
+  }
+};
+
+
 Host.prototype.sendRequest = function (e,m)
 {
 
