@@ -273,10 +273,6 @@ USBNode.prototype._onOutEndpointEnd = function() {
 
 USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
 
-  var antInterface,
-    err,
-    antDevices;
-
   this.usb.on('attach', this._onAttach.bind(this)); // USB listen for attached listener 'newListener' and  enableHotplugEvents for any devices
   this.usb.on('detach', this._onDetach.bind(this)); // USB listen for detached listener 'removedListener' and disableHotplugEvents for any devices
 
@@ -291,7 +287,18 @@ USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
 
     this.device.open();
 
-    this._claimInterface(retrn);
+    // Discard data in buffers, i.e user exit without closing channels (will fill buffers with broadcasts)
+    this.device.reset(function _reset(e)
+    {
+      if (e)
+        {
+          if (this.log.logging)
+            this.log.log('error','Failed to reset device',e);
+        }
+
+      this._claimInterface(retrn);
+
+    }.bind(this));
 
   } else {
     this._generateError(this.ERROR.NO_DEVICE, retrn);
