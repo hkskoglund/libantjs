@@ -50,7 +50,9 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
 
   this.on('reset', this.onReset.bind(this));
 
+
   this.on('directory', function _onDirectory(lsl) {
+    /*jshint -W117 */
    if (ls)
       console.log(lsl);
   });
@@ -84,7 +86,7 @@ Host.prototype.onRxFailGoToSearch = function (e,m)
 {
   clearTimeout(this.session.burstResponseTimeout);
   this.once('HOST_CHANNEL_OPEN', this.sendNow.bind(this,e,m)); // Queue on next beacon
-}
+};
 
 Host.prototype.onBeacon = function(beacon) {
   var NO_ERROR,
@@ -260,85 +262,6 @@ Host.prototype.initRequest = function (request, callback)
   this.sendRequest(NO_ERROR,request);
 };
 
-Host.prototype.sendRequestOLD = function (e,m)
-{
-  var MAX_RETRIES = 15,
-      err;
-
-  if (this.isTransferInProgress() || !this.isTracking()) // Channel can drop to search state (RX_FAIL_GOTO_SEARCH), we have to check for tracking
-    return;
-
-  if (this.beacon.clientDeviceState.isBusy() && !this.option.ignoreBusyState)
-  {
-    if (this.log.logging)
-      this.log.log('log','Client is busy, cannot send request now', this.session);
-
-
-
-    return;
-  }
-
-  clearTimeout(this.session.burstResponseTimeout);
-
-  if (++this.session.retry <= MAX_RETRIES)
-  {
-
-    if (this.log.logging)
-      this.log.log('log','Sending request, retry '  + this.session.retry +' ' + m.toString());
-
-   this.session.TxCompleted = false;
-
-    this.session.sendFunc(); // Acknowleded or burst setup in initRequest
-
-  }
-  else
-  {
-    err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
-
-    if (this.session.request instanceof DownloadRequest)
-
-      this.emit('download', err);
-
-    else if (this.session.request instanceof EraseRequest)
-
-      this.emit('erase',err);
-  }
-}
-
-Host.prototype.sendNow = function (e,m)
-{
-  var MAX_RETRIES = 15,
-      err;
-
-  if (!this.isTracking()) // in case RX_FAIL_GOTO_SEARCH
-    return;
-
-  clearTimeout(this.session.burstResponseTimeout);
-
-  if (++this.session.retry <= MAX_RETRIES)
-  {
-
-    if (this.log.logging)
-      this.log.log('log','Sending request, retry '  + this.session.retry +' ' + m.toString());
-
-    this.session.sendFunc(); // Acknowleded or burst setup in initRequest
-
-  }
-  else
-  {
-
-    err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
-
-    if (this.session.request instanceof DownloadRequest)
-
-      this.emit('download', err);
-
-    else if (this.session.request instanceof EraseRequest)
-
-      this.emit('erase',err);
-  }
-}
-
 Host.prototype.sendRequest = function (e,m)
 {
 
@@ -355,7 +278,7 @@ Host.prototype.sendRequest = function (e,m)
   else
     this.sendNow(e,m);
 
-}
+};
 
 // Override Channel
 Host.prototype.sendAcknowledged = function(request, callback) {
