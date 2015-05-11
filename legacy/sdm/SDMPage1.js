@@ -171,4 +171,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   module.exports = SDMPage1;
 
-  return module.exports;
+  

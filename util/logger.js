@@ -119,4 +119,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   module.exports = Logger;
-  return module.exports;
+  

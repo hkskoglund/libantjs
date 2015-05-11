@@ -326,4 +326,4 @@ AuthenticationManager.prototype.onAuthenticate = function() {
 };
 
 module.exports = AuthenticationManager;
-return module.exports;
+

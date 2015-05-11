@@ -102,4 +102,4 @@
 
   module.exports = GenericPage;
 
-  return module.exports;
+  

@@ -51,4 +51,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   module.exports = ManufacturerId;
-  return module.exports;
+  

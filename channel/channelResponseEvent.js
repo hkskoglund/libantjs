@@ -121,4 +121,4 @@
   };
 
   module.exports = ChannelResponse;
-  return module.exports;
+  

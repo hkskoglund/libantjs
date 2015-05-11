@@ -27,4 +27,4 @@ EraseRequest.prototype.toString = function() {
 };
 
 module.exports = EraseRequest;
-return module.exports;
+

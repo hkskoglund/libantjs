@@ -184,4 +184,4 @@
   };
 
   module.exports = ChannelId;
-  return module.exports;
+  

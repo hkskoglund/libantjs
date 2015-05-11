@@ -16,4 +16,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   }
 
   module.exports = ReceivedPages;
-  return module.exports;
+  

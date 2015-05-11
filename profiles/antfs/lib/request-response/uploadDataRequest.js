@@ -67,4 +67,4 @@ UploadDataRequest.prototype.toString = function() {
 };
 
 module.exports = UploadDataRequest;
-return module.exports;
+

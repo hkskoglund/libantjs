@@ -218,4 +218,4 @@ Directory.prototype.toString = function() {
 };
 
 module.exports = Directory;
-return module.exports;
+

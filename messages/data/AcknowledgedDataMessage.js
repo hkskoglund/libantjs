@@ -14,4 +14,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   AcknowledgedDataMessage.prototype.constructor = AcknowledgedDataMessage;
 
   module.exports = AcknowledgedDataMessage;
-  return module.exports;
+  

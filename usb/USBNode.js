@@ -455,4 +455,4 @@ Util.prototype.toUint8Array = function(buffer) {
 };
 
 module.exports = USBNode;
-return module.exports;
+

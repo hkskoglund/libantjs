@@ -86,4 +86,4 @@ UploadRequestResponse.prototype.toString = function() {
 };
 
 module.exports = UploadRequestResponse;
-return module.exports;
+

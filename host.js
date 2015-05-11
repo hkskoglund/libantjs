@@ -829,4 +829,3 @@ Host.prototype.deserialize = function(data) {
 };
 
 module.exports = Host;
-return module.exports;

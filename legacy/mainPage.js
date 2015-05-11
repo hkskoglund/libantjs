@@ -16,6 +16,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   MainPage.prototype.constructor = MainPage;
 
   module.exports = MainPage;
-  return module.exports;
+  
 
 // TO DO : Remove?

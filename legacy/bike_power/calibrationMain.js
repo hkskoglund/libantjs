@@ -99,4 +99,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   module.exports = CalibrationMain;
-  return module.exports;
+  

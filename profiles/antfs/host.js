@@ -343,4 +343,3 @@ var onDisconnect = function _onDisconnect(e,m)
 };
 
 module.exports = Host;
-return module.exports;

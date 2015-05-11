@@ -51,4 +51,4 @@ UploadDataResponse.prototype.toString = function() {
 };
 
 module.exports = UploadDataResponse;
-return module.exports;
+

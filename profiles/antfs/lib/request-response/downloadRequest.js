@@ -62,4 +62,4 @@ DownloadRequest.prototype.toString = function() {
 };
 
 module.exports = DownloadRequest;
-return module.exports;
+

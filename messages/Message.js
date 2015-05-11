@@ -342,4 +342,3 @@
   };
 
   module.exports = Message;
-  return module.exports;

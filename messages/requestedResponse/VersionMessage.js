@@ -36,4 +36,4 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   module.exports = VersionMessage;
-  return module.exports;
+  

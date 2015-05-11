@@ -215,4 +215,4 @@ LinkManager.prototype.disconnect = function(callback) {
 };
 
 module.exports = LinkManager;
-return module.exports;
+

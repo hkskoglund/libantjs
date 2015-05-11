@@ -571,4 +571,3 @@ TransportManager.prototype.onTransport = function() {
 };
 
 module.exports = TransportManager;
-return module.exports;
