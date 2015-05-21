@@ -147,6 +147,7 @@ TransportManager.prototype.addTask = function (request,index)
   var split,
       filteredSplit,
       indexArr = [],
+      // http://stackoverflow.com/questions/1960473/unique-values-in-an-array
        onlyUnique = function (value, index, self) {
                         return self.indexOf(value) === index;
                     },
