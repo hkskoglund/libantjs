@@ -145,16 +145,45 @@ TransportManager.prototype.onErase = function (error,session)
 TransportManager.prototype.addTask = function (request,index)
 {
   var split,
-      filteredSplit;
+      filteredSplit,
+      indexArr = [],
+       onlyUnique = function (value, index, self) {
+                        return self.indexOf(value) === index;
+                    },
+      uniqueArr;
 
-  if (typeof index === 'string') //In case '10,11'-format or '10 11'
+  if (typeof index === 'string') //In case '10,11'-format
   {
-       split = index.split(/[\s,]+/);
-       split.forEach(function (e,i) { split[i] = Number(e); });
-       filteredSplit = split.filter(function (e) { return !isNaN(e); });
-       //if (this.log.logging)
-       // this.log.log('log','Filtered split',filteredSplit);
-       this.addTask(request,filteredSplit);
+       split = index.split(',');
+       split.forEach(function (e,i) {
+         var splitOnHyphen,
+             min,minNum,
+             max,maxNum,
+             j;
+
+         if (isNaN(e))
+         {
+           splitOnHyphen = e.split('-'); // Allow '10-20' format
+            if (splitOnHyphen.length >= 2)
+            {
+              minNum = Number(splitOnHyphen[0]);
+              maxNum = Number(splitOnHyphen[1]);
+              min = Math.min(minNum,maxNum);
+              max = Math.max(minNum,maxNum);
+
+              if (!isNaN(min) && !isNaN(max))
+              {
+                for (j=min;j<=max;j++)
+                  indexArr.push(j);
+              }
+            }
+         } else {
+             indexArr.push(Number(e));
+         }
+       });
+
+       uniqueArr = indexArr.filter(onlyUnique);
+       this.addTask(request,uniqueArr);
   }
 
   if (typeof index === 'object' && index.constructor === Array) {// Allow [1,2,3]
