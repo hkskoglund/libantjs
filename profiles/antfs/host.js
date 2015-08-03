@@ -284,16 +284,32 @@ Host.prototype.sendNow = function (e,m)
   else
   {
 
-    err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
+    if (this.session.request) {
 
-    if (this.session.request instanceof DownloadRequest)
+        err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
 
-      this.emit('download', err);
+        if (this.log.logging)
+          this.log.log('error',err.toString());
 
-    else if (this.session.request instanceof EraseRequest)
 
-      this.emit('erase',err);
-  }
+        if (this.session.request instanceof DownloadRequest)
+
+          this.emit('download', err);
+
+        else if (this.session.request instanceof EraseRequest)
+
+          this.emit('erase',err);
+      }
+      else {
+        if (this.log.logging)
+          this.log.log('error',e,m);
+
+        console.error('Max retries ' + MAX_RETRIES + ' reached');
+        console.trace();
+
+      }
+}
+
 };
 
 
