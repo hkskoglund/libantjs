@@ -1,15 +1,6 @@
 # libantjs
 
-A javascript implementation of the ANT protocol that interfaces with ANT USB stick. For web and nodejs/iojs.
-
-Tested on platform:
-
-    1. Fedora
-    2. iojs
-
-Used utilities:
-
-    1. Atom.io editor
+A javascript implementation of the ANT protocol that interfaces with ANT USB stick. For nodejs.
 
 #### Message support matrix
 
