@@ -471,7 +471,7 @@ var filename;
 
    session = session || this.session; // In case .emit('download'/'erase') without reference to session (when max retries reached in host sendrequest)
 
-  if (this.host.host.isNode() && !error && session && session.index) { // Won't save directory at index 0
+  if (!error && session && session.index) { // Won't save directory at index 0
     filename = session.file.getFileName();
     fs.writeFile(filename, new Buffer(session.packets), function(err) {
       if (err) {

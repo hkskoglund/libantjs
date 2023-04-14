@@ -205,9 +205,6 @@ AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber
 
   this.setPasskey(this.clientSerialNumber, passkey);
 
-  if (!this.host.host.isNode())
-    return;
-
   if (this.log.logging)
     this.log.log('log', 'Write passkey for client serial number ' + clientDeviceSerialNumber + ' to ' + authorizationFile);
 
@@ -225,9 +222,6 @@ AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber)
 
   var passkey,
     authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
-
-  if (!this.host.host.isNode())
-    return;
 
   if (this.log.logging)
     this.log.log('log', 'Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + authorizationFile);
