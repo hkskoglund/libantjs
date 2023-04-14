@@ -73,7 +73,6 @@ var EventEmitter = require('events'),
   // USB hosts
 
   USBNode = require('./usb/USBNode.js');
-
 function Host(options) {
 
   var channel;
@@ -94,23 +93,15 @@ function Host(options) {
     this.channel[channel] = new Channel(this.options, this, channel);
   }
 
-  if (this.isNode())
     this.usb = new USBNode({
       log: options.log,
       debugLevel: options.debugLevel
     });
-  else
-    if (this.log.logging)
-      this.log.log('error','No USB host available');
 
 }
 
 Host.prototype = Object.create(EventEmitter.prototype);
 Host.prototype.constuctor = Host;
-
-Host.prototype.isNode = function() {
-  return typeof process !== 'undefined' && (process.title.indexOf('node') !== -1 || process.title.indexOf('iojs') !== -1);
-};
 
 Host.prototype.MAX_CHAN = 8;
 
