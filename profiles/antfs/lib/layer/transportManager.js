@@ -539,8 +539,38 @@ TransportManager.prototype.onTransport = function() {
 
         case EraseRequest.prototype.ID:
 
-          // Removing a file on the device updates the directory, so erasing index 10, moves all indexes - 1
-          this.erase(this.directory.indexOf(this.task[this.execTaskIndex].index) + 1, onNextTask);
+          var originalIndicesToDelete = this.task
+            .filter(function(t) { return t.request === EraseRequest.prototype.ID; })
+            .map(function(t) { return t.index; });
+
+          var eraseLoop = function() {
+            var nextFileToErase = this.directory.file.find(function(f) {
+              return originalIndicesToDelete.indexOf(f.index) !== -1;
+            });
+
+            if (nextFileToErase) {
+              var onErase = function(err) {
+                if (err) {
+                  return onNextTask(err);
+                }
+                // Re-download directory to get updated file indices and continue loop
+                this.download(0, function(downloadErr) {
+                  if (downloadErr) {
+                    return onNextTask(downloadErr);
+                  }
+                  eraseLoop();
+                });
+              }.bind(this);
+
+              this.erase(nextFileToErase.index, onErase);
+            } else {
+              // No more files to erase from the list, mark tasks as done and proceed
+              this.task.forEach(function(t) { if (t.request === EraseRequest.prototype.ID) t.done = true; });
+              onNextTask();
+            }
+          }.bind(this);
+
+          eraseLoop();
 
           break;
 
