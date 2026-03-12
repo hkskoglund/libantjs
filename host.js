@@ -101,7 +101,7 @@ function Host(options) {
 }
 
 Host.prototype = Object.create(EventEmitter.prototype);
-Host.prototype.constuctor = Host;
+Host.prototype.constructor = Host;
 
 Host.prototype.MAX_CHAN = 8;
 
@@ -619,11 +619,11 @@ Host.prototype.sendAdvancedTransfer = function(channel, data, size, packetsPerUR
 
 Host.prototype.deserialize = function(data) {
   var msgBytes,
-    iEndOfMessage,
     iStartOfMessage = 0,
     metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
     message,
     bufferUtil = new Concat(),
+    totalMessageLength,
     event,
     NO_ERROR;
 
@@ -633,12 +633,17 @@ Host.prototype.deserialize = function(data) {
     data = bufferUtil.concat(this.previousPacket, data);
   }
 
-  iEndOfMessage = data[Message.prototype.iLENGTH] + metaDataLength;
+  while (iStartOfMessage < data.byteLength) {
 
-  while (iStartOfMessage < iEndOfMessage) {
+    // Need at least header and CRC bytes
+    if (data.byteLength - iStartOfMessage < metaDataLength) {
+        this.previousPacket = data.subarray(iStartOfMessage);
+        return;
+    }
 
-    msgBytes = data.subarray(iStartOfMessage, iEndOfMessage);
+    totalMessageLength = data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength;
 
+    msgBytes = data.subarray(iStartOfMessage, iStartOfMessage + totalMessageLength);
     if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
 
       if (this.log.logging) this.log.log('error', 'Invalid SYNC ' + msgBytes[Message.prototype.iSYNC] +
@@ -806,17 +811,15 @@ Host.prototype.deserialize = function(data) {
       if (this.log.logging)
         this.log.log('log', message.toString());
 
-    iStartOfMessage = iEndOfMessage;
+    iStartOfMessage += totalMessageLength;
 
-    if (iStartOfMessage + data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength <= data.byteLength) {
-      iEndOfMessage += (data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength);
-    } else {
+    if (iStartOfMessage > data.byteLength) { // Should not happen with check above
       this.previousPacket = data.subarray(iStartOfMessage);
-
-      iEndOfMessage = iStartOfMessage;
+      return;
     }
-
   }
+
+  this.previousPacket = undefined;
 };
 
 module.exports = Host;

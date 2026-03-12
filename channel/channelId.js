@@ -21,7 +21,7 @@
       this.deviceType = this.deviceType | ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR;
     }
 
-    this.pair = (this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR > 0) ? true : false;
+    this.pair = ((this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR) > 0);
 
     // http://www.thisisant.com/developer/resources/tech-bulletin/pairing-to-devices-with-extended-device-numbers
     // "The extended device number is not intended as a number that must be displayed - it is intended to increase a device's chance of pairing to the right device every time - even in crowded environments."
@@ -109,7 +109,7 @@
 
     this.transmissionType = extendedData[3];
 
-    this.pair = (this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR > 0) ? true : false;
+    this.pair = ((this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR) > 0);
 
     this._check20BitDeviceNumber();
 

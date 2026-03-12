@@ -222,31 +222,31 @@ DeviceProfile_ANTFS.prototype.addIndex = function(index) {
 };
 
 DeviceProfile_ANTFS.prototype.setHomeDirectory = function(homeDir) {
-  var self = this; // Keep our this reference in callbacks please!
-
+  var self = this;
   this.homeDirectory = homeDir;
 
   fs.exists(this.homeDirectory, function(exists) {
-      if (!exists) {
-        // try {
-        fs.mkdir(self.homeDirectory, function completionCB() {
+    if (!exists) {
+      fs.mkdir(self.homeDirectory, function(err) {
+        if (err) {
+          console.log(Date.now() + " Could not create home directory: " + err);
+          throw err;
+        } else {
           console.log(Date.now() + " Created home directory at " + self.homeDirectory);
-        });
-        //} catch (e)
-        {
-          //    console.log(Date.now() + " Could not create home directory ",util.inspect(e));
-          //    throw e;
-          //}
-        } else
-          console.log(Date.now() + " Setting home directory to " + self.homeDirectory);
+        }
       });
-  };
+    } else {
+      console.log(Date.now() + " Setting home directory to " + self.homeDirectory);
+    }
+  });
+};
 
-  DeviceProfile_ANTFS.prototype.getHomeDirectory = function() {
-    return this.homeDirectory;
-  };
 
+DeviceProfile_ANTFS.prototype.getHomeDirectory = function() {
+  return this.homeDirectory;
+};
 
+DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
   var self = this,
     beacon, numberOfPackets = data.length / 8,
     authenticate_response = {},
@@ -611,7 +611,6 @@ DeviceProfile_ANTFS.prototype.setHomeDirectory = function(homeDir) {
   }
 };
 
-
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize) {
   //console.log("ANTFSCOMMAND_Download",dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize);
 
@@ -647,7 +646,7 @@ DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOf
 };
 
 // host serial number is available on antInstance.serialNumber if getDeviceSerialNumber has been executed
-
+DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Link = function(channelFreq,channelPeriod,hostSerialNumber) {
 var payload = new Buffer(8);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
@@ -680,7 +679,7 @@ DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Disconnect = function(commandType, ti
   };
 };
 
-
+DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Authentication = function(commandType, authStringLength, hostSerialNumber) {
 var payload = new Buffer(8);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
@@ -695,7 +694,7 @@ return {
 };
 };
 
-
+DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Erase = function(dataIndex) {
 var payload = new Buffer(4);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
@@ -755,7 +754,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
       return this.channel;
     };
-
+  };
 
     DeviceProfile_ANTFS.prototype.channelResponseEvent = function(data) {
       //console.log("THIS IS", this);
@@ -1506,7 +1505,6 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                 delete self._mutex.processingCommand;
 
               //self.linkLayerTimeout = setTimeout(function ()
-              {
                 //    console.log(Date.now() + " Did not receive any LINK beacon from device in 1 second, connection probably lost/device closed channel");
                 //}, 1000);
 
@@ -1549,10 +1547,8 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                     default:
                       console.error("Authentication type not implemented, cannot proceed to transport layer ", DeviceProfile_ANTFS.prototype.AUTHENTICATION_TYPE[beacon.authentication], "(" + beacon.authentication + ")");
                       break;
-                  }
+                    }
                 }
-
-                break;
 
                 case DeviceProfile_ANTFS.prototype.STATE.AUTHENTICATION_LAYER:
                   // One exception is EVENT_TRANSFER_TX_FAILED of link command (but device got the command and still sends AUTHENTICATION BEACON)
@@ -1715,6 +1711,5 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
               }
           }
         };
-
-
-        module.exports = DeviceProfile_ANTFS;
+      
+        module.exports = DeviceProfile_ANTFS

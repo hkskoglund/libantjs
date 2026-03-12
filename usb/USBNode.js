@@ -375,7 +375,7 @@ USBNode.prototype._onInEndpointData = function(data) {
       this.log.log(USBDevice.prototype.EVENT.LOG, 'RX', data);
     }
 
-    this.emit(USBDevice.prototype.EVENT.DATA, Util.prototype.toUint8Array(data));
+    this.emit(USBDevice.prototype.EVENT.DATA, Util.toUint8Array(data));
   }
 
 };
@@ -425,7 +425,7 @@ USBNode.prototype.listen = function() {
 
 USBNode.prototype.transfer = function(chunk, retrn) {
 
-  var nodeBuf = Util.prototype.toNodeBuffer(chunk);
+  var nodeBuf = Util.toNodeBuffer(chunk);
 
   if (this.log.logging) {
     this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf);
@@ -436,14 +436,14 @@ USBNode.prototype.transfer = function(chunk, retrn) {
 
 function Util() {}
 
-Util.prototype.toNodeBuffer = function(chunk) {
+Util.toNodeBuffer = function(chunk) {
 
   return Buffer.from(chunk);
 
 };
 
 // http://stackoverflow.com/questions/8609289/convert-a-binary-nodejs-buffer-to-javascript-arraybuffer
-Util.prototype.toUint8Array = function(buffer) {
+Util.toUint8Array = function(buffer) {
   var ab = new ArrayBuffer(buffer.length),
     view = new Uint8Array(ab);
 
