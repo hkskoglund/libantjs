@@ -335,7 +335,7 @@ USBNode.prototype.exit = function(retrn) {
   }.bind(this);
 
   if (this.device === undefined) {
-    retrn(this.ERROR.NO_DEVICE);
+    return this._generateError(this.ERROR.NO_DEVICE, retrn);
   } else {
 
     if (this.deviceInterface) {
