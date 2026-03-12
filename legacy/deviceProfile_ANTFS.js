@@ -1590,8 +1590,6 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                             fs.readFile(passkeyFileName, function(err, data) {
                               if (err) throw err;
                               self.passkey = (JSON.parse(data)).passkey;
-                              //console.log(data);
-                              self.sendRequestWithPasskey(new Buffer(self.passkey), function error(err) {
                               // self.passkey is an array of numbers from JSON
                               self.sendRequestWithPasskey(Buffer.from(self.passkey), function error(err) {
                                 delete self._mutex.sendingAUTH_CLIENT_SN;
