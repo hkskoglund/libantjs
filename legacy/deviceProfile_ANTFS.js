@@ -414,7 +414,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
               download_response.data = data.slice(24, -8); // Last packet is 000000 + 2 CRC bytes -> slice it off -> -8
 
               if (download_response.dataOffset === 0) {
-                self.downloadFile = new Buffer(DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB * 1024 * 1024); // First block of data - allocate 16MB buffer -> should handle most cases if client grows file dynamically
+                self.downloadFile = Buffer.alloc(DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB * 1024 * 1024); // First block of data - allocate 16MB buffer -> should handle most cases if client grows file dynamically
                 self.dataOffset = [];
                 self.CRCSeed = [];
                 self.dataLength = [];
@@ -505,7 +505,8 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                     self.sendDownloadRequest(self.request.dataIndex, currentDataOffset, downloadRequestType, currentCRCSeed, 0, self.request.callback);
                   } else {
                     console.log(Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
-                    process.kill(process.pid, 'SIGINT');
+                    self.emit('error', new Error('Unable to receive burst response for download request. Reached maximum retries.'));
+                    self.disconnectFromDevice();
                   }
                 }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
 
@@ -555,8 +556,9 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                   self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
                     DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
                 } else {
-                  console.log(Date.now() + " Lost the link to the device. Cannot proceed.");
-                  process.kill(process.pid, 'SIGINT');
+                  var errMsg = "Lost the link to the device. Cannot proceed.";
+                  console.log(Date.now() + " " + errMsg);
+                  self.emit('error', new Error(errMsg));
 
                 }
               }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
@@ -585,8 +587,9 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 
                     self.sendEraseRequest(self.request.dataIndex, false);
                   } else {
-                    console.log(Date.now() + " Something is wrong with the link to the device. Cannot proceed.");
-                    process.kill(process.pid, 'SIGINT');
+                    var errMsg = "Something is wrong with the link to the device. Cannot proceed.";
+                    console.log(Date.now() + " " + errMsg);
+                    self.emit('error', new Error(errMsg));
                   }
                 }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
               } else {
@@ -614,7 +617,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize) {
   //console.log("ANTFSCOMMAND_Download",dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize);
 
-  var payload = new Buffer(16);
+  var payload = Buffer.alloc(16);
 
   // Packet 1
 
@@ -647,7 +650,7 @@ DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOf
 
 // host serial number is available on antInstance.serialNumber if getDeviceSerialNumber has been executed
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Link = function(channelFreq,channelPeriod,hostSerialNumber) {
-var payload = new Buffer(8);
+var payload = Buffer.alloc(8);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
 payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.LINK;
@@ -665,7 +668,7 @@ return {
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Disconnect = function(commandType, timeDuration, applicationSpecificDuration) {
   // timeDuration - 0x00 - Disabled/Invalid
   // application specific duration - 0x00 - Disabled/Invalid
-  var payload = new Buffer(4);
+  var payload = Buffer.alloc(4);
 
   payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
   payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DISCONNECT;
@@ -680,7 +683,7 @@ DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Disconnect = function(commandType, ti
 };
 
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Authentication = function(commandType, authStringLength, hostSerialNumber) {
-var payload = new Buffer(8);
+var payload = Buffer.alloc(8);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
 payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.AUTHENTICATE;
@@ -695,7 +698,7 @@ return {
 };
 
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Erase = function(dataIndex) {
-var payload = new Buffer(4);
+var payload = Buffer.alloc(4);
 
 payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
 payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.ERASE;
@@ -727,7 +730,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
     // Setup channel parameters for ANT-FS
 
-    this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, config.networkNr, new Buffer(this._configuration.network_keys.ANT_FS));
+    this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_channel, config.networkNr, Buffer.from(this._configuration.network_keys.ANT_FS));
 
     this.channel.setChannelId(config.deviceNr, config.deviceType, config.transmissionType, false);
     this.channel.setChannelPeriod(DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD);
@@ -934,7 +937,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         console.warn("No friendly name of ANT-FS host specified - will be unknown during pairing");
       else {
         authStringLength = friendlyName.length;
-        authenticationString = new Buffer(friendlyName, "utf8");
+        authenticationString = Buffer.from(friendlyName, "utf8");
       }
 
       var authMsg = this.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_PAIRING, authStringLength, this.ANT.serialNumber);
@@ -1589,6 +1592,8 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                               self.passkey = (JSON.parse(data)).passkey;
                               //console.log(data);
                               self.sendRequestWithPasskey(new Buffer(self.passkey), function error(err) {
+                              // self.passkey is an array of numbers from JSON
+                              self.sendRequestWithPasskey(Buffer.from(self.passkey), function error(err) {
                                 delete self._mutex.sendingAUTH_CLIENT_SN;
                               }, function success() {});
                             });

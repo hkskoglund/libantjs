@@ -137,9 +137,9 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
               case DeviceProfile_SDM.prototype.DEVICE_TYPE:
 
                 console.log(Date.now(), "Found SDM4 - foot pod - master/sensor");
-                console.log(Date.now(), this.channelID.toString());
-                if (configuredChannel(2, this.channelID.deviceTypeID))
-                  console.log(Data.now(), "Already configured channel to receive broadcast from device type/SDM");
+                console.log(Date.now(), channelID.toString());
+                if (configuredChannel(2, channelID.deviceTypeID))
+                  console.log(Date.now(), "Already configured channel to receive broadcast from device type/SDM");
                 else {
                   deviceProfile = new DeviceProfile_SDM(this.nodeInstance);
                   openChannel(2);
@@ -149,9 +149,9 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
               case DeviceProfile_SPDCAD.prototype.DEVICE_TYPE:
 
                 console.log(Date.now(), "Found SPDCAD - bike speed/cadence - master/sensor");
-                console.log(Date.now(), this.channelID.toString());
-                if (configuredChannel(3, this.channelID.deviceTypeID))
-                  console.log(Data.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
+                console.log(Date.now(), channelID.toString());
+                if (configuredChannel(3, channelID.deviceTypeID))
+                  console.log(Date.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
                 else {
                   deviceProfile = new DeviceProfile_SPDCAD(this.nodeInstance);
                   openChannel(3);

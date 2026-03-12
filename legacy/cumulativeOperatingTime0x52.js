@@ -29,7 +29,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     this.descriptive = {
       coarseVoltage: data[7] & 0x0F,
       batteryStatus: new BatteryStatus(data),
-      resoultion: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
+      resolution: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
     };
 
     var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;

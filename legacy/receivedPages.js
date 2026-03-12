@@ -11,8 +11,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   function ReceivedPages(sensorId) {
 
     this.all = [];
-    for (var type in GenericPage.prototype.TYPE)
-      this[GenericPage.prototype.TYPE[type]] = {};
+    // TO DO: GenericPage.prototype.TYPE is not defined in Page.js.
+    // for (var type in GenericPage.prototype.TYPE)
+    //  this[GenericPage.prototype.TYPE[type]] = {};
   }
 
   module.exports = ReceivedPages;
