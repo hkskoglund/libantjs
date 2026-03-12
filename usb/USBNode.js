@@ -438,7 +438,7 @@ function Util() {}
 
 Util.prototype.toNodeBuffer = function(chunk) {
 
-  return new Buffer(chunk);
+  return Buffer.from(chunk);
 
 };
 
@@ -455,4 +455,3 @@ Util.prototype.toUint8Array = function(buffer) {
 };
 
 module.exports = USBNode;
-
