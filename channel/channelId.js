@@ -64,6 +64,8 @@
   ChannelId.prototype._check20BitDeviceNumber = function() {
     var transferTypeMSN;
 
+    delete this.deviceNumber20BIT;
+
     if (this.has20BitDeviceNumber()) {
       transferTypeMSN = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
       this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
@@ -98,10 +100,14 @@
   // Parse channel ID if enabled via LIBConfig
   ChannelId.prototype.decode = function(extendedData) {
 
+    if (!extendedData || extendedData.length < 4) {
+      throw new RangeError('Channel ID data must contain at least 4 bytes');
+    }
+
     //var extendedDataUint8 = new Uint8Array(extendedData);
     // | DN # af 41 | DT # 78 |T# 01
 
-    this.deviceNumber = (new DataView(extendedData.buffer)).getUint16(extendedData.byteOffset + 0, true);
+    this.deviceNumber = (new DataView(extendedData.buffer, extendedData.byteOffset, extendedData.byteLength)).getUint16(0, true);
 
     this.deviceType = extendedData[2];
 
