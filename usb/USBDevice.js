@@ -10,13 +10,17 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   // Abstract USB device
   function USBDevice(options) {
 
+    if (this.constructor === USBDevice) {
+      throw new Error('USBDevice is abstract and cannot be instantiated directly');
+    }
+
     EventEmitter.call(this, options);
 
-    this.options = options;
-    if (options)
-      options.logSource = this;
+    this.options = options ? Object.assign({}, options) : undefined;
+    if (this.options)
+      this.options.logSource = this;
 
-    this.log = new Logger(options);
+    this.log = new Logger(this.options);
 
   }
 
