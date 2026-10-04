@@ -1,17 +1,87 @@
 # libantjs
 
-A javascript implementation of the ANT protocol that interfaces with ANT USB stick. For nodejs.
+`libantjs` is a Node.js implementation of the ANT protocol for communicating with ANT USB sticks. It provides a host interface, channel configuration, and ANT message handling.
 
-## Runtime and platform support
+## Requirements
 
-- Node.js 22 or newer is required. Node.js 22 is the minimum supported version; use a currently maintained Node.js release.
-- The Node.js backend uses the native `usb` package and requires a working libusb-compatible USB environment. Linux, macOS, and Windows are intended targets, but this project does not currently run a platform CI matrix.
-- On Linux, the user running the application must have permission to access the ANT USB stick. Configure the host's USB device permissions (for example, with a udev rule) rather than running the application as root.
-- Install the library and its native dependency with `npm install`. Connect a supported ANT USB stick before initializing the host.
+- Node.js 22 or newer (use a currently maintained Node.js release).
+- A supported ANT USB stick. The library currently recognizes the ANT USB-2 Stick and ANT USB-m Stick.
+- A working libusb-compatible USB environment. Linux, macOS, and Windows are intended targets; the project does not currently run a platform CI matrix.
+- On Linux, the user running the application must have permission to access the stick. Configure USB permissions (for example, with a udev rule) rather than running the application as root.
+
+## Installation
+
+Install the package and its native USB dependency in your application:
+
+```sh
+npm install libantjs
+```
+
+Connect the ANT USB stick before initializing the host. On Linux, confirm that your user has permission to access it.
+
+## Quick start
+
+This example opens a wildcard receive channel on the public ANT network and prints received broadcast payloads:
+
+```js
+const Host = require('libantjs');
+
+const host = new Host();
+const devices = host.getDevices();
+
+if (devices.length === 0) {
+  throw new Error('No supported ANT USB stick found');
+}
+
+const channel = host.channel[0];
+
+host.init(0, (error) => {
+  if (error) {
+    console.error('Unable to initialize ANT host:', error);
+    return;
+  }
+
+  channel.on('data', (message) => {
+    console.log('Received:', Array.from(message.payload));
+  });
+
+  channel.assign(channel.BIDIRECTIONAL_SLAVE, 0, (assignError) => {
+    if (assignError) {
+      console.error('Unable to assign channel:', assignError);
+      return;
+    }
+
+    channel.setId(0, 0, 0, (idError) => {
+      if (idError) {
+        console.error('Unable to configure channel ID:', idError);
+        return;
+      }
+
+      channel.open((openError) => {
+        if (openError) {
+          console.error('Unable to open channel:', openError);
+        }
+      });
+    });
+  });
+});
+```
+
+`getDevices()` returns the supported sticks detected by USB; the example initializes the first one at index `0`. Host and channel command callbacks receive `(error, response)`. Received broadcast messages are emitted on the channel's `data` event, with the eight-byte payload available as `message.payload`. Register listeners before opening the channel.
+
+The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `channel.setNetworkKey(channel.NET.KEY['ANT+'], callback)` before opening the channel. Close an open channel with `channel.close(callback)` and shut down the USB host with `host.exit(callback)`.
 
 ## Tests
 
-Run the automated unit tests with `npm test`. They use Node.js's built-in test runner and do not require an ANT USB stick.
+Run the automated unit tests with:
+
+```sh
+npm test
+```
+
+The tests use Node.js's built-in test runner and do not require an ANT USB stick.
+
+## Message support
 
 #### Message support matrix
 
@@ -52,18 +122,6 @@ Run the automated unit tests with `npm test`. They use Node.js's built-in test r
 | Config | Set Encryption Key                   | N |
 | Config | Set Encryption Info                  | N |
 | Config | Channel Search Sharing               | N |
-| Config | Config Encryption ID List            | N |
-| Config | Set Channel Transmit Power           | Y |
-| Config | Low Priority Search Timeout          | Y |
-| Config | Serial Number Set Channel ID         | N |
-| Config | Enable Ext RX Messages               | N |
-| Config | Enable LED                           | N |
-| Config | Crystal Enable                       | N |
-| Config | Lib Config                           | Y |
-| Config | Frequency Agility                    | N |
-| Config | Proximity Search                     | Y |
-| Config | Configure Event Buffer               | Y |
-| Config | Channel Search Priority              | N |
 | Config | Load/Store Encryption Key            | N |
 | Config | Set USB Descriptor String            | N |
 | Notifications | Start-up Message              | Y |
@@ -86,7 +144,6 @@ Run the automated unit tests with `npm test`. They use Node.js's built-in test r
 | Requested response | Capabilities             | Y |
 | Requested response | Serial Number                          | Y |
 | Requested response | Event Buffer Configuration             | Y |
-| Requested response | Channel Status                         | Y |
 | Requested response | Advanced Burst Capabilities            | Y |
 | Requested response | Advanced Burst Current Configuration   | Y |
 | Requested response | Event Filter                           | N |
