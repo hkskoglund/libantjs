@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const Message = require('../messages/Message');
+const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
@@ -42,6 +43,20 @@ test('Extended broadcast frames decode their channel ID', () => {
   ]));
 
   const decoded = new BroadcastDataMessage(message.serialize());
+
+  assert.equal(decoded.channelId.deviceNumber, 0x1234);
+  assert.equal(decoded.channelId.deviceType, 0x56);
+  assert.equal(decoded.channelId.transmissionType, 0x78);
+});
+
+test('Extended acknowledged-data frames decode their channel ID', () => {
+  const message = new Message(undefined, Message.prototype.ACKNOWLEDGED_DATA);
+  message.setContent(Uint8Array.from([
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x20, 0x34, 0x12, 0x56, 0x78
+  ]));
+
+  const decoded = new AcknowledgedDataMessage(message.serialize());
 
   assert.equal(decoded.channelId.deviceNumber, 0x1234);
   assert.equal(decoded.channelId.deviceType, 0x56);

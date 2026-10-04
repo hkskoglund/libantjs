@@ -67,8 +67,9 @@
 
     // Extended message (channel id, rx timestamp, rssi)
 
-    // TO DO : Check Acknoledged Data and Advanced Burst Transfer data
+    // TO DO : Check Advanced Burst Transfer data
     if ((this.id === Message.prototype.BROADCAST_DATA ||
+        this.id === Message.prototype.ACKNOWLEDGED_DATA ||
         this.id === Message.prototype.BURST_TRANSFER_DATA) &&
       this.content.length > Message.prototype.iFlagsByte) {
 
