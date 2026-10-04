@@ -40,6 +40,8 @@ AuthenticationManager.prototype.constructor = AuthenticationManager;
 
 AuthenticationManager.prototype.onReset = function() {
 
+  this.authorized = undefined;
+
   this.session = {
     request: [],
     response: []
@@ -49,6 +51,19 @@ AuthenticationManager.prototype.onReset = function() {
 
   this.once('authenticate', this.onAuthenticate);
 
+};
+
+AuthenticationManager.prototype.getAuthorizationStatus = function() {
+  var status;
+
+  if (this.authorized === true)
+    status = 'AUTHORIZED';
+  else if (this.authorized === false)
+    status = 'NOT AUTHORIZED (rejected)';
+  else
+    status = 'UNKNOWN (no accept/reject response received)';
+
+  return 'Authorization status for client ' + this.clientSerialNumber + ': ' + status;
 };
 
 AuthenticationManager.prototype.onBeacon = function(beacon) {
@@ -86,11 +101,13 @@ AuthenticationManager.prototype.handleResponse = function(response) {
 
     case AuthenticateResponse.prototype.ACCEPT:
 
+      this.authorized = true;
       this.emit('AUTHENTICATE_RESPONSE', NO_ERROR, response);
       break;
 
     case AuthenticateResponse.prototype.REJECT:
 
+      this.authorized = false;
       this.emit('AUTHENTICATE_RESPONSE', new Error(response.toString()), undefined);
       break;
 

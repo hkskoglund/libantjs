@@ -395,6 +395,7 @@ TransportManager.prototype._setupSession = function (index)
   };
 
   if (index === 0) {
+      console.log(this.host.authenticationManager.getAuthorizationStatus());
       this.directory = new Directory(undefined, this.host);
       this.session.file = this.directory;
   } else {
