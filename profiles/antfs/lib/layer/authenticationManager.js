@@ -9,7 +9,9 @@ var EventEmitter = require('events'),
   AuthenticateRequest = require('../request-response/authenticateRequest'),
   AuthenticateResponse = require('../request-response/authenticateResponse'),
   State = require('./util/state'),
-  fs = require('fs');
+  fs = require('fs'),
+  os = require('os'),
+  path = require('path');
 
 function AuthenticationManager(host) {
 
@@ -216,9 +218,17 @@ AuthenticationManager.prototype.setPasskey = function(clientSerialNumber, passke
   this.pairingDB[clientSerialNumber] = passkey;
 };
 
+AuthenticationManager.prototype.getConfigDir = function() {
+
+  var base = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+
+  return path.join(base, 'libantjs');
+};
+
 AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber, passkey) {
 
-  var authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+  var configDir = this.getConfigDir(),
+    authorizationFile = path.join(configDir, 'authorization-' + clientDeviceSerialNumber + '.key');
 
   this.setPasskey(this.clientSerialNumber, passkey);
 
@@ -226,9 +236,14 @@ AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber
     this.log.log('log', 'Write passkey for client serial number ' + clientDeviceSerialNumber + ' to ' + authorizationFile);
 
   try {
-    fs.writeFileSync(authorizationFile, passkey, {
-      mode: 432 // -rw-rw---
+    fs.mkdirSync(configDir, {
+      recursive: true,
+      mode: 0o700
     });
+    fs.writeFileSync(authorizationFile, passkey, {
+      mode: 0o600
+    });
+    fs.chmodSync(authorizationFile, 0o600); // mode is ignored when overwriting an existing file
   } catch (e) {
     if (this.log.logging)
       this.log.log('error', 'Failed to write passkey to ' + authorizationFile, e);
@@ -238,19 +253,24 @@ AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber
 AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber) {
 
   var passkey,
-    authorizationFile = 'authorization-' + clientDeviceSerialNumber + '.key';
+    fileName = 'authorization-' + clientDeviceSerialNumber + '.key',
+    // Fall back to current directory for passkeys stored by earlier versions
+    candidates = [path.join(this.getConfigDir(), fileName), fileName],
+    i;
 
-  if (this.log.logging)
-    this.log.log('log', 'Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + authorizationFile);
+  for (i = 0; i < candidates.length && !passkey; i++) {
 
-  try {
-    passkey = fs.readFileSync(authorizationFile, {
-      encoding: 'utf8'
-    });
-  } catch (e) {
     if (this.log.logging)
-      this.log.log('error', 'Failed to read passkey from ' + authorizationFile, e);
+      this.log.log('log', 'Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + candidates[i]);
 
+    try {
+      passkey = fs.readFileSync(candidates[i], {
+        encoding: 'utf8'
+      });
+    } catch (e) {
+      if (this.log.logging)
+        this.log.log('error', 'Failed to read passkey from ' + candidates[i], e);
+    }
   }
 
   if (passkey)
