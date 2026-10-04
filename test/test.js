@@ -2,6 +2,8 @@
 
 const assert = require('node:assert/strict');
 const test = require('node:test');
+const Message = require('../messages/Message');
+const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
 
@@ -9,6 +11,41 @@ test('ResetSystemMessage serializes to a valid reset frame', () => {
   const reset = new ResetSystemMessage();
 
   assert.deepEqual(Array.from(reset.serialize()), [0xa4, 0x01, 0x4a, 0x00, 0xef]);
+});
+
+test('Message.decode rejects incomplete frames and invalid CRCs', () => {
+  const frame = new ResetSystemMessage().serialize();
+
+  assert.throws(() => new Message(frame.subarray(0, frame.length - 1)), {
+    message: 'Message is shorter than its declared length'
+  });
+
+  frame[frame.length - 1] ^= 0xff;
+  assert.throws(() => new Message(frame), { message: 'Invalid message CRC' });
+});
+
+test('Message.serialize rejects content larger than the frame length field', () => {
+  const message = new Message(undefined, 0x4e);
+  message.setContent(new Uint8Array(256));
+
+  assert.throws(() => message.serialize(), {
+    name: 'RangeError',
+    message: 'Message content must not exceed 255 bytes'
+  });
+});
+
+test('Extended broadcast frames decode their channel ID', () => {
+  const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
+  message.setContent(Uint8Array.from([
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x20, 0x34, 0x12, 0x56, 0x78
+  ]));
+
+  const decoded = new BroadcastDataMessage(message.serialize());
+
+  assert.equal(decoded.channelId.deviceNumber, 0x1234);
+  assert.equal(decoded.channelId.deviceType, 0x56);
+  assert.equal(decoded.channelId.transmissionType, 0x78);
 });
 
 test('ChannelId.decode rejects data shorter than four bytes even when the backing buffer is longer', () => {

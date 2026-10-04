@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
+const Message = require('../messages/Message');
 
 const message = {
   id: 0x4a,
@@ -22,6 +23,12 @@ function createHost() {
     host,
     completeTransfer: (error, result) => transferCallback(error, result)
   };
+}
+
+function createFrame(id) {
+  const message = new Message(undefined, id);
+  message.setContent(new Uint8Array(0));
+  return message.serialize();
 }
 
 test('sendMessage calls the callback once when a transfer without a response event fails', () => {
@@ -85,6 +92,33 @@ test('sendMessage delivers successful response events without calling the callba
 
   host.channel[0].emit('response_0x4a', undefined, response);
   assert.equal(callbackCalls, 1);
+});
+
+test('Host.deserialize reports frames with invalid CRCs and continues parsing', () => {
+  const { host } = createHost();
+  const errors = [];
+  const firstFrame = createFrame(0x01);
+  const secondFrame = createFrame(0x02);
+
+  firstFrame[firstFrame.length - 1] ^= 0xff;
+  host.on(host.EVENT.ERROR, (error) => errors.push(error));
+  host.deserialize(Buffer.concat([firstFrame, secondFrame]));
+
+  assert.deepEqual(errors, ['Invalid message CRC', 'Unable to parse received msg id 2']);
+});
+
+test('Host.deserialize buffers incomplete frames and clears them after parsing', () => {
+  const { host } = createHost();
+  const frame = createFrame(0x01);
+  const errors = [];
+
+  host.on(host.EVENT.ERROR, (error) => errors.push(error));
+  host.deserialize(frame.subarray(0, frame.length - 1));
+  assert.equal(host.previousPacket.length, frame.length - 1);
+
+  host.deserialize(frame.subarray(frame.length - 1));
+  assert.equal(host.previousPacket, undefined);
+  assert.deepEqual(errors, ['Unable to parse received msg id 1']);
 });
 
 test('Host.exit propagates a reset error and still exits USB', () => {

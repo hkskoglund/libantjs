@@ -639,6 +639,7 @@ Host.prototype.deserialize = function(data) {
     message,
     bufferUtil = new Concat(),
     totalMessageLength,
+    frameError,
     event,
     NO_ERROR;
 
@@ -646,6 +647,7 @@ Host.prototype.deserialize = function(data) {
   // Holds the rest of the ANT message when receiving more data than the requested in endpoint packet size
   {
     data = bufferUtil.concat(this.previousPacket, data);
+    this.previousPacket = undefined;
   }
 
   while (iStartOfMessage < data.byteLength) {
@@ -658,13 +660,17 @@ Host.prototype.deserialize = function(data) {
 
     totalMessageLength = data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength;
 
-    msgBytes = data.subarray(iStartOfMessage, iStartOfMessage + totalMessageLength);
-    if (msgBytes[Message.prototype.iSYNC] !== Message.prototype.SYNC) {
-
-      if (this.log.logging) this.log.log('error', 'Invalid SYNC ' + msgBytes[Message.prototype.iSYNC] +
-        ', discarding ' + data.length + ' bytes', data);
-
+    if (data.byteLength - iStartOfMessage < totalMessageLength) {
+      this.previousPacket = data.subarray(iStartOfMessage);
       return;
+    }
+
+    msgBytes = data.subarray(iStartOfMessage, iStartOfMessage + totalMessageLength);
+    frameError = Message.prototype.getFrameError(msgBytes);
+    if (frameError) {
+      this.emit(this.EVENT.ERROR, frameError);
+      iStartOfMessage += totalMessageLength;
+      continue;
     }
 
     message = undefined;

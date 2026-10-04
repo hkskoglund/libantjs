@@ -51,6 +51,11 @@
   Message.prototype.iFlagsByte = 9;
 
   Message.prototype.decode = function(data) {
+    var frameError = Message.prototype.getFrameError(data);
+
+    if (frameError)
+      throw new Error(frameError);
+
     // Standard message
 
     this.SYNC = data[Message.prototype.iSYNC];
@@ -72,7 +77,7 @@
       this.extendedData = this.content.subarray(Message.prototype.iFlagsByte + 1); // Subarray creates a view to underlying arraybuffer
       // Check for channel ID
       // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
-      if (this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) {
+      if (this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) {
         if (!this.channelId)
           this.channelId = new ChannelId();
         //this.channelId.decode(this.extendedData.buffer.slice(0, 4));
@@ -91,27 +96,49 @@
         //            }
       }
 
-      if (this.flagsByte & LibConfig.prototype.RX_TIMESTAMP_ENABLED) {
+      if (this.flagsByte & LibConfig.RX_TIMESTAMP_ENABLED) {
         if (!this.RXTimestamp)
           this.RXTimestamp = new RXTimestamp();
         // this.RXTimestamp.decode(this.extendedData.buffer.slice(-2));
         this.RXTimestamp.decode(this.extendedData.subarray(-2));
       }
 
-      if (!(this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.RSSI_ENABLED)) {
+      if (!(this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
         //this.RSSI.decode(this.extendedData.buffer.slice(0, 2));
         if (!this.RSSI)
           this.RSSI = new RSSI();
         this.RSSI.decode(this.extendedData.subarray(0, 2));
       }
 
-      if ((this.flagsByte & LibConfig.prototype.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.prototype.RSSI_ENABLED)) {
+      if ((this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
         //this.RSSI.decode(this.extendedData.buffer.slice(4, 7));
         if (!this.RSSI)
           this.RSSI = new RSSI();
         this.RSSI.decode(this.extendedData.subarray(4, 7));
       }
     }
+  };
+
+  Message.prototype.getFrameError = function(data) {
+    var minimumLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+      totalLength;
+
+    if (!data || typeof data.subarray !== 'function' || typeof data.byteLength !== 'number')
+      return 'Message data must be a byte array';
+
+    if (data.byteLength < minimumLength)
+      return 'Message is shorter than the minimum frame length';
+
+    totalLength = data[Message.prototype.iLENGTH] + minimumLength;
+
+    if (data.byteLength < totalLength)
+      return 'Message is shorter than its declared length';
+
+    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC)
+      return 'Invalid message SYNC';
+
+    if (data[totalLength - 1] !== Message.prototype.getCRC.call(this, data.subarray(0, totalLength - 1)))
+      return 'Invalid message CRC';
   };
 
   Message.prototype.toString = function(verbose) {
@@ -163,9 +190,13 @@
   */
   Message.prototype.serialize = function() {
 
-    var standardMessage = new Uint8Array(Message.prototype.HEADER_LENGTH+this.content.byteLength+1), //Message format : SYNC MSG_LENGTH MSG_ID MSG_CONTENT CRC
+    var standardMessage,
       iCRC;
 
+    if (this.content.byteLength > 0xFF)
+      throw new RangeError('Message content must not exceed 255 bytes');
+
+    standardMessage = new Uint8Array(Message.prototype.HEADER_LENGTH + this.content.byteLength + 1);
     this.length = this.content.byteLength;
 
     standardMessage[0] = Message.prototype.SYNC;
