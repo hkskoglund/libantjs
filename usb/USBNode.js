@@ -13,6 +13,9 @@ function USBNode(options) {
   USBDevice.call(this, options);
 
   this.usb = usb;
+  this._usbAttachListener = this._onAttach.bind(this);
+  this._usbDetachListener = this._onDetach.bind(this);
+  this._usbErrorListener = this._onError.bind(this);
 
   if (this.options.debugLevel)
     this.usb.setDebugLevel(this.options.debugLevel || 0);
@@ -28,6 +31,12 @@ USBNode.prototype._onError = function(error) {
   if (this.log.logging) {
     this.log.log(USBDevice.prototype.EVENT.ERROR, error);
   }
+};
+
+USBNode.prototype._removeUSBListeners = function() {
+  this.usb.removeListener('attach', this._usbAttachListener);
+  this.usb.removeListener('detach', this._usbDetachListener);
+  this.usb.removeListener('error', this._usbErrorListener);
 };
 
 USBNode.prototype._onAttach = function(device) {
@@ -273,10 +282,9 @@ USBNode.prototype._onOutEndpointEnd = function() {
 
 USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
 
-  this.usb.on('attach', this._onAttach.bind(this)); // USB listen for attached listener 'newListener' and  enableHotplugEvents for any devices
-  this.usb.on('detach', this._onDetach.bind(this)); // USB listen for detached listener 'removedListener' and disableHotplugEvents for any devices
-
-  this.usb.on('error', this._onError.bind(this));
+  this.usb.on('attach', this._usbAttachListener); // USB listen for attached listener 'newListener' and  enableHotplugEvents for any devices
+  this.usb.on('detach', this._usbDetachListener); // USB listen for detached listener 'removedListener' and disableHotplugEvents for any devices
+  this.usb.on('error', this._usbErrorListener);
 
   this.device = this.getDevices()[preferredDeviceIndex];
 
@@ -292,8 +300,22 @@ USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
     {
       if (e)
         {
+          var resetError = e;
+
           if (this.log.logging)
             this.log.log('error','Failed to reset device',e);
+
+          this._removeUSBListeners();
+          try {
+            this.device.close();
+          } catch (closeError) {
+            resetError = new Error('Failed to reset and close USB device');
+            resetError.resetError = e;
+            resetError.closeError = closeError;
+          }
+          this.device = undefined;
+          retrn(resetError);
+          return;
         }
 
       this._claimInterface(retrn);
@@ -301,6 +323,7 @@ USBNode.prototype.init = function(preferredDeviceIndex, retrn) {
     }.bind(this));
 
   } else {
+    this._removeUSBListeners();
     this._generateError(this.ERROR.NO_DEVICE, retrn);
   }
 
@@ -314,7 +337,7 @@ USBNode.prototype._onInterfaceReleased = function(error) {
 
   this.emit(USBDevice.prototype.EVENT.CLOSED);
 
-  this.usb.removeAllListeners();
+  this._removeUSBListeners();
 
   this.removeAllListeners();
 
@@ -340,7 +363,7 @@ USBNode.prototype.exit = function(retrn) {
 
     if (this.deviceInterface) {
 
-      this.inEndpoint.stopPoll(function _onEnd() {
+      var releaseInterface = function _releaseInterface() {
 
         if (this.log.logging)
           this.log.log(USBDevice.prototype.EVENT.LOG, 'Polling ended (no transfers pending)');
@@ -351,7 +374,15 @@ USBNode.prototype.exit = function(retrn) {
 
         // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
         this.deviceInterface.release(true, onReleased);
-      }.bind(this));
+      }.bind(this);
+
+      if (this.inEndpoint.pollActive) {
+        this.inEndpoint.stopPoll(releaseInterface);
+      } else if (this.inEndpoint.pollTransfers) {
+        this.inEndpoint.once('end', releaseInterface);
+      } else {
+        releaseInterface();
+      }
 
     } else {
 

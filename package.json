@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test test/test.js test/host.test.js",
+    "test": "node --test test/test.js test/host.test.js test/usb-node.test.js",
     "rebuild" : "npm rebuild --update-binary"
   },
   "repository": {
