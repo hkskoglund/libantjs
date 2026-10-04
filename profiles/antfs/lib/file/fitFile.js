@@ -84,7 +84,10 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     else
       dateStr = this._formatDate(this.date);
 
-   filename = FitFile.prototype.FIT_FILE_TYPES[this.subType] + '-' + this.index;
+   filename = FitFile.prototype.FIT_FILE_TYPES[this.subType];
+
+    if (!unixFormat)
+      filename += '-' + this.index;
 
     if (!unixFormat) {
       if (dateStr !== '')
@@ -109,7 +112,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   FitFile.prototype.toUnixString = function() {
 
-    return File.prototype.toUnixString.call(this)  + this.getFileName(true);
+    return File.prototype.toUnixString.call(this, this.getFileName(true));
 
   };
 

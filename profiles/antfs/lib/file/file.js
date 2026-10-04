@@ -84,80 +84,64 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   File.prototype.getFilename = function ()
   {
     if (this.type <= File.prototype.TYPE.MANUFACTURER_MAX)
-      return 'Manufacturer-' + this.index;
+      return 'Manufacturer';
     else
       return '';
 
   };
 
-  File.prototype.toUnixString = function() {
-  var  filetype = '-', // Regular file = -
-    ownerPermission = filetype,
-    groupPermission = '-rw',
-    otherPermission = '---',
-    owner = this.directory.host.getHostname(),
-    group = 'antfs',
-    permission,
-    size = Number(this.size).toString(),
-    MAXLEN_SIZE = 12,
-    prefix_size = '',
-    i,
-    date,
-    dateSplit,
-    month,
-    day,
-    year,
-    dateStr='',
-    timeSplit,
-    hour,
-    min,
-    halfYearInMilliseconds = 182.5*24*60*60*1000,
-    iNodes = 1; // 16-bytes meta data in antfs
+  File.prototype.getFlags = function () {
+    var p = this.permission;
 
-   if (this.permission.read)
-     ownerPermission += 'r';
-   else
-     ownerPermission += '-';
+    return (p.read ? 'R' : '-') + (p.write ? 'W' : '-') + (p.erase ? 'E' : '-') +
+      (p.archive ? 'A' : '-') + (p.append ? 'P' : '-') + (p.crypto ? 'C' : '-');
+  };
 
-   if (this.permission.write)
-     ownerPermission += 'w';
-    else
-      ownerPermission += '-';
+  File.prototype.getHumanSize = function () {
+    return File.humanSize(this.size);
+  };
 
-   for (i=0; i< MAXLEN_SIZE-size.length; i++)
-     prefix_size += ' ';
+  File.humanSize = function (bytes) {
+    var units = ['', 'K', 'M', 'G'],
+      size = bytes,
+      i = 0;
 
-   size = prefix_size + size;
+    while (size >= 1024 && i < units.length - 1) {
+      size /= 1024;
+      i++;
+    }
 
-   if (this.timeFormat === File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989) {
-     date = this.getDateFrom31Dec1989();
-     /*
-     'Wed Apr 01 2015'
-     > d.toDateString().split(' ')
-    [ 'Wed', 'Apr', '01', '2015' ]
-    */
+    return (i === 0 || size >= 10 ? Math.round(size) : size.toFixed(1)) + units[i];
+  };
 
-     dateSplit = date.toDateString().split(' ');
-     month = dateSplit[1];
-     day = dateSplit[2];
-     year = dateSplit[3];
+  File.prototype.getDateString = function () {
+    var date,
+      pad = function (n) { return n < 10 ? '0' + n : '' + n; };
 
-     timeSplit = date.toLocaleTimeString().split(':');
-     hour = timeSplit[0];
-     min = timeSplit[1];
+    if (this.timeFormat !== File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989)
+      return this.date.toString();
 
-     dateStr = month + ' ' + day + ' ';
+    // 0 and 0xFFFFFFFF are used for files without a date
+    if (this.date === 0 || this.date === 0xFFFFFFFF)
+      return '-';
 
-     if (date.getTime() <= Date.now()-halfYearInMilliseconds)
-       dateStr += ' ' + year;
-     else
-       dateStr += hour + ':' + min;
-   }
+    date = this.getDateFrom31Dec1989();
 
-   permission = ownerPermission + groupPermission + otherPermission + ' '+ iNodes + ' ' + owner +
-               ' ' + group + size + ' ' + dateStr + ' ' + File.prototype.getFilename.call(this);
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' +
+      pad(date.getHours()) + ':' + pad(date.getMinutes());
+  };
 
-    return permission;
+  File.UNIX_HEADER = 'Idx  Flags    Size   Modified          Name';
+
+  File.prototype.toUnixString = function (name) {
+    var pad = function (str, len) { str = '' + str; while (str.length < len) str = ' ' + str; return str; },
+      dateStr = this.getDateString();
+
+    while (dateStr.length < 16)
+      dateStr += ' ';
+
+    return pad(this.index, 3) + '  ' + this.getFlags() + '  ' + pad(this.getHumanSize(), 5) + '   ' +
+      dateStr + '  ' + (name !== undefined ? name : this.getFilename());
   };
 
   module.exports = File;

@@ -177,7 +177,13 @@ Directory.prototype.ls = function() {
   var i,
     str;
 
-  str = 'totals ' + this.getTotalBlocks() + '\n';
+  var total = 0;
+
+  this.file.forEach(function (file) { total += file.size; });
+
+  str = 'Flags: R=read W=write E=erase A=archived P=append C=crypto\n';
+  str += 'total ' + File.humanSize(total) + ' in ' + this.file.length + ' files\n';
+  str += File.UNIX_HEADER + '\n';
 
   this.file.forEach(function (file) { str += file.toUnixString() + '\n'; });
 
