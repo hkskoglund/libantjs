@@ -7,6 +7,7 @@ const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessag
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
+const Directory = require('../profiles/antfs/lib/file/directory');
 
 test('ResetSystemMessage serializes to a valid reset frame', () => {
   const reset = new ResetSystemMessage();
@@ -94,4 +95,26 @@ test('ChannelId.decode clears a stale 20-bit device number', () => {
 
   assert.equal(channelId.has20BitDeviceNumber(), 0);
   assert.equal(Object.hasOwn(channelId, 'deviceNumber20BIT'), false);
+});
+
+test('Directory.getFileName includes the authenticated client friendly name', () => {
+  const host = {
+    log: { log() {} },
+    getClientFriendlyname: () => 'Forerunner 935',
+    getClientSerialNumber: () => 3842729776
+  };
+  const directory = new Directory(undefined, host);
+
+  assert.equal(directory.getFileName(), 'directory-Forerunner 935-3842729776');
+});
+
+test('Directory.getFileName falls back to the client serial number without a friendly name', () => {
+  const host = {
+    log: { log() {} },
+    getClientFriendlyname: () => undefined,
+    getClientSerialNumber: () => 3842729776
+  };
+  const directory = new Directory(undefined, host);
+
+  assert.equal(directory.getFileName(), 'directory-3842729776');
 });
