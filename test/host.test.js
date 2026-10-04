@@ -139,3 +139,47 @@ test('Host.exit preserves both errors when reset and USB exit fail', async () =>
     });
   });
 });
+
+test('Channel.getStatus forwards errors without updating channel state', () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  const statusError = new Error('status request failed');
+  channel.state = channel.TRACKING;
+  host.getChannelStatus = (_channel, callback) => callback(statusError);
+
+  channel.getStatus((error, status) => {
+    assert.equal(error, statusError);
+    assert.equal(status, undefined);
+    assert.equal(channel.state, channel.TRACKING);
+  });
+});
+
+test('Channel.assign accepts an omitted extended assignment before the callback', () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  const callback = () => {};
+  let assignArguments;
+
+  host.assignChannel = function() {
+    assignArguments = Array.prototype.slice.call(arguments);
+  };
+
+  channel.assign(channel.BIDIRECTIONAL_SLAVE, 0, undefined, callback);
+
+  assert.equal(assignArguments[0], channel.channel);
+  assert.equal(assignArguments[1], channel.BIDIRECTIONAL_SLAVE);
+  assert.equal(assignArguments[2], 0);
+  assert.equal(assignArguments[3], callback);
+  assert.equal(assignArguments.length, 4);
+});
+
+test('Channel.toString includes zero-valued network, type, and state', () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  channel.state = channel.UNASSIGNED;
+  const description = channel.toString();
+
+  assert.match(description, /Net 0\|/);
+  assert.match(description, /Bidirectional SLAVE\|/);
+  assert.match(description, /Unassigned\|/);
+});

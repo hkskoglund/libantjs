@@ -267,6 +267,9 @@
 
     } else if (typeof extendedAssignment === 'function') {
       this.host.assignChannel(this.channel, this.type, this.net, extendedAssignment);
+
+    } else if (typeof extendedAssignment === 'undefined' && typeof callback === 'function') {
+      this.host.assignChannel(this.channel, this.type, this.net, callback);
     }
 
   };
@@ -349,9 +352,11 @@
     var key,
       onStatus = function(err, status) {
 
-        this.state = status.state;
-        this.type = status.type;
-        this.net = status.net;
+        if (!err) {
+          this.state = status.state;
+          this.type = status.type;
+          this.net = status.net;
+        }
 
         callback(err, status);
 
@@ -402,10 +407,10 @@
   Channel.prototype.toString = function() {
     var msg = 'Ch ' + this.channel + ' |';
 
-    if (this.net)
+    if (typeof this.net === 'number')
       msg += 'Net ' + this.net + '|';
 
-    if (this.type)
+    if (typeof this.type === 'number')
       msg += Channel.prototype.TYPE[this.type] + '|';
 
     if (this.id)
@@ -419,7 +424,7 @@
       msg += ' period ' + this.period + '|';
     }
 
-    if (this.state) // Search etc.
+    if (typeof this.state === 'number') // Search etc.
     {
       msg += Channel.prototype.STATE[this.state] + '|';
     }
