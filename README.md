@@ -2,6 +2,17 @@
 
 A javascript implementation of the ANT protocol that interfaces with ANT USB stick. For nodejs.
 
+## Runtime and platform support
+
+- Node.js 22 or newer is required. Node.js 22 is the minimum supported version; use a currently maintained Node.js release.
+- The Node.js backend uses the native `usb` package and requires a working libusb-compatible USB environment. Linux, macOS, and Windows are intended targets, but this project does not currently run a platform CI matrix.
+- On Linux, the user running the application must have permission to access the ANT USB stick. Configure the host's USB device permissions (for example, with a udev rule) rather than running the application as root.
+- Install the library and its native dependency with `npm install`. Connect a supported ANT USB stick before initializing the host.
+
+## Tests
+
+Run the automated unit tests with `npm test`. They use Node.js's built-in test runner and do not require an ANT USB stick.
+
 #### Message support matrix
 
 | Class  | Type                                 | Supported |

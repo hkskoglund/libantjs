@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "ANT wireless USB library",
   "main": "host.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test test/test.js test/host.test.js",
     "rebuild" : "npm rebuild --update-binary"
   },
   "repository": {

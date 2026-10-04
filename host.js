@@ -118,6 +118,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
   var msgBytes,
     messageStr,
+    responseEvent,
 
     onSentToANT = function _onSentToANT(error, msg) {
 
@@ -127,11 +128,16 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
           this.log.log('error', 'TX failed of ' + messageStr, error);
         }
 
-        if (event)
-          this.removeListener(event, callback);
+        if (event) {
+          if (typeof channel !== 'number') {
+            this.removeListener(event, callback);
+          } else {
+            this.channel[channel].removeListener(responseEvent, callback);
+          }
+        }
 
         callback(error, msg);
-
+        return;
       }
 
       if (!event) { // i.e send acknowledged data
@@ -152,10 +158,11 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
 
     } else {
 
-      this.channel[channel].once(event + '_0x' + message.id.toString(16), callback);
+      responseEvent = event + '_0x' + message.id.toString(16);
+      this.channel[channel].once(responseEvent, callback);
 
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + event + '_0x' + message.id.toString(16) + ' channel ' + channel);
+        this.log.log('log', 'Waiting for ' + responseEvent + ' channel ' + channel);
     }
 
   }
@@ -263,16 +270,24 @@ Host.prototype.exit = function(callback) {
 
   // TO DO? Close open channels? Exit channels/profiles?
 
-  this.resetSystem(function _onReset(err, notificationStartup) {
+  this.resetSystem(function _onReset(resetError, notificationStartup) {
 
     for (var c = 0; c < Host.prototype.MAX_CHAN; c++) {
       this.channel[c].removeAllListeners();
     }
 
-    this.usb.exit(function _onUSBexit() {
+    this.usb.exit(function _onUSBexit(usbExitError) {
 
       this.removeAllListeners();
-      callback();
+
+      if (resetError && usbExitError) {
+        var shutdownError = new Error('Shutdown failed during reset and USB exit');
+        shutdownError.resetError = resetError;
+        shutdownError.usbExitError = usbExitError;
+        callback(shutdownError);
+      } else {
+        callback(resetError || usbExitError);
+      }
 
     }.bind(this));
 
