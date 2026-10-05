@@ -17,7 +17,9 @@ var Channel = require('../../channel/channel'),
 
   AuthenticateRequest = require('./lib/request-response/authenticateRequest'),
   DownloadRequest  = require('./lib/request-response/downloadRequest'),
-  EraseRequest = require('./lib/request-response/eraseRequest');
+  EraseRequest = require('./lib/request-response/eraseRequest'),
+  UploadRequest = require('./lib/request-response/uploadRequest'),
+  UploadDataRequest = require('./lib/request-response/uploadDataRequest');
 
 function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, erase,ls, skipNewFiles, ignoreBusyState) {
 
@@ -312,6 +314,10 @@ Host.prototype.sendNow = function (e,m)
         else if (this.session.request instanceof EraseRequest)
 
           this.emit('erase',err);
+
+        else if (this.session.request instanceof UploadRequest || this.session.request instanceof UploadDataRequest)
+
+          this.emit('upload', err, this.transportManager.session);
       }
       else {
         if (this.log.logging)
@@ -325,6 +331,12 @@ Host.prototype.sendNow = function (e,m)
 
 };
 
+
+// Queue an overwrite of the file at directory index with data (Uint8Array). Call before the transport state is reached.
+Host.prototype.upload = function (index, data)
+{
+  this.transportManager.addUploadTask(index, data);
+};
 
 Host.prototype.sendRequest = function (e,m)
 {

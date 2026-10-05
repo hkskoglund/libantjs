@@ -17,6 +17,9 @@ var EventEmitter = require('events'),
   UploadRequest = require('../request-response/uploadRequest'),
   UploadResponse = require('../request-response/uploadRequestResponse'),
 
+  UploadDataRequest = require('../request-response/uploadDataRequest'),
+  UploadDataResponse = require('../request-response/uploadDataResponse'),
+
   CRC = require('./util/crc'),
   crc = new CRC(),
 
@@ -24,7 +27,9 @@ var EventEmitter = require('events'),
 
   Directory = require('../file/directory'),
 
-  fs = require('fs');
+  fs = require('fs'),
+  os = require('os'),
+  path = require('path');
 
 // heap = require('/usr/lib/node_modules/heapdump');
 
@@ -110,6 +115,12 @@ TransportManager.prototype.onBurst = function(burst) {
 
       break;
 
+    case UploadDataResponse.prototype.ID:
+
+      this.onUploadDataResponse(responseData);
+
+      break;
+
   }
 };
 
@@ -122,6 +133,7 @@ TransportManager.prototype.onReset = function() {
   this.host.removeAllListeners('download_progress');
   this.host.removeAllListeners('download');
   this.host.removeAllListeners('erase');
+  this.host.removeAllListeners('upload');
 
   this.once('transport', this.onTransport);
 
@@ -221,6 +233,18 @@ TransportManager.prototype.addEraseTask = function(index) {
   this.addTask(EraseRequest.prototype.ID,index);
 };
 
+// Queue an upload (overwrite) of the file at directory index. Executed in transport state after downloads/erases
+TransportManager.prototype.addUploadTask = function(index, data) {
+
+  this.task.push({
+    request: UploadRequest.prototype.ID,
+    index: index,
+    data: data,
+    done: false,
+    retry: 0
+  });
+};
+
 TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
 
 TransportManager.prototype.onEraseResponse = function(responseData) {
@@ -254,13 +278,243 @@ TransportManager.prototype.onEraseResponse = function(responseData) {
   }
 };
 
+TransportManager.prototype.MAX_UPLOAD_RETRIES = 3;
+
 TransportManager.prototype.onUploadResponse = function(responseData)
 {
-  var response;
+  var response,
+    session = this.session,
+    NO_ERROR;
+
+  if (!session || !session.upload)
+    return;
 
   response = new UploadResponse(responseData);
 
-  console.log('upload response',response, response.toString());
+  session.response.push(response);
+
+  if (this.log.logging)
+    this.logger('log', response.toString());
+
+  switch (response.response) {
+
+    case UploadResponse.prototype.OK:
+
+      if (session.upload.data.byteLength > response.maxFileSize) {
+        this._finishUpload(new Error('File size ' + session.upload.data.byteLength + ' exceeds client max file size ' + response.maxFileSize), true);
+        return;
+      }
+
+      if (response.offset > session.upload.data.byteLength) {
+        this._finishUpload(new Error('Client upload offset ' + response.offset + ' is beyond file size'), true);
+        return;
+      }
+
+      session.upload.maxBlockSize = response.maxBlockSize;
+      session.crcSeed = response.CRC;
+      this._uploadBlock(response.offset);
+
+      break;
+
+    default: // does not exist, exists not writable, not enough space, invalid, not ready
+
+      this._finishUpload(response, response.response !== UploadResponse.prototype.NOT_READY);
+
+      break;
+  }
+};
+
+TransportManager.prototype.onUploadDataResponse = function(responseData)
+{
+  var response,
+    session = this.session,
+    upload,
+    offset;
+
+  if (!session || !session.upload)
+    return;
+
+  upload = session.upload;
+
+  response = new UploadDataResponse(responseData);
+
+  session.response.push(response);
+
+  if (this.log.logging)
+    this.logger('log', response.toString());
+
+  if (response.result !== UploadDataResponse.prototype.OK) {
+
+    // Ask the client where to continue (offset + CRC) instead of guessing what it has received
+    if (++upload.retry > this.MAX_UPLOAD_RETRIES) {
+      this._finishUpload(new Error('Upload failed after ' + this.MAX_UPLOAD_RETRIES + ' retries at offset ' + upload.offset), false);
+      return;
+    }
+
+    this.sendRequest(new UploadRequest(session.index, upload.data.byteLength, UploadRequest.prototype.CONTINUE_OFFSET));
+    return;
+  }
+
+  upload.retry = 0;
+
+  session.crcSeed = upload.blockCrc;
+  offset = upload.offset + upload.blockLength;
+
+  session.offset = offset;
+  session.progress = offset / upload.data.byteLength * 100;
+
+  this.host.emit('upload_progress', undefined, session);
+
+  if (offset < upload.data.byteLength)
+    this._uploadBlock(offset);
+  else
+    this._finishUpload();
+};
+
+TransportManager.prototype._uploadBlock = function(offset)
+{
+  var upload = this.session.upload,
+    remaining = upload.data.byteLength - offset,
+    blockLength = remaining,
+    maxBlock = Math.floor(upload.maxBlockSize / UploadDataRequest.prototype.PACKET_LENGTH) * UploadDataRequest.prototype.PACKET_LENGTH,
+    request;
+
+  if (maxBlock > 0 && blockLength > maxBlock)
+    blockLength = maxBlock;
+
+  request = new UploadDataRequest(this.session.crcSeed, offset, upload.data.subarray(offset, offset + blockLength));
+
+  upload.offset = offset;
+  upload.blockLength = blockLength;
+  upload.blockCrc = crc.updateCRC16(this.session.crcSeed, this._paddedBlock(request.data));
+
+  this.sendRequest(request);
+};
+
+// Block as sent on air (zero padded to 8 byte packets) - the CRC covers the padding
+TransportManager.prototype._paddedBlock = function(block)
+{
+  var padded = new Uint8Array(Math.ceil(block.byteLength / UploadDataRequest.prototype.PACKET_LENGTH) * UploadDataRequest.prototype.PACKET_LENGTH);
+
+  padded.set(block);
+
+  return padded;
+};
+
+TransportManager.prototype._finishUpload = function(error, final)
+{
+  var task = this.task[this.execTaskIndex];
+
+  if (task && task.request === UploadRequest.prototype.ID)
+    task.done = !error || !!final;
+
+  this.host.emit('upload', error, this.session);
+};
+
+// Overwrites the file at directory index (index 0 is the directory and 0xFFFE the command pipe, they are not allowed here)
+TransportManager.prototype.upload = function(index, data, callback) {
+  var request,
+    file;
+
+  if (data instanceof ArrayBuffer)
+    data = new Uint8Array(data);
+
+  if (!(data instanceof Uint8Array) || !data.byteLength)
+    return callback(new Error('Upload data must be a non-empty Uint8Array'));
+
+  if (typeof index !== 'number' || index < 1 || index >= UploadRequest.prototype.COMMAND_PIPE)
+    return callback(new Error('Invalid upload index ' + index));
+
+  file = this.directory && this.directory.getFile(index);
+
+  if (this.directory && !file)
+    return callback(new Error('No file at index ' + index));
+
+  if (file && !file.permission.write)
+    return callback(new Error('File at index ' + index + ' is not writable'));
+
+  this.session = {
+    index: index,
+    request: [],
+    response: [],
+    crcSeed: 0,
+    file: file,
+    upload: {
+      data: data,
+      offset: 0,
+      retry: 0,
+      maxBlockSize: 0
+    }
+  };
+
+  if (this.execTaskIndex >= 0 && this.task[this.execTaskIndex])
+    this.task[this.execTaskIndex].retry++;
+
+  this.host.once('upload', function _onUpload(err, session) {
+    this.onUpload(err, session);
+    callback(err, session);
+  }.bind(this));
+
+  request = new UploadRequest(index, data.byteLength, 0);
+
+  this.sendRequest(request);
+};
+
+// XDG Base Directory spec: $XDG_DATA_HOME, defaulting to ~/.local/share (relative values must be ignored)
+TransportManager.prototype.getBackupDirectory = function() {
+  var dataHome = process.env.XDG_DATA_HOME;
+
+  if (!dataHome || !path.isAbsolute(dataHome))
+    dataHome = path.join(os.homedir(), '.local', 'share');
+
+  return path.join(dataHome, 'getfit');
+};
+
+// Downloads the existing file and saves a timestamped copy before overwriting it. Upload is aborted if the backup fails.
+TransportManager.prototype.uploadWithBackup = function(index, data, callback) {
+
+  this.download(index, function _onBackupDownload(err, session) {
+    var backupName,
+        backupError;
+
+    if (err) {
+      return callback(new Error('Backup of index ' + index + ' failed, upload aborted: ' + err.toString()));
+    }
+
+    backupName = path.join(this.getBackupDirectory(), session.file.getFileName() + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-'));
+
+    try {
+      fs.mkdirSync(path.dirname(backupName), { recursive: true });
+      fs.writeFileSync(backupName, Buffer.from(session.packets));
+    } catch (e) {
+      backupError = e;
+    }
+
+    if (backupError) {
+      return callback(new Error('Could not write backup ' + backupName + ', upload aborted: ' + backupError.toString()));
+    }
+
+    if (this.log.logging)
+      this.log.log('log', 'Backed up index ' + index + ' to ' + backupName);
+
+    this.upload(index, data, function _onUploaded(uploadErr, uploadSession) {
+      if (uploadSession)
+        uploadSession.backup = backupName;
+      callback(uploadErr, uploadSession);
+    });
+  }.bind(this));
+};
+
+TransportManager.prototype.onUpload = function(error, session) {
+
+  session = session || this.session;
+
+  if (this.log.logging) {
+    if (error)
+      this.log.log('error', 'Failed upload index ' + session.index + ' ' + error.toString());
+    else
+      this.log.log('log', 'Uploaded ' + session.upload.data.byteLength + ' bytes to index ' + session.index);
+  }
 };
 
 TransportManager.prototype.onDownloadResponse = function(responseData) {
@@ -383,6 +637,8 @@ TransportManager.prototype.onRequestSent = function(err, msg) {
        this.emit('download', err); // Continue with next task
     else if (this.session.request[0] instanceof EraseRequest)
       this.emit('erase', err);
+    else if (this.session.request[0] instanceof UploadRequest)
+      this.host.emit('upload', err, this.session);
   }
 
 };
@@ -582,6 +838,12 @@ TransportManager.prototype.onTransport = function() {
           }.bind(this);
 
           eraseLoop();
+
+          break;
+
+        case UploadRequest.prototype.ID:
+
+          this.uploadWithBackup(this.task[this.execTaskIndex].index, this.task[this.execTaskIndex].data, onNextTask);
 
           break;
 

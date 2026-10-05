@@ -4,7 +4,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 /*jshint -W097 */
 'use strict';
 
-var crc = new require('../layer/util/crc')();
+var CRC = require('../layer/util/crc'),
+    crc = new CRC();
 
 
 function UploadDataRequest(crcSeed, offset, data) {
@@ -13,21 +14,10 @@ function UploadDataRequest(crcSeed, offset, data) {
 
 UploadDataRequest.prototype.ID = 0x0C;
 
-UploadDataRequest.prototype.CONTINUE_TRANSFER = 0x00;
-UploadDataRequest.prototype.NEW_TRANSFER      = 0x01;
-
-UploadDataRequest.prototype.DIRECTORY     = 0x00;
-UploadDataRequest.prototype.COMMAND_PIPE  = 0xFFFE;
-
 UploadDataRequest.prototype.HEADER_LENGTH              = 8;
 UploadDataRequest.prototype.FOOTER_LENGTH              = 8;
-UploadDataRequest.prototype.FOOTER_RESERVED_PAD_LENGTH = 6;
 UploadDataRequest.prototype.CRC_LENGTH                 = 2;
 UploadDataRequest.prototype.PACKET_LENGTH              = 8;
-
-UploadDataRequest.prototype.continueRequest = function(index, offset, crcSeed, maxBlockSize) {
-  this.request(index, offset, UploadDataRequest.prototype.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
-};
 
 UploadDataRequest.prototype.request = function(crcSeed, offset, data) {
 
@@ -36,34 +26,30 @@ UploadDataRequest.prototype.request = function(crcSeed, offset, data) {
   this.data = data;
 };
 
+// Spec. 12.10 - burst: header packet, data packets (padded to 8 bytes) and a footer packet with 6 reserved bytes + CRC
 UploadDataRequest.prototype.serialize = function() {
 
-  var command = new Uint8Array(this.HEADER_LENGTH + this.data.byteLength + this.FOOTER_LENGTH),
+  var paddedLength = Math.ceil(this.data.byteLength / this.PACKET_LENGTH) * this.PACKET_LENGTH,
+      command = new Uint8Array(this.HEADER_LENGTH + paddedLength + this.FOOTER_LENGTH),
       dv      = new DataView(command.buffer);
-
-
-
- // PACKET 1 - HEADER
 
   command[0] = 0x44; // ANT-FS COMMAND message
   command[1] = this.ID;
   dv.setUint16(2, this.crcSeed, true);
   dv.setUint32(4, this.offset, true);
 
-  // PACKET 2:N - DATA PACKETS
-
   command.set(this.data, this.HEADER_LENGTH);
 
-  // PACKET N + 1 - FOOTER
+  // CRC covers the data including padding, continuing from the seed
+  this.crc16 = crc.updateCRC16(this.crcSeed, command.subarray(this.HEADER_LENGTH, this.HEADER_LENGTH + paddedLength));
 
-  // 6 zeros
   dv.setUint16(command.byteLength - this.CRC_LENGTH, this.crc16, true);
 
   return command;
 };
 
 UploadDataRequest.prototype.toString = function() {
-  return this.constructor.name + ' id 0x' + this.ID.toString(16) + ' offset ' + this.offset +' CRC seed ' + this.crcSeed;
+  return this.constructor.name + ' id 0x' + this.ID.toString(16) + ' offset ' + this.offset +' CRC seed ' + this.crcSeed + ' length ' + this.data.byteLength;
 };
 
 module.exports = UploadDataRequest;
