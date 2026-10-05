@@ -341,7 +341,8 @@ TransportManager.prototype.onUploadDataResponse = function(responseData)
   session.response.push(response);
 
   if (this.log.logging)
-    this.logger('log', response.toString());
+    this.logger('log', response.toString() + ' raw ' + Array.prototype.map.call(responseData, function(b) { return ('0' + b.toString(16)).slice(-2); }).join(' ') +
+      ' | sent ' + session.request[session.request.length - 1].toString() + ' block crc 0x' + upload.blockCrc.toString(16) + ' maxBlockSize ' + upload.maxBlockSize);
 
   if (response.result !== UploadDataResponse.prototype.OK) {
 
@@ -379,26 +380,17 @@ TransportManager.prototype._uploadBlock = function(offset)
     maxBlock = Math.floor(upload.maxBlockSize / UploadDataRequest.prototype.PACKET_LENGTH) * UploadDataRequest.prototype.PACKET_LENGTH,
     request;
 
-  if (maxBlock > 0 && blockLength > maxBlock)
-    blockLength = maxBlock;
+  // Only split when the remaining data does not fit in one block (non-final blocks must be whole 8 byte packets)
+  if (upload.maxBlockSize > 0 && blockLength > upload.maxBlockSize)
+    blockLength = maxBlock > 0 ? maxBlock : upload.maxBlockSize;
 
   request = new UploadDataRequest(this.session.crcSeed, offset, upload.data.subarray(offset, offset + blockLength));
 
   upload.offset = offset;
   upload.blockLength = blockLength;
-  upload.blockCrc = crc.updateCRC16(this.session.crcSeed, this._paddedBlock(request.data));
+  upload.blockCrc = crc.updateCRC16(this.session.crcSeed, request.data);
 
   this.sendRequest(request);
-};
-
-// Block as sent on air (zero padded to 8 byte packets) - the CRC covers the padding
-TransportManager.prototype._paddedBlock = function(block)
-{
-  var padded = new Uint8Array(Math.ceil(block.byteLength / UploadDataRequest.prototype.PACKET_LENGTH) * UploadDataRequest.prototype.PACKET_LENGTH);
-
-  padded.set(block);
-
-  return padded;
 };
 
 TransportManager.prototype._finishUpload = function(error, final)

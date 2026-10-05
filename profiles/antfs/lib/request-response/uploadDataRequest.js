@@ -40,8 +40,8 @@ UploadDataRequest.prototype.serialize = function() {
 
   command.set(this.data, this.HEADER_LENGTH);
 
-  // CRC covers the data including padding, continuing from the seed
-  this.crc16 = crc.updateCRC16(this.crcSeed, command.subarray(this.HEADER_LENGTH, this.HEADER_LENGTH + paddedLength));
+  // CRC covers the data excluding padding (same as for download), continuing from the seed
+  this.crc16 = crc.updateCRC16(this.crcSeed, this.data);
 
   dv.setUint16(command.byteLength - this.CRC_LENGTH, this.crc16, true);
 
