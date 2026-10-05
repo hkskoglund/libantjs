@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "node --test test/test.js test/host.test.js test/usb-node.test.js",
-    "rebuild" : "npm rebuild --update-binary"
+    "rebuild": "npm rebuild --update-binary"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,7 @@
     "USB",
     "library"
   ],
-  "author": "Henning Knut Skoglund <hkskoglund@gmail.com>",
+  "author": "Henning Skoglund <hkskoglund@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/hkskoglund/libantjs/issues"
@@ -29,5 +29,8 @@
   "homepage": "https://github.com/hkskoglund/libantjs",
   "dependencies": {
     "usb": "^1.0.6"
+  },
+  "allowScripts": {
+    "usb@1.9.2": true
   }
 }
