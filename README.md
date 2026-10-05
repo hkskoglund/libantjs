@@ -71,6 +71,8 @@ host.init(0, (error) => {
 
 The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `channel.setNetworkKey(channel.NET.KEY['ANT+'], callback)` before opening the channel. Close an open channel with `channel.close(callback)` and shut down the USB host with `host.exit(callback)`.
 
+ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDir>/<device serial number>/`. Set `dataDir` in the `Host` options, e.g. `new Host({ dataDir: '/path/to/dir' })`; the default is `$XDG_DATA_HOME/libantjs` (`~/.local/share/libantjs`).
+
 ## Tests
 
 Run the automated unit tests with:

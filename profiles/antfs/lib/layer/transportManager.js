@@ -452,14 +452,27 @@ TransportManager.prototype.upload = function(index, data, callback) {
   this.sendRequest(request);
 };
 
-// XDG Base Directory spec: $XDG_DATA_HOME, defaulting to ~/.local/share (relative values must be ignored)
+// Base directory is the dataDir option of the client program, defaulting to $XDG_DATA_HOME/libantjs
+// (XDG Base Directory spec: ~/.local/share if unset; relative values must be ignored)
 TransportManager.prototype.getBackupDirectory = function() {
-  var dataHome = process.env.XDG_DATA_HOME;
+  var dataHome;
+
+  if (this.host.option && this.host.option.dataDir)
+    return path.resolve(this.host.option.dataDir);
+
+  dataHome = process.env.XDG_DATA_HOME;
 
   if (!dataHome || !path.isAbsolute(dataHome))
     dataHome = path.join(os.homedir(), '.local', 'share');
 
-  return path.join(dataHome, 'getfit');
+  return path.join(dataHome, 'libantjs');
+};
+
+// Files are stored per device: <dataDir>/<client serial number>
+TransportManager.prototype.getDeviceDirectory = function() {
+  var serial = this.host.authenticationManager && this.host.authenticationManager.clientSerialNumber;
+
+  return serial ? path.join(this.getBackupDirectory(), String(serial)) : this.getBackupDirectory();
 };
 
 // Downloads the existing file and saves a timestamped copy before overwriting it. Upload is aborted if the backup fails.
@@ -473,7 +486,7 @@ TransportManager.prototype.uploadWithBackup = function(index, data, callback) {
       return callback(new Error('Backup of index ' + index + ' failed, upload aborted: ' + err.toString()));
     }
 
-    backupName = path.join(this.getBackupDirectory(), session.file.getFileName() + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-'));
+    backupName = path.join(this.getDeviceDirectory(), session.file.getFileName() + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-'));
 
     try {
       fs.mkdirSync(path.dirname(backupName), { recursive: true });
@@ -731,8 +744,15 @@ var filename;
    session = session || this.session; // In case .emit('download'/'erase') without reference to session (when max retries reached in host sendrequest)
 
   if (!error && session && session.index) { // Won't save directory at index 0
-    filename = session.file.getFileName();
-    fs.writeFile(filename, new Buffer(session.packets), function(err) {
+    filename = path.join(this.getDeviceDirectory(), session.file.getFileName());
+    try {
+      fs.mkdirSync(path.dirname(filename), { recursive: true });
+    } catch (e) {
+      if (this.log.logging)
+        this.log.log('error', 'Error creating directory for ' + filename, e);
+      return;
+    }
+    fs.writeFile(filename, Buffer.from(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
           this.log.log('error', 'Error writing ' + filename, err);

@@ -198,7 +198,8 @@ Host.prototype.connectANTFS = function (channel,net,deviceNumber, hostname, down
 {
 
   var antfsHost = new ANTFSHost({
-    log : this.options.log
+    log : this.options.log,
+    dataDir : this.options.dataDir
   },this,channel,net, deviceNumber, hostname, download, erase,ls, skipNewFiles, ignoreBusyState);
 
   this.setChannel(antfsHost);
