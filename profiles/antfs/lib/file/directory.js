@@ -33,10 +33,9 @@ Directory.prototype.TIME_FORMAT = {
 Directory.prototype.HEADER_LENGTH = 16;
 
 Directory.prototype.getFileName = function() {
-  var clientFriendlyname = this.host.getClientFriendlyname(),
-    clientSerialNumber = this.host.getClientSerialNumber();
+  var clientSerialNumber = this.host.getClientSerialNumber();
 
-  return 'directory-' + (clientFriendlyname ? clientFriendlyname + '-' : '') + clientSerialNumber;
+  return 'directory-' + clientSerialNumber;
 };
 
 Directory.prototype.getFile = function(directoryIndex) {

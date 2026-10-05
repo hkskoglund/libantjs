@@ -99,7 +99,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
       if (!clientFriendlyname)
          return  'client-' + clientSerialNumber + ' ' + filename;
       else
-        return clientFriendlyname + ' ' + filename;
+        return filename;
     }
     else
       return filename + '.fit';

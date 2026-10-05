@@ -9,6 +9,7 @@ const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
 const Directory = require('../profiles/antfs/lib/file/directory');
+const FitFile = require('../profiles/antfs/lib/file/fitFile');
 const DownloadRequest = require('../profiles/antfs/lib/request-response/downloadRequest');
 const TransportManager = require('../profiles/antfs/lib/layer/transportManager');
 const CRC = require('../profiles/antfs/lib/layer/util/crc');
@@ -154,7 +155,7 @@ test('ChannelId.decode clears a stale 20-bit device number', () => {
   assert.equal(Object.hasOwn(channelId, 'deviceNumber20BIT'), false);
 });
 
-test('Directory.getFileName includes the authenticated client friendly name', () => {
+test('Directory.getFileName omits the authenticated client friendly name', () => {
   const host = {
     log: { log() {} },
     getClientFriendlyname: () => 'Forerunner 935',
@@ -162,7 +163,7 @@ test('Directory.getFileName includes the authenticated client friendly name', ()
   };
   const directory = new Directory(undefined, host);
 
-  assert.equal(directory.getFileName(), 'directory-Forerunner 935-3842729776');
+  assert.equal(directory.getFileName(), 'directory-3842729776');
 });
 
 test('Directory.getFileName falls back to the client serial number without a friendly name', () => {
@@ -174,4 +175,20 @@ test('Directory.getFileName falls back to the client serial number without a fri
   const directory = new Directory(undefined, host);
 
   assert.equal(directory.getFileName(), 'directory-3842729776');
+});
+
+test('FitFile.getFileName omits the authenticated client friendly name', () => {
+  const directory = {
+    timeFormat: 0,
+    host: {
+      getClientFriendlyname: () => 'Forerunner 935',
+      getClientSerialNumber: () => 3842729776
+    }
+  };
+  const file = new FitFile(undefined, directory);
+  file.subType = 2;
+  file.index = 4;
+  file.date = 0xFFFFFFFF;
+
+  assert.equal(file.getFileName(), 'Settings-4.fit');
 });
