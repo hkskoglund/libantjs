@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const EventEmitter = require('node:events');
 const test = require('node:test');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
@@ -8,6 +9,62 @@ const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
 const Directory = require('../profiles/antfs/lib/file/directory');
+const DownloadRequest = require('../profiles/antfs/lib/request-response/downloadRequest');
+const TransportManager = require('../profiles/antfs/lib/layer/transportManager');
+const CRC = require('../profiles/antfs/lib/layer/util/crc');
+
+function downloadResponse(offset, fileSize, packets) {
+  const data = new Uint8Array(16 + packets.length + 8);
+  const view = new DataView(data.buffer);
+
+  data[2] = 0;
+  view.setUint32(4, packets.length, true);
+  view.setUint32(8, offset, true);
+  view.setUint32(12, fileSize, true);
+  data.set(packets, 16);
+
+  return data;
+}
+
+test('TransportManager continues a download with the CRC of the received prefix', () => {
+  const manager = Object.create(TransportManager.prototype);
+  const requests = [];
+  const initialPackets = Uint8Array.from([1, 2, 3]);
+  const managerCrc = new CRC();
+  const expectedCrc = new CRC().calc16(initialPackets);
+
+  manager.host = new EventEmitter();
+  manager.log = { logging: false };
+  manager.session = {
+    index: 1,
+    packets: new Uint8Array(6),
+    request: [new DownloadRequest(1)],
+    response: [],
+    crcOffset: 0,
+    crcSeed: 0
+  };
+  manager.task = [{ done: false }];
+  manager.execTaskIndex = 0;
+  manager.sendRequest = request => requests.push(request);
+
+  manager.onDownloadResponse(downloadResponse(0, 6, initialPackets));
+
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].offset, initialPackets.length);
+  assert.equal(requests[0].crcSeed, expectedCrc);
+  assert.equal(manager.session.crcSeed, expectedCrc);
+  assert.equal(manager.session.crcOffset, initialPackets.length);
+
+  const finalPackets = Uint8Array.from([4, 5, 6]);
+  manager.onDownloadResponse(downloadResponse(3, 6, finalPackets));
+
+  assert.deepEqual(Array.from(manager.session.packets), [1, 2, 3, 4, 5, 6]);
+  assert.equal(
+    manager.session.crcSeed,
+    managerCrc.updateCRC16(expectedCrc, finalPackets)
+  );
+  assert.equal(manager.session.crcOffset, 6);
+});
 
 test('ResetSystemMessage serializes to a valid reset frame', () => {
   const reset = new ResetSystemMessage();

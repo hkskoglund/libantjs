@@ -310,6 +310,14 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
       }
 
       this.session.packets.set(response.packets, response.offset);
+
+      if (response.offset === this.session.crcOffset) {
+        this.session.crcSeed = crc.updateCRC16(this.session.crcSeed, response.packets);
+      } else {
+        this.session.crcSeed = crc.calc16(this.session.packets.subarray(0, response.offset + response.length));
+      }
+      this.session.crcOffset = response.offset + response.length;
+
       response.packets = null; // Don't cache in session
 
       offset = response.offset + response.length;
@@ -392,6 +400,8 @@ TransportManager.prototype._setupSession = function (index)
     index: index,
     request: [],
     response: [],
+    crcOffset: 0,
+    crcSeed: 0
   };
 
   if (index === 0) {
@@ -434,7 +444,7 @@ TransportManager.prototype.download = function(index, offset) {
 
     // 'The seed value should equal the CRC value of the data received prior to the requested data offset' Spec. section 12.7.1
 
-    crcSeed = crc.calc16(this.session.packets.subarray(0, offset));
+    crcSeed = this.session.crcSeed;
 
     request.continueRequest(index, offset, crcSeed, this.session.request[0].maxBlockSize);
   }
