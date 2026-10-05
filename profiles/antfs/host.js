@@ -164,6 +164,9 @@ Host.prototype.onTxCompleted = function ()
   var BURST_RESPONSE_TIMEOUT = this.period / 32768 * 1000 * 8,
       NO_ERROR;
 
+  if (this.closed)
+    return;
+
   if (this.session.hasBurstResponse && !(this.session.request instanceof AuthenticateRequest &&
         this.session.request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
   {
@@ -198,6 +201,16 @@ Host.prototype.onReset = function(err, callback) {
   this.removeAllListeners('HOST_CHANNEL_OPEN');
   this.session = {};
 
+};
+
+// Stops all retry timers/listeners; called before the USB device is closed
+Host.prototype.shutdown = function ()
+{
+  this.closed = true;
+  clearTimeout(this.beaconTimeout);
+  clearTimeout(this.session.burstResponseTimeout);
+  this.removeAllListeners('CLIENT_NOT_BUSY');
+  this.removeAllListeners('HOST_CHANNEL_OPEN');
 };
 
 Host.prototype.connect = function(callback) {
@@ -267,7 +280,7 @@ Host.prototype.sendNow = function (e,m)
   var MAX_RETRIES = 15,
       err;
 
-  if (!this.isTracking()) // in case RX_FAIL_GOTO_SEARCH
+  if (this.closed || !this.isTracking()) // in case RX_FAIL_GOTO_SEARCH
     return;
 
   clearTimeout(this.session.burstResponseTimeout);

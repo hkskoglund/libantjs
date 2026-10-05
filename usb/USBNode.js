@@ -462,6 +462,13 @@ USBNode.prototype.transfer = function(chunk, retrn) {
     this.log.log(USBDevice.prototype.EVENT.LOG, 'TX', nodeBuf);
   }
 
+  if (!this.outEndpoint) {
+    if (typeof retrn === 'function') {
+      retrn(new Error('USB device closed'));
+    }
+    return;
+  }
+
   this.outEndpoint.transfer(nodeBuf, retrn);
 };
 

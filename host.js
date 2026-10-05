@@ -268,7 +268,12 @@ Host.prototype.init = function(iDevice, onInit) {
 
 Host.prototype.exit = function(callback) {
 
-  // TO DO? Close open channels? Exit channels/profiles?
+  // Stop profile retry timers so nothing is sent on the USB device after it is closed
+  for (var i = 0; i < Host.prototype.MAX_CHAN; i++) {
+    if (this.channel[i] && typeof this.channel[i].shutdown === 'function') {
+      this.channel[i].shutdown();
+    }
+  }
 
   this.resetSystem(function _onReset(resetError, notificationStartup) {
 
