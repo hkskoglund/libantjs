@@ -68,7 +68,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     return date + ' ' + time;
   };
 
-  FitFile.prototype.getFileName = function(unixFormat) {
+  FitFile.prototype.getFileName = function(unixFormat, omitDevice) {
     var dateStr,
     clientSerialNumber = this.directory.host.getClientSerialNumber(),
     clientFriendlyname = this.directory.host.getClientFriendlyname(),
@@ -94,6 +94,8 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
         filename += ' ' + dateStr + '.fit';
       else
         filename += dateStr + '.fit';
+      if (omitDevice)
+        return filename;
       if (!clientFriendlyname)
          return  'client-' + clientSerialNumber + ' ' + filename;
       else

@@ -486,7 +486,7 @@ TransportManager.prototype.uploadWithBackup = function(index, data, callback) {
       return callback(new Error('Backup of index ' + index + ' failed, upload aborted: ' + err.toString()));
     }
 
-    backupName = path.join(this.getDeviceDirectory(), session.file.getFileName() + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-'));
+    backupName = path.join(this.getDeviceDirectory(), session.file.getFileName(false, true) + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-'));
 
     try {
       fs.mkdirSync(path.dirname(backupName), { recursive: true });
@@ -744,7 +744,7 @@ var filename;
    session = session || this.session; // In case .emit('download'/'erase') without reference to session (when max retries reached in host sendrequest)
 
   if (!error && session && session.index) { // Won't save directory at index 0
-    filename = path.join(this.getDeviceDirectory(), session.file.getFileName());
+    filename = path.join(this.getDeviceDirectory(), session.file.getFileName(false, true));
     try {
       fs.mkdirSync(path.dirname(filename), { recursive: true });
     } catch (e) {
