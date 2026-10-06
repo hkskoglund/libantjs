@@ -87,7 +87,7 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType];
 
     if (!unixFormat)
-      filename += '-' + this.index;
+     filename = this.index + '-' + filename;
 
     if (!unixFormat) {
       if (dateStr !== '')

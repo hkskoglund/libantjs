@@ -190,5 +190,5 @@ test('FitFile.getFileName omits the authenticated client friendly name', () => {
   file.index = 4;
   file.date = 0xFFFFFFFF;
 
-  assert.equal(file.getFileName(), 'Settings-4.fit');
+  assert.equal(file.getFileName(), '4-Settings.fit');
 });
