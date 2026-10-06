@@ -3,7 +3,6 @@
   var DeviceProfile = require('./deviceProfile'),
     TEMPProfile = require('./environment/deviceProfile_ENVIRONMENT'),
     HRMProfile = require('./hrm/deviceProfile_HRM'),
-    SDMProfile = require('./sdm/deviceProfile_SDM'),
     SPDCADProfile = require('./bike_spdcad/deviceProfile_SPDCAD'),
     BikeSpdProfile = require('./bike_spd/deviceProfile_BikeSpd'),
     BikeCadProfile = require('./bike_cad/deviceProfile_BikeCad'),

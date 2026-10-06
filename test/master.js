@@ -7,30 +7,10 @@ var MasterChannel0 = masterHost.channel[0];
 var dataSeed = 0;
 var devices;
 
-function onExited(error) {
-  console.log('exited', error);
-}
-
-function onPage(page) {
-  console.log(page);
-}
-
-
-function onReset(error, notification) {
-  console.log('onReset', error);
-}
-
 function onMasterChannel0Open(error, msg) {
   console.log('master open', error, msg);
 
   //  setTimeout(function () { MasterChannel0.getStatus(function (err,msg) { console.log('status',msg); }); },2500);
-  /*  setTimeout(function _close () {
-      MasterChannel0.close(onMasterChannel0Closed);
-    },10000); */
-}
-
-function onMasterChannel0Closed(err, msg) {
-  console.log('master closed sent');
 }
 
 function generateBurstData() {

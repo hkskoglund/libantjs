@@ -60,8 +60,6 @@ var EventEmitter = require('events'),
   ChannelResponseMessage = require('./messages/ChannelResponseEvent/ChannelResponseMessage'),
   ChannelResponseEvent = require('./channel/channelResponseEvent'),
 
-  ChannelId = require('./channel/channelId'),
-
   // Profiles
 
   //RxScanModeProfile = require('./profiles/RxScanMode'),

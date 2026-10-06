@@ -346,8 +346,7 @@
   };
 
   Channel.prototype.getStatus = function(callback) {
-    var key,
-      onStatus = function(err, status) {
+    var onStatus = function(err, status) {
 
         if (!err) {
           this.state = status.state;

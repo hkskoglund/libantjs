@@ -14,10 +14,6 @@
   EraseResponse.prototype.deserialize = function(data) {
     // overview p. 59 in spec of response format
 
-    var dv = new DataView(data.buffer),
-      iStart,
-      iEnd;
-
     // HEADER
 
     // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND

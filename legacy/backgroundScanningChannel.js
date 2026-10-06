@@ -4,9 +4,6 @@ var DeviceProfile = require('./deviceProfile.js');
 var DeviceProfile_HRM = require('./deviceProfile_HRM.js');
 var DeviceProfile_SDM = require('./deviceProfile_SDM.js');
 var DeviceProfile_SPDCAD = require('./deviceProfile_SPDCAD.js');
-var CRC = require('../crc.js');
-var ANT = require('libant');
-var fs = require('fs');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
 var util = require('util');
@@ -85,29 +82,22 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
             self.log.log('log', Date.now(), "Could not activate channel configuration", err);
           },
           function successCB(data) {
-            //self.nodeInstance.ANT.close(0, function error(err)
-            {
-              self.log.log('log', Date.now(), "Failed to close background search channel");
-            },
-            // function successCB()
-            {
-              self.ANT.open(channelNr, function error(err) {
-                  self.log.log('log', Date.now(), "Could not open channel", self.channel.channelID, err);
-                },
-                function success(data) {
-                  //console.log(Date.now(), "Channel open for profile " + deviceProfile.NAME);
-                }, true);
-              //  },true);
-            });
-        }
+            self.ANT.open(channelNr, function error(err) {
+                self.log.log('log', Date.now(), "Could not open channel", self.channel.channelID, err);
+              },
+              function success(data) {
+                //console.log(Date.now(), "Channel open for profile " + deviceProfile.NAME);
+              }, true);
+          });
+    };
 
-        var configuredChannel = function(channelNr, deviceType) {
-          // Only open 1 channel to a specific device type - first come, first served
-          //console.log(self.nodeInstance.ANT.channelConfiguration[channelNr]);
-          return (typeof self.ANT.channelConfiguration !== "undefined" &&
-            typeof self.ANT.channelConfiguration[channelNr] !== "undefined" &&
-            self.ANT.channelConfiguration[channelNr].channelID.deviceType === deviceType);
-        }
+    var configuredChannel = function(channelNr, deviceType) {
+      // Only open 1 channel to a specific device type - first come, first served
+      //console.log(self.nodeInstance.ANT.channelConfiguration[channelNr]);
+      return (typeof self.ANT.channelConfiguration !== "undefined" &&
+        typeof self.ANT.channelConfiguration[channelNr] !== "undefined" &&
+        self.ANT.channelConfiguration[channelNr].channelID.deviceType === deviceType);
+    };
 
         switch (channelID.deviceTypeID) {
 
@@ -125,49 +115,43 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
             else {
               deviceProfile = new DeviceProfile_HRM(this.getConfiguration());
               openChannel(1);
-              //setTimeout(function ()
-              {
-                //    console.log(Date.now(), "Calling broadcast data paser for testing of registering of a new HRM device");
-                //    self.broadCastDataParser(data);
-                //}, 1000);
-              }
-              break;
-
-              case DeviceProfile_SDM.prototype.DEVICE_TYPE:
-
-                self.log.log('log', Date.now(), "Found SDM4 - foot pod - master/sensor");
-                self.log.log('log', Date.now(), channelID.toString());
-                if (configuredChannel(2, channelID.deviceTypeID))
-                  self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SDM");
-                else {
-                  deviceProfile = new DeviceProfile_SDM(this.nodeInstance);
-                  openChannel(2);
-                }
-                break;
-
-              case DeviceProfile_SPDCAD.prototype.DEVICE_TYPE:
-
-                self.log.log('log', Date.now(), "Found SPDCAD - bike speed/cadence - master/sensor");
-                self.log.log('log', Date.now(), channelID.toString());
-                if (configuredChannel(3, channelID.deviceTypeID))
-                  self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
-                else {
-                  deviceProfile = new DeviceProfile_SPDCAD(this.nodeInstance);
-                  openChannel(3);
-                }
-
-                break;
-
-              default:
-                self.log.log('log', Date.now() + "Found ANT device type", this.channelID.deviceTypeID, " device profile not implemented/supported");
-                break;
             }
+            break;
 
-        };
+          case DeviceProfile_SDM.prototype.DEVICE_TYPE:
 
-        BackgroundScanningChannel.prototype.channelResponseEvent = function(data) {
-          //console.log(Date.now() + " Background scanning channel RESPONSE/EVENT : ", data);
-        };
+            self.log.log('log', Date.now(), "Found SDM4 - foot pod - master/sensor");
+            self.log.log('log', Date.now(), channelID.toString());
+            if (configuredChannel(2, channelID.deviceTypeID))
+              self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SDM");
+            else {
+              deviceProfile = new DeviceProfile_SDM(this.nodeInstance);
+              openChannel(2);
+            }
+            break;
+
+          case DeviceProfile_SPDCAD.prototype.DEVICE_TYPE:
+
+            self.log.log('log', Date.now(), "Found SPDCAD - bike speed/cadence - master/sensor");
+            self.log.log('log', Date.now(), channelID.toString());
+            if (configuredChannel(3, channelID.deviceTypeID))
+              self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
+            else {
+              deviceProfile = new DeviceProfile_SPDCAD(this.nodeInstance);
+              openChannel(3);
+            }
+            break;
+
+          default:
+            self.log.log('log', Date.now() + "Found ANT device type", this.channelID.deviceTypeID, " device profile not implemented/supported");
+            break;
+        }
+
+  };
+
+  BackgroundScanningChannel.prototype.channelResponseEvent = function(data) {
+    //console.log(Date.now() + " Background scanning channel RESPONSE/EVENT : ", data);
+  };
 
 
-        module.exports = BackgroundScanningChannel;
+  module.exports = BackgroundScanningChannel;

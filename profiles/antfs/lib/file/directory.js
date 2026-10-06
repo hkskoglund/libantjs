@@ -172,8 +172,7 @@ Directory.prototype.getFITfiles = function(newOnly) {
 };
 
 Directory.prototype.ls = function() {
-  var i,
-    str;
+  var str;
 
   var total = 0;
 

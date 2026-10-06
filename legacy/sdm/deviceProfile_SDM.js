@@ -73,7 +73,6 @@
     var page,
       pageNumber = broadcast.data[0],
       sensorId = broadcast.channelId.sensorId,
-      pageIdentifier = sensorId + '.' + pageNumber,
       BROADCAST_LIMIT_BEFORE_UI_UPDATE = 4; // ca 1 second with ca 4 Hz period
 
     // Don't process broadcast with wrong device type

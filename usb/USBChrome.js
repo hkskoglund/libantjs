@@ -336,8 +336,7 @@ define(['usb/USBDevice'], function(USBDevice) {
   };
 
   USBChrome.prototype._tryFindManifestDevice = function(index) {
-    var error,
-      maxlen = this.enumeratedManifestDevices.length;
+    var error;
 
     if (!this.devicesInManifest) {
       error = new Error('Cannot find/open devices without knowledge about devices in manifest');

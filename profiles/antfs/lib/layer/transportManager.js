@@ -153,7 +153,6 @@ TransportManager.prototype.onErase = function (error,session)
 TransportManager.prototype.addTask = function (request,index)
 {
   var split,
-      filteredSplit,
       indexArr = [],
       // http://stackoverflow.com/questions/1960473/unique-values-in-an-array
        onlyUnique = function (value, index, self) {
@@ -279,8 +278,7 @@ TransportManager.prototype.MAX_UPLOAD_RETRIES = 3;
 TransportManager.prototype.onUploadResponse = function(responseData)
 {
   var response,
-    session = this.session,
-    NO_ERROR;
+    session = this.session;
 
   if (!session || !session.upload)
     return;

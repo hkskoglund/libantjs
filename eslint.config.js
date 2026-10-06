@@ -3,8 +3,7 @@ const globals = require("globals");
 
 module.exports = [
   {
-    // This obsolete legacy file has a pre-existing syntax error.
-    ignores: ["node_modules/**", "legacy/backgroundScanningChannel.js"]
+    ignores: ["node_modules/**"]
   },
   {
     files: ["**/*.js"],

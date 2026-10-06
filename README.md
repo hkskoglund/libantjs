@@ -89,8 +89,8 @@ Run ESLint across the JavaScript source with:
 npm run lint
 ```
 
-Unused variables are reported as warnings for now, and the obsolete
-[legacy/backgroundScanningChannel.js](./legacy/backgroundScanningChannel.js) is excluded because it has a pre-existing syntax error.
+Unused variables are reported as warnings for now. Legacy files are included in
+the lint run.
 
 ## Message support
 

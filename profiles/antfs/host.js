@@ -1,7 +1,6 @@
 'use strict';
 
 var Channel = require('../../channel/channel'),
-    ChannelResponseEvent = require('../../channel/channelResponseEvent'),
   ClientBeacon = require('./lib/layer/clientBeacon'),
   State = require('./lib/layer/util/state'),
 
@@ -87,8 +86,7 @@ Host.prototype.onRxFailGoToSearch = function (e,m)
 };
 
 Host.prototype.onBeacon = function(beacon) {
-  var NO_ERROR,
-      BEACON_TIMEOUT = 25000;
+  var BEACON_TIMEOUT = 25000;
 
   clearTimeout(this.beaconTimeout);
 

@@ -9,19 +9,6 @@ var devices = slaveHost.getDevices();
 var currentDevice;
 var singlefreq = true;
 
-function onExited(error) {
-  console.log('exited', error);
-}
-
-function onPage(page) {
-  console.log(page);
-}
-
-
-function onReset(error, notification) {
-  console.log('onReset', error);
-}
-
 function onSlaveChannel0Open(err, msg) {
   //console.log('slave open');
 }

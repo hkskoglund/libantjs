@@ -1,12 +1,6 @@
 'use strict';
 
   var DeviceProfile = require('../deviceProfile'),
-    BikeSpdPage0 = require('../bike_spd/bikePage0'),
-    BikeCadPage0 = require('../bike_cad/bikePage0'),
-    SPDCADPage0 = require('../bike_spdcad/SPDCADPage0'),
-    CumulativeOperatingTime = require('../cumulativeOperatingTime'),
-    ManufacturerId = require('../manufacturerId'),
-    ProductId = require('../productId'),
     GenericPage = require('../Page');
 
   function DeviceProfile_BikeShared(configuration) {

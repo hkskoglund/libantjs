@@ -1,6 +1,5 @@
   var Channel = require('../channel/channel'),
     GenericPage = require('./Page'),
-    MainPage = require('./mainPage'),
     BackgroundPage = require('./backgroundPage'),
     ManufacturerId = require('./manufacturerId'),
     ProductId = require('./productId'),

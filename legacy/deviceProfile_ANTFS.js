@@ -249,9 +249,8 @@ DeviceProfile_ANTFS.prototype.getHomeDirectory = function() {
 
 DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
   var self = this,
-    beacon, numberOfPackets = data.length / 8,
+    beacon,
     authenticate_response = {},
-    packetNr,
     download_response = {},
     currentCRCSeed,
     erase_response = {},
@@ -301,11 +300,6 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
     self.retryTimeout = 0;
 
   //console.log("Got burst data in device profile ANT-FS", data);
-
-  //console.log(Date.now() + " Received ", numberOfPackets, " packets with a total length of ", data.length, " bytes");
-
-  //for (packetNr = 0; packetNr < numberOfPackets; packetNr++)
-  //    console.log(packetNr, data.slice(packetNr * 8, 8 + packetNr * 8));
 
   if (data[0] !== DeviceProfile_ANTFS.prototype.BEACON_ID)
     console.error("Expected beacon id. (0x43) in the first packet of burst payload", data);
@@ -725,8 +719,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     //(networkNr, channelNr, deviceNr, deviceType, transmissionType, searchTimeout
     var broadCastDataParserFunc,
       parseBurstDataFunc,
-      channelResponseEventFunc,
-      self = this;
+      channelResponseEventFunc;
 
     // Setup channel parameters for ANT-FS
 
@@ -743,20 +736,11 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     parseBurstDataFunc = this.parseBurstData || DeviceProfile.prototype.decodeBurstData; // Called on a complete aggregation of burst packets
     channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
-    //this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, function _crespFunc()
-    {
-      //    // Added to maintain this context to deviceProfile instance instead of callback context which is channel
-      //    //console.log(arguments);
-      //    channelResponseEventFunc.apply(self,arguments); });
-      // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind?redirectlocale=en-US&redirectslug=JavaScript%2FReference%2FGlobal_Objects%2FFunction%2Fbind
-      // There is similarity with the Compability section and the pattern above using apply(self,arguments) inside a function
+    this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+    this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
+    this.channel.addListener(Channel.prototype.EVENT.BURST, parseBurstDataFunc.bind(this));
 
-      this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
-      this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
-      this.channel.addListener(Channel.prototype.EVENT.BURST, parseBurstDataFunc.bind(this));
-
-      return this.channel;
-    };
+    return this.channel;
   };
 
     DeviceProfile_ANTFS.prototype.channelResponseEvent = function(data) {
@@ -870,8 +854,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
     DeviceProfile_ANTFS.prototype.sendLinkCommand = function(errorCallback, successCallback) {
       //console.log("LINK", this); this = channelConfiguration
-      var channelNr = this.channel.number,
-        self = this;
+      var channelNr = this.channel.number;
       var linkMsg = this.ANTFSCOMMAND_Link(ANT.prototype.ANTFS_FREQUENCY, DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD.Hz8, this.ANT.serialNumber);
       this.ANT.sendAcknowledgedData(channelNr, linkMsg, errorCallback, successCallback);
     };
@@ -1140,7 +1123,6 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         var generalFlags = "",
           dataType = this.dataType,
           date = "",
-          number = "",
           dataTypeFlags = "",
           dataSubType = "";
 
@@ -1183,9 +1165,6 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           dataType += " Manufacturer/Device";
 
         if (this.dataType === DeviceProfile_ANTFS.prototype.FILE_TYPE.FIT) {
-
-          if (this.number !== 0xFFFF)
-            number = this.dataSubType;
 
           // FIT Files Types document in the FIT SDK
           dataSubType = getDataSubTypeFriendly(this.dataSubType);

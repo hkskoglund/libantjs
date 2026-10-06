@@ -54,36 +54,6 @@
   };
 
   DownloadResponse.prototype.toString = function() {
-
-    var msg = '';
-
-    switch (this.result) {
-
-      case DownloadResponse.prototype.OK:
-        msg += 'OK';
-        break;
-
-      case DownloadResponse.prototype.NOT_EXIST:
-        msg += 'Does not exist';
-        break;
-
-      case DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE:
-        msg += 'Exists, but is not downloadable';
-        break;
-
-      case DownloadResponse.prototype.NOT_READY:
-        msg += 'Not ready to download';
-        break;
-
-      case DownloadResponse.prototype.INVALID:
-        msg += 'Invalid request';
-        break;
-
-      case DownloadResponse.prototype.CRC_INCORRECT:
-        msg += 'CRC incorrect';
-        break;
-    }
-
     return this.constructor.name + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
       this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
