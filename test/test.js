@@ -177,6 +177,16 @@ test('Directory.getFileName falls back to the client serial number without a fri
   assert.equal(directory.getFileName(), 'directory-3842729776');
 });
 
+test('Directory.ls starts the flags header on a new line', () => {
+  const host = {
+    log: { log() {} },
+    getClientSerialNumber: () => 3842729776
+  };
+  const directory = new Directory(undefined, host);
+
+  assert.ok(directory.ls().startsWith('\nFlags:'));
+});
+
 test('FitFile.getFileName omits the authenticated client friendly name', () => {
   const directory = {
     timeFormat: 0,

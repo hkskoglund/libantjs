@@ -183,7 +183,7 @@ Directory.prototype.ls = function() {
 
   this.file.forEach(function (file) { total += file.size; });
 
-  str = 'Flags: R=read W=write E=erase A=archived P=append C=crypto\n';
+  str = '\nFlags: R=read W=write E=erase A=archived P=append C=crypto\n';
   str += 'total ' + File.humanSize(total) + ' in ' + this.file.length + ' files\n';
   str += File.UNIX_HEADER + '\n';
 
