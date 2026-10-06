@@ -2,6 +2,9 @@
 
 const assert = require('node:assert/strict');
 const EventEmitter = require('node:events');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const test = require('node:test');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
@@ -65,6 +68,34 @@ test('TransportManager continues a download with the CRC of the received prefix'
     managerCrc.updateCRC16(expectedCrc, finalPackets)
   );
   assert.equal(manager.session.crcOffset, 6);
+});
+
+test('TransportManager saves each downloaded directory as a readable listing', () => {
+  const manager = Object.create(TransportManager.prototype);
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'libantjs-'));
+  const fileName = path.join(dataDir, '1234', 'directory-1234.txt');
+  let listing = 'directory listing\n';
+  const session = {
+    index: 0,
+    file: {
+      getFileName: () => 'directory-1234',
+      ls: () => listing
+    }
+  };
+
+  manager.host = { option: { dataDir } };
+  manager.host.authenticationManager = { clientSerialNumber: 1234 };
+  manager.log = { logging: false };
+  try {
+    manager.onDownload(undefined, session);
+    assert.equal(fs.readFileSync(fileName, 'utf8'), listing);
+
+    listing = 'updated directory listing\n';
+    manager.onDownload(undefined, session);
+    assert.equal(fs.readFileSync(fileName, 'utf8'), listing);
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
 });
 
 test('ResetSystemMessage serializes to a valid reset frame', () => {

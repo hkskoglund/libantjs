@@ -743,7 +743,16 @@ var filename;
 
    session = session || this.session; // In case .emit('download'/'erase') without reference to session (when max retries reached in host sendrequest)
 
-  if (!error && session && session.index) { // Won't save directory at index 0
+  if (!error && session && session.index === 0) {
+    filename = path.join(this.getDeviceDirectory(), session.file.getFileName() + '.txt');
+    try {
+      fs.mkdirSync(path.dirname(filename), { recursive: true });
+      fs.writeFileSync(filename, session.file.ls());
+    } catch (e) {
+      if (this.log.logging)
+        this.log.log('error', 'Error writing directory listing ' + filename, e);
+    }
+  } else if (!error && session && session.index) {
     filename = path.join(this.getDeviceDirectory(), session.file.getFileName(false, true));
     try {
       fs.mkdirSync(path.dirname(filename), { recursive: true });
