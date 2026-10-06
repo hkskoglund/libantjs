@@ -231,5 +231,38 @@ test('FitFile.getFileName omits the authenticated client friendly name', () => {
   file.index = 4;
   file.date = 0xFFFFFFFF;
 
-  assert.equal(file.getFileName(), '4-Settings.fit');
+  assert.equal(file.getFileName(), 'Settings.fit');
+});
+
+test('FitFile.getFileName prefixes only duplicate names in Unix format', () => {
+  const directory = {
+    file: [],
+    timeFormat: 0,
+    host: {
+      getClientFriendlyname: () => 'Forerunner 935',
+      getClientSerialNumber: () => 3842729776
+    }
+  };
+  const schedule = new FitFile(undefined, directory);
+  schedule.subType = 7;
+  schedule.index = 24;
+  schedule.date = 0xFFFFFFFF;
+  directory.file.push(schedule);
+
+  assert.equal(schedule.getFileName(true), 'Schedule.fit');
+
+  const firstSportSettings = new FitFile(undefined, directory);
+  firstSportSettings.subType = 3;
+  firstSportSettings.index = 5;
+  firstSportSettings.date = 0xFFFFFFFF;
+  const secondSportSettings = new FitFile(undefined, directory);
+  secondSportSettings.subType = 3;
+  secondSportSettings.index = 6;
+  secondSportSettings.date = 0xFFFFFFFF;
+  directory.file.push(firstSportSettings, secondSportSettings);
+
+  assert.equal(firstSportSettings.getFileName(true), '5-SportSettings.fit');
+  assert.equal(secondSportSettings.getFileName(true), '6-SportSettings.fit');
+  assert.equal(firstSportSettings.getFileName(), '5-SportSettings.fit');
+  assert.equal(secondSportSettings.getFileName(), '6-SportSettings.fit');
 });

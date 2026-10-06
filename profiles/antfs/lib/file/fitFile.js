@@ -72,7 +72,9 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     var dateStr,
     clientSerialNumber = this.directory.host.getClientSerialNumber(),
     clientFriendlyname = this.directory.host.getClientFriendlyname(),
-    filename;
+    filename,
+    indexPrefix = '',
+    i;
 
     if (this.date === 0xFFFFFFFF)
       dateStr = '';
@@ -84,25 +86,31 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
     else
       dateStr = this._formatDate(this.date);
 
-   filename = FitFile.prototype.FIT_FILE_TYPES[this.subType];
+    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType];
 
-    if (!unixFormat)
-     filename = this.index + '-' + filename;
-
-    if (!unixFormat) {
-      if (dateStr !== '')
-        filename += ' ' + dateStr + '.fit';
-      else
-        filename += dateStr + '.fit';
-      if (omitDevice)
-        return filename;
-      if (!clientFriendlyname)
-         return  'client-' + clientSerialNumber + ' ' + filename;
-      else
-        return filename;
+    for (i = 0; this.directory.file && i < this.directory.file.length; i++) {
+      if (this.directory.file[i] !== this &&
+          this.directory.file[i] instanceof FitFile &&
+          this.directory.file[i].subType === this.subType) {
+        indexPrefix = this.index + '-';
+        break;
+      }
     }
+
+    if (unixFormat)
+      return indexPrefix + filename + '.fit';
+
+    filename = indexPrefix + filename;
+    if (dateStr !== '')
+      filename += ' ' + dateStr + '.fit';
     else
-      return filename + '.fit';
+      filename += dateStr + '.fit';
+    if (omitDevice)
+      return filename;
+    if (!clientFriendlyname)
+       return  'client-' + clientSerialNumber + ' ' + filename;
+    else
+      return filename;
   };
 
   FitFile.prototype.toString = function()
