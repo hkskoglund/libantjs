@@ -57,8 +57,6 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
     this.setContent(msgBuffer);
 
-    console.log(this.toString());
-
   };
 
   ConfigureAdvancedBurstMessage.prototype.toString = function () {

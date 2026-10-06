@@ -56,8 +56,8 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
   this.on('directory', function _onDirectory(lsl) {
     /*jshint -W117 */
    if (ls)
-      console.log(lsl);
-  });
+      this.log.console.log(lsl);
+  }.bind(this));
 
   // Initialize layer specific event handlers at the tail of event callbacks
   // Host has priority (in front of event callbacks) because it handles decoding of the client beacon

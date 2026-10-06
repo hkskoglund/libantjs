@@ -14,6 +14,7 @@ var util = require('util');
 
 function DeviceProfile_ANTFS(configuration) {
   DeviceProfile.call(this, configuration); // Call parent
+  var self = this;
   //this.nodeInstance = nodeInstance;
 
   //this.ANT.addListener(ANT.prototype.EVENT.BROADCAST, this.broadCastDataParser);
@@ -34,12 +35,12 @@ function DeviceProfile_ANTFS(configuration) {
 
   fs.exists(DeviceProfile_ANTFS.prototype.ROOT_DIR, function(exists) {
     if (!exists) {
-      console.log("Root directory does not exists");
+      self.log.log('log', "Root directory does not exists");
       fs.mkdir(DeviceProfile_ANTFS.prototype.ROOT_DIR, function completionCB() {
-        console.log("New root directory created at " + DeviceProfile_ANTFS.prototype.ROOT_DIR);
+        self.log.log('log', "New root directory created at " + DeviceProfile_ANTFS.prototype.ROOT_DIR);
       });
     } else
-      console.log(Date.now() + " Root directory (for storage of device FIT files)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
+      self.log.log('log', Date.now() + " Root directory (for storage of device FIT files)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
   });
 
 }
@@ -229,14 +230,14 @@ DeviceProfile_ANTFS.prototype.setHomeDirectory = function(homeDir) {
     if (!exists) {
       fs.mkdir(self.homeDirectory, function(err) {
         if (err) {
-          console.log(Date.now() + " Could not create home directory: " + err);
+          self.log.log('log', Date.now() + " Could not create home directory: " + err);
           throw err;
         } else {
-          console.log(Date.now() + " Created home directory at " + self.homeDirectory);
+          self.log.log('log', Date.now() + " Created home directory at " + self.homeDirectory);
         }
       });
     } else {
-      console.log(Date.now() + " Setting home directory to " + self.homeDirectory);
+      self.log.log('log', Date.now() + " Setting home directory to " + self.homeDirectory);
     }
   });
 };
@@ -277,7 +278,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
   }
 
   function repeatLastRequest() {
-    console.log(Date.now() + " Repeat request", self.request);
+    self.log.log('log', Date.now() + " Repeat request", self.request);
 
     if (self.request.request === DeviceProfile_ANTFS.prototype.REQUEST_TYPE.DOWNLOAD) {
       self.sendDownloadRequest(self.request.dataIndex, self.request.dataOffset,
@@ -317,7 +318,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 
     } else {
 
-      console.log(Date.now(), beacon.toString(), " burst data length:", data.length);
+      self.log.log('log', Date.now(), beacon.toString(), " burst data length:", data.length);
 
       self.lastBeacon = {
         beacon: beacon,
@@ -355,7 +356,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
               if (typeof self.request.callback === "function")
                 self.request.callback();
               else
-                console.log(Date.now() + " No callback specified after authentication response for client device serial number");
+                self.log.log('log', Date.now() + " No callback specified after authentication response for client device serial number");
             }
 
             // Accept of pairing bulk response
@@ -372,22 +373,22 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                   passkey: authenticate_response.authenticationString
                 }), function(err) {
                   if (err)
-                    console.log(Date.now() + " Error writing to passkey file", err);
+                    self.log.log('log', Date.now() + " Error writing to passkey file", err);
                   else
-                    console.log(Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + PathSeparator + 'passkey.BIN');
+                    self.log.log('log', Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + PathSeparator + 'passkey.BIN');
                 });
               }
             }
 
             if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.REJECT) // Reject
             {
-              console.log("Authorization rejected (pairing not accepted or wrong passkey provided)");
+              self.log.log('log', "Authorization rejected (pairing not accepted or wrong passkey provided)");
             }
 
             // add authenticateResponse to device profile instance
             self.authenticate_response = authenticate_response;
 
-            console.log(Date.now(), authenticate_response, DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE[authenticate_response.responseType]);
+            self.log.log('log', Date.now(), authenticate_response, DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE[authenticate_response.responseType]);
             break;
 
             // Observation : FR 910XT sends data in chuncks of 512 bytes
@@ -442,9 +443,9 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 
                 if (download_response.dataOffset === 0) {
                   if (self.request.dataIndex !== 0x00)
-                    console.log(Date.now() + " Expecting a file with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
+                    self.log.log('log', Date.now() + " Expecting a file with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
                   else
-                    console.log(Date.now() + " Expecting a directory with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
+                    self.log.log('log', Date.now() + " Expecting a directory with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
 
                   currentCRCSeed = CRC.Calc16(download_response.data);
                   self.CRCSeed.push(currentCRCSeed);
@@ -483,7 +484,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                   removeLastBlock();
 
                   // Try to resume download with last good CRC
-                  console.log(Date.now() + " Resume block " + resumeIndex + " data offset: " + currentDataOffset + " CRC Seed: " + currentCRCSeed);
+                  self.log.log('log', Date.now() + " Resume block " + resumeIndex + " data offset: " + currentDataOffset + " CRC Seed: " + currentCRCSeed);
 
                 } else {
                   currentDataOffset = download_response.dataOffset + download_response.totalRemainingLength;
@@ -501,10 +502,10 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                 self.retryRequestTimeoutID = setInterval(function _retryDownloadRequest() {
                   self.retryTimeout++;
                   if (self.retryTimeout < 10) {
-                    console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.retryTimeout);
+                    self.log.log('log', Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.retryTimeout);
                     self.sendDownloadRequest(self.request.dataIndex, currentDataOffset, downloadRequestType, currentCRCSeed, 0, self.request.callback);
                   } else {
-                    console.log(Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
+                    self.log.log('log', Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
                     self.emit('error', new Error('Unable to receive burst response for download request. Reached maximum retries.'));
                     self.disconnectFromDevice();
                   }
@@ -520,12 +521,12 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                 if (self.request.dataIndex !== DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE) {
 
                   var fName = self.getHomeDirectory() + PathSeparator + self.directory.index[self.request.dataIndex].fileName;
-                  console.log(Date.now() + " Downloaded file ", fName, download_response.fileSize, "bytes");
+                  self.log.log('log', Date.now() + " Downloaded file ", fName, download_response.fileSize, "bytes");
                   fs.writeFile(fName, self.response.downloadFile, function(err) {
                     if (err)
-                      console.log(Date.now() + " Error writing " + fName, err);
+                      self.log.log('log', Date.now() + " Error writing " + fName, err);
                     else
-                      console.log(Date.now() + " Saved " + fName);
+                      self.log.log('log', Date.now() + " Saved " + fName);
                   });
 
                 }
@@ -534,7 +535,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 
               }
             } else if (download_response.response === DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE.CRC_INCORRECT) {
-              console.log(Date.now() + " Download response : ", download_response);
+              self.log.log('log', Date.now() + " Download response : ", download_response);
 
               resumeIndex = self.dataOffset.length - 2;
               resumeDataOffset = self.dataOffset[resumeIndex] + self.dataLength[resumeIndex];
@@ -544,7 +545,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
               removeLastBlock();
 
               // Try to resume download with last good CRC
-              console.log(Date.now() + " Resume block " + resumeIndex + " data offset: " + resumeDataOffset + " CRC Seed: " + resumeCRCSeed);
+              self.log.log('log', Date.now() + " Resume block " + resumeIndex + " data offset: " + resumeDataOffset + " CRC Seed: " + resumeCRCSeed);
 
               self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
                 DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
@@ -552,18 +553,18 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
               self.retryRequestTimeoutID = setInterval(function retry() {
                 self.retryTimeout++;
                 if (self.retryTimeout < 10) {
-                  console.log(Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
+                  self.log.log('log', Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
                   self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
                     DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
                 } else {
                   var errMsg = "Lost the link to the device. Cannot proceed.";
-                  console.log(Date.now() + " " + errMsg);
+                  self.log.log('log', Date.now() + " " + errMsg);
                   self.emit('error', new Error(errMsg));
 
                 }
               }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
             } else {
-              console.log(Date.now() + " Download response : ", download_response);
+              self.log.log('log', Date.now() + " Download response : ", download_response);
               processRequestCallback();
             }
 
@@ -573,7 +574,7 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
 
             erase_response.response = data[10];
 
-            console.log(Date.now() + " Erase response: " + DeviceProfile_ANTFS.prototype.ERASE_RESPONSE[erase_response.response]);
+            self.log.log('log', Date.now() + " Erase response: " + DeviceProfile_ANTFS.prototype.ERASE_RESPONSE[erase_response.response]);
 
             if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_FAILED ||
               erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.NOT_READY) {
@@ -583,22 +584,22 @@ DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
                 self.retryRequestTimeoutID = setInterval(function retry() {
                   self.retryTimeout++;
                   if (self.retryTimeout < 10) {
-                    console.log(Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.retryTimeout);
+                    self.log.log('log', Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.retryTimeout);
 
                     self.sendEraseRequest(self.request.dataIndex, false);
                   } else {
                     var errMsg = "Something is wrong with the link to the device. Cannot proceed.";
-                    console.log(Date.now() + " " + errMsg);
+                    self.log.log('log', Date.now() + " " + errMsg);
                     self.emit('error', new Error(errMsg));
                   }
                 }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
               } else {
-                console.log(Date.now() + " Reached maximum number of retries, file is probably not deleted", self.request.retry);
+                self.log.log('log', Date.now() + " Reached maximum number of retries, file is probably not deleted", self.request.retry);
                 processRequestCallback();
               }
 
             } else if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_SUCCESSFULL) {
-              console.log(Date.now() + " Erased file at index ", self.request.dataIndex);
+              self.log.log('log', Date.now() + " Erased file at index ", self.request.dataIndex);
               processRequestCallback();
             } else
               console.warn(Date.now() + " Received unknown erase response", erase_response.response);
@@ -630,8 +631,7 @@ DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOf
 
   payload[8] = 0;
   if (typeof initialRequest === "undefined") {
-    console.log("Initial request is undefined");
-    console.trace();
+    this.log.log('warn', "Initial request is undefined", new Error().stack);
   }
   payload[9] = initialRequest;
 
@@ -769,14 +769,14 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         channelNr = self.channel.number;
 
       if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_FAIL_GO_TO_SEARCH, data)) {
-        console.log(Date.now() + " ANT-FS Channel " + channelNr + " cannot track broadcast anymore, missed to many expected broadcasts from device");
+        self.log.log('log', Date.now() + " ANT-FS Channel " + channelNr + " cannot track broadcast anymore, missed to many expected broadcasts from device");
 
         // Clean up and return to LINK layer ...
-        console.log("self", self);
+        self.log.log('log', "self", self);
       } else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_RX_SEARCH_TIMEOUT, data))
-        console.log(Date.now() + " ANT-FS Channel " + channelNr + " reached search timeout. Device did not send any ANT data in the search periode.");
+        self.log.log('log', Date.now() + " ANT-FS Channel " + channelNr + " reached search timeout. Device did not send any ANT data in the search periode.");
       else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data))
-        console.log(Date.now() + " ANT-FS Channel " + channelNr + " closed.");
+        self.log.log('log', Date.now() + " ANT-FS Channel " + channelNr + " closed.");
 
     };
 
@@ -885,7 +885,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           // For FR 910XT -> only 1 or 2 LINK messages are received after disconnect before device channel is closed
           // To prevent LINK command being sent, its possible to set a flag to indicate that we don't want to do any
           // connection to the device in 10 seconds.
-          console.log(Date.now() + " Disconnect ackowledged by device. Earliest reconnection will take place in about 10 seconds.");
+          self.log.log('log', Date.now() + " Disconnect ackowledged by device. Earliest reconnection will take place in about 10 seconds.");
           self._mutex.DONT_CONNECT = true;
           setTimeout(function() {
             delete self._mutex.DONT_CONNECT;
@@ -913,12 +913,12 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
       this.ANT.sendAcknowledgedData(channelNr, authMsg,
         function _errorCBRequestForClientDeviceSerialNumber(err) {
-          console.log(Date.now() + " Could not send request for client device serial number", err);
+          self.log.log('log', Date.now() + " Could not send request for client device serial number", err);
           errorCB(err);
 
         },
         function _successCBRequestForClientDeviceSerialNumber() {
-          console.log(Date.now() + " Request for client device serial number acknowledged by device.");
+          self.log.log('log', Date.now() + " Request for client device serial number acknowledged by device.");
           if (typeof successCB === "function")
             successCB();
           else
@@ -948,20 +948,20 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         // It's OK to send it as an acknowledgedData if authentication string length is 0, otherwise a burst must be used
         this.ANT.sendAcknowledgedData(channelNr, authMsg,
           function error() {
-            console.log(Date.now() + " Could not send acknowledged message request for pairing for unknown ANT-FS host ");
+            self.log.log('log', Date.now() + " Could not send acknowledged message request for pairing for unknown ANT-FS host ");
             errorCB();
           },
           function success() {
-            console.log(Date.now() + " Request for pairing sent as acknowledged message for unknown ANT-FS host.");
+            self.log.log('log', Date.now() + " Request for pairing sent as acknowledged message for unknown ANT-FS host.");
             successCB();
           });
       } else {
         var data = Buffer.concat([authMsg.buffer, authenticationString]);
         this.ANT.sendBurstTransfer(channelNr, data, function error(err) {
-            console.log(Date.now() + " Failed to send burst transfer with request for pairing", err);
+            self.log.log('log', Date.now() + " Failed to send burst transfer with request for pairing", err);
           },
           function success() {
-            console.log(Date.now() + " Sent burst transfer with request for pairing", data);
+            self.log.log('log', Date.now() + " Sent burst transfer with request for pairing", data);
           }, "Pairing request");
       }
     };
@@ -982,11 +982,11 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
       data = Buffer.concat([authMsg.buffer, authenticationString]);
       this.ANT.sendBurstTransfer(channelNr, data, function error(err) {
-          console.log(Date.now() + " Failed to send burst transfer with passkey", err);
+          self.log.log('log', Date.now() + " Failed to send burst transfer with passkey", err);
           errorCB(error);
         },
         function success() {
-          console.log(Date.now() + " Sent burst transfer with passkey", data);
+          self.log.log('log', Date.now() + " Sent burst transfer with passkey", data);
           successCB();
         }, "Transfer with passkey");
     };
@@ -1017,7 +1017,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       structureLength = self.directory.header.structureLength;
       numberOfFiles = (data.length - 2 * 8) / structureLength;
 
-      console.log("Number of files in directory", numberOfFiles);
+      self.log.log('log', "Number of files in directory", numberOfFiles);
 
       function getDataSubTypeFriendly(subtype) {
         var stype;
@@ -1237,26 +1237,26 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         // console.log(file);
         self.directory.index[file.index] = file;
 
-        console.log(file.toString());
+        self.log.log('log', file.toString());
 
       }
 
-      console.log("Total bytes in directory : ", totalBytesInDirectory);
+      self.log.log('log', "Total bytes in directory : ", totalBytesInDirectory);
 
       if (self.directory.newIndex.length > 0)
-        console.log("New files : ", self.directory.newIndex.length);
+        self.log.log('log', "New files : ", self.directory.newIndex.length);
       else
-        console.log("All files archived/previously downloaded");
+        self.log.log('log', "All files archived/previously downloaded");
 
       if (self.directory.downloadIndex.length > 0)
-        console.log("Downloadable/readable files : ", self.directory.downloadIndex.length);
+        self.log.log('log', "Downloadable/readable files : ", self.directory.downloadIndex.length);
       else
-        console.log("No downloadable/readable files available");
+        self.log.log('log', "No downloadable/readable files available");
 
       if (self.directory.eraseIndex.length > 0)
-        console.log("Erasable files : ", self.directory.eraseIndex.length);
+        self.log.log('log', "Erasable files : ", self.directory.eraseIndex.length);
       else
-        console.log("No erasable files in directory");
+        self.log.log('log', "No erasable files in directory");
 
       //console.log(self.directory);
     };
@@ -1303,14 +1303,14 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         // send request when client is in TRANSPORT state)
         if (self.lastBeacon.beacon.clientDeviceState === DeviceProfile_ANTFS.prototype.STATE.BUSY) {
           self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.BUSY;
-          console.log(Date.now() + " Client is busy. Delaying burst of download request with 130 ms");
+          self.log.log('log', Date.now() + " Client is busy. Delaying burst of download request with 130 ms");
           setTimeout(function() {
             retry();
           }, 130);
         } else
           self.ANT.sendBurstTransfer(channelNr, downloadMsg, function error() {
               self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.ERROR;
-              console.log(Date.now() + " Failed to send burst transfer with download request");
+              self.log.log('log', Date.now() + " Failed to send burst transfer with download request");
             },
             function success() {
               self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.SENT;
@@ -1319,7 +1319,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                 s = "" + s;
                 return s.length < z ? pad("0" + s, z) : s
               }
-              console.log(Date.now() + " Sent burst transfer with download request dataIndex: %d dataOffset %d CRC-16 seed %s", dataIndex, dataOffset, pad(CRCSeed.toString(2), 16));
+              self.log.log('log', Date.now() + " Sent burst transfer with download request dataIndex: %d dataOffset %d CRC-16 seed %s", dataIndex, dataOffset, pad(CRCSeed.toString(2), 16));
             }, "DownloadRequest index: " + dataIndex + " data offset: " + dataOffset + " initial request: " + initialRequest + "CRC seed: " + CRCSeed + "max. block size: " + maximumBlockSize);
       }
 
@@ -1347,12 +1347,12 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       self.request.rawMessage = eraseMsg;
       self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.REQUEST;
 
-      console.log(self.request, eraseMsg);
+      self.log.log('log', self.request, eraseMsg);
 
       // MAYBE : Optimize sending of new request when recieving client state = TRANSPORT broadcast instead of using a timeout
       function retryIfBusy() {
         if (self.lastBeacon.beacon.clientDeviceState === DeviceProfile_ANTFS.prototype.STATE.BUSY) {
-          console.log(Date.now() + " Client is busy. Delaying burst of erase request with 130 ms");
+          self.log.log('log', Date.now() + " Client is busy. Delaying burst of erase request with 130 ms");
           setTimeout(function() {
             retryIfBusy();
           }, 130);
@@ -1360,11 +1360,11 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           self.ANT.sendAcknowledgedData(channelNr, eraseMsg,
             function error() {
               self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.ERROR;
-              console.log(Date.now() + " Failed to send acknowledged transfer with erase request");
+              self.log.log('log', Date.now() + " Failed to send acknowledged transfer with erase request");
             },
             function success() {
               self.request.state = DeviceProfile_ANTFS.prototype.REQUEST_STATE.SENT;
-              console.log(Date.now() + " Sent acknowledged transfer with erase request", eraseMsg);
+              self.log.log('log', Date.now() + " Sent acknowledged transfer with erase request", eraseMsg);
             }, "EraseRequest index: " + dataIndex);
       }
 
@@ -1374,7 +1374,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     DeviceProfile_ANTFS.prototype.downloadMultipleFiles = function(files, completeCB) {
       var self = this;
 
-      console.log(Date.now() + " Downloading ", files.length, " files.");
+      self.log.log('log', Date.now() + " Downloading ", files.length, " files.");
 
       function downloadNextFile() {
         var nextFileIndex = files.shift();
@@ -1399,7 +1399,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     DeviceProfile_ANTFS.prototype.eraseMultipleFiles = function(files, completeCB) {
       var self = this;
 
-      console.log(Date.now() + " Erasing ", files.length, " files.");
+      self.log.log('log', Date.now() + " Erasing ", files.length, " files.");
 
       function eraseNextFile() {
         var nextFileIndex;
@@ -1427,12 +1427,12 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     DeviceProfile_ANTFS.prototype.disconnectFromDevice = function(completeCB) {
       var self = this;
       self.sendDisconnect(function error() {
-          console.log(Date.now() + " Failed to send ANT-FS disconnect command to device");
+          self.log.log('log', Date.now() + " Failed to send ANT-FS disconnect command to device");
           // delete self.sendingLINK;
         },
         function success() {
           // delete self.download;
-          console.log(Date.now() + " ANT-FS disconnect command acknowledged by device. Device should return immediatly to LINK layer.");
+          self.log.log('log', Date.now() + " ANT-FS disconnect command acknowledged by device. Device should return immediatly to LINK layer.");
 
           if (typeof completeCB === "function")
             completeCB();
@@ -1483,7 +1483,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
             timestamp: Date.now()
           };
 
-          console.log(Date.now() + " " + beacon.toString());
+          self.log.log('log', Date.now() + " " + beacon.toString());
 
           clearTimeout(self.linkLayerTimeout);
 
@@ -1491,7 +1491,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           switch (beacon.clientDeviceState) {
 
             case DeviceProfile_ANTFS.prototype.STATE.BUSY:
-              console.log(Date.now(), beacon.toString());
+              self.log.log('log', Date.now(), beacon.toString());
               break;
 
             case DeviceProfile_ANTFS.prototype.STATE.LINK_LAYER:
@@ -1514,7 +1514,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                 if (beacon.dataAvailable || self._commandQueue.length > 0) // Only go to auth. layer if new data is available or there is more commands to process
                 {
                   if (self._commandQueue.length === 0 && beacon.dataAvailable) {
-                    console.log(Date.now() + " LINK beacon reports data available, scheduling download of new files");
+                    self.log.log('log', Date.now() + " LINK beacon reports data available, scheduling download of new files");
                     self._commandQueue.push(DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW);
                   }
 
@@ -1528,16 +1528,16 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
                         self.sendLinkCommand(
                           function error() {
-                            console.log(Date.now() + " Failed to send ANT-FS link command to device");
+                            self.log.log('log', Date.now() + " Failed to send ANT-FS link command to device");
                             delete self._mutex.sendingLINK; // Release MUTEX
 
                           },
                           function success() {
-                            console.log(Date.now() + " ANT-FS link command acknowledged by device.");
+                            self.log.log('log', Date.now() + " ANT-FS link command acknowledged by device.");
                             // Device should transition to authentication beacon now if all went well
                             setTimeout(function _timeoutForLINK() {
                               if (typeof self._mutex.sendingLINK !== "undefined") {
-                                console.log(Date.now() + " Device did not transition to authentication state. Retrying when LINK beacon is received from device.");
+                                self.log.log('log', Date.now() + " Device did not transition to authentication state. Retrying when LINK beacon is received from device.");
                                 delete self._mutex.sendingLINK;
                               }
                             }, 10000); // Allow resend of LINK after 10 sec.
@@ -1574,7 +1574,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                         // Device will send a authentication burst response after a short while after receiving the authentication request
                         setTimeout(function _timeoutForAUTH_CLIENT_SN() {
                           if (typeof self._mutex.sendingAUTH_CLIENT_SN !== "undefined") {
-                            console.log(Date.now() + " Device did respond on request for client serial number. Retrying when AUTHENTICATION beacon is received from device.");
+                            self.log.log('log', Date.now() + " Device did respond on request for client serial number. Retrying when AUTHENTICATION beacon is received from device.");
                             delete self._mutex.sendingAUTH_CLIENT_SN;
                           }
                         }, 2000); // Allow resend of request for client serial number
@@ -1583,10 +1583,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                       function authenticationCB() {
                         // Try to read passkey from file
                         var passkeyFileName = self.getHomeDirectory() + PathSeparator + 'passkey.json';
-                        console.log(Date.now() + " Trying to find passkey file at ", passkeyFileName);
+                        self.log.log('log', Date.now() + " Trying to find passkey file at ", passkeyFileName);
                         fs.exists(passkeyFileName, function(exists) {
                           if (exists) {
-                            console.log(Date.now() + " Found passkey.json file");
+                            self.log.log('log', Date.now() + " Found passkey.json file");
                             fs.readFile(passkeyFileName, function(err, data) {
                               if (err) throw err;
                               self.passkey = (JSON.parse(data)).passkey;
@@ -1596,7 +1596,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                               }, function success() {});
                             });
                           } else {
-                            console.log(Date.now() + " Did not find passkey.json file, requesting pairing with device");
+                            self.log.log('log', Date.now() + " Did not find passkey.json file, requesting pairing with device");
                             self.sendRequestForPairing(DeviceProfile_ANTFS.prototype.FRIENDLY_NAME, function error(err) {
                               delete self._mutex.sendingAUTH_CLIENT_SN;
                             }, function success() {
@@ -1624,7 +1624,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                   { // Can only process one command at a time
                     self._mutex.processingCommand = true;
 
-                    console.log("COMMAND QUEUE:", self._commandQueue);
+                    self.log.log('log', "COMMAND QUEUE:", self._commandQueue);
                     currentCommand = self._commandQueue.shift(); // Take next command
 
                     if (typeof currentCommand === "undefined") {
@@ -1695,14 +1695,14 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                                 });
                             });
                           } else {
-                            console.log(Date.now() + " No files to erase");
+                            self.log.log('log', Date.now() + " No files to erase");
                             delete self._mutex.processingCommand; // Allow processing of next command
                           }
 
                           break;
 
                         default:
-                          console.log(Date.now() + " Unknown command to process " + self._commandQueue);
+                          self.log.log('log', Date.now() + " Unknown command to process " + self._commandQueue);
                           delete self._mutex.processingCommand;
                           break;
                       }

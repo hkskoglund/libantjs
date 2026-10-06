@@ -666,7 +666,7 @@ TransportManager.prototype._setupSession = function (index)
   };
 
   if (index === 0) {
-      console.log(this.host.authenticationManager.getAuthorizationStatus());
+      this.log.log('log', this.host.authenticationManager.getAuthorizationStatus());
       this.directory = new Directory(undefined, this.host);
       this.session.file = this.directory;
   } else {
@@ -748,7 +748,7 @@ var filename;
     try {
       fs.mkdirSync(path.dirname(filename), { recursive: true });
       fs.writeFileSync(filename, session.file.ls());
-      console.log('Directory file stored at ' + filename);
+      this.log.log('log', 'Directory file stored at ' + filename);
     } catch (e) {
       if (this.log.logging)
         this.log.log('error', 'Error writing directory listing ' + filename, e);
