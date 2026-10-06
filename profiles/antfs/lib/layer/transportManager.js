@@ -748,6 +748,7 @@ var filename;
     try {
       fs.mkdirSync(path.dirname(filename), { recursive: true });
       fs.writeFileSync(filename, session.file.ls());
+      console.log('Directory file stored at ' + filename);
     } catch (e) {
       if (this.log.logging)
         this.log.log('error', 'Error writing directory listing ' + filename, e);
