@@ -1,8 +1,6 @@
-/* global define: true, chrome: true, Uint8Array: true,  */
-
 define(['usb/USBDevice'], function(USBDevice) {
 
-  /*jshint -W097 */
+
 'use strict';
 
   function USBChrome(options) {

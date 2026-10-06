@@ -1,7 +1,3 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
-module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
-
-/*jshint -W097 */
 'use strict';
 
 var Channel = require('../../channel/channel'),
@@ -54,7 +50,7 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
 
 
   this.on('directory', function _onDirectory(lsl) {
-    /*jshint -W117 */
+
    if (ls)
       this.log.console.log(lsl);
   }.bind(this));
@@ -175,7 +171,7 @@ Host.prototype.onTxCompleted = function ()
     // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
     // During pairing, user intervention is necessary, so don't enable timeout
 
-       this.session.burstResponseTimeout =  setTimeout(this.sendNow.bind(this, NO_ERROR, 'Client burst response timeout ' + BURST_RESPONSE_TIMEOUT + ' ms'),
+       this.session.burstResponseTimeout =  setTimeout(this.sendNow.bind(this, NO_ERROR, 'Client burst response timeout ' + BURST_RESPONSE_TIMEOUT + ' ms'),
                                                      BURST_RESPONSE_TIMEOUT);
 
      if (this.log.logging)

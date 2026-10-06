@@ -1,5 +1,5 @@
 ﻿
-/*jshint -W097 */
+
 'use strict';
 //console.log(module);
 
@@ -1553,6 +1553,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                     }
                 }
 
+                // falls through
                 case DeviceProfile_ANTFS.prototype.STATE.AUTHENTICATION_LAYER:
                   // One exception is EVENT_TRANSFER_TX_FAILED of link command (but device got the command and still sends AUTHENTICATION BEACON)
                   self.state = DeviceProfile_ANTFS.prototype.STATE.AUTHENTICATION_LAYER; // Follow same state in host as the device/client;

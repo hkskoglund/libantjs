@@ -1,9 +1,7 @@
-/* global define: true, Windows: true, Uint8Array : true  */
-
 // Requires winusb.sys driver - windows 8
 
 define(['usb/USBDevice'], function(USBDevice) {
-  /*jshint -W097 */
+
 'use strict';
 
   function USBWindows(options) {

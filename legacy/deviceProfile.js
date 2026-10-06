@@ -1,7 +1,3 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
-module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
-
-
   var Channel = require('../channel/channel'),
     GenericPage = require('./Page'),
     MainPage = require('./mainPage'),
@@ -133,13 +129,13 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
 
   };
 
-  /* jshint ignore: start */
+
   DeviceProfile.prototype.getPageNumber = function(broadcast) {
 
     throw new Error('Should be overridden in descendants');
 
   };
-  /* jshint ignore: end */
+
 
   // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
   DeviceProfile.prototype.pageToggleFilter = function(broadcast) {
@@ -375,11 +371,11 @@ module:true, process: true, window: true, clearInterval: true, setInterval: true
   };
 
   // Deserialization of broadcast (8-byte packet) into a page object
-  /* jshint ignore: start */
+
   DeviceProfile.prototype.getPage = function(broadcast) {
     throw new Error('getPage should be overridden in descendants');
   };
-  /* jshint ignore: end */
+
 
   // Filter and deserialize into page object
   DeviceProfile.prototype.broadCast = function(broadcast) {

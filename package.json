@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "node --test test/test.js test/host.test.js test/usb-node.test.js",
+    "lint": "eslint .",
     "rebuild": "npm rebuild --update-binary"
   },
   "repository": {
@@ -32,5 +33,10 @@
   },
   "allowScripts": {
     "usb@1.9.2": true
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0"
   }
 }

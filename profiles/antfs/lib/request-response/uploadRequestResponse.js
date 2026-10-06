@@ -1,7 +1,3 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
-module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true */
-
-/*jshint -W097 */
 'use strict';
 
 // Spec; "The host sends an upload request to ready the client device to receive a data upload"

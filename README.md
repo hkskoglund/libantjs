@@ -73,7 +73,7 @@ The example listens on the public ANT network. ANT+ devices use a different netw
 
 ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDir>/<device serial number>/`. Each downloaded directory is also saved as a readable `directory-<device serial number>.txt` listing in that folder, replacing the previous listing. Set `dataDir` in the `Host` options, e.g. `new Host({ dataDir: '/path/to/dir' })`; the default is `$XDG_DATA_HOME/libantjs` (`~/.local/share/libantjs`).
 
-## Tests
+## Checks
 
 Run the automated unit tests with:
 
@@ -82,6 +82,15 @@ npm test
 ```
 
 The tests use Node.js's built-in test runner and do not require an ANT USB stick.
+
+Run ESLint across the JavaScript source with:
+
+```sh
+npm run lint
+```
+
+Unused variables are reported as warnings for now, and the obsolete
+[legacy/backgroundScanningChannel.js](./legacy/backgroundScanningChannel.js) is excluded because it has a pre-existing syntax error.
 
 ## Message support
 

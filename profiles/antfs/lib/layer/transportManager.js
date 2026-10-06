@@ -1,8 +1,3 @@
-/* global define: true, Uint8Array: true, clearTimeout: true, setTimeout: true, require: true,
-module:true, process: true, window: true, clearInterval: true, setInterval: true, DataView: true, Buffer: true */
-
-
-/*jshint -W097 */
 'use strict';
 
 var EventEmitter = require('events'),
@@ -147,10 +142,11 @@ TransportManager.prototype.onErase = function (error,session)
 
   filename = session.file.getFileName();
 
-  if (!error)
+  if (!error) {
     if (this.log.logging) this.log.log('log','Erased ' + filename);
-  else
-   if (this.log.logging) this.log.log('log','Failed file erase index ' + session.index + ' ' + error.toString());
+  } else if (this.log.logging) {
+    this.log.log('log','Failed file erase index ' + session.index + ' ' + error.toString());
+  }
 
 };
 
