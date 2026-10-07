@@ -635,7 +635,7 @@ return {
 DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Disconnect = function(commandType, timeDuration, applicationSpecificDuration) {
   // timeDuration - 0x00 - Disabled/Invalid
   // application specific duration - 0x00 - Disabled/Invalid
-  var payload = Buffer.alloc(4);
+  var payload = Buffer.alloc(5);
 
   payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
   payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DISCONNECT;
@@ -1551,7 +1551,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                             function completeCB() {
                               var genericIndex;
 
-                              self.parseDirectory(self.response.downloadFile);
+                              self.decodeDirectory(self.response.downloadFile);
 
                               if (currentCommand === DeviceProfile_ANTFS.prototype.NODECOMMAND.DOWNLOAD_NEW)
                                 genericIndex = self.directory.newIndex;
@@ -1588,7 +1588,7 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                                 DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER, 0, 0,
                                 function completeCB() {
 
-                                  self.parseDirectory(self.response.downloadFile);
+                                  self.decodeDirectory(self.response.downloadFile);
 
                                   delete self._mutex.processingCommand;
                                 });
