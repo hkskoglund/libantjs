@@ -383,8 +383,8 @@ define(['usb/USBDevice'], function(USBDevice) {
       if (defaultDevice) {
         if (this.log && this.log.logging) this.log.log('log', 'Trying to open ANT device ', defaultDevice);
         chrome.usb.findDevices({
-          "vendorId": defaultDevice.vendorId,
-          "productId": defaultDevice.productId
+          "vendorId": defaultDevice.device.vendorId,
+          "productId": defaultDevice.device.productId
         }, this._onDeviceFound.bind(this));
       }
 

@@ -5,7 +5,11 @@ const EventEmitter = require('node:events');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 const test = require('node:test');
+const USBDevice = require('../usb/USBDevice');
+const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x52');
+const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
@@ -25,6 +29,19 @@ const FitFile = require('../profiles/antfs/lib/file/fitFile');
 const DownloadRequest = require('../profiles/antfs/lib/request-response/downloadRequest');
 const TransportManager = require('../profiles/antfs/lib/layer/transportManager');
 const CRC = require('../profiles/antfs/lib/layer/util/crc');
+
+function loadAmdModule(modulePath, dependencies, globals = {}) {
+  let exported;
+
+  vm.runInNewContext(fs.readFileSync(modulePath, 'utf8'), {
+    define: (_dependencies, factory) => {
+      exported = factory(..._dependencies.map(dependency => dependencies[dependency]));
+    },
+    ...globals
+  }, { filename: modulePath });
+
+  return exported;
+}
 
 function downloadResponse(offset, fileSize, packets) {
   const data = new Uint8Array(16 + packets.length + 8);
@@ -446,4 +463,165 @@ test('FitFile.getFileName prefixes only duplicate names in Unix format', () => {
   assert.equal(secondSportSettings.getFileName(true), '6-SportSettings.fit');
   assert.equal(firstSportSettings.getFileName(), '5-SportSettings.fit');
   assert.equal(secondSportSettings.getFileName(), '6-SportSettings.fit');
+});
+
+test('USBChrome reopens the selected manifest device using its USB identifiers', () => {
+  let findDevicesOptions;
+  const USBChrome = loadAmdModule(
+    path.join(__dirname, '..', 'usb', 'USBChrome.js'),
+    { 'usb/USBDevice': USBDevice },
+    { chrome: { usb: { findDevices: (options) => { findDevicesOptions = options; } } } }
+  );
+  const usb = new USBChrome({ deviceId: 'selected-device' });
+
+  usb.enumeratedManifestDevices = [{
+    id: 'selected-device',
+    device: { vendorId: 0x0fcf, productId: 0x1008 }
+  }];
+  usb._onDeviceFound = () => {};
+
+  usb._onEnumerationComplete();
+
+  assert.equal(findDevicesOptions.vendorId, 0x0fcf);
+  assert.equal(findDevicesOptions.productId, 0x1008);
+});
+
+test('USBWindows emits the defined enumeration-complete event', () => {
+  const listeners = {};
+  const watcher = {
+    addEventListener: (name, listener) => { listeners[name] = listener; },
+    start() {}
+  };
+  const windows = {
+    Devices: {
+      Usb: {
+        UsbDeviceClass: function() {},
+        UsbDevice: { getDeviceClassSelector: () => 'selector' }
+      },
+      Enumeration: {
+        DeviceInformation: { createWatcher: () => watcher }
+      }
+    }
+  };
+  const USBWindows = loadAmdModule(
+    path.join(__dirname, '..', 'usb', 'USBWindows.js'),
+    { 'usb/USBDevice': USBDevice },
+    { Windows: windows }
+  );
+  const usb = new USBWindows({});
+  let emittedDevices;
+
+  usb.on(USBDevice.prototype.EVENT.ENUMERATION_COMPLETE, devices => { emittedDevices = devices; });
+  usb.init(() => {});
+  listeners.enumerationcompleted();
+
+  assert.equal(emittedDevices, usb.devices);
+});
+
+test('USBWindows resumes reading after an empty transfer', async () => {
+  const USBWindows = loadAmdModule(
+    path.join(__dirname, '..', 'usb', 'USBWindows.js'),
+    { 'usb/USBDevice': USBDevice }
+  );
+  const usb = new USBWindows({ length: { in: 8 } });
+  let readCalls = 0;
+
+  usb.ANTdevice = { defaultInterface: { bulkInPipes: [{ endpointDescriptor: { maxPacketSize: 8 } }] } };
+  usb.dataReader = {
+    loadAsync: () => {
+      readCalls++;
+      return readCalls === 1 ? Promise.resolve(0) : new Promise(() => {});
+    }
+  };
+
+  usb.listen();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(readCalls, 2);
+});
+
+test('USBWindows emits only the original non-terminal read error', async () => {
+  const USBWindows = loadAmdModule(
+    path.join(__dirname, '..', 'usb', 'USBWindows.js'),
+    { 'usb/USBDevice': USBDevice }
+  );
+  const usb = new USBWindows({ length: { in: 8 } });
+  const readError = new Error('read failed');
+  const emittedErrors = [];
+  let readCalls = 0;
+
+  usb.ANTdevice = { defaultInterface: { bulkInPipes: [{ endpointDescriptor: { maxPacketSize: 8 } }] } };
+  usb.dataReader = {
+    loadAsync: () => {
+      readCalls++;
+      return readCalls === 1 ? Promise.reject(readError) : new Promise(() => {});
+    }
+  };
+  usb.on(USBDevice.prototype.EVENT.ERROR, error => emittedErrors.push(error));
+
+  usb.listen();
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.deepEqual(emittedErrors, [readError]);
+});
+
+test('USBWindows does not retry a transfer after writeBytes fails', () => {
+  const USBWindows = loadAmdModule(
+    path.join(__dirname, '..', 'usb', 'USBWindows.js'),
+    { 'usb/USBDevice': USBDevice }
+  );
+  const usb = new USBWindows({});
+  const writeError = new Error('write failed');
+  let storeCalls = 0;
+  const callbackErrors = [];
+
+  usb.ANTdevice = {};
+  usb.dataWriter = {
+    writeBytes: () => { throw writeError; },
+    storeAsync: () => { storeCalls++; return Promise.resolve(); }
+  };
+
+  usb.transfer(new Uint8Array([1]), error => callbackErrors.push(error));
+
+  assert.deepEqual(callbackErrors, [writeError]);
+  assert.equal(storeCalls, 0);
+});
+
+test('CumulativeOperatingTime0x52 decodes battery status from byte 7', () => {
+  const data = new Uint8Array(8);
+  data[6] = 128;
+  data[7] = 0x20;
+
+  const page = new CumulativeOperatingTime0x52(
+    { logger: { logging: false } },
+    { data },
+    undefined,
+    0x52
+  );
+
+  assert.equal(page.descriptive.batteryStatus.batteryStatus, 2);
+  assert.equal(page.descriptive.batteryStatus.toString(), 'Good');
+});
+
+test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollovers', () => {
+  const previousPage = {
+    bikeSpeedEventTime: 65000,
+    cumulativeSpeedRevolutionCount: 65535,
+    bikeCadenceEventTime: 65000,
+    cumulativeCadenceRevolutionCount: 65535
+  };
+  const page = Object.create(SPDCADSharedPage.prototype);
+
+  page.profile = { getPreviousPageValidateRolloverTime: () => previousPage };
+  page.bikeSpeedEventTime = 488;
+  page.cumulativeSpeedRevolutionCount = 0;
+  page.bikeCadenceEventTime = 488;
+  page.cumulativeCadenceRevolutionCount = 0;
+
+  page.calcSpeed();
+  page.calcCadence();
+
+  assert.equal(page.relativeCumulativeSpeedRevolutionCount, 1);
+  assert.equal(page.unCalibratedSpeed, 1);
+  assert.equal(page.cadence, 60);
 });

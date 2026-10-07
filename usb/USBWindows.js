@@ -244,7 +244,7 @@ define(['usb/USBDevice'], function(USBDevice) {
     var _onEnumerationComplete = function(event) {
       var deviceInformation;
 
-      this.emit(USBDevice.prototype.EVENT.ENUMERATIONCOMPLETE, this.devices);
+      this.emit(USBDevice.prototype.EVENT.ENUMERATION_COMPLETE, this.devices);
 
       if (this.log && this.log.logging)
         this.log.log('log', 'USB device enumeration complete, found ' + this.devices.length + ' devices');
@@ -404,6 +404,7 @@ define(['usb/USBDevice'], function(USBDevice) {
 
         // Don't let rxParser run on 0 data
 
+        retry();
         return;
       }
 
@@ -445,11 +446,12 @@ define(['usb/USBDevice'], function(USBDevice) {
         retry();
       else
         newError = new Error('Too many failed attempts to read from device, reading stopped');
-      if (this.log && this.log.logging)
+      if (newError) {
+        if (this.log && this.log.logging)
+          this.log.log('error', newError);
 
-        this.log.log('error', newError);
-
-      this.emit(USBDevice.prototype.EVENT.ERROR, newError);
+        this.emit(USBDevice.prototype.EVENT.ERROR, newError);
+      }
 
     }.bind(this);
 
@@ -483,11 +485,13 @@ define(['usb/USBDevice'], function(USBDevice) {
         this.dataWriter.writeBytes(chunk);
       else {
         callback(new Error('No data writer available, cannot transfer USB data '));
+        return;
       }
     } catch (e) {
       if (this.log && this.log.logging)
         this.log.log('error', 'Failed writeBytes to dataWriter for ANT USB', e);
       callback(e);
+      return;
     }
 
     var success = function _success(bytesWritten) {
@@ -509,6 +513,7 @@ define(['usb/USBDevice'], function(USBDevice) {
       } catch (e) {
         if (this.log && this.log.logging)
           this.log.log('error', 'Failed storeAsync HOST -> ANT', e);
+        callback(e);
       }
     }.bind(this);
 

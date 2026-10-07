@@ -24,7 +24,7 @@
 
     this.descriptive = {
       coarseVoltage: data[7] & 0x0F,
-      batteryStatus: new BatteryStatus(data),
+      batteryStatus: new BatteryStatus(data[7]),
       resolution: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
     };
 

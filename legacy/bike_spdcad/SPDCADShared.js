@@ -62,7 +62,7 @@
     bikeSpeedEventTimeRollover = (this.bikeSpeedEventTime < previousPage.bikeSpeedEventTime);
 
     if (bikeSpeedEventTimeRollover) {
-      bikeSpeedEventTimeDifference = 0xFFFF + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
+      bikeSpeedEventTimeDifference = 0x10000 + (this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime);
     } else {
       bikeSpeedEventTimeDifference = this.bikeSpeedEventTime - previousPage.bikeSpeedEventTime;
     }
@@ -73,8 +73,8 @@
 
     if (bikeSpeedEventTimeDifference) {
       if (cumulativeSpeedRevolutionCountRollover) {
-        this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - previousPage.cumulativeSpeedRevolutionCount;
-        this.unCalibratedSpeed = 1024 * (0xFFFF - this.relativeCumulativeSpeedRevolutionCount) / bikeSpeedEventTimeDifference;
+        this.relativeCumulativeSpeedRevolutionCount = 0x10000 + this.cumulativeSpeedRevolutionCount - previousPage.cumulativeSpeedRevolutionCount;
+        this.unCalibratedSpeed = 1024 * this.relativeCumulativeSpeedRevolutionCount / bikeSpeedEventTimeDifference;
       } else {
         this.relativeCumulativeSpeedRevolutionCount = this.cumulativeSpeedRevolutionCount - previousPage.cumulativeSpeedRevolutionCount;
         this.unCalibratedSpeed = 1024 * this.relativeCumulativeSpeedRevolutionCount / bikeSpeedEventTimeDifference;
@@ -112,7 +112,7 @@
     bikeCadenceEventTimeRollover = (this.bikeCadenceEventTime < previousPage.bikeCadenceEventTime);
 
     if (bikeCadenceEventTimeRollover) {
-      bikeCadenceEventTimeDifference = 0xFFFF + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
+      bikeCadenceEventTimeDifference = 0x10000 + (this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime);
     } else {
       bikeCadenceEventTimeDifference = this.bikeCadenceEventTime - previousPage.bikeCadenceEventTime;
     }
@@ -120,7 +120,7 @@
 
     if (bikeCadenceEventTimeDifference) {
       if (cumulativeCadenceRevolutionCountRollover) {
-        this.cadence = 61440 * (0xFFFF - this.cumulativeCadenceRevolutionCount + previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
+        this.cadence = 61440 * (0x10000 + this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
       } else {
         this.cadence = 61440 * (this.cumulativeCadenceRevolutionCount - previousPage.cumulativeCadenceRevolutionCount) / bikeCadenceEventTimeDifference;
       }
