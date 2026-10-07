@@ -31,13 +31,10 @@ LinkManager.prototype.constructor = LinkManager;
 
 LinkManager.prototype.onReset = function() {
 
-  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e,m)
+  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e)
   {
     if (e & this.log.logging)
       this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
-
-    //if (typeof callback === 'function')
-    //  callback(e);
   }.bind(this);
 
   this.removeAllListeners('link');
@@ -53,8 +50,6 @@ LinkManager.prototype.onBeacon = function(beacon) {
 
   if (beacon.clientDeviceState.isLink()) {
     this.linkBeaconCount++;
-    //console.log('lcount', this.linkBeaconCount);
-    //  this.host.state.set(State.prototype.LINK);
     if (this.linkBeaconCount === MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP) {
       this.emit('link');
     } else {
@@ -69,7 +64,7 @@ LinkManager.prototype.onLink = function() {
 
   var authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
 
-    onTxCompleted = function _onTxCompleted(e,m)
+    onTxCompleted = function _onTxCompleted()
     {
       // LINK is received by client ANT stack now, and client will switch frequency to
       // the requested frequency by the link request and start advertising the authentication beacon
@@ -77,7 +72,7 @@ LinkManager.prototype.onLink = function() {
       if (this.host.frequency !== authentication_RF) {
 
         this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-          function _switchFreq(err, msg) {
+          function _switchFreq(err) {
             if (!err && this.log.logging)
               this.log.log('log', 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
           }.bind(this.host));
@@ -85,7 +80,7 @@ LinkManager.prototype.onLink = function() {
 
     }.bind(this),
 
-    onSentToANT = function _onSentToANT(err, RFevent) {
+    onSentToANT = function _onSentToANT(err) {
 
       if (err) {
 
@@ -100,7 +95,7 @@ LinkManager.prototype.onLink = function() {
 
     }.bind(this),
 
-    onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet(err, repsonse) {
+    onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet() {
 
       var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
@@ -124,9 +119,9 @@ LinkManager.prototype.onLink = function() {
 LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, callback) {
 
   var newPeriod,
-    switchFreq = function _switchFreq(e, m) {
+    switchFreq = function _switchFreq() {
       if (this.host.frequency !== frequency)
-        this.host.setFrequency(frequency, function _setFreq(err, msg) {
+        this.host.setFrequency(frequency, function _setFreq(err) {
 
           if (err) {
             if (this.log.logging)
@@ -142,7 +137,7 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
 
     }.bind(this),
 
-    switchPeriod = function _switchPeriod(e, m) {
+    switchPeriod = function _switchPeriod() {
       if (this.host.period !== period)
         this.host.setPeriod(newPeriod, function _setPeriod(err, msg) {
           if (err) {
@@ -185,7 +180,7 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
 LinkManager.prototype.disconnect = function(callback) {
 
   var disconnectRequest = new DisconnectRequest(),
-        onSentToANT = function _onSentToANT(e,m)
+        onSentToANT = function _onSentToANT(e)
         {
           if (e)
           {
@@ -210,4 +205,3 @@ LinkManager.prototype.disconnect = function(callback) {
 };
 
 module.exports = LinkManager;
-
