@@ -48,7 +48,8 @@
   Message.prototype.iFlagsByte = 9;
 
   Message.prototype.decode = function(data) {
-    var frameError = Message.prototype.getFrameError(data);
+    var frameError = Message.prototype.getFrameError(data),
+      extendedDataOffset = 0;
 
     if (frameError)
       throw new Error(frameError);
@@ -75,29 +76,38 @@
       // Check for channel ID
       // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
       if (this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) {
+        if (this.extendedData.length < 4) {
+          this.extendedDataError = 'Channel ID data must contain at least 4 bytes';
+          return;
+        }
+
         if (!this.channelId)
           this.channelId = new ChannelId();
-        this.channelId.decode(this.extendedData.subarray(0, 4));
+        this.channelId.decode(this.extendedData.subarray(extendedDataOffset, extendedDataOffset + 4));
+        extendedDataOffset += 4;
 
         // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
       }
 
+      if (this.flagsByte & LibConfig.RSSI_ENABLED) {
+        if (this.extendedData.length < extendedDataOffset + 3) {
+          this.extendedDataError = 'RSSI data must contain at least 3 bytes';
+          return;
+        }
+        if (!this.RSSI)
+          this.RSSI = new RSSI();
+        this.RSSI.decode(this.extendedData.subarray(extendedDataOffset, extendedDataOffset + 3));
+        extendedDataOffset += 3;
+      }
+
       if (this.flagsByte & LibConfig.RX_TIMESTAMP_ENABLED) {
+        if (this.extendedData.length < extendedDataOffset + 2) {
+          this.extendedDataError = 'RX timestamp data must contain at least 2 bytes';
+          return;
+        }
         if (!this.RXTimestamp)
           this.RXTimestamp = new RXTimestamp();
-        this.RXTimestamp.decode(this.extendedData.subarray(-2));
-      }
-
-      if (!(this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
-        if (!this.RSSI)
-          this.RSSI = new RSSI();
-        this.RSSI.decode(this.extendedData.subarray(0, 2));
-      }
-
-      if ((this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
-        if (!this.RSSI)
-          this.RSSI = new RSSI();
-        this.RSSI.decode(this.extendedData.subarray(4, 7));
+        this.RXTimestamp.decode(this.extendedData.subarray(extendedDataOffset, extendedDataOffset + 2));
       }
     }
   };

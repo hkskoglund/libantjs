@@ -337,6 +337,20 @@ test('Extended broadcast frames decode their channel ID', () => {
   assert.equal(decoded.channelId.transmissionType, 0x78);
 });
 
+test('Extended broadcast frames with truncated channel ID metadata do not throw', () => {
+  const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
+  message.setContent(Uint8Array.from([
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x20, 0x34
+  ]));
+
+  const decoded = new BroadcastDataMessage(message.serialize());
+
+  assert.equal(decoded.payload.length, 8);
+  assert.equal(decoded.channelId, undefined);
+  assert.equal(decoded.extendedDataError, 'Channel ID data must contain at least 4 bytes');
+});
+
 test('Extended acknowledged-data frames decode their channel ID', () => {
   const message = new Message(undefined, Message.prototype.ACKNOWLEDGED_DATA);
   message.setContent(Uint8Array.from([
