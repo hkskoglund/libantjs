@@ -31,7 +31,6 @@
 
 
   //    DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) //{
-  //            this.log.log('log', 'DeviceProfile ENVIRONMENT', channelResponse, channelResponse.toString());
   //    };
 
 

@@ -10,7 +10,6 @@ var currentDevice;
 var singlefreq = true;
 
 function onSlaveChannel0Open(err, msg) {
-  //console.log('slave open');
 }
 
 function onBroadcast(err, msg) {
@@ -18,10 +17,6 @@ function onBroadcast(err, msg) {
   if (!err)
     console.log(slaveHost.log._formatUint8Array(msg.payload));
 
-  /*if (slaveChannel0.id.deviceNumber === 0 ||
-      slaveChannel0.id.deviceType === 0 ||
-      slaveChannel0.id.transmissionType === 0)
-    slaveChannel0.getId(function (err,channelId) { console.log('cid'+channelId);}); */
 }
 
 function onSlaveAssigned(error) {
@@ -70,15 +65,10 @@ function onSlaveAssigned(error) {
     }.bind(this);
 
   slaveChannel0.id(0, 0, 0, function(err, msg) {
-    //console.log('setChannelId response',msg.toString());
     slaveChannel0.on('Broadcast Data', onBroadcast);
-    //console.log('slave channel' + slaveChannel0);
-    //  slaveHost.libConfig(0x80,function (err,msg)
-    //  {
     increaseFreq();
     if (!singlefreq)
       freqIntervalID = setInterval(increaseFreq, searchWindowDelay);
-    //  });
 
   });
 }
@@ -88,18 +78,9 @@ function onSlaveKey(error) {
 }
 
 function onSlaveInited(error) {
-  var key;
-  //key = slaveChannel0.NET.KEY['ANT+'];
-  //  key = [0,0,0,0,0,0,0,0];
   console.log('slave initied', error);
-
-  if (key) {
-    console.log('slave net 0 key', key);
-    slaveChannel0.key(0, key, onSlaveKey);
-  } else {
-    console.log('slave net 0 key PUBLIC');
-    onSlaveKey();
-  }
+  console.log('slave net 0 key PUBLIC');
+  onSlaveKey();
 }
 
 function onError(error) {

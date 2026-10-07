@@ -98,7 +98,6 @@
 
     // Signed Integer 1.5 byte
     // Sbbb bbbbbbbb
-    // console.log("MSB",Number(data[4]).toString(2),"LSB",Number(data[3]).toString(2),data);
     var hour24LowMSN = (data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_LOW_MSN] & TemperaturePage1.prototype.BIT_MASK.HOUR24_LOW_MSN) >> TemperaturePage1.prototype.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
     // Byte 4 & Sbbb 0000 >> 4
 

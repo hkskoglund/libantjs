@@ -62,7 +62,6 @@ var EventEmitter = require('events'),
 
   // Profiles
 
-  //RxScanModeProfile = require('./profiles/RxScanMode'),
   ANTFSHost = require('./profiles/antfs/host'),
 
   // USB hosts
@@ -545,8 +544,6 @@ Host.prototype.sendBurstTransferPacket = function(sequenceChannel, packet, callb
 
   msg.encode(sequenceChannel, packet);
 
-  // TEST FAIL this.channel[0].emit('EVENT_TRANSFER_TX_FAILED',undefined,'EVENT_TRANSFER_TX_FAILED');
-  // TEST FAIL callback(undefined,'test');
   this.sendMessage(msg, undefined, undefined, callback);
 };
 
@@ -811,11 +808,6 @@ Host.prototype.deserialize = function(data) {
           event = ChannelResponseEvent.prototype.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16);
         else
           event = ChannelResponseEvent.prototype.MESSAGE[message.response.code];
-
-      /*  if (this.log.logging) {
-          this.log.log('log','Emitting event ' + event + ' channel ' + message.response.channel);
-        //  this.log.log('log','Event handlers channel ' + message.response.channel,this.channel[message.response.channel]._events);
-      } */
 
         this.channel[message.response.channel].emit(event, NO_ERROR, message.response);
 

@@ -15,7 +15,6 @@
   }
 
   RSSI.prototype.decode = function(extendedData) {
-    //var extendedDataUint8 = new Uint8Array(extendedData); // Allows using [], which cannot be used on an ArrayBuffer
     var extendedDataView = new DataView(extendedData.buffer);
 
     this.measurementType = extendedData[0];

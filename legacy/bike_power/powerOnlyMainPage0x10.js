@@ -39,12 +39,6 @@
 
     this.instantaneousPower = dataView.getUint16(data.byteOffset + 6, true);
 
-    // TEST
-    /* if (previousPage !== undefined)
-     {
-        this.updateEventCount = previousPage.updateEventCount;
-     }*/
-
     // .profile is set in generic Page.js
     if (previousPage !== undefined && this.updateEventCount === previousPage.updateEventCount) {
       this.pageNotUpdated = true;

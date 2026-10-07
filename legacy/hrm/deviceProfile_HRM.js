@@ -22,7 +22,6 @@
 
     // Purpose : More performance - does not need to generate a new HRM page Object for each broadcast
     // Profiling of new HRMPage4 -> does not take long to execute -> keep new HRMPage ...
-    //this.hrmPage4 = new HRMPage4({log : true});
 
     this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY, this.processAggregatedRR);
 

@@ -51,17 +51,12 @@
 
   Logger.prototype.log = function(type) {
 
-    //return null; // Disable
-
     var now = new Date(),
       nowStr = now.getTime(),
       myArguments = [],
       header,
       logSource;
-    //   errStack = (new Error()).stack;
     //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
-
-    // console.trace();
 
     if (this.logging && this.console && this.console[type]) {
 
@@ -87,20 +82,16 @@
         myArguments.push(arguments[argNr]);
       }
 
-      // myArguments.push(errStack);
-
       this.console[type].apply(this.console, myArguments);
 
 
     } else if (!(this.console && this.console[type]))
       this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
-    //console.timeEnd('logger');
   };
 
   Logger.prototype.changeConsole = function(newConsole) {
     if (newConsole) {
       this.console = newConsole;
-      // this.console.info('Console changed to', newConsole);
     }
   };
 

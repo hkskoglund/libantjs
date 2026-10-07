@@ -89,7 +89,6 @@
   SDMPage2.prototype.decode = function(broadcast) {
 
     var data = broadcast.data;
-    // dataView = new DataView(data.buffer);
 
     this.broadcast = broadcast;
 

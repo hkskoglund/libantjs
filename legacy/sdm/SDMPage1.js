@@ -61,8 +61,6 @@
 
   SDMPage1.prototype.decode = function(broadcast) {
     var data = broadcast.data;
-    //  dataView = new DataView(data.buffer);
-
     this.broadcast = broadcast;
 
     // Byte 0 - page number
@@ -109,30 +107,6 @@
     var msg = "P# " + this.number + ' ',
       UNUSED = 0x00;
 
-    //var convertToMinPrKM = function (speed) //{
-    //    if (speed === 0)
-    //        return 0;
-    //    else
-    //        return 1 / (speed * 0.06); // 0.06 = 60/1000
-    //};
-
-    //var formatToMMSS = function (speed) //{
-    //    if (speed === 0)
-    //        return "00:00";
-
-    //    var minutes = Math.floor(speed);
-    //    var seconds = parseInt(((speed - minutes) * 60).toFixed(), 10); // implicit rounding
-    //    if (seconds === 60) //{
-    //        seconds = 0;
-    //        minutes += 1;
-    //    }
-
-    //    var result = (minutes < 10 ? "0" + minutes : minutes) + ":" + (seconds < 10 ? "0" + seconds : seconds);
-
-    //    return result;
-    //};
-
-
     // Time starts when SDM is powered ON
 
     if (this.time !== UNUSED)
@@ -147,8 +121,6 @@
 
     if (this.speed !== UNUSED)
       msg += " Speed : " + this.speed.toFixed(1) + " m/s ";
-    // Removed due to performance considerations
-    // + " - " + formatToMMSS(convertToMinPrKM(this.speed)) + " min/km";
     else
       msg += " Speed : 0" + " m/s";
 

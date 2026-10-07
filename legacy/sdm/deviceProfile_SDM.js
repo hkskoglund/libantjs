@@ -65,11 +65,6 @@
   DeviceProfile_SDM.prototype.ALTERNATIVE_CHANNEL_PERIOD = 16268; // 2 Hz
 
   DeviceProfile_SDM.prototype.broadCast = function(broadcast) {
-    //    var  data = broadcast.data,
-    //         dataView = new DataView(data.buffer);
-
-    //
-
     var page,
       pageNumber = broadcast.data[0],
       sensorId = broadcast.channelId.sensorId,
@@ -94,7 +89,6 @@
 
       case 1:
 
-        // page = new SDMPage1({ log: this.log.logging }, broadcast);
         page = this.SDMPage1;
         page.decode(broadcast);
 
@@ -103,7 +97,6 @@
 
       case 2:
 
-        // page = new SDMPage2({ log: this.log.logging }, broadcast);
         page = this.SDMPage2;
         page.decode(broadcast);
 

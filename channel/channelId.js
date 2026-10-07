@@ -100,7 +100,6 @@
       throw new RangeError('Channel ID data must contain at least 4 bytes');
     }
 
-    //var extendedDataUint8 = new Uint8Array(extendedData);
     // | DN # af 41 | DT # 78 |T# 01
 
     this.deviceNumber = (new DataView(extendedData.buffer, extendedData.byteOffset, extendedData.byteLength)).getUint16(0, true);
@@ -116,8 +115,6 @@
     this._check20BitDeviceNumber();
 
     this.globalDataPagesNonANTPlusManaged = this.hasGlobalDataPages();
-
-    // this.sensorId = this.getUniqueId();
 
   };
 

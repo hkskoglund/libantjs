@@ -335,8 +335,6 @@ Host.prototype.upload = function (index, data)
 Host.prototype.sendRequest = function (e,m)
 {
 
-  //if (this.isTransferInProgress() || !this.isTracking()) // Channel can drop to search state (RX_FAIL_GOTO_SEARCH), we have to check for tracking
-  //  return;
 
   if (this.beacon.clientDeviceState.isBusy() && !this.option.ignoreBusyState)
   {

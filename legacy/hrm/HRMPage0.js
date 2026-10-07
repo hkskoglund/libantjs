@@ -16,7 +16,6 @@
     this.readHR();
 
     // Old legacy format doesnt have previous heart beat event time
-    // this.previousHeartBeatEventTime = undefined;
 
   };
 

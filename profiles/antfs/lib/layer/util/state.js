@@ -21,7 +21,6 @@
     var prevState = this.state;
     if (state !== prevState) {
       this.state = state;
-    //  console.log('State transition ' + new State(prevState).toString() + ' to ' + this.toString());
     }
   };
 

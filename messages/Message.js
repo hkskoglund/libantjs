@@ -71,45 +71,30 @@
       this.content.length > Message.prototype.iFlagsByte) {
 
       this.flagsByte = this.content[Message.prototype.iFlagsByte];
-      //this.extendedData = new Uint8Array(this.payload.buffer.slice(10));
       this.extendedData = this.content.subarray(Message.prototype.iFlagsByte + 1); // Subarray creates a view to underlying arraybuffer
       // Check for channel ID
       // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
       if (this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) {
         if (!this.channelId)
           this.channelId = new ChannelId();
-        //this.channelId.decode(this.extendedData.buffer.slice(0, 4));
         this.channelId.decode(this.extendedData.subarray(0, 4));
 
         // Spec. p. 27 - single master controls multiple slaves - possible to have a 1 or 2-byte shared address field at the start of data payload
-        //            sharedAddress = this.channelId.getSharedAddressType();
-        //
-        //            if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE) //{
-        //                this.sharedAddress = this.payload[0]; // 1 byte is the shared address 0 = broadcast to all slaves
-        //                this.data = this.payload.subarray(2, 9);
-        //
-        //            } else if (sharedAddress === ChannelId.prototype.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE) //{
-        //                this.sharedAddress = (new DataView(this.payload,0,2)).getUint16(0,true); // 2-bytes LSB MSB shared address 0 = broadcast to all slaves
-        //                this.data = this.payload.subarray(3, 9);
-        //            }
       }
 
       if (this.flagsByte & LibConfig.RX_TIMESTAMP_ENABLED) {
         if (!this.RXTimestamp)
           this.RXTimestamp = new RXTimestamp();
-        // this.RXTimestamp.decode(this.extendedData.buffer.slice(-2));
         this.RXTimestamp.decode(this.extendedData.subarray(-2));
       }
 
       if (!(this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
-        //this.RSSI.decode(this.extendedData.buffer.slice(0, 2));
         if (!this.RSSI)
           this.RSSI = new RSSI();
         this.RSSI.decode(this.extendedData.subarray(0, 2));
       }
 
       if ((this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) && (this.flagsByte & LibConfig.RSSI_ENABLED)) {
-        //this.RSSI.decode(this.extendedData.buffer.slice(4, 7));
         if (!this.RSSI)
           this.RSSI = new RSSI();
         this.RSSI.decode(this.extendedData.subarray(4, 7));
@@ -154,9 +139,6 @@
 
     if (this.id)
       msg += " ID 0x" + this.id.toString(16) + " = " + this.id;
-
-    //  if (this.payload)
-    //    msg += " content " + this.payload.toString();
 
     if (this.CRC)
       msg += " CRC 0x" + this.CRC.toString(16) + " = " + this.CRC;

@@ -11,7 +11,6 @@
 
   CumulativeOperatingTime.prototype.readCumulativeOperatingTime = function(broadcast, offset, unit_multiplier) {
     var data = broadcast.data,
-      // dataView = new DataView(data.buffer),
       multiplier = unit_multiplier || 2, // Default 2
       byte1,
       byte2,

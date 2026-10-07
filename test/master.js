@@ -9,8 +9,6 @@ var devices;
 
 function onMasterChannel0Open(error, msg) {
   console.log('master open', error, msg);
-
-  //  setTimeout(function () { MasterChannel0.getStatus(function (err,msg) { console.log('status',msg); }); },2500);
 }
 
 function generateBurstData() {
@@ -40,15 +38,6 @@ function onMasterAssigned(error) {
         });
 
       }
-      /*  else if (dataSeed > 0 && data < 127 ) {
-           sendFunc = MasterChannel0.sendAck;
-           data = [dataSeed,dataSeed+1,dataSeed+2,dataSeed+3,dataSeed+4,dataSeed+5,dataSeed+6,dataSeed+7];
-        } else
-         {
-           sendFunc = MasterChannel0.send;
-           data = [dataSeed,dataSeed+1,dataSeed+2,dataSeed+3,dataSeed+4,dataSeed+5,dataSeed+6,dataSeed+7];
-         } */
-
     }.bind(this);
 
   console.log('master assigned', error);
@@ -83,11 +72,7 @@ function onMasterAssigned(error) {
   MasterChannel0.setId(1, 1, 1, function(err, msg) {
     console.log('setChannelId response', msg.toString());
 
-    // Start sending data
-    // MasterChannel0.sendAcknowledged([0,1,2,3,4,5,6,7],function (err,msg) {
-    //   if (!err)
     MasterChannel0.open(onMasterChannel0Open);
-    // });
 
   });
 
@@ -96,35 +81,7 @@ function onMasterAssigned(error) {
 function onMasterInited(error) {
   console.log('master inited', error);
 
-//  masterHost.enableAdvancedBurst(0x01,function(err, msg) {
-//    if (!err) {
-//      console.log('config advanced burst ');
-
-//      masterHost.getAdvancedBurstConfiguration(function (err,msg)
-//      {
-//        if (!err)
-//        {
-//          console.log('advanced conf',msg.toString());
           MasterChannel0.master(0, onMasterAssigned);
-//        }
-//      });
-//    }
-//  });
-  //masterHost.establishRXScanModeChannel(onPage);
-  //masterHost.resetSystem(onReset);
-  /* masterHost.configureEventBuffer(0x01,0xFFFF,0x00,function ()
-   {
-       masterHost.getEventBufferConfiguration(function _result (err,msg) {  console.log('result',msg); });
-     });*/
-  //masterHost.getCapabilities (function (err,msg) { console.log('capabilities',msg.toString()); });
-
-
-  //  masterHost.getChannelStatus(0,function (err,msg) { console.log('channelstatus',msg.toString()); });
-  //  console.log(masterHost.channel[0]);
-
-  //  MasterChannel0.on("RESPONSE_NO_ERROR",function (response) { console.log('YEAH!!!',response); });
-
-  //channel.getStatus(function (err,msg) { console.log('status',msg.toString()); console.log(channel.toString());});
 
 }
 
@@ -134,17 +91,6 @@ function onError(error) {
 }
 
 devices = masterHost.getDevices();
-//console.log('devices',devices);
-
-/*    process.on('SIGINT', function sigint()
-{
-          console.log(Date.now() + " Process interrupted - signal SIGINT (Ctrl+C)");
-          MasterChannel0.close(function (err,msg) { if (!err) {
-            console.log(Date.now(),'Master channel closed sent');
-            masterHost.exit(function () { console.log(Date.now('Master host exit')); });
-          }});
-
-   }); */
 
 try {
   console.log('master device', devices[masterPort]);

@@ -48,22 +48,16 @@
 
     if (startupMessage === NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE;
-      // code = NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK;
     } else if (startupMessage === NotificationStartup.prototype.HARDWARE_RESET_LINE.BIT_MASK) {
       msg = NotificationStartup.prototype.HARDWARE_RESET_LINE.MESSAGE;
-      //code = NotificationStartup.prototype.HARDWARE_RESET_LINE.BIT_MASK;
     } else if (startupMessage & NotificationStartup.prototype.WATCH_DOG_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.WATCH_DOG_RESET.MESSAGE;
-      //code = NotificationStartup.prototype.WATCH_DOG_RESET.BIT_MASK;
     } else if (startupMessage & NotificationStartup.prototype.COMMAND_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.COMMAND_RESET.MESSAGE;
-      //code = NotificationStartup.prototype.COMMAND_RESET.BIT;
     } else if (startupMessage & NotificationStartup.prototype.SYNCHRONOUS_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.SYNCHRONOUS_RESET.MESSAGE;
-      //code = NotificationStartup.prototype.SYNCHRONOUS_RESET.CODE;
     } else if (startupMessage & NotificationStartup.prototype.SUSPEND_RESET.BIT_MASK) {
       msg = NotificationStartup.prototype.SUSPEND_RESET.MESSAGE;
-      //code = NotificationStartup.prototype.SUSPEND_RESET.CODE;
     }
 
     this.message = msg;

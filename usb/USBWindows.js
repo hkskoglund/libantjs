@@ -86,12 +86,8 @@ define(['usb/USBDevice'], function(USBDevice) {
         Windows.Devices.Usb.UsbDevice.fromIdAsync(deviceInformation.id).then(this._foundANTDevice.bind(this), this._notFoundANTDevice.bind(this));
 
         break;
-        // return devNum;
-
       }
     }
-
-    // return undefined;
 
   };
 
@@ -136,7 +132,6 @@ define(['usb/USBDevice'], function(USBDevice) {
           this.log.log('info', 'USB Device-Access: Access to device allowed by user');
         break;
 
-        //case Windows.Devices.Enumeration.DeviceAccessStatus.unspecified:
       default:
         // Most likely the device is opened by another app, but cannot be sure
         if (this.log && this.log.logging)
@@ -190,13 +185,6 @@ define(['usb/USBDevice'], function(USBDevice) {
   };
 
   USBWindows.prototype._initializeDeviceWatcher = function() {
-    // returns an AQS - Advanced Query String for finding the device
-    //var ANTSelector = Windows.Devices.Usb.UsbDevice.getDeviceSelector(this.options.vid, this.options.pid);
-
-    // Don't know the interface class for ANT USB2/m stick
-    //var winUSBInterfaceClass = "88bae032-5a81-49f0-bc3d-a4ff138216d6";
-    //var ANTSelector = Windows.Devices.Usb.UsbDevice.getDeviceSelector(winUSBInterfaceClass);
-
     // Can be used, but user must select the right device among devices that may not be ANT capable
     var usbDeviceClass = new Windows.Devices.Usb.UsbDeviceClass();
     usbDeviceClass.classCode = 0xFF;
@@ -287,8 +275,6 @@ define(['usb/USBDevice'], function(USBDevice) {
       }
 
 
-      // TEST stopped state : this.ANTWatcher.stop();
-
 
     }.bind(this);
 
@@ -345,13 +331,6 @@ define(['usb/USBDevice'], function(USBDevice) {
     if (!this.ANTWatcher)
       this._initializeDeviceWatcher(); // Cold start
     else {
-      //var _initCB = function () //{
-      //     this.ANTWatcher.removeEventListener("enumerationcompleted", _initCB);
-      //    callback();
-      //}.bind(this);
-      //// i.e resume application from suspended state
-      //this.ANTWatcher.addEventListener("enumerationcompleted", _initCB);
-
       this.ANTWatcher.start();
 
     }
@@ -365,29 +344,22 @@ define(['usb/USBDevice'], function(USBDevice) {
 
     if (this.readingPromise) {
       this.readingPromise.cancel();
-      //this.readingPromise = undefined;
-
     }
 
     if (this.log && this.log.logging)
       this.log.log('log', 'Canceling writing to ANT out endpoint');
     if (this.writingPromise) {
       this.writingPromise.cancel();
-      //this.writingPromise = undefined;
-      // this.dataWriter.close();
-      // this.dataWriter = null;
     }
 
     // Attempt release of resources
     if (this.dataReader) {
 
       this.dataReader.close();
-      // this.dataReader = undefined;
     }
 
     if (this.dataWriter) {
       this.dataWriter.close();
-      //this.dataWriter = undefined;
     }
 
 
@@ -410,8 +382,6 @@ define(['usb/USBDevice'], function(USBDevice) {
       this.ANTWatcher.stop();
 
     this.releaseDevice();
-
-    // callback();
 
   };
 
@@ -452,7 +422,6 @@ define(['usb/USBDevice'], function(USBDevice) {
       if (this.log && this.log.logging && console && console.time)
         console.time('messageFactory');
 
-      //rxParser(undefined, buf);
       this.emit(USBDevice.prototype.EVENT.DATA, buf); // Using events allows adding more listeners of usb data, e.g logging/debugging
 
       if (this.log && this.log.logging && console && console.timeEnd)
@@ -486,17 +455,10 @@ define(['usb/USBDevice'], function(USBDevice) {
 
     var retry = function _bulkInTransfer() {
       try {
-        //delete this.readingPromise;
         if (this.ANTdevice)
           this.readingPromise = this.dataReader.loadAsync(REQUESTED_TRANSFER_SIZE).then(success, error);
 
       } catch (e) {
-        //this.log.log('error', 'Failed loadAsync', e);
-        //transferErrorCount++;
-        //if (transferErrorCount < MAX_TRANSFER_ERROR_COUNT)
-        //    retry();
-        //else
-
         if (this.log && this.log.logging)
           this.log.log('error', 'Failed loadAsync ANT -> HOST', e);
 
@@ -511,8 +473,6 @@ define(['usb/USBDevice'], function(USBDevice) {
 
     retry();
 
-    //return bulkPipes.readingPromise;
-
   };
 
   USBWindows.prototype.transfer = function(chunk, callback) {
@@ -523,8 +483,6 @@ define(['usb/USBDevice'], function(USBDevice) {
         this.dataWriter.writeBytes(chunk);
       else {
         callback(new Error('No data writer available, cannot transfer USB data '));
-        //this.log.log('error', 'Tx - No data writer available');
-        //return;
       }
     } catch (e) {
       if (this.log && this.log.logging)
@@ -546,7 +504,6 @@ define(['usb/USBDevice'], function(USBDevice) {
 
     var retry = function _retry() {
       try {
-        // delete this.writingPromise;
         if (this.ANTdevice)
           this.writingPromise = this.dataWriter.storeAsync().then(success, error);
       } catch (e) {

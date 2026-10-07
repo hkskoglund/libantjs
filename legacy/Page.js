@@ -33,7 +33,6 @@
 
     this.profile = profile; // For e.g previous page
 
-    // this.previousPage = this.profile.getPreviousPageValidateRolloverTime();
 
     // Background pages does not have these functions
 
