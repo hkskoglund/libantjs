@@ -269,6 +269,7 @@ TransportManager.prototype.onEraseResponse = function(responseData) {
 };
 
 TransportManager.prototype.MAX_UPLOAD_RETRIES = 3;
+TransportManager.prototype.MAX_DOWNLOAD_FILE_SIZE = 256 * 1024 * 1024;
 
 TransportManager.prototype.onUploadResponse = function(responseData)
 {
@@ -518,7 +519,22 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
     NO_ERROR,
     now;
 
+  if (responseData.byteLength < DownloadResponse.prototype.HEADER_LENGTH + DownloadResponse.prototype.FOOTER_LENGTH) {
+    this._failDownload(new Error('Download response is shorter than its header and footer'));
+    return;
+  }
+
   response = new DownloadResponse(responseData);
+
+  if (response.result === DownloadResponse.prototype.OK &&
+      (response.length > responseData.byteLength - DownloadResponse.prototype.HEADER_LENGTH - DownloadResponse.prototype.FOOTER_LENGTH ||
+       response.offset > response.fileSize ||
+       response.length > response.fileSize - response.offset ||
+       response.fileSize > this.MAX_DOWNLOAD_FILE_SIZE)) {
+    this._failDownload(new Error('Invalid download response bounds (offset ' + response.offset +
+      ', length ' + response.length + ', file size ' + response.fileSize + ')'));
+    return;
+  }
 
   this.session.response.push(response);
 
@@ -612,6 +628,13 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
 
   }
 
+};
+
+TransportManager.prototype._failDownload = function(error) {
+  if (this.task[this.execTaskIndex])
+    this.task[this.execTaskIndex].done = true;
+
+  this.host.emit('download', error, this.session);
 };
 
 TransportManager.prototype.onRequestSent = function(err) {

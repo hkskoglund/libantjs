@@ -12,6 +12,7 @@ const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const ChannelId = require('../channel/channelId');
 const Directory = require('../profiles/antfs/lib/file/directory');
+const File = require('../profiles/antfs/lib/file/file');
 const FitFile = require('../profiles/antfs/lib/file/fitFile');
 const DownloadRequest = require('../profiles/antfs/lib/request-response/downloadRequest');
 const TransportManager = require('../profiles/antfs/lib/layer/transportManager');
@@ -68,6 +69,100 @@ test('TransportManager continues a download with the CRC of the received prefix'
     managerCrc.updateCRC16(expectedCrc, finalPackets)
   );
   assert.equal(manager.session.crcOffset, 6);
+});
+
+test('TransportManager rejects malformed and oversized download responses before allocation', () => {
+  const malformedPayload = downloadResponse(0, 1, new Uint8Array(0));
+  new DataView(malformedPayload.buffer).setUint32(4, 1, true);
+
+  [
+    downloadResponse(0, 0xFFFFFFFF, new Uint8Array(0)),
+    malformedPayload,
+    downloadResponse(1, 1, Uint8Array.from([1]))
+  ].forEach(responseData => {
+    const manager = Object.create(TransportManager.prototype);
+    let downloadError;
+
+    manager.host = new EventEmitter();
+    manager.host.once('download', error => { downloadError = error; });
+    manager.session = {
+      index: 1,
+      request: [new DownloadRequest(1)],
+      response: []
+    };
+    manager.task = [{ done: false }];
+    manager.execTaskIndex = 0;
+
+    manager.onDownloadResponse(responseData);
+
+    assert.ok(downloadError instanceof Error);
+    assert.equal(manager.task[0].done, true);
+    assert.equal(manager.session.packets, undefined);
+  });
+});
+
+test('Directory.decode rejects incomplete headers and malformed file records', () => {
+  const host = { log: { logging: false, log() {} } };
+  const directory = new Directory(undefined, host);
+
+  assert.throws(() => directory.decode(new Uint8Array(15)), /shorter than its header/);
+
+  const zeroRecordLength = new Uint8Array(Directory.prototype.HEADER_LENGTH);
+  assert.throws(() => directory.decode(zeroRecordLength), /Invalid directory structure length/);
+
+  const incompleteRecord = new Uint8Array(Directory.prototype.HEADER_LENGTH + 1);
+  incompleteRecord[1] = 16;
+  assert.throws(() => directory.decode(incompleteRecord), /incomplete file record/);
+});
+
+test('Generic files have unique names and downloads persist without throwing', async () => {
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'libantjs-'));
+  const manager = Object.create(TransportManager.prototype);
+  const directory = { timeFormat: File.prototype.TIME_FORMAT.COUNTER };
+  const metadata = new Uint8Array(16);
+  const packets = Uint8Array.from([0xAA, 0xBB]);
+  const view = new DataView(metadata.buffer);
+  let file;
+  let filePath,
+      waitForFile;
+
+  view.setUint16(0, 3, true);
+  metadata[2] = 1;
+  view.setUint32(3, 0x12345600, true);
+  view.setUint32(8, 2, true);
+  file = new File(metadata, directory);
+  filePath = path.join(dataDir, '1234', file.getFileName());
+
+  manager.host = {
+    option: { dataDir },
+    authenticationManager: { clientSerialNumber: 1234 }
+  };
+  manager.log = { logging: false };
+
+  try {
+    assert.match(file.getFileName(), /^file-3-1-1193046\.bin$/);
+    manager.onDownload(undefined, {
+      index: file.index,
+      file,
+      packets
+    });
+    waitForFile = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('Downloaded generic file was not written')), 1000);
+      const checkFile = () => {
+        if (fs.existsSync(filePath) && fs.statSync(filePath).size === packets.byteLength) {
+          clearTimeout(timeout);
+          resolve();
+        } else {
+          setTimeout(checkFile, 10);
+        }
+      };
+      checkFile();
+    });
+    await waitForFile;
+    assert.deepEqual(fs.readFileSync(filePath), Buffer.from(packets));
+  } finally {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+  }
 });
 
 test('TransportManager saves each downloaded directory as a readable listing', () => {

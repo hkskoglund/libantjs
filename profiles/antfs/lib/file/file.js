@@ -77,13 +77,14 @@
 
   };
 
+  File.prototype.getFileName = function ()
+  {
+    return 'file-' + this.index + '-' + this.type + '-' + this.identifier + '.bin';
+  };
+
   File.prototype.getFilename = function ()
   {
-    if (this.type <= File.prototype.TYPE.MANUFACTURER_MAX)
-      return 'Manufacturer';
-    else
-      return '';
-
+    return this.getFileName(true);
   };
 
   File.prototype.getFlags = function () {
@@ -137,7 +138,7 @@
       dateStr += ' ';
 
     return pad(this.index, 3) + '  ' + this.getFlags() + '  ' + pad(this.getHumanSize(), 5) + '   ' +
-      dateStr + '  ' + (name !== undefined ? name : this.getFilename());
+      dateStr + '  ' + (name !== undefined ? name : this.getFileName(true));
   };
 
   module.exports = File;

@@ -48,10 +48,20 @@ Directory.prototype.decode = function(data) {
     file,
     fileMetaData;
 
+  if (data.byteLength < this.HEADER_LENGTH)
+    throw new Error('Directory data is shorter than its header');
+
+  this.structureLength = data[1];
+
+  if (this.structureLength < 16)
+    throw new Error('Invalid directory structure length ' + this.structureLength);
+
+  if ((data.byteLength - this.HEADER_LENGTH) % this.structureLength !== 0)
+    throw new Error('Directory data ends with an incomplete file record');
+
   this.majorRevision = (data[0] & 0xF0) >> 4;
   this.minorRevision = data[0] & 0x0F;
 
-  this.structureLength = data[1];
   this.timeFormat = data[2];
 
   // Reserved 5 bytes = 0x00
