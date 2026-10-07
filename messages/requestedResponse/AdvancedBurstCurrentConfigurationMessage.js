@@ -25,11 +25,11 @@
 
     // Optional
 
-    if (this.content[8] && this.content[7]) {
+    if (this.content.length >= 9) {
       this.stallCount = (this.content[8] << 8) | this.content[7];
     }
 
-    if (this.content[9])
+    if (this.content.length >= 10)
       this.retryCount = this.content[9];
 
   };

@@ -76,68 +76,68 @@
 
   CapabilitiesMessage.prototype.toString = function() {
 
-    var msg = Message.prototype.toString.call(this) + " Channels " + this.getNumberOfChannels() + " | Networks " + this.getNumberOfNetworks() + ' | sensRcore channels ' + this.maxSensRcoreChannels + ' | ';
+    var msg = Message.prototype.toString.call(this) + " Channels " + this.MAX_CHAN + " | Networks " + this.MAX_NET + ' | sensRcore channels ' + this.maxSensRcoreChannels + ' | ';
 
-    msg += (this.standardOptions.NO_RECEIVE_CHANNELS ? '+' : '-') + "No receive channels | ";
+    msg += (this.NO_RECEIVE_CHANNELS ? '+' : '-') + "No receive channels | ";
 
-    msg += (this.standardOptions.NO_TRANSMIT_CHANNELS ? '+' : '-') + "No transmit channels | ";
+    msg += (this.NO_TRANSMIT_CHANNELS ? '+' : '-') + "No transmit channels | ";
 
-    msg += (this.standardOptions.NO_RECEIVE_MESSAGES ? '+' : '-') + "No receive messages | ";
+    msg += (this.NO_RECEIVE_MESSAGES ? '+' : '-') + "No receive messages | ";
 
-    msg += (this.standardOptions.NO_TRANSMIT_MESSAGES ? '+' : '-') + "No transmit messages | ";
+    msg += (this.NO_TRANSMIT_MESSAGES ? '+' : '-') + "No transmit messages | ";
 
-    msg += (this.standardOptions.NO_ACKD_MESSAGES ? '+' : '-') + "No ackd. messages | ";
+    msg += (this.NO_ACKD_MESSAGES ? '+' : '-') + "No ackd. messages | ";
 
-    msg += (this.standardOptions.NO_BURST_MESSAGES ? '+' : '-') + "No burst messages | ";
-
-
-    msg += (this.advancedOptions.NETWORK_ENABLED ? '+' : '-') + "Network | ";
-
-    msg += (this.advancedOptions.SERIAL_NUMBER_ENABLED ? '+' : '-') + "Serial number | ";
-
-    msg += (this.advancedOptions.PER_CHANNEL_TX_POWER_ENABLED ? '+' : '-') + "Per channel Tx Power | ";
-
-    msg += (this.advancedOptions.LOW_PRIORITY_SEARCH_ENABLED ? '+' : '-') + "Low priority search | ";
-
-    msg += (this.advancedOptions.SCRIPT_ENABLED ? '+' : '-') + "Script | ";
-
-    msg += (this.advancedOptions.SEARCH_LIST_ENABLED ? '+' : '-') + "Search list | ";
+    msg += (this.NO_BURST_MESSAGES ? '+' : '-') + "No burst messages | ";
 
 
-    if (this.advancedOptions2) {
-      msg += (this.advancedOptions2.LED_ENABLED ? '+' : '-') + "Led | ";
+    msg += (this.NETWORK_ENABLED ? '+' : '-') + "Network | ";
 
-      msg += (this.advancedOptions2.EXT_MESSAGE_ENABLED ? '+' : '-') + "Extended messages | ";
+    msg += (this.SERIAL_NUMBER_ENABLED ? '+' : '-') + "Serial number | ";
 
-      msg += (this.advancedOptions2.SCAN_MODE_ENABLED ? '+' : '-') + "Scan mode | ";
+    msg += (this.PER_CHANNEL_TX_POWER_ENABLED ? '+' : '-') + "Per channel Tx Power | ";
 
-      msg += (this.advancedOptions2.PROXY_SEARCH_ENABLED ? '+' : '-') + "Proximity search | ";
+    msg += (this.LOW_PRIORITY_SEARCH_ENABLED ? '+' : '-') + "Low priority search | ";
 
-      msg += (this.advancedOptions2.EXT_ASSIGN_ENABLED ? '+' : '-') + "Extended assign | ";
+    msg += (this.SCRIPT_ENABLED ? '+' : '-') + "Script | ";
 
-      msg += (this.advancedOptions2.FS_ANTFS_ENABLED ? '+' : '-') + "ANT-FS | ";
+    msg += (this.SEARCH_LIST_ENABLED ? '+' : '-') + "Search list | ";
 
-    }
 
-    if (this.advancedOptions3) {
-      msg += (this.advancedOptions3.ADVANCED_BURST_ENABLED ? '+' : '-') + 'Advanced burst |';
+    if (this.advancedOptions2 !== undefined) {
+      msg += (this.LED_ENABLED ? '+' : '-') + "Led | ";
 
-      msg += (this.advancedOptions3.EVENT_BUFFERING_ENABLED ? '+' : '-') + "Event buffering | ";
+      msg += (this.EXT_MESSAGE_ENABLED ? '+' : '-') + "Extended messages | ";
 
-      msg += (this.advancedOptions3.EVENT_FILTERING_ENABLED ? '+' : '-') + "Event filtering | ";
+      msg += (this.SCAN_MODE_ENABLED ? '+' : '-') + "Scan mode | ";
 
-      msg += (this.advancedOptions3.HIGH_DUTY_SEARCH_ENABLED ? '+' : '-') + "High duty search | ";
+      msg += (this.PROXY_SEARCH_ENABLED ? '+' : '-') + "Proximity search | ";
 
-      msg += (this.advancedOptions3.SEARCH_SHARING_ENABLED ? '+' : '-') + "Search sharing | ";
+      msg += (this.EXT_ASSIGN_ENABLED ? '+' : '-') + "Extended assign | ";
 
-      msg += (this.advancedOptions3.ENCRYPTED_CHANNEL_ENABLED ? '+' : '-') + "Encrypted channel | ";
-
-      msg += (this.advancedOptions3.SELECTIVE_DATA_ENABLED ? '+' : '-') + "Selective data update | ";
+      msg += (this.FS_ANTFS_ENABLED ? '+' : '-') + "ANT-FS | ";
 
     }
 
-    if (this.advancedOptions4) {
-      msg += (this.advancedOptions4.RFACTIVE_NOTIFICATION_ENABLED ? '+' : '-') + "RF Active notification | ";
+    if (this.advancedOptions3 !== undefined) {
+      msg += (this.ADVANCED_BURST_ENABLED ? '+' : '-') + 'Advanced burst |';
+
+      msg += (this.EVENT_BUFFERING_ENABLED ? '+' : '-') + "Event buffering | ";
+
+      msg += (this.EVENT_FILTERING_ENABLED ? '+' : '-') + "Event filtering | ";
+
+      msg += (this.HIGH_DUTY_SEARCH_ENABLED ? '+' : '-') + "High duty search | ";
+
+      msg += (this.SEARCH_SHARING_ENABLED ? '+' : '-') + "Search sharing | ";
+
+      msg += (this.ENCRYPTED_CHANNEL_ENABLED ? '+' : '-') + "Encrypted channel | ";
+
+      msg += (this.SELECTIVE_DATA_ENABLED ? '+' : '-') + "Selective data update | ";
+
+    }
+
+    if (this.advancedOptions4 !== undefined) {
+      msg += (this.RFACTIVE_NOTIFICATION_ENABLED ? '+' : '-') + "RF Active notification | ";
 
     }
 

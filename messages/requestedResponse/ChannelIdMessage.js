@@ -18,7 +18,7 @@
     this.channelId = new ChannelId(deviceNum, deviceType, transmissionType);
   };
 
-  ChannelId.prototype.getId = function() {
+  ChannelIdMessage.prototype.getId = function() {
     return this.channelId;
   };
 

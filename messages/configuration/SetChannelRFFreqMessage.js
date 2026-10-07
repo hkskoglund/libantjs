@@ -17,8 +17,11 @@
   SetChannelRFFreqMessage.prototype.encode = function(channel, RFFreq) {
     var msgBuffer = new Uint8Array(2);
 
+    if (typeof RFFreq === 'undefined')
+      RFFreq = 66;
+
     msgBuffer[0] = channel;
-    msgBuffer[1] = RFFreq || 66;
+    msgBuffer[1] = RFFreq;
 
     this.channel = channel;
     this.RFFreq = RFFreq;

@@ -36,16 +36,16 @@
     this.size = size;
     this.time = time;
 
-    this.setContent(msgBuffer);
+    this.setContent(new Uint8Array(msgBuffer.buffer));
 
   };
 
   ConfigureEventBufferMessage.prototype.decode = function() {
-    var dw = new DataView(this.payload.buffer);
+    var dw = new DataView(this.content.buffer, this.content.byteOffset, this.content.byteLength);
 
-    this.config = dw.getUint8(this.payload.byteOffset);
-    this.size = dw.getUint16(this.payload.byteOffset + 1, true);
-    this.time = dw.getUint16(this.payload.byteOffset + 3, true);
+    this.config = dw.getUint8(0);
+    this.size = dw.getUint16(1, true);
+    this.time = dw.getUint16(3, true);
 
   };
 

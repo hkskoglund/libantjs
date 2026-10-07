@@ -10,6 +10,14 @@ const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
+const OpenRxScanModeMessage = require('../messages/control/OpenRxScanModeMessage');
+const ConfigureEventBufferMessage = require('../messages/configuration/ConfigureEventBufferMessage');
+const UnAssignChannelMessage = require('../messages/configuration/UnAssignChannelMessage');
+const SetChannelRFFreqMessage = require('../messages/configuration/SetChannelRFFreqMessage');
+const VersionMessage = require('../messages/requestedResponse/VersionMessage');
+const CapabilitiesMessage = require('../messages/requestedResponse/CapabilitiesMessage');
+const AdvancedBurstCurrentConfigurationMessage = require('../messages/requestedResponse/AdvancedBurstCurrentConfigurationMessage');
+const ChannelIdMessage = require('../messages/requestedResponse/ChannelIdMessage');
 const ChannelId = require('../channel/channelId');
 const Directory = require('../profiles/antfs/lib/file/directory');
 const File = require('../profiles/antfs/lib/file/file');
@@ -29,6 +37,14 @@ function downloadResponse(offset, fileSize, packets) {
   data.set(packets, 16);
 
   return data;
+}
+
+function messageFrame(id, content) {
+  const message = new Message(undefined, id);
+
+  message.setContent(content);
+
+  return message.serialize();
 }
 
 test('TransportManager continues a download with the CRC of the received prefix', () => {
@@ -218,6 +234,76 @@ test('Message.serialize rejects content larger than the frame length field', () 
     name: 'RangeError',
     message: 'Message content must not exceed 255 bytes'
   });
+});
+
+test('ConfigureEventBufferMessage serializes and decodes all configuration bytes', () => {
+  const message = new ConfigureEventBufferMessage(1, 10, 100);
+  const serialized = message.serialize();
+  const decoded = new ConfigureEventBufferMessage(messageFrame(0x74, Uint8Array.from([1, 10, 0, 100, 0])));
+
+  assert.deepEqual(Array.from(serialized.subarray(3, -1)), [1, 10, 0, 100, 0]);
+  assert.equal(decoded.config, 1);
+  assert.equal(decoded.size, 10);
+  assert.equal(decoded.time, 100);
+});
+
+test('UnAssignChannelMessage preserves the requested channel', () => {
+  const message = new UnAssignChannelMessage(2);
+
+  assert.deepEqual(Array.from(message.serialize().subarray(3, -1)), [2]);
+});
+
+test('VersionMessage decodes its null-terminated version from content', () => {
+  const message = new VersionMessage(messageFrame(0x3e, Uint8Array.from([65, 78, 84, 43, 32, 49, 46, 0])));
+
+  assert.equal(message.getVersion(), 'ANT+ 1.');
+});
+
+test('OpenRxScanModeMessage serializes the requested channel', () => {
+  const message = new OpenRxScanModeMessage(3);
+
+  assert.deepEqual(Array.from(message.serialize().subarray(3, -1)), [3]);
+});
+
+test('CapabilitiesMessage stringifies decoded capability fields', () => {
+  const message = new CapabilitiesMessage(messageFrame(
+    0x54,
+    Uint8Array.from([8, 2, 1, 2, 4, 3, 2, 1])
+  ));
+  const output = message.toString();
+
+  assert.match(output, /Channels 8 \| Networks 2/);
+  assert.match(output, /\+No receive channels/);
+  assert.match(output, /\+Network/);
+  assert.match(output, /\+Event buffering/);
+});
+
+test('SetChannelRFFreqMessage preserves zero offsets and defaults omitted offsets', () => {
+  const zeroOffset = new SetChannelRFFreqMessage(2, 0);
+  const defaultOffset = new SetChannelRFFreqMessage(2);
+
+  assert.deepEqual(Array.from(zeroOffset.serialize().subarray(3, -1)), [2, 0]);
+  assert.deepEqual(Array.from(defaultOffset.serialize().subarray(3, -1)), [2, 66]);
+});
+
+test('AdvancedBurstCurrentConfigurationMessage decodes stall counts containing zero bytes', () => {
+  const message = new AdvancedBurstCurrentConfigurationMessage(messageFrame(
+    0x78,
+    Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 1, 0, 0])
+  ));
+
+  assert.equal(message.stallCount, 1);
+  assert.equal(message.retryCount, 0);
+});
+
+test('ChannelIdMessage exposes its decoded ChannelId', () => {
+  const message = new ChannelIdMessage(messageFrame(
+    0x51,
+    Uint8Array.from([2, 0x34, 0x12, 0x56, 0x78])
+  ));
+
+  assert.equal(message.getId(), message.channelId);
+  assert.equal(message.getId().deviceNumber, 0x1234);
 });
 
 test('Extended broadcast frames decode their channel ID', () => {

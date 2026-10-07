@@ -18,7 +18,7 @@
 
     this.channel = channel;
 
-    this.setContent(msgBuffer.buffer);
+    this.setContent(msgBuffer);
 
   };
 
