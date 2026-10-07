@@ -26,8 +26,6 @@ var EventEmitter = require('events'),
   os = require('os'),
   path = require('path');
 
-// heap = require('/usr/lib/node_modules/heapdump');
-
 function TransportManager(host, download,erase,ls,skipNewFiles) {
 
   EventEmitter.call(this);
@@ -69,7 +67,6 @@ TransportManager.prototype.onBeacon = function(beacon) {
 
   if (beacon.clientDeviceState.isTransport() && beacon.forHost(this.host.getHostSerialNumber()) &&
     this.host.layerState.isAuthentication()) {
-    //console.log('Listener for transport-ev',this.listeners('transport'));
     this.emit('transport');
   }
 };
@@ -82,8 +79,6 @@ TransportManager.prototype.onBurst = function(burst) {
   if (!(this.host.beacon.forHost(this.host.hostSerialNumber) &&
       this.host.layerState.isTransport()))
       {
-        //if (this.log.logging)
-        //  this.log.log('log','Transport manager ignoring burst',this.host.beacon,this.host.layerState);
           return;
        }
 
@@ -163,7 +158,7 @@ TransportManager.prototype.addTask = function (request,index)
   if (typeof index === 'string') //In case '10,11'-format
   {
        split = index.split(',');
-       split.forEach(function (e,i) {
+       split.forEach(function (e) {
          var splitOnHyphen,
              min,minNum,
              max,maxNum,
@@ -524,7 +519,6 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
     now;
 
   response = new DownloadResponse(responseData);
-// TEST response.result = DownloadResponse.prototype.NOT_READY;
 
   this.session.response.push(response);
 
@@ -601,7 +595,6 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
           this.host.emit('directory', this.directory.ls(this.session.maxBlockSize));
         }
 
-        // TEST this.task[this.execTaskIndex].done  = false;
         this.task[this.execTaskIndex].done  = true;
 
         this.host.emit('download', NO_ERROR, this.session);
@@ -610,8 +603,6 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
       break;
 
     default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
-
-      //console.error(response, this.session);
 
       this.task[this.execTaskIndex].done = (response.result !== DownloadResponse.prototype.NOT_READY);
 
@@ -623,7 +614,7 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
 
 };
 
-TransportManager.prototype.onRequestSent = function(err, msg) {
+TransportManager.prototype.onRequestSent = function(err) {
   var message;
 
   if (err) {
@@ -685,7 +676,6 @@ TransportManager.prototype.download = function(index, offset) {
     this._setupSession(index);
 
     request = new DownloadRequest(index);
-    // TEST  request.setMaxBlockSize(8);
 
     this.host.once('download', offset);
 
@@ -760,8 +750,6 @@ var filename;
       if (err) {
         if (this.log.logging)
           this.log.log('error', 'Error writing ' + filename, err);
-      } else {
-        //console.log('Downloaded ' + filename + ' (' + session.packets.byteLength + ' bytes)');
       }
 
     }.bind(this));
@@ -775,7 +763,7 @@ var filename;
 
 TransportManager.prototype.onTransport = function() {
 
-  var onNextTask = function _onNextTask(err, session) {
+  var onNextTask = function _onNextTask(err) {
 
     var newFiles,
         inCompleteTask;
@@ -801,10 +789,6 @@ TransportManager.prototype.onTransport = function() {
       newFiles.forEach(function (index) { this.addDownloadTask(index);}.bind(this));
 
     }
-
-    /* TEST if (this.task[this.execTaskIndex])
-            this.task[this.execTaskIndex].done = false; */
-
 
     if (this.execTaskIndex < this.task.length && !this.task[this.execTaskIndex].done) {
 
@@ -870,8 +854,6 @@ TransportManager.prototype.onTransport = function() {
 
       inCompleteTask = this.task.filter(function _taskFilter(task)  {  return !task.done && task.retry < 3; });
 
-    // TEST inCompleteTask = { length : 1};
-
       if (inCompleteTask.length) {
 
         this.incompleteTaskTimeout =  setTimeout(function _retryIncompleteTask()
@@ -881,11 +863,6 @@ TransportManager.prototype.onTransport = function() {
                      }.bind(this),100);
       } else
          {
-           // TEST  this.execTaskIndex = -1;
-           // TEST   onNextTask();
-           // TEST ignore busy state
-           if (this.log.loggging)
-             console.timeEnd('Transport');
            this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
          }
     }
@@ -899,23 +876,7 @@ TransportManager.prototype.onTransport = function() {
   if (this.log.logging)
    this.log.log('log','Starting with task', this.task);
 
-  // TEST ignore busy state
-  if (this.log.logging)
-    console.time('Transport');
-
   onNextTask();
-
-/*
-  var req = new UploadRequest(UploadRequest.prototype.COMMAND_PIPE,16384,0);
-  console.log('upload req',req);
-
-  this.session = {
-    index: UploadRequest.prototype.COMMAND_PIPE,
-    request: [],
-    response: [],
-  };
-
-  this.sendRequest(req); */
 
 };
 
