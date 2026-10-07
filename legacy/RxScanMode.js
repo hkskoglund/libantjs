@@ -85,7 +85,7 @@
     profile.addListener('page', this.onPage.bind(this)); // Forward
 
     if (this.log.logging) {
-      this.log.log('info', 'Added profile for sensorId ' + sensorId + ' to RX SCAN mode channel', profile);
+      this.log.info( 'Added profile for sensorId ' + sensorId + ' to RX SCAN mode channel', profile);
     }
   };
 
@@ -96,12 +96,12 @@
     var currentProfile;
 
     if (!broadcast) {
-      this.log.log('error', 'Undefined broadcast received');
+      this.log.error( 'Undefined broadcast received');
       return;
     }
 
     if (!broadcast.channelId) {
-      this.log.log('error', 'No channel id available for broadcast', broadcast);
+      this.log.error( 'No channel id available for broadcast', broadcast);
       return;
     }
 
@@ -164,7 +164,7 @@
         default:
 
           if (this.log && this.log.logging) {
-            this.log.log('warn', 'No profile support for device type ' + broadcast.channelId.deviceType);
+            this.log.warn( 'No profile support for device type ' + broadcast.channelId.deviceType);
           }
           break;
 

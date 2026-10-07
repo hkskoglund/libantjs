@@ -1,110 +1,120 @@
-  function Logger(options) {
+'use strict';
 
+const loglevel = require('loglevel');
 
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
-    Object.defineProperty(this, "logging", {
-      get: function() {
-        return this._logging;
-      },
-      set: function(newValue) {
-        this._logging = newValue;
+let nextLoggerId = 0;
+
+function Logger(options) {
+  this.options = options;
+  this.console = console;
+  this._logger = loglevel.getLogger(`libantjs-${nextLoggerId++}`);
+
+  Object.defineProperty(this, 'logging', {
+    get: function() {
+      return this._logging;
+    },
+    set: function(newValue) {
+      this._logging = Boolean(newValue);
+      if (this._logger)
+        this._logger.setLevel(this._logging ? 'debug' : 'silent');
+    }
+  });
+
+  if (typeof options === 'object' && options !== null)
+    this.logging = options.log;
+  else
+    this.logging = options;
+
+  this._logger.methodFactory = (methodName) => {
+    const consoleMethod = methodName === 'debug' || methodName === 'trace' ? 'log' : methodName;
+
+    return (...args) => {
+      if (!this.logging || !this.console)
+        return;
+
+      const output = this.console[consoleMethod] || this.console.log;
+      if (typeof output !== 'function')
+        return;
+
+      let header = Date.now().toString();
+      if (this.options && this.options.logSource) {
+        const logSource = typeof this.options.logSource === 'string'
+          ? this.options.logSource
+          : this.options.logSource.constructor.name;
+        header += ` ${logSource}:`;
       }
-    });
 
-    if (typeof options === 'object' && options.log) // Handle Logger ({log : true|| false})
-      this.logging = true;
-    else if (typeof options === 'boolean') // Handle Logger(true||false)
-      this.logging = options;
-    else
-      this.logging = false;
+      const outputArguments = [header];
+      for (const arg of args) {
+        if (arg instanceof Uint8Array)
+          outputArguments.push(this._formatUint8Array(arg));
+        outputArguments.push(arg);
+      }
 
-    this.console = console;
+      output.apply(this.console, outputArguments);
+    };
+  };
 
-    this.options = options;
+  this._logger.setLevel(this.logging ? 'debug' : 'silent');
+}
 
+Logger.prototype._formatUint8Array = function(arg) {
+  if (!(arg instanceof Uint8Array))
+    return arg;
+
+  let msg = 'Uint8Array < ';
+  const maxBytesToFormat = 32;
+  let i;
+  for (i = 0; i < arg.length && i < maxBytesToFormat; i++) {
+    const prefix = arg[i] <= 0x0F ? '0' : '';
+    msg += `${prefix}${arg[i].toString(16)} `;
   }
 
-  Logger.prototype._formatUint8Array = function(arg) {
-    if (arg instanceof Uint8Array) {
-      var i, msg = 'Uint8Array < ',
-        MAX_BYTES_TO_FORMAT = 32,
-        prefix;
-      for (i = 0; i < arg.length; i++) {
-        if (i < MAX_BYTES_TO_FORMAT) {
-          if (arg[i] <= 0x0F)
-            prefix = '0';
-          else prefix = '';
-          msg += prefix + arg[i].toString(16) + ' ';
-        } else {
-          msg += '...>';
-          break;
-        }
-      }
+  if (i < arg.length)
+    msg += '...>';
+  else
+    msg += '>';
 
-      if (i === arg.length)
-        msg += '>';
+  return msg;
+};
 
-      return msg;
-    } else
-      return arg;
+for (const method of ['trace', 'debug', 'info', 'warn', 'error']) {
+  Logger.prototype[method] = function() {
+    this._logger[method].apply(this._logger, arguments);
   };
+}
 
-  Logger.prototype.log = function(type) {
+Logger.prototype.log = function(type) {
+  const method = type === 'log' ? 'debug' : type;
+  if (['trace', 'debug', 'info', 'warn', 'error'].includes(method)) {
+    this[method].apply(this, Array.prototype.slice.call(arguments, 1));
+  } else if (this.console && typeof this.console.warn === 'function') {
+    this.console.warn(Date.now(), 'Unknown console function ' + type, arguments);
+  }
+};
 
-    var now = new Date(),
-      nowStr = now.getTime(),
-      myArguments = [],
-      header,
-      logSource;
-    //+ ' ' + now.toLocaleTimeString(); // .toLocaleTimeString is very expensive on performance - maybe candidate for removal
+Logger.prototype.setLevel = function(level) {
+  this._logger.setLevel(level);
+  this._logging = this._logger.getLevel() < this._logger.levels.SILENT;
+};
 
-    if (this.logging && this.console && this.console[type]) {
+Logger.prototype.getLevel = function() {
+  return this._logger.getLevel();
+};
 
-      // Headers
-      header = nowStr;
-      if (this.options && this.options.logSource) {
-        if (typeof this.options.logSource === 'string')
-          logSource = this.options.logSource;
-        else if (typeof this.options.logSource === 'object')
-          logSource = this.options.logSource.constructor.name;
+Logger.prototype.changeConsole = function(newConsole) {
+  if (newConsole)
+    this.console = newConsole;
+};
 
-        header += ' ' + logSource + ':';
-      }
+Logger.prototype.time = function(name) {
+  if (this.logging && this.console && this.console.time)
+    this.console.time(name);
+};
 
-      myArguments.push(header);
+Logger.prototype.timeEnd = function(name) {
+  if (this.logging && this.console && this.console.timeEnd)
+    this.console.timeEnd(name);
+};
 
-      // Arguments
-
-      for (var argNr = 1, len = arguments.length; argNr < len; argNr++) {
-        if (arguments[argNr] instanceof Uint8Array)
-          myArguments.push(this._formatUint8Array(arguments[argNr]));
-
-        myArguments.push(arguments[argNr]);
-      }
-
-      this.console[type].apply(this.console, myArguments);
-
-
-    } else if (!(this.console && this.console[type]))
-      this.console.warn(nowStr, 'Unknown console function ' + type, arguments);
-  };
-
-  Logger.prototype.changeConsole = function(newConsole) {
-    if (newConsole) {
-      this.console = newConsole;
-    }
-  };
-
-  Logger.prototype.time = function(name) {
-    if (this.logging && this.console && this.console.time)
-      this.console.time(name);
-
-  };
-
-  Logger.prototype.timeEnd = function(name) {
-    if (this.logging && this.console && this.console.timeEnd)
-      this.console.timeEnd(name);
-  };
-
-  module.exports = Logger;
-  
+module.exports = Logger;

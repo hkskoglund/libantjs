@@ -33,7 +33,7 @@ BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function(conf
   this.channel.setLowPrioritySearchTimeout(config.searchTimeoutLP);
 
   if (config.searchTimeoutHP !== 0x00) {
-    this.log.log('log', Date.now(), "High priority search timeout is not disabled = " + config.searchTimeoutHP.toString(16) + " , forced disable = 0x00 for background scanning");
+    this.log.debug( Date.now(), "High priority search timeout is not disabled = " + config.searchTimeoutHP.toString(16) + " , forced disable = 0x00 for background scanning");
     config.searchTimeoutHP = 0x00;
   }
   this.channel.setChannelSearchTimeout(config.searchTimeoutHP); // Disable High priority search
@@ -73,11 +73,11 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
         self.ANT.setChannelConfiguration(channelNr, deviceProfile.getSlaveChannelConfiguration(Network.prototype.ANT,
           channelNr, channelID.deviceNumber, channelID.transmissionType, searchTimeoutHP, searchTimeoutLP));
         self.ANT.activateChannelConfiguration(channelNr, function error(err) {
-            self.log.log('log', Date.now(), "Could not activate channel configuration", err);
+            self.log.debug( Date.now(), "Could not activate channel configuration", err);
           },
           function successCB(data) {
             self.ANT.open(channelNr, function error(err) {
-                self.log.log('log', Date.now(), "Could not open channel", self.channel.channelID, err);
+                self.log.debug( Date.now(), "Could not open channel", self.channel.channelID, err);
               },
               function success(data) {
               }, true);
@@ -99,11 +99,11 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
             // the background channel search will not trigger anymore on this particular master, but can trigger on same device type.
             // Only one channel pr. device type is allocated
 
-            self.log.log('log', Date.now(), "Found HRM - heart rate monitor - master/sensor")
-            self.log.log('log', Date.now(), channelID.toString());
+            self.log.debug( Date.now(), "Found HRM - heart rate monitor - master/sensor")
+            self.log.debug( Date.now(), channelID.toString());
 
             if (configuredChannel(1, channelID.deviceTypeID))
-              self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/HRM");
+              self.log.debug( Date.now(), "Already configured channel to receive broadcast from device type/HRM");
             else {
               deviceProfile = new DeviceProfile_HRM(this.getConfiguration());
               openChannel(1);
@@ -112,10 +112,10 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
 
           case DeviceProfile_SDM.prototype.DEVICE_TYPE:
 
-            self.log.log('log', Date.now(), "Found SDM4 - foot pod - master/sensor");
-            self.log.log('log', Date.now(), channelID.toString());
+            self.log.debug( Date.now(), "Found SDM4 - foot pod - master/sensor");
+            self.log.debug( Date.now(), channelID.toString());
             if (configuredChannel(2, channelID.deviceTypeID))
-              self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SDM");
+              self.log.debug( Date.now(), "Already configured channel to receive broadcast from device type/SDM");
             else {
               deviceProfile = new DeviceProfile_SDM(this.nodeInstance);
               openChannel(2);
@@ -124,10 +124,10 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
 
           case DeviceProfile_SPDCAD.prototype.DEVICE_TYPE:
 
-            self.log.log('log', Date.now(), "Found SPDCAD - bike speed/cadence - master/sensor");
-            self.log.log('log', Date.now(), channelID.toString());
+            self.log.debug( Date.now(), "Found SPDCAD - bike speed/cadence - master/sensor");
+            self.log.debug( Date.now(), channelID.toString());
             if (configuredChannel(3, channelID.deviceTypeID))
-              self.log.log('log', Date.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
+              self.log.debug( Date.now(), "Already configured channel to receive broadcast from device type/SPDCAD");
             else {
               deviceProfile = new DeviceProfile_SPDCAD(this.nodeInstance);
               openChannel(3);
@@ -135,7 +135,7 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
             break;
 
           default:
-            self.log.log('log', Date.now() + "Found ANT device type", this.channelID.deviceTypeID, " device profile not implemented/supported");
+            self.log.debug( Date.now() + "Found ANT device type", this.channelID.deviceTypeID, " device profile not implemented/supported");
             break;
         }
 

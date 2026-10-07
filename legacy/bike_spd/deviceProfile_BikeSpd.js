@@ -51,7 +51,7 @@
 
       } else {
         if (this.log && this.log.logging) {
-          this.log.log('error', 'Failed to get background page for page number ' + pageNumber, this);
+          this.log.error( 'Failed to get background page for page number ' + pageNumber, this);
         }
       }
     }

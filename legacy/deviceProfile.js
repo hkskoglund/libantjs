@@ -39,7 +39,7 @@
         broadcast: {}
       };
     } else if (this.log && this.log.logging) {
-      this.log.log('info', 'Device is not capable of page toggeling', this);
+      this.log.info( 'Device is not capable of page toggeling', this);
     }
     this.sensorId = undefined;
 
@@ -121,7 +121,7 @@
 
 
     if (!page) {
-      this.log.log('error', 'Unable to create background page object for page number ', pageNumber + ' 0x' + pageNumber.toString(16), broadcast);
+      this.log.error( 'Unable to create background page object for page number ', pageNumber + ' 0x' + pageNumber.toString(16), broadcast);
     }
 
     return page;
@@ -179,7 +179,7 @@
       this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
       if (this.log && this.log.logging) {
-        this.log.log('info', sensorId, 'Page toggeling ' + transitionMsg + ' at B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+        this.log.info( sensorId, 'Page toggeling ' + transitionMsg + ' at B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
       }
     }
 
@@ -195,7 +195,7 @@
       this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
       if (this.log && this.log.logging) {
-        this.log.log('info', sensorId, 'No page toggeling after B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'Its a legacy device using page 0 format', 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+        this.log.info( sensorId, 'No page toggeling after B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'Its a legacy device using page 0 format', 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
       }
     }
   };
@@ -299,7 +299,7 @@
 
       if (pageNumber === undefined || pageNumber === null) {
         if (this.log && this.log.logging) {
-          this.log.log('warn', 'Undefined or null page number for sensor id ' + this.sensorId);
+          this.log.warn( 'Undefined or null page number for sensor id ' + this.sensorId);
         }
       }
 
@@ -326,7 +326,7 @@
 
     if (this.timer.onPage !== undefined) {
       if (this.log && this.log.logging) {
-        this.log.log('warn', 'requestPageUpdate should only be called one time');
+        this.log.warn( 'requestPageUpdate should only be called one time');
       }
       clearInterval(this.timer.onPage);
     }
@@ -334,7 +334,7 @@
     this.timer.onPage = setInterval(this.getLatestPage.bind(this, processHook), timeout);
 
     if (this.log && this.log.logging) {
-      this.log.log('info', 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
+      this.log.info( 'Requested page update each ' + timeout + ' ms. Timer id ' + this.timer.onPage);
     }
 
     setTimeout(this.getLatestPage.bind(this, processHook), 1000); // Run fast update first time
@@ -356,7 +356,7 @@
 
     if (rollOverThreshold && (this.timestamp - previousPage.timestamp >= rollOverThreshold)) {
       if (this.log.logging) {
-        this.log.log('warn', 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, previousPage);
+        this.log.warn( 'Time between pages is longer than the rollover threshold (64s), skipped cadence and speed calculation', this.page, previousPage);
       }
       return;
     }
@@ -392,7 +392,7 @@
     if (this.filterAndCountBroadcast(broadcast)) {
 
       if (this.broadcastCount < 10 && this.log && this.log.logging) { // Debug page toggeling detection
-        this.log.log('info', 'Filtering B#', this.broadcastCount, broadcast.channelId.sensorId, broadcast.data);
+        this.log.info( 'Filtering B#', this.broadcastCount, broadcast.channelId.sensorId, broadcast.data);
       }
       return;
     }
@@ -400,12 +400,12 @@
     // Verify that latest pages are emitted
     if (this.timer.onPage === undefined) {
       if (this.log && this.log.logging) {
-        this.log.log('error', 'No onPage callback available to send latest main/background pages');
+        this.log.error( 'No onPage callback available to send latest main/background pages');
         if (this.DEFAULT_PAGE_UPDATE_DELAY) {
-          this.log.log('info', 'Found DEFAULT_PAGE_UPDATE_DELAY = ' + this.DEFAULT_PAGE_UPDATE_DELAY + ', requesting page update');
+          this.log.info( 'Found DEFAULT_PAGE_UPDATE_DELAY = ' + this.DEFAULT_PAGE_UPDATE_DELAY + ', requesting page update');
           this.requestPageUpdate(this.DEFAULT_PAGE_UPDATE_DELAY);
         } else {
-          this.log.log('info', 'No DEFAULT_PAGE_UPDATE_DELAY, cannot emit latest page');
+          this.log.info( 'No DEFAULT_PAGE_UPDATE_DELAY, cannot emit latest page');
         }
       }
     }
@@ -421,7 +421,7 @@
 
     if (!page) {
       if (this.log && this.log.logging) {
-        this.log.log('error', 'Attempt to add undefined or null page, skipping');
+        this.log.error( 'Attempt to add undefined or null page, skipping');
       }
       return;
     }
@@ -500,7 +500,7 @@
 
     if (!isEqualDeviceType) {
       if (this.log && this.log.logging) {
-        this.log.log('error', "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
+        this.log.error( "Received broadcast from device type 0x" + broadcast.channelId.deviceType.toString(16) + " routing of broadcast is wrong!");
       }
     }
 

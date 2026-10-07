@@ -56,7 +56,7 @@ function TransportManager(host, download,erase,ls,skipNewFiles) {
   this.addEraseTask(erase);
 
   if (this.log.logging)
-    this.log.log('log','Transport option',this.option);
+    this.log.debug('Transport option',this.option);
 
 }
 
@@ -138,9 +138,9 @@ TransportManager.prototype.onErase = function (error,session)
   filename = session.file.getFileName();
 
   if (!error) {
-    if (this.log.logging) this.log.log('log','Erased ' + filename);
+    if (this.log.logging) this.log.debug('Erased ' + filename);
   } else if (this.log.logging) {
-    this.log.log('log','Failed file erase index ' + session.index + ' ' + error.toString());
+    this.log.debug('Failed file erase index ' + session.index + ' ' + error.toString());
   }
 
 };
@@ -205,7 +205,7 @@ TransportManager.prototype.addTask = function (request,index)
   };
 
   if (this.log.logging)
-    this.log.log('log','Adding task',task);
+    this.log.debug('Adding task',task);
 
   if (request === DownloadRequest.prototype.ID)
     this.task.splice(1,0,task); // Insert at front (erase tasks should follow download tasks)
@@ -490,7 +490,7 @@ TransportManager.prototype.uploadWithBackup = function(index, data, callback) {
     }
 
     if (this.log.logging)
-      this.log.log('log', 'Backed up index ' + index + ' to ' + backupName);
+      this.log.debug( 'Backed up index ' + index + ' to ' + backupName);
 
     this.upload(index, data, function _onUploaded(uploadErr, uploadSession) {
       if (uploadSession)
@@ -506,9 +506,9 @@ TransportManager.prototype.onUpload = function(error, session) {
 
   if (this.log.logging) {
     if (error)
-      this.log.log('error', 'Failed upload index ' + session.index + ' ' + error.toString());
+      this.log.error( 'Failed upload index ' + session.index + ' ' + error.toString());
     else
-      this.log.log('log', 'Uploaded ' + session.upload.data.byteLength + ' bytes to index ' + session.index);
+      this.log.debug( 'Uploaded ' + session.upload.data.byteLength + ' bytes to index ' + session.index);
   }
 };
 
@@ -554,7 +554,7 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
 
         if (this.session.index) {
           if (this.log.logging)
-          this.log.log('log','Downloading ' + this.session.file.getFileName() + ' (' + response.fileSize + ' bytes)');
+          this.log.debug('Downloading ' + this.session.file.getFileName() + ' (' + response.fileSize + ' bytes)');
         }
 
       }
@@ -644,7 +644,7 @@ TransportManager.prototype.onRequestSent = function(err) {
      message = 'Failed to send request to ANT';
 
     if (this.log.logging)
-      this.log.log('error', message, err);
+      this.log.error( message, err);
 
     if (this.session.request[0] instanceof DownloadRequest)
        this.emit('download', err); // Continue with next task
@@ -674,7 +674,7 @@ TransportManager.prototype._setupSession = function (index)
   };
 
   if (index === 0) {
-      this.log.log('log', this.host.authenticationManager.getAuthorizationStatus());
+      this.log.debug( this.host.authenticationManager.getAuthorizationStatus());
       this.directory = new Directory(undefined, this.host);
       this.session.file = this.directory;
   } else {
@@ -740,7 +740,7 @@ var filename;
     filename = session.file.getFileName();
 
     if (this.log.logging)
-      this.log.log('log', 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
+      this.log.debug( 'progress ' + Number(session.progress).toFixed(1) + '% ' + filename);
   }
 };
 
@@ -755,10 +755,10 @@ var filename;
     try {
       fs.mkdirSync(path.dirname(filename), { recursive: true });
       fs.writeFileSync(filename, session.file.ls());
-      this.log.log('log', 'Directory file stored at ' + filename);
+      this.log.debug( 'Directory file stored at ' + filename);
     } catch (e) {
       if (this.log.logging)
-        this.log.log('error', 'Error writing directory listing ' + filename, e);
+        this.log.error( 'Error writing directory listing ' + filename, e);
     }
   } else if (!error && session && session.index) {
     filename = path.join(this.getDeviceDirectory(), session.file.getFileName(false, true));
@@ -766,20 +766,20 @@ var filename;
       fs.mkdirSync(path.dirname(filename), { recursive: true });
     } catch (e) {
       if (this.log.logging)
-        this.log.log('error', 'Error creating directory for ' + filename, e);
+        this.log.error( 'Error creating directory for ' + filename, e);
       return;
     }
     fs.writeFile(filename, Buffer.from(session.packets), function(err) {
       if (err) {
         if (this.log.logging)
-          this.log.log('error', 'Error writing ' + filename, err);
+          this.log.error( 'Error writing ' + filename, err);
       }
 
     }.bind(this));
   } else
     if (error)
     {
-      if (this.log.logging) this.log.log('error','Failed download index ' + session.index + ' ' + error.toString());
+      if (this.log.logging) this.log.error('Failed download index ' + session.index + ' ' + error.toString());
     }
 
 };
@@ -794,7 +794,7 @@ TransportManager.prototype.onTransport = function() {
     if (err)
     {
       if (this.log.logging)
-      this.log.log('error',err);
+      this.log.error(err);
     }
 
     this.execTaskIndex++;
@@ -806,7 +806,7 @@ TransportManager.prototype.onTransport = function() {
       if (newFiles && newFiles.length)
       {
         if (this.log.logging)
-          this.log.log('log','New files available',newFiles);
+          this.log.debug('New files available',newFiles);
       }
 
       newFiles.forEach(function (index) { this.addDownloadTask(index);}.bind(this));
@@ -816,7 +816,7 @@ TransportManager.prototype.onTransport = function() {
     if (this.execTaskIndex < this.task.length && !this.task[this.execTaskIndex].done) {
 
       if (this.log.logging)
-        this.log.log('log','Executing task ' + this.execTaskIndex,this.task[this.execTaskIndex]);
+        this.log.debug('Executing task ' + this.execTaskIndex,this.task[this.execTaskIndex]);
 
       switch (this.task[this.execTaskIndex].request)
       {
@@ -897,7 +897,7 @@ TransportManager.prototype.onTransport = function() {
   this.execTaskIndex = -1;
 
   if (this.log.logging)
-   this.log.log('log','Starting with task', this.task);
+   this.log.debug('Starting with task', this.task);
 
   onNextTask();
 

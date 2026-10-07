@@ -119,7 +119,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
       if (error) {
 
         if (this.log.logging) {
-          this.log.log('error', 'TX failed of ' + messageStr, error);
+          this.log.error( 'TX failed of ' + messageStr, error);
         }
 
         if (event) {
@@ -148,7 +148,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
       this.once(event, callback);
 
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + event + ' - host');
+        this.log.debug( 'Waiting for ' + event + ' - host');
 
     } else {
 
@@ -156,7 +156,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
       this.channel[channel].once(responseEvent, callback);
 
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + responseEvent + ' channel ' + channel);
+        this.log.debug( 'Waiting for ' + responseEvent + ' channel ' + channel);
     }
 
   }
@@ -164,7 +164,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
   messageStr = message.toString();
 
   if (this.log.logging) {
-    this.log.log('log', 'Sending ' + messageStr);
+    this.log.debug( 'Sending ' + messageStr);
   }
 
   msgBytes = message.serialize();
@@ -248,7 +248,7 @@ Host.prototype.init = function(iDevice, onInit) {
 {
 
                         if (this.log.logging)
-                            this.log.log('log', libConfig.toString());
+                            this.log.debug( libConfig.toString());
                         _doLibConfigCB();
                     }
                     else
@@ -300,7 +300,7 @@ Host.prototype.resetSystem = function(callback) {
   var onNotificationStartup = function _onNotificationStartup(err, notificationStartup) {
     var DELAY = 500;
     if (this.log.logging)
-      this.log.log('log', 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
+      this.log.debug( 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
     setTimeout(callback.bind(this, err, notificationStartup), DELAY);
   }.bind(this);
 
@@ -618,7 +618,7 @@ Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callba
   numberOfPackets = Math.ceil(data.byteLength / packetLength);
 
   if (this.log.logging)
-    this.log.log('log', 'Sending burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
+    this.log.debug( 'Sending burst, ' + numberOfPackets + ' packets, packet length ' + packetLength + ' channel ' + channel + ' ' + data.byteLength + ' bytes ');
 
   sendPacket();
 
@@ -823,7 +823,7 @@ Host.prototype.deserialize = function(data) {
 
     if (message)
       if (this.log.logging)
-        this.log.log('log', message.toString());
+        this.log.debug( message.toString());
 
     iStartOfMessage += totalMessageLength;
 

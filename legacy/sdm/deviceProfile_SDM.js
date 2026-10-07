@@ -111,7 +111,7 @@
           // Issue : Receive page 2 for temp sensor (does not exist)
           //  May indicate that a broadcast from another sensor is sent with the wrong channelId in extended data...
           // Page 2 should be page 1 -> maybe a bit error?, CRC is OK
-          if (this.log.logging) this.log.log('error', 'Failed to parse page ' + page.number + ' broadcast', broadcast.toString());
+          if (this.log.logging) this.log.error( 'Failed to parse page ' + page.number + ' broadcast', broadcast.toString());
           page = undefined;
         }
 
@@ -123,12 +123,12 @@
 
       page.timestamp = Date.now();
 
-      if (this.log.logging) this.log.log('info', sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
+      if (this.log.logging) this.log.info( sensorId + ' B#' + this.receivedBroadcastCounter[sensorId], page, page.toString());
 
       if (this.receivedBroadcastCounter[sensorId] >= BROADCAST_LIMIT_BEFORE_UI_UPDATE)
         this.onPage(page);
       else if (this.log.logging)
-        this.log.log('warn', 'Skipping page, broadcast for SDM sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
+        this.log.warn( 'Skipping page, broadcast for SDM sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
 
     }
 

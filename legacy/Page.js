@@ -17,7 +17,7 @@
     if (this.timestamp === undefined) {
       this.timestamp = Date.now();
       if (this.log && this.log.logging) {
-        this.log.log('warn', 'No timestamp on broadcast, setting it to now', this.timestamp);
+        this.log.warn( 'No timestamp on broadcast, setting it to now', this.timestamp);
       }
     }
 
@@ -25,7 +25,7 @@
 
     if (this.number === undefined) {
       if (this.log && this.log.logging) {
-        this.log.log('warn', 'Cannot accept undefined page number');
+        this.log.warn( 'Cannot accept undefined page number');
       }
 
       return;

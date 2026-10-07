@@ -88,7 +88,7 @@
 
     if (this.unCalibratedSpeed > 512) {
       if (this.log && this.log.logging) {
-        this.log.log('warn', 'Very high uncalibrated speed filtered', this);
+        this.log.warn( 'Very high uncalibrated speed filtered', this);
       }
       this.unCalibratedSpeed = undefined;
     }
@@ -132,7 +132,7 @@
 
     if (this.cadence > 512) {
       if (this.log && this.log.logging) {
-        this.log.log('warn', 'Very high cadence filtered', this);
+        this.log.warn( 'Very high cadence filtered', this);
       }
       this.cadence = undefined;
 

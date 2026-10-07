@@ -36,7 +36,7 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
    this.hostname = 'antfsjs';
 
   if (this.log.logging)
-    this.log.log('log','Hostname ' + this.hostname);
+    this.log.debug('Hostname ' + this.hostname);
 
   this.on('data', this.onBroadcast.bind(this)); // decodes client beacon
 
@@ -94,19 +94,19 @@ Host.prototype.onBeacon = function(beacon) {
   {
 
     if (this.log.logging)
-      this.log.log('log','Client beacon timeout ' + BEACON_TIMEOUT + ' ms');
+      this.log.debug('Client beacon timeout ' + BEACON_TIMEOUT + ' ms');
 
     this.emit('reset');
   }.bind(this), BEACON_TIMEOUT);
 
   if (this.log.logging)
-    this.log.log('log', this.beacon.toString());
+    this.log.debug( this.beacon.toString());
 
   // Client dropped to link
   if (!this.layerState.isLink() && this.beacon.clientDeviceState.isLink())
   {
     if (this.log.logging)
-      this.log.log('log','Client dropped to LINK, Host ',this.layerState.toString(),'Client',this.beacon.clientDeviceState.toString());
+      this.log.debug('Client dropped to LINK, Host ',this.layerState.toString(),'Client',this.beacon.clientDeviceState.toString());
 
     this.emit('reset');
   }
@@ -124,7 +124,7 @@ Host.prototype.onBroadcast = function(broadcast) {
 
   {
     if (this.log.logging) {
-      this.log.log('log', 'Broadcast not a valid beacon. Ignoring.');
+      this.log.debug( 'Broadcast not a valid beacon. Ignoring.');
     }
   } else {
 
@@ -145,7 +145,7 @@ Host.prototype.onBurst = function(burst) {
 
   {
     if (this.log.logging) {
-      this.log.log('warn', 'Expected client beacon as the first packet of the burst');
+      this.log.warn( 'Expected client beacon as the first packet of the burst');
     }
   } else {
 
@@ -173,7 +173,7 @@ Host.prototype.onTxCompleted = function ()
                                                      BURST_RESPONSE_TIMEOUT);
 
      if (this.log.logging)
-       this.log.log('log', 'Burst response timeout in ' + BURST_RESPONSE_TIMEOUT +' ms');
+       this.log.debug( 'Burst response timeout in ' + BURST_RESPONSE_TIMEOUT +' ms');
      }
 };
 
@@ -216,7 +216,7 @@ Host.prototype.connect = function(callback) {
     if (!err) {
       this.layerState = new State(State.prototype.LINK);
       if (this.log.logging)
-        this.log.log('log', 'Connecting, host state now ' + this.layerState.toString());
+        this.log.debug( 'Connecting, host state now ' + this.layerState.toString());
     }
 
     callback(err, msg);
@@ -285,7 +285,7 @@ Host.prototype.sendNow = function (e,m)
   {
 
     if (this.log.logging)
-      this.log.log('log','Sending request, retry '  + this.session.retry +' ' + m.toString());
+      this.log.debug('Sending request, retry '  + this.session.retry +' ' + m.toString());
 
     this.session.sendFunc(); // Acknowleded or burst setup in initRequest
 
@@ -298,7 +298,7 @@ Host.prototype.sendNow = function (e,m)
         err = new Error('Max retries ' + MAX_RETRIES + ' reached for request ' + this.session.request.toString());
 
         if (this.log.logging)
-          this.log.log('error',err.toString());
+          this.log.error(err.toString());
 
 
         if (this.session.request instanceof DownloadRequest)
@@ -315,7 +315,7 @@ Host.prototype.sendNow = function (e,m)
       }
       else {
         if (this.log.logging)
-          this.log.log('error',e,m);
+          this.log.error(e,m);
 
         console.error('Max retries ' + MAX_RETRIES + ' reached');
         console.trace();
@@ -339,7 +339,7 @@ Host.prototype.sendRequest = function (e,m)
   if (this.beacon.clientDeviceState.isBusy() && !this.option.ignoreBusyState)
   {
     if (this.log.logging)
-      this.log.log('log','Client is busy, cannot send request now', this.session);
+      this.log.debug('Client is busy, cannot send request now', this.session);
 
     this.once('CLIENT_NOT_BUSY',this.sendNow.bind(this,e,m)); // Queue pending transfer on next beacon (onBeacon) when client is not busy
   }

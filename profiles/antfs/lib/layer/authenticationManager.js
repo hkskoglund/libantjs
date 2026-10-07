@@ -201,7 +201,7 @@ AuthenticationManager.prototype.requestPasskeyExchange = function(clientSerialNu
 AuthenticationManager.prototype.onSentToANT = function(err, msg) {
 
   if (err && this.log.logging)
-    this.log.log('error', 'Failed to send AUTHENTICATE request to ANT', err);
+    this.log.error( 'Failed to send AUTHENTICATE request to ANT', err);
 };
 
 AuthenticationManager.prototype.getPasskey = function(clientSerialNumber) {
@@ -229,7 +229,7 @@ AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber
   this.setPasskey(this.clientSerialNumber, passkey);
 
   if (this.log.logging)
-    this.log.log('log', 'Write passkey for client serial number ' + clientDeviceSerialNumber + ' to ' + authorizationFile);
+    this.log.debug( 'Write passkey for client serial number ' + clientDeviceSerialNumber + ' to ' + authorizationFile);
 
   try {
     fs.mkdirSync(configDir, {
@@ -242,7 +242,7 @@ AuthenticationManager.prototype.writePasskey = function(clientDeviceSerialNumber
     fs.chmodSync(authorizationFile, 0o600); // mode is ignored when overwriting an existing file
   } catch (e) {
     if (this.log.logging)
-      this.log.log('error', 'Failed to write passkey to ' + authorizationFile, e);
+      this.log.error( 'Failed to write passkey to ' + authorizationFile, e);
   }
 };
 
@@ -257,7 +257,7 @@ AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber)
   for (i = 0; i < candidates.length && !passkey; i++) {
 
     if (this.log.logging)
-      this.log.log('log', 'Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + candidates[i]);
+      this.log.debug( 'Read passkey for client serial number ' + clientDeviceSerialNumber + ' from ' + candidates[i]);
 
     try {
       passkey = fs.readFileSync(candidates[i], {
@@ -265,7 +265,7 @@ AuthenticationManager.prototype.readPasskey = function(clientDeviceSerialNumber)
       });
     } catch (e) {
       if (this.log.logging)
-        this.log.log('error', 'Failed to read passkey from ' + candidates[i], e);
+        this.log.error( 'Failed to read passkey from ' + candidates[i], e);
     }
   }
 
@@ -291,7 +291,7 @@ AuthenticationManager.prototype.onAuthenticate = function() {
       if (!passkey && authenticationType.isPasskeyAndPairingOnly()) {
 
         if (this.log.logging)
-          this.log.log('log', 'No passkey available for client ' + this.clientSerialNumber + ' requesting pairing');
+          this.log.debug( 'No passkey available for client ' + this.clientSerialNumber + ' requesting pairing');
 
         this.requestPairing(onPairing);
 
@@ -327,7 +327,7 @@ AuthenticationManager.prototype.onAuthenticate = function() {
       {
 
         if (this.log.logging)
-          this.log.log('log', 'Pairing response', response);
+          this.log.debug( 'Pairing response', response);
 
         if (this.host.beacon.authenticationType.isPasskeyAndPairingOnly()) {
 

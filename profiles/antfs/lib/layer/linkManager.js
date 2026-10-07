@@ -34,7 +34,7 @@ LinkManager.prototype.onReset = function() {
   var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e)
   {
     if (e & this.log.logging)
-      this.log.log('error', 'Failed to reset search frequency to default ANT-FS 2450 MHz');
+      this.log.error( 'Failed to reset search frequency to default ANT-FS 2450 MHz');
   }.bind(this);
 
   this.removeAllListeners('link');
@@ -54,7 +54,7 @@ LinkManager.prototype.onBeacon = function(beacon) {
       this.emit('link');
     } else {
       if (this.log.logging)
-        this.log.log('log', 'Waiting for ' + MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP + ' client LINK before host LINK request, now at ' + this.linkBeaconCount);
+        this.log.debug( 'Waiting for ' + MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP + ' client LINK before host LINK request, now at ' + this.linkBeaconCount);
     }
   }
 
@@ -74,7 +74,7 @@ LinkManager.prototype.onLink = function() {
         this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
           function _switchFreq(err) {
             if (!err && this.log.logging)
-              this.log.log('log', 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
+              this.log.debug( 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
           }.bind(this.host));
       }
 
@@ -85,7 +85,7 @@ LinkManager.prototype.onLink = function() {
       if (err) {
 
         if (this.log.logging)
-          this.log.log('error', 'Failed to send LINK request to ANT', err);
+          this.log.error( 'Failed to send LINK request to ANT', err);
 
       }
 
@@ -125,7 +125,7 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
 
           if (err) {
             if (this.log.logging)
-              this.log.log('error', 'Failed to switch frequency to ' + (2400 + frequency) + 'MHz');
+              this.log.error( 'Failed to switch frequency to ' + (2400 + frequency) + 'MHz');
             callback(err);
             return;
           }
@@ -142,7 +142,7 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
         this.host.setPeriod(newPeriod, function _setPeriod(err, msg) {
           if (err) {
             if (this.log.logging)
-              this.log.log('error', 'Failed to switch period to ' + newPeriod);
+              this.log.error( 'Failed to switch period to ' + newPeriod);
           }
 
           callback(err, msg);
@@ -185,7 +185,7 @@ LinkManager.prototype.disconnect = function(callback) {
           if (e)
           {
             if (this.log.logging)
-              this.log.log('error','Failed to send disconnect request to ANT');
+              this.log.error('Failed to send disconnect request to ANT');
           }
         };
 
@@ -196,7 +196,7 @@ LinkManager.prototype.disconnect = function(callback) {
     var msg = 'Failed to send disconnect request to client, letting client timeout on session';
     this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED',callback);
     if (this.log.logging)
-      this.log.log('log',msg);
+      this.log.debug(msg);
     callback(new Error(msg));
 
   }.bind(this));

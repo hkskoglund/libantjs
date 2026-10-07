@@ -142,7 +142,7 @@
     this.state = this.SEARCHING;
 
     if (this.log.logging)
-       this.log.log('log', 'Lost contact with client, searching.');
+       this.log.debug( 'Lost contact with client, searching.');
 
   };
 

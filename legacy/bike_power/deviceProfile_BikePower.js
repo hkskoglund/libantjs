@@ -91,7 +91,7 @@
       default:
 
         if (this.log && this.log.logging) {
-          this.log.log('error', 'Unable to handle page number', pageNumber, pageNumber.toString(16), broadcast, this);
+          this.log.error( 'Unable to handle page number', pageNumber, pageNumber.toString(16), broadcast, this);
         }
 
         break;

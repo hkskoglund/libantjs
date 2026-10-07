@@ -150,7 +150,7 @@ Directory.prototype.eraseFile = function(index) {
     var removedFiles = this.file.splice(index - 1, 1);
 
      if (this.log.logging)
-      this.log.log('log','Directory file index after removal of index ' + index,this._showFileIndex());
+      this.log.debug('Directory file index after removal of index ' + index,this._showFileIndex());
 
     return removedFiles[0];
 
