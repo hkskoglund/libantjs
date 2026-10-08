@@ -7,6 +7,15 @@
 
     DeviceProfile.call(this, configuration);
 
+    if (configuration && configuration.wheelCircumference !== undefined) {
+      if (!Number.isFinite(configuration.wheelCircumference) || configuration.wheelCircumference <= 0) {
+        throw new RangeError('Wheel circumference must be a positive finite number');
+      }
+      this.WHEEL_CIRCUMFERENCE = configuration.wheelCircumference;
+    } else {
+      this.WHEEL_CIRCUMFERENCE = DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE;
+    }
+
     this.initMasterSlaveConfiguration();
 
     this.requestPageUpdate(DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY);
@@ -17,7 +26,7 @@
 
   DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
 
-  DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE = 2.07; // in meter -> should be able to configure in a setting
+  DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE = 2.07; // meters
 
   DeviceProfile_BikeShared.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
 

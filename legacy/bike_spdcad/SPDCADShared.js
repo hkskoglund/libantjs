@@ -92,6 +92,10 @@
       }
       this.unCalibratedSpeed = undefined;
     }
+
+    if (this.unCalibratedSpeed !== undefined) {
+      this.speed = this.unCalibratedSpeed * this.profile.WHEEL_CIRCUMFERENCE;
+    }
   };
 
   SPDCADSharedPage.prototype.calcCadence = function() {

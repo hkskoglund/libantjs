@@ -10,6 +10,7 @@ const test = require('node:test');
 const USBDevice = require('../usb/USBDevice');
 const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x52');
 const DeviceProfile = require('../legacy/deviceProfile');
+const DeviceProfile_BikeShared = require('../legacy/bike_spdcad/deviceProfile_BikeShared');
 const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const DeviceProfile_BikePower = require('../legacy/bike_power/deviceProfile_BikePower');
@@ -643,7 +644,10 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
   };
   const page = Object.create(SPDCADSharedPage.prototype);
 
-  page.profile = { getPreviousPageValidateRolloverTime: () => previousPage };
+  page.profile = {
+    WHEEL_CIRCUMFERENCE: 2.07,
+    getPreviousPageValidateRolloverTime: () => previousPage
+  };
   page.bikeSpeedEventTime = 488;
   page.cumulativeSpeedRevolutionCount = 0;
   page.bikeCadenceEventTime = 488;
@@ -654,7 +658,50 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
 
   assert.equal(page.relativeCumulativeSpeedRevolutionCount, 1);
   assert.equal(page.unCalibratedSpeed, 1);
+  assert.equal(page.speed, 2.07);
   assert.equal(page.cadence, 60);
+});
+
+test('SPDCADSharedPage applies configured wheel circumference to speed in m/s', () => {
+  const previousPage = {
+    bikeSpeedEventTime: 0,
+    cumulativeSpeedRevolutionCount: 0
+  };
+  const page = Object.create(SPDCADSharedPage.prototype);
+
+  page.profile = {
+    WHEEL_CIRCUMFERENCE: 2.1,
+    getPreviousPageValidateRolloverTime: () => previousPage
+  };
+  page.bikeSpeedEventTime = 1024;
+  page.cumulativeSpeedRevolutionCount = 1;
+
+  page.calcSpeed();
+
+  assert.equal(page.unCalibratedSpeed, 1);
+  assert.equal(page.speed, 2.1);
+});
+
+test('Bike speed/cadence profile accepts a validated wheel circumference setting', () => {
+  const originalInit = DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration;
+  const originalRequest = DeviceProfile_BikeShared.prototype.requestPageUpdate;
+  DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration = () => {};
+  DeviceProfile_BikeShared.prototype.requestPageUpdate = () => {};
+
+  try {
+    const profile = new DeviceProfile_BikeShared({
+      logger: { logging: false },
+      wheelCircumference: 2.15
+    });
+    assert.equal(profile.WHEEL_CIRCUMFERENCE, 2.15);
+    assert.throws(
+      () => new DeviceProfile_BikeShared({ logger: { logging: false }, wheelCircumference: 0 }),
+      /Wheel circumference must be a positive finite number/
+    );
+  } finally {
+    DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration = originalInit;
+    DeviceProfile_BikeShared.prototype.requestPageUpdate = originalRequest;
+  }
 });
 
 test('TemperaturePage1 decodes negative signed temperatures and invalid values', () => {

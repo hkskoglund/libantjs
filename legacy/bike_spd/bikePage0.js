@@ -28,18 +28,16 @@
 
   BikePage0.prototype.toString = function() {
 
-    var calibrationFactor = 2.07, // Just used for a speed estimate
-      speed,
-      msg;
+    var msg;
 
     msg = "P# " + this.number;
 
-    if (this.unCalibratedSpeed !== undefined) {
-      speed = calibrationFactor * this.unCalibratedSpeed;
-      msg += ' speed (m/s) ' + speed;
+    if (this.speed !== undefined) {
+      msg += ' speed (m/s) ' + this.speed;
     }
 
-    msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount + ' default wheel size (m) ' + calibrationFactor;
+    msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +
+      ' wheel circumference (m) ' + this.profile.WHEEL_CIRCUMFERENCE;
 
     return msg;
   };
