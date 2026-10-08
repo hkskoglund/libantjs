@@ -89,8 +89,8 @@ Run ESLint across the JavaScript source with:
 npm run lint
 ```
 
-Unused variables are reported as warnings for now. Legacy files are included in
-the lint run.
+Unused variables are reported as warnings for now. Retained ANT+ profile code
+is included in the lint run.
 
 ## Message support
 

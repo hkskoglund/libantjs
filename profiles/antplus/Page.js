@@ -1,6 +1,6 @@
 'use strict';
 
-  var Logger = require('../util/logger');
+  var Logger = require('../../util/logger');
 
   function GenericPage(configuration, broadcast, profile, pageNumber) {
 

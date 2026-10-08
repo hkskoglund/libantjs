@@ -1,4 +1,4 @@
-  var Channel = require('../channel/channel'),
+  var Channel = require('../../channel/channel'),
     GenericPage = require('./Page'),
     BackgroundPage = require('./backgroundPage'),
     ManufacturerId = require('./manufacturerId'),

@@ -26,7 +26,7 @@ module.exports = [
     }
   },
   {
-    files: ["legacy/**/*.js"],
+    files: ["profiles/antplus/**/*.js"],
     languageOptions: {
       globals: {
         setting: "readonly"
