@@ -10,6 +10,7 @@ const test = require('node:test');
 const USBDevice = require('../usb/USBDevice');
 const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x52');
 const DeviceProfile = require('../legacy/deviceProfile');
+const ProductId0x51 = require('../legacy/productId0x51');
 const DeviceProfile_BikeShared = require('../legacy/bike_spdcad/deviceProfile_BikeShared');
 const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
@@ -633,6 +634,46 @@ test('CumulativeOperatingTime0x52 decodes battery status from byte 7', () => {
 
   assert.equal(page.descriptive.batteryStatus.batteryStatus, 2);
   assert.equal(page.descriptive.batteryStatus.toString(), 'Good');
+});
+
+test('ProductId0x51 decodes supplemental and main software revisions per Common Data Pages', () => {
+  const data = new Uint8Array([0x51, 0xFF, 100, 13, 0, 0, 0, 0]);
+  const page = new ProductId0x51(
+    { logger: { logging: false } },
+    { data },
+    undefined,
+    0x51
+  );
+
+  assert.equal(page.SWRevisionString, '1.4');
+
+  data[2] = 0xFF;
+  data[3] = 5;
+  const mainOnlyPage = new ProductId0x51(
+    { logger: { logging: false } },
+    { data },
+    undefined,
+    0x51
+  );
+
+  assert.equal(mainOnlyPage.SWRevisionString, '0.5');
+});
+
+test('CumulativeOperatingTime0x52 decodes battery identifiers and the unused time sentinel', () => {
+  const data = new Uint8Array([0x52, 0xFF, 0x21, 0xFF, 0xFF, 0xFF, 0xFF, 0x20]);
+  const page = new CumulativeOperatingTime0x52(
+    { logger: { logging: false } },
+    { data },
+    undefined,
+    0x52
+  );
+
+  assert.equal(page.batteryIdentifier, 2);
+  assert.equal(page.numberOfBatteries, 1);
+  assert.equal(page.cumulativeOperatingTime, undefined);
+  assert.equal(page.lastBatteryReset, undefined);
+  assert.match(page.toString(), /Cumulative operating time unavailable/);
+  assert.doesNotMatch(page.toString(), /Battery reset ca\./);
 });
 
 test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollovers', () => {

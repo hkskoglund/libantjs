@@ -18,7 +18,10 @@
   CumulativeOperatingTime.prototype.read = function(broadcast) {
     var data = broadcast.data;
 
-    // Byte 1-2 - reserved 0xFF
+    // Byte 2
+
+    this.batteryIdentifier = data[2] === 0xFF ? undefined : data[2] >> 4;
+    this.numberOfBatteries = data[2] === 0xFF ? undefined : data[2] & 0x0F;
 
     // Byte 7
 
@@ -32,7 +35,13 @@
 
     // Byte 3-5
 
-    this.readCumulativeOperatingTime(broadcast, 3, unit_multiplier);
+    if (data[3] === 0xFF && data[4] === 0xFF && data[5] === 0xFF) {
+      this.cumulativeOperatingTime = undefined;
+      this.cumulativeOperatingTimeString = undefined;
+      this.lastBatteryReset = undefined;
+    } else {
+      this.readCumulativeOperatingTime(broadcast, 3, unit_multiplier);
+    }
 
     // Byte 6
 
@@ -45,7 +54,15 @@
   CumulativeOperatingTime.prototype.toString = function() {
     var msg = "P# " + this.number + " Cumulative operating time ";
 
-    msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
+    if (this.cumulativeOperatingTime === undefined) {
+      msg += "unavailable";
+    } else {
+      msg += this.cumulativeOperatingTimeString + ' Battery reset ca. ' + this.lastBatteryReset;
+    }
+
+    if (this.batteryIdentifier !== undefined) {
+      msg += " Battery identifier " + this.batteryIdentifier + " of " + this.numberOfBatteries;
+    }
 
     if (this.descriptive.coarseVoltage !== 0x0F) { // Filter invalid voltage
       msg += " Battery (V) " + this.batteryVoltage.toFixed(1);

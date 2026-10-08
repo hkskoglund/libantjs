@@ -34,26 +34,11 @@
   ProductId.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
 
   ProductId.prototype.getSWRevision = function() {
-    var SWrev;
-
-    if (this.SWRevision > 10) {
-      SWrev = this.SWRevision / 10;
-    } else {
-      SWrev = this.SWRevision;
+    if (this.supplementalSWRevision === 0xFF) {
+      return (this.SWRevision / 10).toString();
     }
 
-    // ANT+ Managed Network Document – Common Data Pages, Rev 2.4 , p. 23
-
-    if (this.supplementalSWRevision !== 0xFF) // Invalid
-    {
-      if (this.supplementalSWRevision < 100) {
-        SWrev += this.supplementalSWRevision / 1000;
-      } else {
-        SWrev += this.supplementalSWRevision / 10000;
-      }
-    }
-
-    return SWrev.toString();
+    return ((this.SWRevision * 100 + this.supplementalSWRevision) / 1000).toString();
   };
 
   ProductId.prototype.toString = function() {
