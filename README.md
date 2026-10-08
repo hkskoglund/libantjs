@@ -106,7 +106,6 @@ host.connectANTFS(0, {
   erase: false,
   ls: false,
   skipNewFiles: false,
-  ignoreBusyState: false,
   onSearching(error) {
     if (error) console.error('ANT-FS search failed:', error);
   }

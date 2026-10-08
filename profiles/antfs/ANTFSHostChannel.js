@@ -77,8 +77,6 @@ function ANTFSHostChannel(options, ANTHost, channel) {
   this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch);
 
-  this.option.ignoreBusyState = options.ignoreBusyState;
-
   this.session = {};
 
 }
@@ -343,7 +341,7 @@ ANTFSHostChannel.prototype.sendRequest = function (e,m)
 {
 
 
-  if (this.beacon.clientDeviceState.isBusy() && !this.option.ignoreBusyState)
+  if (this.beacon.clientDeviceState.isBusy())
   {
     if (this.log.logging)
       this.log.debug('Client is busy, cannot send request now', this.session);

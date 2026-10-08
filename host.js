@@ -192,9 +192,12 @@ Host.prototype.onUSBError = function(error) {
   this.emit(this.EVENT.ERROR, error);
 };
 
-Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, ignoreBusyState, onSearching) {
+Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, onSearching) {
   var antfsOptions,
     antfsHost;
+
+  if (typeof onSearching !== 'function' && typeof arguments[9] === 'function')
+    onSearching = arguments[9];
 
   if (options && typeof options === 'object' && !Array.isArray(options)) {
     antfsOptions = Object.assign({}, options);
@@ -207,7 +210,6 @@ Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname,
       erase: erase,
       ls: ls,
       skipNewFiles: skipNewFiles,
-      ignoreBusyState: ignoreBusyState,
       onSearching: onSearching
     };
   }

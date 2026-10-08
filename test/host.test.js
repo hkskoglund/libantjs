@@ -161,7 +161,6 @@ test('connectANTFS accepts an options object and preserves the positional form',
         erase: false,
         ls: true,
         skipNewFiles: true,
-        ignoreBusyState: true,
         onSearching: searchCallback
       }],
       expected: {
@@ -171,12 +170,11 @@ test('connectANTFS accepts an options object and preserves the positional form',
         download: true,
         erase: false,
         ls: true,
-        skipNewFiles: true,
-        ignoreBusyState: true
+        skipNewFiles: true
       }
     },
     {
-      args: [3, 2, 5678, 'legacy-host', true, true, false, true, false, searchCallback],
+      args: [3, 2, 5678, 'legacy-host', true, true, false, true, searchCallback],
       expected: {
         net: 2,
         deviceNumber: 5678,
@@ -184,8 +182,19 @@ test('connectANTFS accepts an options object and preserves the positional form',
         download: true,
         erase: true,
         ls: false,
-        skipNewFiles: true,
-        ignoreBusyState: false
+        skipNewFiles: true
+      }
+    },
+    {
+      args: [4, 2, 9876, 'legacy-host', true, false, true, false, true, searchCallback],
+      expected: {
+        net: 2,
+        deviceNumber: 9876,
+        hostname: 'legacy-host',
+        download: true,
+        erase: false,
+        ls: true,
+        skipNewFiles: false
       }
     }
   ];
