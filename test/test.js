@@ -10,6 +10,9 @@ const test = require('node:test');
 const USBDevice = require('../usb/USBDevice');
 const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x52');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
+const TemperaturePage1 = require('../legacy/environment/TemperaturePage1');
+const DeviceProfile_HRM = require('../legacy/hrm/deviceProfile_HRM');
+const DeviceProfile_SDM = require('../legacy/sdm/deviceProfile_SDM');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
@@ -638,4 +641,67 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
   assert.equal(page.relativeCumulativeSpeedRevolutionCount, 1);
   assert.equal(page.unCalibratedSpeed, 1);
   assert.equal(page.cadence, 60);
+});
+
+test('TemperaturePage1 decodes negative 1-complement temperatures and invalid values', () => {
+  const configuration = { logger: { logging: false } };
+  const makePage = data => new TemperaturePage1(
+    configuration,
+    { data: Uint8Array.from(data) },
+    undefined,
+    1
+  );
+  const negativeLow = makePage([1, 0xff, 0, 0xfe, 0xf0, 0, 0, 0]);
+  const negativeHigh = makePage([1, 0xff, 0, 0, 0x0e, 0xff, 0, 0]);
+  const invalid = makePage([1, 0xff, 0, 0, 0x80, 0x80, 0, 0x80]);
+
+  assert.equal(negativeLow.hour24Low, -0.1);
+  assert.equal(negativeHigh.hour24High, -0.1);
+  assert.equal(invalid.hour24Low, undefined);
+  assert.equal(invalid.hour24High, undefined);
+  assert.equal(invalid.currentTemp, undefined);
+  assert.match(invalid.toString(), /Low \(24H\) N\/A°C High \(24H\) N\/A°C Current Temp N\/A°C/);
+});
+
+test('HRM background pages are not decoded as heart-rate data', () => {
+  const backgroundPage = {
+    broadcast: { data: Uint8Array.from([0x50, 0, 0, 0, 1, 0, 1, 100]) }
+  };
+  const profile = {
+    getPageNumber: () => 0x50,
+    getBackgroundPage: () => backgroundPage
+  };
+
+  const page = DeviceProfile_HRM.prototype.getPage.call(
+    profile,
+    { data: backgroundPage.broadcast.data }
+  );
+
+  assert.equal(page, backgroundPage);
+  assert.equal(page.computedHeartRate, undefined);
+  assert.equal(page.RRInterval, undefined);
+});
+
+test('SDM dispatches common background pages without calling a missing decode method', () => {
+  let emittedPage;
+  let requestedBackgroundPage;
+  const profile = Object.create(DeviceProfile_SDM.prototype);
+  profile.verifyDeviceType = () => true;
+  profile.countBroadcast = () => {};
+  profile.isDuplicateMessage = () => false;
+  profile.getBackgroundPage = (_broadcast, pageNumber) => {
+    requestedBackgroundPage = pageNumber;
+    return { number: pageNumber, toString: () => 'background page' };
+  };
+  profile.receivedBroadcastCounter = { sensor: 4 };
+  profile.log = { logging: false };
+  profile.onPage = page => { emittedPage = page; };
+
+  profile.broadCast({
+    data: Uint8Array.from([0x50, 0, 0, 0, 0, 0, 0, 0]),
+    channelId: { sensorId: 'sensor', deviceType: 0x7c }
+  });
+
+  assert.equal(requestedBackgroundPage, 0x50);
+  assert.equal(emittedPage.number, 0x50);
 });

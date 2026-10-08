@@ -4,9 +4,7 @@
     DeviceProfile = require('../deviceProfile'),
     HRMPage4 = require('./HRMPage4'),
     HRMPage0 = require('./HRMPage0'),
-    GenericPage = require('../Page'),
-
-    HRMPage = require('./HRMPage');
+    GenericPage = require('../Page');
 
   function DeviceProfile_HRM(configuration) {
 
@@ -96,11 +94,6 @@
       default:
 
         page = this.getBackgroundPage(broadcast, pageNumber);
-
-        if (page) {
-          HRMPage.prototype.readHR.call(page);
-          HRMPage.prototype.calcRRInterval.call(page);
-        }
 
         break;
 

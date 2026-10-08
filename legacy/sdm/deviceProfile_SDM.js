@@ -2,8 +2,7 @@
 
   var DeviceProfile = require('../deviceProfile'),
     SDMPage1 = require('./SDMPage1'),
-    SDMPage2 = require('./SDMPage2'),
-    GenericPage = require('../Page');
+    SDMPage2 = require('./SDMPage2');
 
   function DeviceProfile_SDM(configuration) {
 
@@ -44,7 +43,6 @@
     // Minimize GC
     this.SDMPage1 = new SDMPage1(configuration);
     this.SDMPage2 = new SDMPage2(configuration);
-    this.genericPage = new GenericPage(configuration);
 
   }
 
@@ -104,16 +102,7 @@
 
       default:
 
-        // Check for common page 80,...
-        page = this.genericPage;
-        if (page.decode(broadcast) === -1) // Not a common page
-        {
-          // Issue : Receive page 2 for temp sensor (does not exist)
-          //  May indicate that a broadcast from another sensor is sent with the wrong channelId in extended data...
-          // Page 2 should be page 1 -> maybe a bit error?, CRC is OK
-          if (this.log.logging) this.log.error( 'Failed to parse page ' + page.number + ' broadcast', broadcast.toString());
-          page = undefined;
-        }
+        page = this.getBackgroundPage(broadcast, pageNumber);
 
         break;
 
