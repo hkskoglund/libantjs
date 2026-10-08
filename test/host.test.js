@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
 const Message = require('../messages/Message');
-const ANTFSHost = require('../profiles/antfs/host');
+const ANTFSHostChannel = require('../profiles/antfs/ANTFSHostChannel');
 
 const message = {
   id: 0x4a,
@@ -56,7 +56,7 @@ test('Host forwards USB errors through its error event', () => {
 
 test('connectANTFS accepts an options object and preserves the positional form', () => {
   const { host } = createHost();
-  const originalConnect = ANTFSHost.prototype.connect;
+  const originalConnect = ANTFSHostChannel.prototype.connect;
   const searchCallback = () => {};
   const cases = [
     {
@@ -97,7 +97,7 @@ test('connectANTFS accepts an options object and preserves the positional form',
     }
   ];
 
-  ANTFSHost.prototype.connect = function(callback) {
+  ANTFSHostChannel.prototype.connect = function(callback) {
     this.searchCallback = callback;
   };
 
@@ -110,10 +110,10 @@ test('connectANTFS accepts an options object and preserves the positional form',
         assert.equal(antfsHost.option[key], value, key);
       }
       assert.equal(antfsHost.searchCallback, searchCallback);
-      assert.equal(antfsHost.constructor, ANTFSHost);
+      assert.equal(antfsHost.constructor, ANTFSHostChannel);
     }
   } finally {
-    ANTFSHost.prototype.connect = originalConnect;
+    ANTFSHostChannel.prototype.connect = originalConnect;
   }
 });
 

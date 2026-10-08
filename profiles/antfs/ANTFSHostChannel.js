@@ -16,7 +16,7 @@ var Channel = require('../../channel/channel'),
   UploadRequest = require('./lib/request-response/uploadRequest'),
   UploadDataRequest = require('./lib/request-response/uploadDataRequest');
 
-function Host(options, ANTHost, channel) {
+function ANTFSHostChannel(options, ANTHost, channel) {
   options = options || {};
 
   Channel.call(this, options, ANTHost, channel, options.net);
@@ -83,16 +83,16 @@ function Host(options, ANTHost, channel) {
 
 }
 
-Host.prototype = Object.create(Channel.prototype);
-Host.prototype.constructor = Host;
+ANTFSHostChannel.prototype = Object.create(Channel.prototype);
+ANTFSHostChannel.prototype.constructor = ANTFSHostChannel;
 
-Host.prototype.onRxFailGoToSearch = function (e,m)
+ANTFSHostChannel.prototype.onRxFailGoToSearch = function (e,m)
 {
   clearTimeout(this.session.burstResponseTimeout);
   this.once('HOST_CHANNEL_OPEN', this.sendNow.bind(this,e,m)); // Queue on next beacon
 };
 
-Host.prototype.onBeacon = function(beacon) {
+ANTFSHostChannel.prototype.onBeacon = function(beacon) {
   var BEACON_TIMEOUT = 25000;
 
   clearTimeout(this.beaconTimeout);
@@ -123,7 +123,7 @@ Host.prototype.onBeacon = function(beacon) {
   }
 };
 
-Host.prototype.onBroadcast = function(broadcast) {
+ANTFSHostChannel.prototype.onBroadcast = function(broadcast) {
 
   var res = this.beacon.decode(broadcast.payload);
 
@@ -140,7 +140,7 @@ Host.prototype.onBroadcast = function(broadcast) {
 
 };
 
-Host.prototype.onBurst = function(burst) {
+ANTFSHostChannel.prototype.onBurst = function(burst) {
 
   clearTimeout(this.session.burstResponseTimeout);
 
@@ -162,7 +162,7 @@ Host.prototype.onBurst = function(burst) {
 
 };
 
-Host.prototype.onTxCompleted = function ()
+ANTFSHostChannel.prototype.onTxCompleted = function ()
 {
   var BURST_RESPONSE_TIMEOUT = this.period / 32768 * 1000 * 8,
       NO_ERROR;
@@ -184,19 +184,19 @@ Host.prototype.onTxCompleted = function ()
      }
 };
 
-Host.prototype.getHostname = function() {
+ANTFSHostChannel.prototype.getHostname = function() {
   return this.hostname;
 };
 
-Host.prototype.getClientSerialNumber = function() {
+ANTFSHostChannel.prototype.getClientSerialNumber = function() {
   return this.authenticationManager.clientSerialNumber;
 };
 
-Host.prototype.getClientFriendlyname = function() {
+ANTFSHostChannel.prototype.getClientFriendlyname = function() {
   return this.authenticationManager.clientFriendlyname;
 };
 
-Host.prototype.onReset = function(err, callback) {
+ANTFSHostChannel.prototype.onReset = function(err, callback) {
 
   clearTimeout(this.beaconTimeout);
   clearTimeout(this.session.burstResponseTimeout);
@@ -207,7 +207,7 @@ Host.prototype.onReset = function(err, callback) {
 };
 
 // Stops all retry timers/listeners; called before the USB device is closed
-Host.prototype.shutdown = function ()
+ANTFSHostChannel.prototype.shutdown = function ()
 {
   this.closed = true;
   clearTimeout(this.beaconTimeout);
@@ -216,7 +216,7 @@ Host.prototype.shutdown = function ()
   this.removeAllListeners('HOST_CHANNEL_OPEN');
 };
 
-Host.prototype.connect = function(callback) {
+ANTFSHostChannel.prototype.connect = function(callback) {
 
   var onConnecting = function _onConnecting(err, msg) {
 
@@ -244,15 +244,15 @@ Host.prototype.connect = function(callback) {
 
 };
 
-Host.prototype.setHostSerialNumber = function(serialNumber) {
+ANTFSHostChannel.prototype.setHostSerialNumber = function(serialNumber) {
   this.hostSerialNumber = serialNumber;
 };
 
-Host.prototype.getHostSerialNumber = function() {
+ANTFSHostChannel.prototype.getHostSerialNumber = function() {
   return this.hostSerialNumber;
 };
 
-Host.prototype.initRequest = function (request, callback)
+ANTFSHostChannel.prototype.initRequest = function (request, callback)
 {
   var NO_ERROR,
       serializedRequest = request.serialize();
@@ -278,7 +278,7 @@ Host.prototype.initRequest = function (request, callback)
   this.sendRequest(NO_ERROR,request);
 };
 
-Host.prototype.sendNow = function (e,m)
+ANTFSHostChannel.prototype.sendNow = function (e,m)
 {
   var MAX_RETRIES = 15,
       err;
@@ -334,12 +334,12 @@ Host.prototype.sendNow = function (e,m)
 
 
 // Queue an overwrite of the file at directory index with data (Uint8Array). Call before the transport state is reached.
-Host.prototype.upload = function (index, data)
+ANTFSHostChannel.prototype.upload = function (index, data)
 {
   this.transportManager.addUploadTask(index, data);
 };
 
-Host.prototype.sendRequest = function (e,m)
+ANTFSHostChannel.prototype.sendRequest = function (e,m)
 {
 
 
@@ -356,16 +356,16 @@ Host.prototype.sendRequest = function (e,m)
 };
 
 // Override Channel
-Host.prototype.sendAcknowledged = function(request, callback) {
+ANTFSHostChannel.prototype.sendAcknowledged = function(request, callback) {
   this.initRequest(request, callback);
 };
 
 // Override Channel
-Host.prototype.sendBurst = function(request, callback) {
+ANTFSHostChannel.prototype.sendBurst = function(request, callback) {
   this.initRequest(request,callback);
 };
 
-Host.prototype.disconnect = function (callback)
+ANTFSHostChannel.prototype.disconnect = function (callback)
 {
 var onDisconnect = function _onDisconnect(e,m)
   {
@@ -382,4 +382,4 @@ var onDisconnect = function _onDisconnect(e,m)
   this.linkManager.disconnect(onDisconnect);
 };
 
-module.exports = Host;
+module.exports = ANTFSHostChannel;

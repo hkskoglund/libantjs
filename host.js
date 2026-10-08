@@ -62,7 +62,7 @@ var EventEmitter = require('events'),
 
   // Profiles
 
-  ANTFSHost = require('./profiles/antfs/host'),
+  ANTFSHostChannel = require('./profiles/antfs/ANTFSHostChannel'),
 
   // USB hosts
 
@@ -210,7 +210,7 @@ Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname,
   antfsOptions.log = this.options.log;
   antfsOptions.dataDir = this.options.dataDir;
 
-  antfsHost = new ANTFSHost(
+  antfsHost = new ANTFSHostChannel(
     antfsOptions,
     this,
     channel
