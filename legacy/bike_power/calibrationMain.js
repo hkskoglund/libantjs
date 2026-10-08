@@ -66,6 +66,7 @@
       dataView = new DataView(data.buffer);
 
     this.calibrationID = data[1];
+    this.calibrationPayload = Uint8Array.from(data.subarray(2));
 
     switch (this.calibrationID) {
       case 0xAC: // Calibration Successfull
@@ -82,6 +83,11 @@
         this.calibrationData = dataView.getInt16(data.byteOffset + 6, true);
 
         break;
+
+      case 0x12:
+        this.autoZeroSupported = (data[2] & 0x01) !== 0;
+        this.autoZeroEnabled = (data[2] & 0x02) !== 0;
+        break;
     }
 
   };
@@ -91,7 +97,21 @@
   };
 
   CalibrationMain.prototype.toString = function() {
-    return 'Calibration ID: ' + this.ID[this.calibrationID] + ' (0x' + this.calibrationID.toString(16) + '), ' + this.AUTO_ZERO[this.autoZeroStatus] + ' (0x' + this.autoZeroStatus.toString(16) + '), Calibration data ' + this.calibrationData + ' (0x' + this.calibrationData.toString(16) + ')';
+    var idName = this.ID[this.calibrationID] || 'Unknown calibration message',
+      msg = 'Calibration ID: ' + idName + ' (0x' + this.calibrationID.toString(16) + ')';
+
+    if (this.autoZeroStatus !== undefined) {
+      msg += ', ' + (this.AUTO_ZERO[this.autoZeroStatus] || 'Unknown auto zero status') +
+        ' (0x' + this.autoZeroStatus.toString(16) + '), Calibration data ' + this.calibrationData;
+    } else if (this.calibrationID === 0x12) {
+      msg += ', Auto zero supported ' + this.autoZeroSupported +
+        ', enabled ' + this.autoZeroEnabled;
+    } else {
+      msg += ', Data ' + Array.from(this.calibrationPayload).map(value =>
+        value.toString(16).padStart(2, '0')).join(' ');
+    }
+
+    return msg;
   };
 
   module.exports = CalibrationMain;

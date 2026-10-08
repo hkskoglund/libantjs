@@ -5,7 +5,8 @@
     DeviceProfile = require('../deviceProfile'),
     PowerOnlyMainPage0x10 = require('../bike_power/powerOnlyMainPage0x10'),
     BackgroundPage = require('../backgroundPage'),
-    CalibrationMainPage = require('../bike_power/calibrationMain');
+    CalibrationMainPage = require('../bike_power/calibrationMain'),
+    BikePowerDataPage = require('../bike_power/bikePowerDataPage');
 
 
   function DeviceProfile_BikePower(configuration) {
@@ -33,6 +34,22 @@
   DeviceProfile_BikePower.prototype.CHANNEL_ID = {
     DEVICE_TYPE: 0x0B,
     TRANSMISSION_TYPE: 0x05
+  };
+
+  DeviceProfile_BikePower.prototype.createManualZeroRequest = function() {
+    return Uint8Array.from([0x01, 0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+  };
+
+  DeviceProfile_BikePower.prototype.requestManualZero = function(sendAcknowledged, callback) {
+    if (typeof sendAcknowledged !== 'function') {
+      throw new TypeError('sendAcknowledged must be a function bound to the sensor channel');
+    }
+
+    if (typeof callback !== 'function') {
+      throw new TypeError('callback must be a function');
+    }
+
+    return sendAcknowledged(this.createManualZeroRequest(), callback);
   };
 
   DeviceProfile_BikePower.prototype.getPageNumber = function(broadcast) {
@@ -64,6 +81,22 @@
       case 0x10:
 
         page = new PowerOnlyMainPage0x10({
+          logger: this.log
+        }, broadcast, this, pageNumber);
+
+        break;
+
+      case 0x02:
+      case 0x03:
+      case 0x11:
+      case 0x12:
+      case 0x13:
+      case 0x20:
+      case 0xE0:
+      case 0xE1:
+      case 0xE2:
+
+        page = new BikePowerDataPage({
           logger: this.log
         }, broadcast, this, pageNumber);
 

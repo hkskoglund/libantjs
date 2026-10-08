@@ -32,7 +32,7 @@
     }
 
     // 0-254 rpm, 255=invalid
-    this.instantaneousCadence = data[3];
+    this.instantaneousCadence = data[3] === 0xFF ? undefined : data[3];
 
     // (May be) Used for bad RF conditions with loss of packets
     this.accumulatedPower = dataView.getUint16(data.byteOffset + 4, true);

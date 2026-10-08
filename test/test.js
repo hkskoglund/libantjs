@@ -12,6 +12,10 @@ const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x
 const DeviceProfile = require('../legacy/deviceProfile');
 const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
+const DeviceProfile_BikePower = require('../legacy/bike_power/deviceProfile_BikePower');
+const CalibrationMainPage = require('../legacy/bike_power/calibrationMain');
+const BikePowerDataPage = require('../legacy/bike_power/bikePowerDataPage');
+const PowerOnlyMainPage0x10 = require('../legacy/bike_power/powerOnlyMainPage0x10');
 const TemperaturePage1 = require('../legacy/environment/TemperaturePage1');
 const DeviceProfile_HRM = require('../legacy/hrm/deviceProfile_HRM');
 const HRMPage0 = require('../legacy/hrm/HRMPage0');
@@ -912,4 +916,73 @@ test('SDM page 2 initializes status before decoding a constructor broadcast', ()
 
   assert.equal(page.status.SDMLocation, 1);
   assert.equal(page.status.UseState, 1);
+});
+
+test('Bike Power dispatches all defined profile data page families', () => {
+  const profile = Object.create(DeviceProfile_BikePower.prototype);
+  profile.log = { logging: false };
+  profile.getPreviousPage = () => undefined;
+  const decode = data => profile.getPage({ data: Uint8Array.from(data) });
+
+  for (const pageNumber of [0x02, 0x03, 0x11, 0x12, 0x13, 0x20, 0xE0, 0xE1, 0xE2]) {
+    assert.ok(decode([pageNumber, 1, 2, 60, 0, 8, 0, 32]) instanceof BikePowerDataPage,
+      'page ' + pageNumber.toString(16));
+  }
+
+  const wheelTorque = decode([0x11, 1, 2, 60, 0, 8, 32, 0]);
+  assert.equal(wheelTorque.accumulatedPeriodSeconds, 1);
+  assert.equal(wheelTorque.accumulatedTorqueNm, 1);
+
+  const crankTorqueFrequency = decode([0x20, 1, 0x01, 0xFF, 0x08, 0x00, 0x12, 0x34]);
+  assert.equal(crankTorqueFrequency.slope, 51.1);
+  assert.equal(crankTorqueFrequency.measurementTimestamp, 1.024);
+  assert.equal(crankTorqueFrequency.torqueTicksStamp, 0x1234);
+});
+
+test('Bike Power treats invalid cadence values as unavailable', () => {
+  const profile = { getPreviousPage: () => undefined };
+  const page = new PowerOnlyMainPage0x10(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([0x10, 0, 0xff, 0xff, 0, 0, 0, 0]) },
+    profile,
+    0x10
+  );
+
+  assert.equal(page.instantaneousCadence, undefined);
+});
+
+test('Bike Power manual-zero request sends the required acknowledged payload', () => {
+  const profile = Object.create(DeviceProfile_BikePower.prototype);
+  const callback = () => {};
+  let sentPayload;
+  let sentCallback;
+
+  assert.deepEqual(Array.from(profile.createManualZeroRequest()), [
+    0x01, 0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
+  ]);
+  profile.requestManualZero((payload, cb) => {
+    sentPayload = payload;
+    sentCallback = cb;
+  }, callback);
+
+  assert.deepEqual(Array.from(sentPayload), Array.from(profile.createManualZeroRequest()));
+  assert.equal(sentCallback, callback);
+  assert.throws(() => profile.requestManualZero(undefined, callback), /sendAcknowledged/);
+  assert.throws(() => profile.requestManualZero(() => {}, undefined), /callback/);
+});
+
+test('Bike Power calibration page renders all defined calibration IDs safely', () => {
+  const configuration = { logger: { logging: false } };
+  const makePage = calibrationId => new CalibrationMainPage(configuration, {
+    data: Uint8Array.from([0x01, calibrationId, 0x03, 0xff, 0xff, 0xff, 0xff, 0xff])
+  }, undefined, 0x01);
+  const autoZero = makePage(0x12);
+  const customCalibration = makePage(0xBA);
+  const manualZeroResponse = makePage(0xAC);
+
+  assert.equal(autoZero.autoZeroSupported, true);
+  assert.equal(autoZero.autoZeroEnabled, true);
+  assert.match(autoZero.toString(), /Auto zero supported true, enabled true/);
+  assert.match(customCalibration.toString(), /Custom Calibration Parameter Request/);
+  assert.match(manualZeroResponse.toString(), /Calibration data -1/);
 });
