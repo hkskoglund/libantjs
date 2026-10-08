@@ -48,6 +48,7 @@ const ChannelId = require('../channel/channelId');
 const Directory = require('../profiles/antfs/lib/file/directory');
 const File = require('../profiles/antfs/lib/file/file');
 const FitFile = require('../profiles/antfs/lib/file/fitFile');
+const ClientBeacon = require('../profiles/antfs/lib/layer/clientBeacon');
 const DownloadRequest = require('../profiles/antfs/lib/request-response/downloadRequest');
 const TransportManager = require('../profiles/antfs/lib/layer/transportManager');
 const CRC = require('../profiles/antfs/lib/layer/util/crc');
@@ -65,15 +66,17 @@ function loadAmdModule(modulePath, dependencies, globals = {}) {
   return exported;
 }
 
-function downloadResponse(offset, fileSize, packets) {
+function downloadResponse(offset, fileSize, packets, crcSeed = 0) {
   const data = new Uint8Array(16 + packets.length + 8);
   const view = new DataView(data.buffer);
+  const crc = new CRC();
 
   data[2] = 0;
   view.setUint32(4, packets.length, true);
   view.setUint32(8, offset, true);
   view.setUint32(12, fileSize, true);
   data.set(packets, 16);
+  view.setUint16(data.length - 2, crc.updateCRC16(crcSeed, packets), true);
 
   return data;
 }
@@ -105,7 +108,10 @@ test('TransportManager continues a download with the CRC of the received prefix'
   };
   manager.task = [{ done: false }];
   manager.execTaskIndex = 0;
-  manager.sendRequest = request => requests.push(request);
+  manager.sendRequest = request => {
+    requests.push(request);
+    manager.session.request.push(request);
+  };
 
   manager.onDownloadResponse(downloadResponse(0, 6, initialPackets));
 
@@ -116,7 +122,7 @@ test('TransportManager continues a download with the CRC of the received prefix'
   assert.equal(manager.session.crcOffset, initialPackets.length);
 
   const finalPackets = Uint8Array.from([4, 5, 6]);
-  manager.onDownloadResponse(downloadResponse(3, 6, finalPackets));
+  manager.onDownloadResponse(downloadResponse(3, 6, finalPackets, expectedCrc));
 
   assert.deepEqual(Array.from(manager.session.packets), [1, 2, 3, 4, 5, 6]);
   assert.equal(
@@ -124,6 +130,31 @@ test('TransportManager continues a download with the CRC of the received prefix'
     managerCrc.updateCRC16(expectedCrc, finalPackets)
   );
   assert.equal(manager.session.crcOffset, 6);
+});
+
+test('TransportManager rejects download responses with an invalid data CRC', () => {
+  const manager = Object.create(TransportManager.prototype);
+  const response = downloadResponse(0, 1, Uint8Array.from([1]));
+  let downloadError;
+
+  response[response.length - 2] ^= 0xff;
+  manager.host = new EventEmitter();
+  manager.host.once('download', error => { downloadError = error; });
+  manager.session = {
+    index: 1,
+    request: [new DownloadRequest(1)],
+    response: [],
+    crcOffset: 0,
+    crcSeed: 0
+  };
+  manager.task = [{ done: false }];
+  manager.execTaskIndex = 0;
+
+  manager.onDownloadResponse(response);
+
+  assert.match(downloadError.message, /CRC mismatch/);
+  assert.equal(manager.task[0].done, true);
+  assert.equal(manager.session.packets, undefined);
 });
 
 test('TransportManager rejects malformed and oversized download responses before allocation', () => {
@@ -168,6 +199,45 @@ test('Directory.decode rejects incomplete headers and malformed file records', (
   const incompleteRecord = new Uint8Array(Directory.prototype.HEADER_LENGTH + 1);
   incompleteRecord[1] = 16;
   assert.throws(() => directory.decode(incompleteRecord), /incomplete file record/);
+});
+
+test('Directory resolves and erases files by their recorded indices', () => {
+  const host = { log: { logging: false, log() {} } };
+  const directory = new Directory(undefined, host);
+  const data = new Uint8Array(Directory.prototype.HEADER_LENGTH + 2 * 16);
+  const view = new DataView(data.buffer);
+
+  data[1] = 16;
+  view.setUint16(16, 2, true);
+  view.setUint16(32, 5, true);
+  directory.decode(data);
+
+  assert.equal(directory.getFile(5).index, 5);
+  assert.equal(directory.getFile(3), undefined);
+  assert.equal(directory.eraseFile(5).index, 5);
+  assert.deepEqual(directory.file.map(file => file.index), [2]);
+
+  directory.decode(data);
+  assert.deepEqual(directory.file.map(file => file.index), [2, 5]);
+});
+
+test('ClientBeacon recognizes the manufacturer ID MSB as the ANT+ Alliance flag', () => {
+  const beacon = new ClientBeacon();
+  const payload = Uint8Array.from([0x43, 0, 0, 0, 0, 0, 0x01, 0x80]);
+
+  beacon.decode(payload);
+
+  assert.equal(beacon.manufacturerID, 0x8001);
+  assert.equal(beacon.deviceTypeManagedBy, 'ANT+ Alliance');
+});
+
+test('File decodes 24-bit identifiers as unsigned values', () => {
+  const metadata = new Uint8Array(16);
+  const directory = { timeFormat: File.prototype.TIME_FORMAT.COUNTER };
+
+  new DataView(metadata.buffer).setUint32(3, 0xffffff00, true);
+
+  assert.equal(new File(metadata, directory).identifier, 0xffffff);
 });
 
 test('Generic files have unique names and downloads persist without throwing', async () => {

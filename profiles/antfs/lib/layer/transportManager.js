@@ -536,6 +536,12 @@ TransportManager.prototype.onDownloadResponse = function(responseData) {
     return;
   }
 
+  if (response.result === DownloadResponse.prototype.OK &&
+      response.CRC !== crc.updateCRC16(this.session.request[this.session.request.length - 1].crcSeed, response.packets)) {
+    this._failDownload(new Error('Download response CRC mismatch'));
+    return;
+  }
+
   this.session.response.push(response);
 
   if (this.log.logging)

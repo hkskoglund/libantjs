@@ -28,7 +28,7 @@
 
     this.index = dv.getUint16(0 + data.byteOffset, true);
     this.type = data[2];
-    this.identifier = dv.getUint32(3 + data.byteOffset, true) >> 8;
+    this.identifier = dv.getUint32(3 + data.byteOffset, true) >>> 8;
     this.typeFlags = data[6];
     this.permission = new GeneralFilePermission(data[7]);
     this.size = dv.getUint32(8 + data.byteOffset, true);

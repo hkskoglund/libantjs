@@ -20,7 +20,7 @@
     PAIRING_ENABLED: 0x08, // 0000 1000 bit 3
     BEACON_CHANNEL_PERIOD: 0x07, // 0000 0111 bit 2-0
 
-    DEVICE_TYPE_MANAGED_BY: 0x4000 // MSB 1 = device type ANT+ alliance managed, MSB 0 = device type Dynastream managed
+    DEVICE_TYPE_MANAGED_BY: 0x8000 // MSB 1 = device type ANT+ alliance managed, MSB 0 = device type Dynastream managed
   };
 
   ClientBeacon.prototype.CHANNEL_PERIOD = {

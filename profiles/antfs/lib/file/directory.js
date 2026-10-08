@@ -35,7 +35,9 @@ Directory.prototype.getFileName = function() {
 };
 
 Directory.prototype.getFile = function(directoryIndex) {
-  return this.file[directoryIndex - 1]; // directoryIndex 1 starts at index 0
+  return this.file.find(function(file) {
+    return file.index === directoryIndex;
+  });
 };
 
 Directory.prototype.decode = function(data) {
@@ -79,6 +81,7 @@ Directory.prototype.decode = function(data) {
 
   // File decoding -> produce File or FitFile objects based on file type
 
+  this.file = [];
   numberOfFiles = (data.byteLength - this.HEADER_LENGTH) / this.structureLength;
 
   for (fileNr = 0; fileNr < numberOfFiles; fileNr++) {
@@ -147,7 +150,8 @@ Directory.prototype._showFileIndex = function ()
 
 Directory.prototype.eraseFile = function(index) {
 
-    var removedFiles = this.file.splice(index - 1, 1);
+    var filePosition = this.indexOf(index),
+      removedFiles = filePosition === -1 ? [] : this.file.splice(filePosition, 1);
 
      if (this.log.logging)
       this.log.debug('Directory file index after removal of index ' + index,this._showFileIndex());
