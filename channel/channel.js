@@ -8,14 +8,11 @@
 
     EventEmitter.call(this, options);
 
-    if (!options)
-      options = {};
+    this.option = Object.assign({}, options);
 
-    options.logSource = this;
-
-    this.option = options;
-
-    this.log = options.logger || new Logger(options);
+    this.log = this.option.logger || new Logger(
+      Object.assign({}, this.option, { logSource: this })
+    );
 
     this.host = host; // Allows access to host API for channel (wrappers)
 

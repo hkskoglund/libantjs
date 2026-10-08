@@ -27,6 +27,9 @@ This example opens a wildcard receive channel on the public ANT network and prin
 const Host = require('libantjs');
 
 const host = new Host();
+host.on('error', (error) => {
+  console.error('ANT/USB error:', error);
+});
 const devices = host.getDevices();
 
 if (devices.length === 0) {
@@ -71,7 +74,29 @@ host.init(0, (error) => {
 
 The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `channel.setNetworkKey(channel.NET.KEY['ANT+'], callback)` before opening the channel. Close an open channel with `channel.close(callback)` and shut down the USB host with `host.exit(callback)`.
 
+USB and endpoint runtime failures are forwarded as the host's `error` event; register an error listener before calling `init()`, as in the example.
+
 ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDir>/<device serial number>/`. Each downloaded directory is also saved as a readable `directory-<device serial number>.txt` listing in that folder, replacing the previous listing. Set `dataDir` in the `Host` options, e.g. `new Host({ dataDir: '/path/to/dir' })`; the default is `$XDG_DATA_HOME/libantjs` (`~/.local/share/libantjs`).
+
+Connect an ANT-FS client using a named options object:
+
+```js
+host.connectANTFS(0, {
+  net: 0,
+  deviceNumber: 123456,
+  hostname: 'my-antfs-host',
+  download: true,
+  erase: false,
+  ls: false,
+  skipNewFiles: false,
+  ignoreBusyState: false,
+  onSearching(error) {
+    if (error) console.error('ANT-FS search failed:', error);
+  }
+});
+```
+
+The former positional `connectANTFS` arguments remain supported for compatibility.
 
 ## Checks
 

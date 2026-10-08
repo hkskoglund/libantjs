@@ -16,9 +16,10 @@ var Channel = require('../../channel/channel'),
   UploadRequest = require('./lib/request-response/uploadRequest'),
   UploadDataRequest = require('./lib/request-response/uploadDataRequest');
 
-function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, erase,ls, skipNewFiles, ignoreBusyState) {
+function Host(options, ANTHost, channel) {
+  options = options || {};
 
-  Channel.call(this, options, ANTHost, channel, net);
+  Channel.call(this, options, ANTHost, channel, options.net);
 
   // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
@@ -27,11 +28,11 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
   this.period = this.NET.PERIOD.ANTFS;
   this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
-  if (typeof deviceNumber === 'number') // Search for specific device
-   this.setId(deviceNumber,0,0);
+  if (typeof options.deviceNumber === 'number') // Search for specific device
+   this.setId(options.deviceNumber,0,0);
 
-  if (typeof hostname === 'string')
-   this.hostname = hostname;
+  if (typeof options.hostname === 'string')
+   this.hostname = options.hostname;
   else
    this.hostname = 'antfsjs';
 
@@ -50,7 +51,7 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
 
   this.on('directory', function _onDirectory(lsl) {
 
-   if (ls)
+   if (options.ls)
       this.log.console.log(lsl);
   }.bind(this));
 
@@ -61,7 +62,13 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
 
   this.authenticationManager = new AuthenticationManager(this);
 
-  this.transportManager = new TransportManager(this, download, erase, ls, skipNewFiles);
+  this.transportManager = new TransportManager(
+    this,
+    options.download,
+    options.erase,
+    options.ls,
+    options.skipNewFiles
+  );
 
   this.beacon = new ClientBeacon();
 
@@ -70,14 +77,14 @@ function Host(options, ANTHost, channel, net, deviceNumber, hostname, download, 
   this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
   this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch);
 
-  this.option.ignoreBusyState = ignoreBusyState;
+  this.option.ignoreBusyState = options.ignoreBusyState;
 
   this.session = {};
 
 }
 
 Host.prototype = Object.create(Channel.prototype);
-Host.prototype.constructor = Channel;
+Host.prototype.constructor = Host;
 
 Host.prototype.onRxFailGoToSearch = function (e,m)
 {

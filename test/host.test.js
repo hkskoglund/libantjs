@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
 const Message = require('../messages/Message');
+const ANTFSHost = require('../profiles/antfs/host');
 
 const message = {
   id: 0x4a,
@@ -30,6 +31,91 @@ function createFrame(id) {
   message.setContent(new Uint8Array(0));
   return message.serialize();
 }
+
+test('Host and channels do not mutate the caller options object', () => {
+  const options = { log: false, dataDir: '/tmp/ant-data' };
+  const host = new Host(options);
+
+  assert.deepEqual(options, { log: false, dataDir: '/tmp/ant-data' });
+  assert.notEqual(host.options, options);
+  assert.notEqual(host.channel[0].option, host.options);
+  assert.equal(host.log.options.logSource, host);
+  assert.equal(host.channel[0].log.options.logSource, host.channel[0]);
+});
+
+test('Host forwards USB errors through its error event', () => {
+  const { host } = createHost();
+  const usbError = new Error('USB endpoint failed');
+  let observedError;
+
+  host.on(Host.prototype.EVENT.ERROR, error => { observedError = error; });
+  host.usb.emit('error', usbError);
+
+  assert.equal(observedError, usbError);
+});
+
+test('connectANTFS accepts an options object and preserves the positional form', () => {
+  const { host } = createHost();
+  const originalConnect = ANTFSHost.prototype.connect;
+  const searchCallback = () => {};
+  const cases = [
+    {
+      args: [2, {
+        net: 1,
+        deviceNumber: 1234,
+        hostname: 'test-host',
+        download: true,
+        erase: false,
+        ls: true,
+        skipNewFiles: true,
+        ignoreBusyState: true,
+        onSearching: searchCallback
+      }],
+      expected: {
+        net: 1,
+        deviceNumber: 1234,
+        hostname: 'test-host',
+        download: true,
+        erase: false,
+        ls: true,
+        skipNewFiles: true,
+        ignoreBusyState: true
+      }
+    },
+    {
+      args: [3, 2, 5678, 'legacy-host', true, true, false, true, false, searchCallback],
+      expected: {
+        net: 2,
+        deviceNumber: 5678,
+        hostname: 'legacy-host',
+        download: true,
+        erase: true,
+        ls: false,
+        skipNewFiles: true,
+        ignoreBusyState: false
+      }
+    }
+  ];
+
+  ANTFSHost.prototype.connect = function(callback) {
+    this.searchCallback = callback;
+  };
+
+  try {
+    for (const { args, expected } of cases) {
+      host.connectANTFS(...args);
+      const antfsHost = host.channel[args[0]];
+
+      for (const [key, value] of Object.entries(expected)) {
+        assert.equal(antfsHost.option[key], value, key);
+      }
+      assert.equal(antfsHost.searchCallback, searchCallback);
+      assert.equal(antfsHost.constructor, ANTFSHost);
+    }
+  } finally {
+    ANTFSHost.prototype.connect = originalConnect;
+  }
+});
 
 test('sendMessage calls the callback once when a transfer without a response event fails', () => {
   const { host, completeTransfer } = createHost();

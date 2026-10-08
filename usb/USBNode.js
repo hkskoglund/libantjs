@@ -11,6 +11,10 @@ function USBNode(options) {
   this._usbAttachListener = this._onAttach.bind(this);
   this._usbDetachListener = this._onDetach.bind(this);
   this._usbErrorListener = this._onError.bind(this);
+  this._inEndpointErrorListener = this._onInEndpointError.bind(this);
+  this._inEndpointDataListener = this._onInEndpointData.bind(this);
+  this._outEndpointErrorListener = this._onOutEndpointError.bind(this);
+  this._outEndpointEndListener = this._onOutEndpointEnd.bind(this);
 
   if (this.options.debugLevel)
     this.usb.setDebugLevel(this.options.debugLevel || 0);
@@ -26,6 +30,7 @@ USBNode.prototype._onError = function(error) {
   if (this.log.logging) {
     this.log.error( error);
   }
+  this.emit(USBDevice.prototype.EVENT.ERROR, error);
 };
 
 USBNode.prototype._removeUSBListeners = function() {
@@ -175,8 +180,9 @@ USBNode.prototype.isTimeoutError = function(error) {
 USBNode.prototype._generateError = function(e, retrn) {
   var err;
 
-  if (!(e instanceof Error)) // USBNode specific error
-  {
+  if (e instanceof Error) {
+    err = e;
+  } else {
     err = new Error(e.message);
     err.code = e.code;
   }
@@ -248,14 +254,13 @@ USBNode.prototype._claimInterface = function(retrn) {
 
   this.inEndpoint = this.deviceInterface.endpoints[0];
 
-  this.inEndpoint.on('error', this._onInEndpointError.bind(this));
-
-  this.inEndpoint.on('data', this._onInEndpointData.bind(this));
+  this.inEndpoint.on('error', this._inEndpointErrorListener);
+  this.inEndpoint.on('data', this._inEndpointDataListener);
 
   this.outEndpoint = this.deviceInterface.endpoints[1];
 
-  this.outEndpoint.on('error', this._onOutEndpointError.bind(this));
-  this.outEndpoint.on('end', this._onOutEndpointEnd.bind(this));
+  this.outEndpoint.on('error', this._outEndpointErrorListener);
+  this.outEndpoint.on('end', this._outEndpointEndListener);
 
   this.deviceInterface.claim(); // Must be called before attempting transfer on endpoints
 
@@ -267,6 +272,7 @@ USBNode.prototype._onOutEndpointError = function(error) {
   if (this.log.logging) {
     this.log.error( 'Out endpoint', error);
   }
+  this.emit(USBDevice.prototype.EVENT.ERROR, error);
 };
 
 USBNode.prototype._onOutEndpointEnd = function() {
@@ -333,8 +339,14 @@ USBNode.prototype._onInterfaceReleased = function(error) {
   this.emit(USBDevice.prototype.EVENT.CLOSED);
 
   this._removeUSBListeners();
-
-  this.removeAllListeners();
+  if (this.inEndpoint) {
+    this.inEndpoint.removeListener('error', this._inEndpointErrorListener);
+    this.inEndpoint.removeListener('data', this._inEndpointDataListener);
+  }
+  if (this.outEndpoint) {
+    this.outEndpoint.removeListener('error', this._outEndpointErrorListener);
+    this.outEndpoint.removeListener('end', this._outEndpointEndListener);
+  }
 
 };
 
@@ -363,10 +375,6 @@ USBNode.prototype.exit = function(retrn) {
         if (this.log.logging)
           this.log.debug( 'Polling ended (no transfers pending)');
 
-        this.inEndpoint.removeAllListeners();
-
-        this.outEndpoint.removeAllListeners();
-
         // Some info on continuation passing style CPS http://matt.might.net/articles/by-example-continuation-passing-style/
         this.deviceInterface.release(true, onReleased);
       }.bind(this);
@@ -391,6 +399,7 @@ USBNode.prototype._onInEndpointError = function(error) {
   if (this.log.logging) {
     this.log.error( 'In endpoint error', error);
   }
+  this.emit(USBDevice.prototype.EVENT.ERROR, error);
 };
 
 USBNode.prototype._onInEndpointData = function(data) {

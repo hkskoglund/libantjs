@@ -71,15 +71,9 @@ function Host(options) {
 
   var channel;
 
-  if (!options) {
-    options = {};
-  }
+  this.options = Object.assign({}, options);
 
-  options.logSource = this;
-
-  this.options = options;
-
-  this.log = new Logger(options);
+  this.log = new Logger(Object.assign({}, this.options, { logSource: this }));
 
   this.channel = new Array(Host.prototype.MAX_CHAN);
 
@@ -88,9 +82,10 @@ function Host(options) {
   }
 
     this.usb = new USBNode({
-      log: options.log,
-      debugLevel: options.debugLevel
+      log: this.options.log,
+      debugLevel: this.options.debugLevel
     });
+    this.usb.on(USBDevice.prototype.EVENT.ERROR, this.onUSBError.bind(this));
 
 }
 
@@ -188,16 +183,41 @@ Host.prototype.EVENT = {
 
 };
 
-Host.prototype.connectANTFS = function (channel,net,deviceNumber, hostname, download, erase, ls, skipNewFiles, ignoreBusyState, onSearching)
-{
+Host.prototype.onUSBError = function(error) {
+  this.emit(this.EVENT.ERROR, error);
+};
 
-  var antfsHost = new ANTFSHost({
-    log : this.options.log,
-    dataDir : this.options.dataDir
-  },this,channel,net, deviceNumber, hostname, download, erase,ls, skipNewFiles, ignoreBusyState);
+Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, ignoreBusyState, onSearching) {
+  var antfsOptions,
+    antfsHost;
+
+  if (options && typeof options === 'object' && !Array.isArray(options)) {
+    antfsOptions = Object.assign({}, options);
+  } else {
+    antfsOptions = {
+      net: options,
+      deviceNumber: deviceNumber,
+      hostname: hostname,
+      download: download,
+      erase: erase,
+      ls: ls,
+      skipNewFiles: skipNewFiles,
+      ignoreBusyState: ignoreBusyState,
+      onSearching: onSearching
+    };
+  }
+
+  antfsOptions.log = this.options.log;
+  antfsOptions.dataDir = this.options.dataDir;
+
+  antfsHost = new ANTFSHost(
+    antfsOptions,
+    this,
+    channel
+  );
 
   this.setChannel(antfsHost);
-  antfsHost.connect(onSearching);
+  antfsHost.connect(antfsOptions.onSearching);
 };
 
 Host.prototype.setChannel = function(channel) {

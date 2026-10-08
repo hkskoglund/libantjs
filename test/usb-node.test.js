@@ -81,6 +81,49 @@ test('USBNode removes only its own shared USB listeners after reset failure', ()
   assert.equal(usb.listenerCount('error'), 0);
 });
 
+test('USBNode emits errors from USB and endpoint events', () => {
+  const node = new USBNode({});
+  const usb = createUSB([]);
+  const inError = new Error('in endpoint failed');
+  const outError = new Error('out endpoint failed');
+  const usbError = new Error('USB runtime failed');
+  const errors = [];
+
+  node.usb = usb;
+  node.on(USBNode.prototype.EVENT.ERROR, error => errors.push(error));
+  node._onInEndpointError(inError);
+  node._onOutEndpointError(outError);
+  node._onError(usbError);
+
+  assert.deepEqual(errors, [inError, outError, usbError]);
+});
+
+test('USBNode preserves error listeners after exit', () => {
+  const node = createExitNode(false, undefined);
+  const expectedError = new Error('USB runtime failed');
+  let observedError;
+
+  node.on('error', error => { observedError = error; });
+  node.exit(() => {});
+  node.emit('error', expectedError);
+
+  assert.equal(observedError, expectedError);
+});
+
+test('USBNode reports no-device errors to both its error event and init callback', () => {
+  const node = new USBNode({});
+  node.usb = createUSB([]);
+  let emittedError;
+  let callbackError;
+
+  node.on('error', error => { emittedError = error; });
+  node.init(0, error => { callbackError = error; });
+
+  assert.equal(callbackError, emittedError);
+  assert.equal(callbackError.message, 'No device');
+  assert.equal(callbackError.code, -1);
+});
+
 test('USBNode reports reset and close failures together', () => {
   let reset;
   const device = createDevice((callback) => { reset = callback; });
