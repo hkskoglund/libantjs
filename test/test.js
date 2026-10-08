@@ -441,7 +441,7 @@ test('Extended broadcast frames decode their channel ID', () => {
   const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x20, 0x34, 0x12, 0x56, 0x78
+    0x80, 0x34, 0x12, 0x56, 0x78
   ]));
 
   const decoded = new BroadcastDataMessage(message.serialize());
@@ -455,7 +455,7 @@ test('Extended broadcast frames with truncated channel ID metadata do not throw'
   const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x20, 0x34
+    0x80, 0x34
   ]));
 
   const decoded = new BroadcastDataMessage(message.serialize());
@@ -469,7 +469,7 @@ test('Extended acknowledged-data frames decode their channel ID', () => {
   const message = new Message(undefined, Message.prototype.ACKNOWLEDGED_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x20, 0x34, 0x12, 0x56, 0x78
+    0x80, 0x34, 0x12, 0x56, 0x78
   ]));
 
   const decoded = new AcknowledgedDataMessage(message.serialize());

@@ -110,7 +110,7 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
       'libConfig', 'setNetworkKey', 'assign', 'setId',
       'setFrequency', 'setPeriod', 'open'
     ]);
-    assert.deepEqual(calls[0], ['libConfig', 0x20]);
+    assert.deepEqual(calls[0], ['libConfig', 0x80]);
     assert.deepEqual(calls[2], ['assign', channel.SLAVE_RECEIVE_ONLY, 0]);
     assert.deepEqual(calls[3], ['setId', 1234, sensorType === 'hrm' ? 120 : 25, 0]);
     assert.deepEqual(calls[4], ['setFrequency', channel.NET.FREQUENCY['ANT+']]);
