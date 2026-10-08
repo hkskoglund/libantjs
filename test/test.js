@@ -727,6 +727,29 @@ test('DeviceProfile applies the selected channel period to master and slave conf
   }
 });
 
+test('Environment profile ignores reserved pages and routes only supported common pages', () => {
+  const routedPages = [];
+  const profile = {
+    log: { logging: false },
+    getPageNumber: DeviceProfile_ENVIRONMENT.prototype.getPageNumber,
+    getBackgroundPage: (_broadcast, pageNumber) => {
+      routedPages.push(pageNumber);
+      return { number: pageNumber };
+    }
+  };
+  const getPage = pageNumber => DeviceProfile_ENVIRONMENT.prototype.getPage.call(profile, {
+    data: Uint8Array.from([pageNumber, 0xff, 0xff, 0, 0, 0, 0, 0])
+  });
+
+  assert.equal(getPage(2), undefined);
+  assert.equal(getPage(3), undefined);
+  assert.deepEqual(routedPages, []);
+  assert.equal(getPage(0x50).number, 0x50);
+  assert.equal(getPage(0x51).number, 0x51);
+  assert.equal(getPage(0x52).number, 0x52);
+  assert.deepEqual(routedPages, [0x50, 0x51, 0x52]);
+});
+
 test('HRM background pages are not decoded as heart-rate data', () => {
   const backgroundPage = {
     broadcast: { data: Uint8Array.from([0x50, 0, 0, 0, 1, 0, 1, 100]) }

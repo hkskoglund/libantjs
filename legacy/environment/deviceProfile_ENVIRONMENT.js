@@ -73,9 +73,8 @@
 
     }
 
-    // Environment profile has global pages
-
-    if (!page) {
+    // Only route supported common pages; pages 2-63 are reserved by this profile.
+    if (pageNumber === 0x50 || pageNumber === 0x51 || pageNumber === 0x52) {
       page = this.getBackgroundPage(broadcast, pageNumber);
     }
 
