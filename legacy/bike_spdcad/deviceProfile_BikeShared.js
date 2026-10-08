@@ -16,9 +16,7 @@
       this.WHEEL_CIRCUMFERENCE = DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE;
     }
 
-    this.initMasterSlaveConfiguration();
-
-    this.requestPageUpdate(DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY);
+    this.measurementPages = [];
   }
 
   DeviceProfile_BikeShared.prototype = Object.create(DeviceProfile.prototype);
@@ -45,6 +43,63 @@
     }
 
     return pageNumber;
+  };
+
+  DeviceProfile_BikeShared.prototype.getBikePage = function(broadcast, PageConstructor, processBackgroundPage) {
+    var pageNumber = this.getPageNumber(broadcast),
+      page;
+
+    if (pageNumber === 0 || pageNumber === 4 || pageNumber === 5) {
+      return new PageConstructor({
+        logger: this.log
+      }, broadcast, this, pageNumber);
+    }
+
+    page = this.getBackgroundPage(broadcast, pageNumber);
+
+    if (page && pageNumber >= 1 && pageNumber <= 3) {
+      processBackgroundPage.call(page, PageConstructor.prototype);
+    } else if (!page && this.log && this.log.logging) {
+      this.log.error('Failed to get background page for page number ' + pageNumber, this);
+    }
+
+    return page;
+  };
+
+  DeviceProfile_BikeShared.prototype.addPage = function(page) {
+    DeviceProfile.prototype.addPage.call(this, page);
+
+    if (!page) {
+      return;
+    }
+
+    if (page.bikeSpeedEventTime === undefined && page.bikeCadenceEventTime === undefined) {
+      return;
+    }
+
+    if (this.measurementPages.length >= this.MAX_UNFILTERED_BROADCAST_BUFFER) {
+      this.measurementPages.shift();
+    }
+
+    this.measurementPages.push(page);
+  };
+
+  DeviceProfile_BikeShared.prototype.getPreviousBikeMeasurementPageValidateRolloverTime = function(currentPage) {
+    var previousPage = this.measurementPages[this.measurementPages.length - 1];
+
+    if (!previousPage) {
+      return;
+    }
+
+    if (this.ROLLOVER_THRESHOLD &&
+      currentPage.timestamp - previousPage.timestamp >= this.ROLLOVER_THRESHOLD) {
+      if (this.log && this.log.logging) {
+        this.log.warn('Time between bike measurement pages is longer than the rollover threshold (64s)', currentPage, previousPage);
+      }
+      return;
+    }
+
+    return previousPage;
   };
 
   module.exports = DeviceProfile_BikeShared;

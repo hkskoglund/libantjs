@@ -14,6 +14,7 @@ const ProductId0x51 = require('../legacy/productId0x51');
 const DeviceProfile_BikeShared = require('../legacy/bike_spdcad/deviceProfile_BikeShared');
 const DeviceProfile_BikeCad = require('../legacy/bike_cad/deviceProfile_BikeCad');
 const DeviceProfile_BikeSpd = require('../legacy/bike_spd/deviceProfile_BikeSpd');
+const DeviceProfile_SPDCAD = require('../legacy/bike_spdcad/deviceProfile_SPDCAD');
 const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const DeviceProfile_BikePower = require('../legacy/bike_power/deviceProfile_BikePower');
@@ -689,7 +690,7 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
 
   page.profile = {
     WHEEL_CIRCUMFERENCE: 2.07,
-    getPreviousPageValidateRolloverTime: () => previousPage
+    getPreviousBikeMeasurementPageValidateRolloverTime: () => previousPage
   };
   page.bikeSpeedEventTime = 488;
   page.cumulativeSpeedRevolutionCount = 0;
@@ -714,7 +715,7 @@ test('SPDCADSharedPage applies configured wheel circumference to speed in m/s', 
 
   page.profile = {
     WHEEL_CIRCUMFERENCE: 2.1,
-    getPreviousPageValidateRolloverTime: () => previousPage
+    getPreviousBikeMeasurementPageValidateRolloverTime: () => previousPage
   };
   page.bikeSpeedEventTime = 1024;
   page.cumulativeSpeedRevolutionCount = 1;
@@ -726,31 +727,76 @@ test('SPDCADSharedPage applies configured wheel circumference to speed in m/s', 
 });
 
 test('Bike speed/cadence profile accepts a validated wheel circumference setting', () => {
-  const originalInit = DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration;
-  const originalRequest = DeviceProfile_BikeShared.prototype.requestPageUpdate;
-  DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration = () => {};
-  DeviceProfile_BikeShared.prototype.requestPageUpdate = () => {};
+  const profile = new DeviceProfile_BikeShared({
+    logger: { logging: false },
+    wheelCircumference: 2.15
+  });
+  assert.equal(profile.WHEEL_CIRCUMFERENCE, 2.15);
+  assert.equal(profile.timer.onPage, undefined);
+  assert.throws(
+    () => new DeviceProfile_BikeShared({ logger: { logging: false }, wheelCircumference: 0 }),
+    /Wheel circumference must be a positive finite number/
+  );
+});
+
+test('Bike profile setup runs once in concrete profile constructors', () => {
+  const originalInit = DeviceProfile.prototype.initMasterSlaveConfiguration;
+  const originalRequest = DeviceProfile.prototype.requestPageUpdate;
+  let initCalls = 0;
+  let requestCalls = 0;
+  DeviceProfile.prototype.initMasterSlaveConfiguration = () => { initCalls++; };
+  DeviceProfile.prototype.requestPageUpdate = () => { requestCalls++; };
 
   try {
-    const profile = new DeviceProfile_BikeShared({
-      logger: { logging: false },
-      wheelCircumference: 2.15
-    });
-    assert.equal(profile.WHEEL_CIRCUMFERENCE, 2.15);
-    assert.throws(
-      () => new DeviceProfile_BikeShared({ logger: { logging: false }, wheelCircumference: 0 }),
-      /Wheel circumference must be a positive finite number/
-    );
+    new DeviceProfile_BikeShared({ logger: { logging: false } });
+    assert.equal(initCalls, 0);
+    assert.equal(requestCalls, 0);
+
+    new DeviceProfile_BikeCad({ logger: { logging: false } });
+    new DeviceProfile_BikeSpd({ logger: { logging: false } });
+    new DeviceProfile_SPDCAD({ logger: { logging: false } });
+    assert.equal(initCalls, 3);
+    assert.equal(requestCalls, 3);
   } finally {
-    DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration = originalInit;
-    DeviceProfile_BikeShared.prototype.requestPageUpdate = originalRequest;
+    DeviceProfile.prototype.initMasterSlaveConfiguration = originalInit;
+    DeviceProfile.prototype.requestPageUpdate = originalRequest;
   }
+});
+
+test('Bike calculations use measurement history and skip intervening background pages', () => {
+  const profile = Object.create(DeviceProfile_BikeShared.prototype);
+  profile.measurementPages = [];
+  profile.receivedPage = [];
+  profile.page = {};
+  profile.log = { logging: false };
+
+  const previousMeasurement = {
+    bikeSpeedEventTime: 100,
+    cumulativeSpeedRevolutionCount: 10,
+    timestamp: 1000
+  };
+  const backgroundPage = { number: 0x50, timestamp: 1010 };
+  const currentMeasurement = { timestamp: 1020 };
+
+  profile.addPage(previousMeasurement);
+  profile.addPage(backgroundPage);
+
+  assert.equal(profile.receivedPage.length, 2);
+  assert.equal(profile.measurementPages.length, 1);
+  assert.equal(
+    profile.getPreviousBikeMeasurementPageValidateRolloverTime(currentMeasurement),
+    previousMeasurement
+  );
+  assert.equal(
+    profile.getPreviousBikeMeasurementPageValidateRolloverTime({ timestamp: 65000 }),
+    undefined
+  );
 });
 
 test('Bike cadence profile processes pages 4 and 5 but not common-page measurements', () => {
   const profile = Object.create(DeviceProfile_BikeCad.prototype);
   profile.log = { logging: false };
-  profile.getPreviousPageValidateRolloverTime = () => undefined;
+  profile.getPreviousBikeMeasurementPageValidateRolloverTime = () => undefined;
   profile.getPageNumber = () => 4;
   profile.getBackgroundPage = () => { throw new Error('Page 4 should use bike event fields'); };
 
@@ -776,7 +822,7 @@ test('Bike cadence profile processes pages 4 and 5 but not common-page measureme
 test('Bike speed profile processes pages 4 and 5 but not common-page measurements', () => {
   const profile = Object.create(DeviceProfile_BikeSpd.prototype);
   profile.log = { logging: false };
-  profile.getPreviousPageValidateRolloverTime = () => undefined;
+  profile.getPreviousBikeMeasurementPageValidateRolloverTime = () => undefined;
   profile.getPageNumber = () => 4;
   profile.getBackgroundPage = () => { throw new Error('Page 4 should use bike event fields'); };
 

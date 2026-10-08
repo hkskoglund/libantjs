@@ -47,7 +47,7 @@
 
   SPDCADSharedPage.prototype.calcSpeed = function() {
 
-    var previousPage = this.profile.getPreviousPageValidateRolloverTime();
+    var previousPage = this.profile.getPreviousBikeMeasurementPageValidateRolloverTime(this);
 
     if (!previousPage) { // Cannot calculate if no previous page is available
       return;
@@ -100,7 +100,7 @@
 
   SPDCADSharedPage.prototype.calcCadence = function() {
 
-    var previousPage = this.profile.getPreviousPageValidateRolloverTime();
+    var previousPage = this.profile.getPreviousBikeMeasurementPageValidateRolloverTime(this);
 
     if (!previousPage) { // Cannot calculate if no previous page is available
       return;

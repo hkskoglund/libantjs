@@ -29,33 +29,10 @@
   DeviceProfile_BikeCad.prototype.PAGE_TOGGLE_CAPABLE = true;
 
   DeviceProfile_BikeCad.prototype.getPage = function(broadcast) {
-
-    var pageNumber = this.getPageNumber(broadcast),
-      page;
-
-    if (pageNumber === 0 || pageNumber === 4 || pageNumber === 5)
-    {
-
-      page = new BikePage0({
-        logger: this.log
-      }, broadcast, this, pageNumber);
-
-    } else {
-      page = this.getBackgroundPage(broadcast, pageNumber);
-
-      if (page && pageNumber >= 1 && pageNumber <= 4) {
-        BikePage0.prototype.readCadence.call(page, BikePage0.prototype);
-        BikePage0.prototype.calcCadence.call(page, BikePage0.prototype);
-
-      } else {
-        if (this.log && this.log.logging) {
-          this.log.error( 'Failed to get background page for page number ' + pageNumber, this);
-        }
-      }
-    }
-
-    return page;
-
+    return this.getBikePage(broadcast, BikePage0, function(prototype) {
+      BikePage0.prototype.readCadence.call(this, prototype);
+      BikePage0.prototype.calcCadence.call(this, prototype);
+    });
   };
 
   module.exports = DeviceProfile_BikeCad;

@@ -29,35 +29,12 @@
   };
 
   DeviceProfile_SPDCAD.prototype.getPage = function(broadcast) {
-
-    var pageNumber = this.getPageNumber(broadcast),
-      page;
-
-    if (pageNumber === 0) // MAIN
-    {
-
-      page = new SPDCADPage0({
-        logger: this.log
-      }, broadcast, this, pageNumber);
-
-    } else {
-      page = this.getBackgroundPage(broadcast, pageNumber);
-
-      if (page) {
-        SPDCADPage0.prototype.readCadence.call(page, SPDCADPage0.prototype);
-        SPDCADPage0.prototype.calcCadence.call(page, SPDCADPage0.prototype);
-        SPDCADPage0.prototype.readSpeed.call(page, SPDCADPage0.prototype);
-        SPDCADPage0.prototype.calcSpeed.call(page, SPDCADPage0.prototype);
-
-      } else {
-        if (this.log && this.log.logging) {
-          this.log.error( 'Failed to get background page for page number ' + pageNumber, this);
-        }
-      }
-    }
-
-    return page;
-
+    return this.getBikePage(broadcast, SPDCADPage0, function(prototype) {
+      SPDCADPage0.prototype.readCadence.call(this, prototype);
+      SPDCADPage0.prototype.calcCadence.call(this, prototype);
+      SPDCADPage0.prototype.readSpeed.call(this, prototype);
+      SPDCADPage0.prototype.calcSpeed.call(this, prototype);
+    });
   };
 
   module.exports = DeviceProfile_SPDCAD;
