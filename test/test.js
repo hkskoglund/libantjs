@@ -33,6 +33,9 @@ const SDMPage3 = require('../profiles/antplus/sdm/SDMPage3');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
+const BurstDataMessage = require('../messages/data/BurstDataMessage');
+const AdvancedBurstDataMessage = require('../messages/data/AdvancedBurstDataMessage');
+const ChannelResponseMessage = require('../messages/ChannelResponseEvent/ChannelResponseMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
 const OpenRxScanModeMessage = require('../messages/control/OpenRxScanModeMessage');
 const ConfigureEventBufferMessage = require('../messages/configuration/ConfigureEventBufferMessage');
@@ -320,6 +323,21 @@ test('Message.decode rejects incomplete frames and invalid CRCs', () => {
   assert.throws(() => new Message(frame), { message: 'Invalid message CRC' });
 });
 
+test('Message.decode rejects trailing bytes and subclass message ID mismatches', () => {
+  const frame = new ResetSystemMessage().serialize();
+  const frameWithTrailingData = new Uint8Array(frame.length + 1);
+
+  frameWithTrailingData.set(frame);
+  frameWithTrailingData[frame.length] = 0;
+
+  assert.throws(() => new Message(frameWithTrailingData), {
+    message: 'Message is longer than its declared length'
+  });
+  assert.throws(() => new BroadcastDataMessage(frame), {
+    message: 'Unexpected message ID: expected 0x4e, received 0x4a'
+  });
+});
+
 test('Message.serialize rejects content larger than the frame length field', () => {
   const message = new Message(undefined, 0x4e);
   message.setContent(new Uint8Array(256));
@@ -327,6 +345,19 @@ test('Message.serialize rejects content larger than the frame length field', () 
   assert.throws(() => message.serialize(), {
     name: 'RangeError',
     message: 'Message content must not exceed 255 bytes'
+  });
+
+  test('Standard data message encoders require exactly eight data bytes', () => {
+    const message = new BroadcastDataMessage();
+
+    assert.throws(() => message.encode(0, Uint8Array.from([1, 2, 3])), {
+      name: 'RangeError',
+      message: 'Standard ANT data payload must contain exactly 8 bytes'
+    });
+    assert.throws(() => message.encode(0, new Uint8Array(9)), {
+      name: 'RangeError',
+      message: 'Standard ANT data payload must contain exactly 8 bytes'
+    });
   });
 });
 
@@ -440,6 +471,29 @@ test('Extended acknowledged-data frames decode their channel ID', () => {
   assert.equal(decoded.channelId.deviceNumber, 0x1234);
   assert.equal(decoded.channelId.deviceType, 0x56);
   assert.equal(decoded.channelId.transmissionType, 0x78);
+});
+
+test('Data message decoders reject short standard payloads and accept variable advanced burst payloads', () => {
+  const shortBroadcast = messageFrame(Message.prototype.BROADCAST_DATA, Uint8Array.from([1, 2]));
+  const shortBurst = messageFrame(Message.prototype.BURST_TRANSFER_DATA, Uint8Array.from([1, 2]));
+  const shortChannelResponse = messageFrame(Message.prototype.CHANNEL_RESPONSE, Uint8Array.from([1, 2]));
+  const advancedBurst = new AdvancedBurstDataMessage();
+
+  assert.throws(() => new BroadcastDataMessage(shortBroadcast), {
+    name: 'RangeError',
+    message: 'Standard ANT data message must contain a channel and 8 data bytes'
+  });
+  assert.throws(() => new BurstDataMessage(shortBurst), {
+    name: 'RangeError',
+    message: 'Standard ANT burst message must contain a channel and 8 data bytes'
+  });
+  assert.throws(() => new ChannelResponseMessage(shortChannelResponse), {
+    name: 'RangeError',
+    message: 'Channel response message must contain exactly 3 bytes'
+  });
+
+  advancedBurst.encode(0, new Uint8Array(16));
+  assert.equal(advancedBurst.content.byteLength, 17);
 });
 
 test('ChannelId.decode rejects data shorter than four bytes even when the backing buffer is longer', () => {

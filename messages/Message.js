@@ -18,6 +18,8 @@
     if (data) {
       this.data = data;
       Message.prototype.decode.call(this, data);
+      if (typeof id !== 'undefined' && this.id !== id)
+        throw new Error('Unexpected message ID: expected 0x' + id.toString(16) + ', received 0x' + this.id.toString(16));
       this.decode(data);
     }
 
@@ -126,6 +128,9 @@
 
     if (data.byteLength < totalLength)
       return 'Message is shorter than its declared length';
+
+    if (data.byteLength > totalLength)
+      return 'Message is longer than its declared length';
 
     if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC)
       return 'Invalid message SYNC';
