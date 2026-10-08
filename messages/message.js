@@ -7,7 +7,7 @@
   // Extended data if requested by libconfig
 
     LibConfig = require('./extended/lib-config'),
-    ChannelId = require('../channel/channelId'),
+    ChannelId = require('../channel/channel-id'),
     RSSI = require('./extended/rssi'),
     RXTimestamp = require('./extended/rx-timestamp');
 

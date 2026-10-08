@@ -2,7 +2,7 @@
 
   var Logger = require('../util/logger'),
     EventEmitter = require('events'),
-    ChannelId = require('./channelId');
+    ChannelId = require('./channel-id');
 
   function Channel(options, host, channelNumber, net, type) {
 

@@ -19,7 +19,7 @@ var Message = require('../messages/message'),
   ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message'),
   AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message'),
   ChannelResponseMessage = require('../messages/channel-response-event/channel-response-message'),
-  ChannelResponseEvent = require('../channel/channelResponseEvent');
+  ChannelResponseEvent = require('../channel/channel-response-event');
 
 module.exports = function(Host) {
   Host.prototype.deserialize = function(data) {

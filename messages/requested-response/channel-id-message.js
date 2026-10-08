@@ -1,7 +1,7 @@
 'use strict';
 
   var Message = require('../message'),
-    ChannelId = require('../../channel/channelId');
+    ChannelId = require('../../channel/channel-id');
 
   function ChannelIdMessage(data) {
     Message.call(this, data);

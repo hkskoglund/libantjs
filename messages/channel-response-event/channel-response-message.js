@@ -1,7 +1,7 @@
 'use strict';
 
   var Message = require('../message'),
-    ChannelResponseEvent = require('../../channel/channelResponseEvent');
+    ChannelResponseEvent = require('../../channel/channel-response-event');
 
   function ChannelResponseMessage(data) {
 

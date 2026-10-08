@@ -1,6 +1,6 @@
 'use strict';
 
-  var ChannelId = require('../../channel/channelId'),
+  var ChannelId = require('../../channel/channel-id'),
     Message = require('../message');
 
   function ExtendedBurstDataMessage(data) {
