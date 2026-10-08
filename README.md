@@ -74,6 +74,23 @@ host.init(0, (error) => {
 
 The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `channel.setNetworkKey(channel.NET.KEY['ANT+'], callback)` before opening the channel. Close an open channel with `channel.close(callback)` and shut down the USB host with `host.exit(callback)`.
 
+To configure a receive-only ANT+ sensor channel, use the sensor helper. It sets ANT+ network and device parameters, enables extended channel ID metadata, and opens the channel. The channel continues to emit the original raw `data` messages, so applications can parse payloads themselves:
+
+```js
+host.connectANTPlusSensor(0, 'hrm', { deviceNumber: 0 }, (error, channel) => {
+  if (error) {
+    console.error('Unable to search for HRM sensors:', error);
+    return;
+  }
+
+  channel.on('data', (message) => {
+    console.log('ANT+ HRM payload:', Array.from(message.payload));
+  });
+});
+```
+
+Supported sensor types are `'hrm'` and `'tempe'` (or `'environment'`). Set `deviceNumber` to `0` to search for any matching sensor; `net` optionally selects the ANT network number. The helper returns the configured channel immediately and reports completion through its callback. Existing manual channel setup remains supported.
+
 USB and endpoint runtime failures are forwarded as the host's `error` event; register an error listener before calling `init()`, as in the example.
 
 ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDir>/<device serial number>/`. Each downloaded directory is also saved as a readable `directory-<device serial number>.txt` listing in that folder, replacing the previous listing. Set `dataDir` in the `Host` options, e.g. `new Host({ dataDir: '/path/to/dir' })`; the default is `$XDG_DATA_HOME/libantjs` (`~/.local/share/libantjs`).

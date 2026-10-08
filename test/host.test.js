@@ -54,6 +54,98 @@ test('Host forwards USB errors through its error event', () => {
   assert.equal(observedError, usbError);
 });
 
+test('connectANTPlusSensor configures HRM and Tempe while preserving channel data events', () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  const calls = [];
+  const dataListener = () => {};
+
+  host.libConfig = (flags, callback) => {
+    calls.push(['libConfig', flags]);
+    callback();
+  };
+  channel.setNetworkKey = (key, callback) => {
+    calls.push(['setNetworkKey', key]);
+    callback();
+  };
+  channel.assign = (type, network, callback) => {
+    calls.push(['assign', type, network]);
+    callback();
+  };
+  channel.setId = (number, type, transmissionType, callback) => {
+    calls.push(['setId', number, type, transmissionType]);
+    callback();
+  };
+  channel.setFrequency = (frequency, callback) => {
+    calls.push(['setFrequency', frequency]);
+    callback();
+  };
+  channel.setPeriod = (period, callback) => {
+    calls.push(['setPeriod', period]);
+    callback();
+  };
+  channel.open = callback => {
+    calls.push(['open']);
+    callback();
+  };
+
+  for (const sensorType of ['hrm', 'tempe']) {
+    calls.length = 0;
+    channel.on('data', dataListener);
+    let callbackChannel;
+
+    assert.equal(host.connectANTPlusSensor(
+      0,
+      sensorType,
+      { deviceNumber: 1234 },
+      (error, connectedChannel) => {
+        assert.equal(error, undefined);
+        callbackChannel = connectedChannel;
+      }
+    ), channel);
+
+    assert.equal(callbackChannel, channel);
+    assert.deepEqual(calls.map(([name]) => name), [
+      'libConfig', 'setNetworkKey', 'assign', 'setId',
+      'setFrequency', 'setPeriod', 'open'
+    ]);
+    assert.deepEqual(calls[0], ['libConfig', 0x20]);
+    assert.deepEqual(calls[2], ['assign', channel.SLAVE_RECEIVE_ONLY, 0]);
+    assert.deepEqual(calls[3], ['setId', 1234, sensorType === 'hrm' ? 120 : 25, 0]);
+    assert.deepEqual(calls[4], ['setFrequency', channel.NET.FREQUENCY['ANT+']]);
+    assert.deepEqual(calls[5], [
+      'setPeriod',
+      sensorType === 'hrm' ? 8070 : channel.NET.PERIOD.ENVIRONMENT.LOW_POWER
+    ]);
+    assert.equal(channel.listeners('data').includes(dataListener), true);
+    channel.removeListener('data', dataListener);
+  }
+});
+
+test('connectANTPlusSensor reports unsupported sensors and stops after setup errors', () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  const calls = [];
+  const setupError = new Error('channel ID setup failed');
+  let receivedError;
+
+  host.libConfig = (_flags, callback) => callback();
+  channel.setNetworkKey = (_key, callback) => callback();
+  channel.assign = (_type, _network, callback) => callback();
+  channel.setId = (_number, _type, _transmissionType, callback) => callback(setupError);
+  channel.setFrequency = () => calls.push('setFrequency');
+  channel.setPeriod = () => calls.push('setPeriod');
+  channel.open = () => calls.push('open');
+
+  host.connectANTPlusSensor(0, 'hrm', error => { receivedError = error; });
+  assert.equal(receivedError, setupError);
+  assert.deepEqual(calls, []);
+
+  host.connectANTPlusSensor(0, 'unsupported', error => { receivedError = error; });
+  assert.ok(receivedError instanceof RangeError);
+  assert.match(receivedError.message, /Unsupported ANT\+ sensor type/);
+});
+
 test('connectANTFS accepts an options object and preserves the positional form', () => {
   const { host } = createHost();
   const originalConnect = ANTFSHostChannel.prototype.connect;
