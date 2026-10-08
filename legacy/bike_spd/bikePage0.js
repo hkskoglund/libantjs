@@ -20,10 +20,18 @@
 
   BikePage0.prototype.readCommonBytes = function() {
     this.readSpeed();
+
+    if (this.number === 5) {
+      this.stopIndicator = (this.broadcast.data[1] & 0x01) === 0x01;
+    }
   };
 
   BikePage0.prototype.update = function() {
     this.calcSpeed();
+
+    if (this.stopIndicator) {
+      this.speed = 0;
+    }
   };
 
   BikePage0.prototype.toString = function() {
@@ -34,6 +42,10 @@
 
     if (this.speed !== undefined) {
       msg += ' speed (m/s) ' + this.speed;
+    }
+
+    if (this.stopIndicator !== undefined) {
+      msg += ' stopped ' + this.stopIndicator;
     }
 
     msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +

@@ -21,10 +21,18 @@
 
   BikePage0.prototype.readCommonBytes = function() {
     this.readCadence();
+
+    if (this.number === 5) {
+      this.stopIndicator = (this.broadcast.data[1] & 0x01) === 0x01;
+    }
   };
 
   BikePage0.prototype.update = function() {
     this.calcCadence();
+
+    if (this.stopIndicator) {
+      this.cadence = 0;
+    }
   };
 
   BikePage0.prototype.toString = function() {
@@ -35,6 +43,10 @@
 
     if (this.cadence !== undefined) {
       msg += this.cadence;
+    }
+
+    if (this.stopIndicator !== undefined) {
+      msg += ' stopped ' + this.stopIndicator;
     }
 
     msg += " cadenceEventTime " + this.bikeCadenceEventTime + ' cadenceRevolution ' + this.cumulativeCadenceRevolutionCount;

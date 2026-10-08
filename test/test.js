@@ -12,6 +12,8 @@ const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x
 const DeviceProfile = require('../legacy/deviceProfile');
 const ProductId0x51 = require('../legacy/productId0x51');
 const DeviceProfile_BikeShared = require('../legacy/bike_spdcad/deviceProfile_BikeShared');
+const DeviceProfile_BikeCad = require('../legacy/bike_cad/deviceProfile_BikeCad');
+const DeviceProfile_BikeSpd = require('../legacy/bike_spd/deviceProfile_BikeSpd');
 const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const DeviceProfile_BikePower = require('../legacy/bike_power/deviceProfile_BikePower');
@@ -743,6 +745,58 @@ test('Bike speed/cadence profile accepts a validated wheel circumference setting
     DeviceProfile_BikeShared.prototype.initMasterSlaveConfiguration = originalInit;
     DeviceProfile_BikeShared.prototype.requestPageUpdate = originalRequest;
   }
+});
+
+test('Bike cadence profile processes pages 4 and 5 but not common-page measurements', () => {
+  const profile = Object.create(DeviceProfile_BikeCad.prototype);
+  profile.log = { logging: false };
+  profile.getPreviousPageValidateRolloverTime = () => undefined;
+  profile.getPageNumber = () => 4;
+  profile.getBackgroundPage = () => { throw new Error('Page 4 should use bike event fields'); };
+
+  const page4Data = new Uint8Array([0x04, 0xFF, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00]);
+  const page4 = profile.getPage({ data: page4Data });
+  assert.equal(page4.number, 4);
+  assert.equal(page4.bikeCadenceEventTime, 1024);
+  assert.equal(page4.cumulativeCadenceRevolutionCount, 1);
+
+  profile.getPageNumber = () => 5;
+  const page5Data = new Uint8Array([0x05, 0x01, 0xFF, 0xFF, 0x00, 0x04, 0x01, 0x00]);
+  const page5 = profile.getPage({ data: page5Data });
+  assert.equal(page5.stopIndicator, true);
+  assert.equal(page5.cadence, 0);
+
+  profile.getPageNumber = () => 0x50;
+  const commonPage = { number: 0x50 };
+  profile.getBackgroundPage = () => commonPage;
+  assert.equal(profile.getPage({ data: new Uint8Array(8) }), commonPage);
+  assert.equal(commonPage.cadence, undefined);
+});
+
+test('Bike speed profile processes pages 4 and 5 but not common-page measurements', () => {
+  const profile = Object.create(DeviceProfile_BikeSpd.prototype);
+  profile.log = { logging: false };
+  profile.getPreviousPageValidateRolloverTime = () => undefined;
+  profile.getPageNumber = () => 4;
+  profile.getBackgroundPage = () => { throw new Error('Page 4 should use bike event fields'); };
+
+  const page4Data = new Uint8Array([0x04, 0xFF, 0x00, 0x00, 0x00, 0x04, 0x01, 0x00]);
+  const page4 = profile.getPage({ data: page4Data });
+  assert.equal(page4.number, 4);
+  assert.equal(page4.bikeSpeedEventTime, 1024);
+  assert.equal(page4.cumulativeSpeedRevolutionCount, 1);
+
+  profile.getPageNumber = () => 5;
+  const page5Data = new Uint8Array([0x05, 0x01, 0xFF, 0xFF, 0x00, 0x04, 0x01, 0x00]);
+  const page5 = profile.getPage({ data: page5Data });
+  assert.equal(page5.stopIndicator, true);
+  assert.equal(page5.speed, 0);
+
+  profile.getPageNumber = () => 0x50;
+  const commonPage = { number: 0x50 };
+  profile.getBackgroundPage = () => commonPage;
+  assert.equal(profile.getPage({ data: new Uint8Array(8) }), commonPage);
+  assert.equal(commonPage.speed, undefined);
 });
 
 test('TemperaturePage1 decodes negative signed temperatures and invalid values', () => {

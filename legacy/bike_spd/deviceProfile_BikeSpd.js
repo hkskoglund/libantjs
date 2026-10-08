@@ -35,7 +35,7 @@
     var pageNumber = this.getPageNumber(broadcast),
       page;
 
-    if (pageNumber === 0) // MAIN
+    if (pageNumber === 0 || pageNumber === 4 || pageNumber === 5)
     {
 
       page = new BikePage0({
@@ -45,7 +45,7 @@
     } else {
       page = this.getBackgroundPage(broadcast, pageNumber);
 
-      if (page) {
+      if (page && pageNumber >= 1 && pageNumber <= 4) {
         BikePage0.prototype.readSpeed.call(page, BikePage0.prototype);
         BikePage0.prototype.calcSpeed.call(page, BikePage0.prototype);
 
