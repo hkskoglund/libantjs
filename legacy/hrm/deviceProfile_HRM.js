@@ -4,6 +4,9 @@
     DeviceProfile = require('../deviceProfile'),
     HRMPage4 = require('./HRMPage4'),
     HRMPage0 = require('./HRMPage0'),
+    HRMPage5 = require('./HRMPage5'),
+    HRMPage6 = require('./HRMPage6'),
+    HRMPage9 = require('./HRMPage9'),
     GenericPage = require('../Page');
 
   function DeviceProfile_HRM(configuration) {
@@ -84,6 +87,30 @@
       case 0:
 
         page = new HRMPage0({
+          logger: this.log
+        }, broadcast, this, pageNumber);
+
+        break;
+
+      case 5:
+
+        page = new HRMPage5({
+          logger: this.log
+        }, broadcast, this, pageNumber);
+
+        break;
+
+      case 6:
+
+        page = new HRMPage6({
+          logger: this.log
+        }, broadcast, this, pageNumber);
+
+        break;
+
+      case 9:
+
+        page = new HRMPage9({
           logger: this.log
         }, broadcast, this, pageNumber);
 

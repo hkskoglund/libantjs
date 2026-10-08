@@ -14,6 +14,9 @@ const TemperaturePage1 = require('../legacy/environment/TemperaturePage1');
 const DeviceProfile_HRM = require('../legacy/hrm/deviceProfile_HRM');
 const HRMPage0 = require('../legacy/hrm/HRMPage0');
 const HRMPage4 = require('../legacy/hrm/HRMPage4');
+const HRMPage5 = require('../legacy/hrm/HRMPage5');
+const HRMPage6 = require('../legacy/hrm/HRMPage6');
+const HRMPage9 = require('../legacy/hrm/HRMPage9');
 const DeviceProfile_SDM = require('../legacy/sdm/deviceProfile_SDM');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
@@ -716,6 +719,35 @@ test('HRM page 4 accepts a previous beat timestamp of zero', () => {
   );
 
   assert.equal(page.RRInterval, 1000);
+});
+
+test('HRM dispatches and decodes pages 5, 6, and 9', () => {
+  const profile = {
+    log: { logging: false },
+    isPageToggle: () => true,
+    getPageNumber: DeviceProfile_HRM.prototype.getPageNumber
+  };
+  const getPage = pageData => DeviceProfile_HRM.prototype.getPage.call(profile, {
+    data: Uint8Array.from(pageData)
+  });
+  const page5 = getPage([5, 72, 180, 80, 0, 0, 1, 72]);
+  const page6 = getPage([6, 0xff, 0x0f, 0x05, 0xff, 0xff, 0xff, 0xff]);
+  const page9 = getPage([9, 0x01, 0xff, 0xff, 0, 0, 0, 0]);
+
+  assert.ok(page5 instanceof HRMPage5);
+  assert.equal(page5.intervalAverageHeartRate, 72);
+  assert.equal(page5.intervalMaximumHeartRate, 180);
+  assert.equal(page5.sessionAverageHeartRate, 80);
+  assert.equal(page5.computedHeartRate, 72);
+
+  assert.ok(page6 instanceof HRMPage6);
+  assert.equal(page6.supported.extendedRunning, true);
+  assert.equal(page6.supported.gymMode, true);
+  assert.equal(page6.enabled.extendedSwimming, true);
+  assert.equal(page6.enabled.extendedRunning, true);
+
+  assert.ok(page9 instanceof HRMPage9);
+  assert.equal(page9.heartBeatEventType, HRMPage9.prototype.HEART_BEAT_EVENT_TYPE.COMPUTED);
 });
 
 test('SDM dispatches common background pages without calling a missing decode method', () => {
