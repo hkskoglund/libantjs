@@ -109,18 +109,13 @@
     // Javascript : bitwise operators working on 32-bit 2's complement bigendian
     //https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
 
-    // Negative numbers are inverted (1's complement)
-    // 0.1 = 0x01 0x0
-    // Inverted 0.1 = 0xFE 0xF
-    // -0.1 ANT+ Sensor Simulator v1.9 0xFF 0xF ("highest negative number")
-
     var valueHour24Low = (valueHour24LowMSN << 8) | hour24LowLSB;
 
 
     if (valueHour24Low !== 0 || signHour24LowMSN !== -1)
     {
       if (signHour24LowMSN === -1)
-        valueHour24Low = (~valueHour24Low) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+        valueHour24Low = ((~valueHour24Low) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
       this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.prototype.UNIT.HOUR24_LOW;
     } else
       this.hour24Low = undefined;
@@ -143,7 +138,7 @@
 
     if (value24High !== 0 || signHour24HighMSB !== -1) {
       if (signHour24HighMSB === -1)
-        value24High = (~value24High) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+        value24High = ((~value24High) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
 
       this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.prototype.UNIT.HOUR24_HIGH;
     } else
@@ -166,7 +161,7 @@
     if (valueCurrentTemp !== 0 || signCurrentTempMSB !== -1) {
 
       if (signCurrentTempMSB == -1)
-        valueCurrentTemp = (~valueCurrentTemp) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;
+        valueCurrentTemp = ((~valueCurrentTemp) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;
 
       this.currentTemp = valueCurrentTemp * signCurrentTempMSB * TemperaturePage1.prototype.UNIT.CURRENT_TEMP;
     } else

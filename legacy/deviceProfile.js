@@ -243,7 +243,11 @@
     }
   };
 
-  DeviceProfile.prototype.initMasterSlaveConfiguration = function() {
+  DeviceProfile.prototype.initMasterSlaveConfiguration = function(channelPeriod) {
+
+    if (channelPeriod === undefined) {
+      channelPeriod = this.CHANNEL_PERIOD.DEFAULT;
+    }
 
     this.addConfiguration("slave", {
       description: "Slave configuration for ANT+ " + this.constructor.name,
@@ -257,7 +261,7 @@
       },
       RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
 
-      channelPeriod: this.CHANNEL_PERIOD.DEFAULT
+      channelPeriod: channelPeriod
 
     });
 
@@ -273,7 +277,7 @@
       },
       RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
 
-      channelPeriod: this.CHANNEL_PERIOD.DEFAULT
+      channelPeriod: channelPeriod
 
     });
 

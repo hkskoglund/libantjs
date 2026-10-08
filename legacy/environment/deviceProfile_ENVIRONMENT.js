@@ -8,7 +8,14 @@
 
     DeviceProfile.call(this, configuration);
 
-    this.initMasterSlaveConfiguration();
+    var channelPeriod = configuration && configuration.channelPeriod;
+    if (channelPeriod !== undefined &&
+      channelPeriod !== DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.DEFAULT &&
+      channelPeriod !== DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.ALTERNATIVE) {
+      throw new RangeError('Unsupported ANT+ Environment channel period: ' + channelPeriod);
+    }
+
+    this.initMasterSlaveConfiguration(channelPeriod);
 
     this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY);
 

@@ -9,6 +9,8 @@ const vm = require('node:vm');
 const test = require('node:test');
 const USBDevice = require('../usb/USBDevice');
 const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x52');
+const DeviceProfile = require('../legacy/deviceProfile');
+const DeviceProfile_ENVIRONMENT = require('../legacy/environment/deviceProfile_ENVIRONMENT');
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const TemperaturePage1 = require('../legacy/environment/TemperaturePage1');
 const DeviceProfile_HRM = require('../legacy/hrm/deviceProfile_HRM');
@@ -648,7 +650,7 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
   assert.equal(page.cadence, 60);
 });
 
-test('TemperaturePage1 decodes negative 1-complement temperatures and invalid values', () => {
+test('TemperaturePage1 decodes negative signed temperatures and invalid values', () => {
   const configuration = { logger: { logging: false } };
   const makePage = data => new TemperaturePage1(
     configuration,
@@ -656,16 +658,73 @@ test('TemperaturePage1 decodes negative 1-complement temperatures and invalid va
     undefined,
     1
   );
-  const negativeLow = makePage([1, 0xff, 0, 0xfe, 0xf0, 0, 0, 0]);
-  const negativeHigh = makePage([1, 0xff, 0, 0, 0x0e, 0xff, 0, 0]);
+  const negativeLow = makePage([1, 0xff, 0, 0xff, 0xf0, 0, 0, 0]);
+  const negativeHigh = makePage([1, 0xff, 0, 0, 0x0f, 0xff, 0, 0]);
+  const negativeCurrent = makePage([1, 0xff, 0, 0, 0, 0, 0xff, 0xff]);
   const invalid = makePage([1, 0xff, 0, 0, 0x80, 0x80, 0, 0x80]);
 
   assert.equal(negativeLow.hour24Low, -0.1);
   assert.equal(negativeHigh.hour24High, -0.1);
+  assert.equal(negativeCurrent.currentTemp, -0.01);
   assert.equal(invalid.hour24Low, undefined);
   assert.equal(invalid.hour24High, undefined);
   assert.equal(invalid.currentTemp, undefined);
   assert.match(invalid.toString(), /Low \(24H\) N\/A°C High \(24H\) N\/A°C Current Temp N\/A°C/);
+});
+
+test('Environment profile configures the selected supported channel period', () => {
+  const originalInit = DeviceProfile_ENVIRONMENT.prototype.initMasterSlaveConfiguration;
+  const originalRequest = DeviceProfile_ENVIRONMENT.prototype.requestPageUpdate;
+  let selectedPeriod;
+
+  DeviceProfile_ENVIRONMENT.prototype.initMasterSlaveConfiguration = period => {
+    selectedPeriod = period;
+  };
+  DeviceProfile_ENVIRONMENT.prototype.requestPageUpdate = () => {};
+
+  try {
+    new DeviceProfile_ENVIRONMENT({
+      logger: { logging: false },
+      channelPeriod: DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.ALTERNATIVE
+    });
+    assert.equal(selectedPeriod, 65535);
+    assert.throws(
+      () => new DeviceProfile_ENVIRONMENT({ logger: { logging: false }, channelPeriod: 1234 }),
+      /Unsupported ANT\+ Environment channel period/
+    );
+  } finally {
+    DeviceProfile_ENVIRONMENT.prototype.initMasterSlaveConfiguration = originalInit;
+    DeviceProfile_ENVIRONMENT.prototype.requestPageUpdate = originalRequest;
+  }
+});
+
+test('DeviceProfile applies the selected channel period to master and slave configurations', () => {
+  const hadSetting = Object.hasOwn(global, 'setting');
+  const originalSetting = global.setting;
+  const configurations = {};
+  const profile = {
+    constructor: { name: 'Environment' },
+    CHANNEL_ID: { DEVICE_TYPE: 0x19, TRANSMISSION_TYPE: 0x05 },
+    CHANNEL_PERIOD: { DEFAULT: 8192 },
+    addConfiguration: (name, configuration) => { configurations[name] = configuration; }
+  };
+
+  global.setting = {
+    networkKey: { 'ANT+': [] },
+    RFfrequency: { 'ANT+': 57 }
+  };
+
+  try {
+    DeviceProfile.prototype.initMasterSlaveConfiguration.call(profile, 65535);
+    assert.equal(configurations.slave.channelPeriod, 65535);
+    assert.equal(configurations.master.channelPeriod, 65535);
+  } finally {
+    if (hadSetting) {
+      global.setting = originalSetting;
+    } else {
+      delete global.setting;
+    }
+  }
 });
 
 test('HRM background pages are not decoded as heart-rate data', () => {
