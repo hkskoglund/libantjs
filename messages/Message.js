@@ -272,12 +272,14 @@
   Message.prototype.BROADCAST_DATA = 0x4E;
   Message.prototype.ACKNOWLEDGED_DATA = 0x4F;
   Message.prototype.BURST_TRANSFER_DATA = 0x50;
+  Message.prototype.EXTENDED_BURST_TRANSFER_DATA = 0x5F;
   Message.prototype.ADVANCED_BURST_TRANSFER_DATA = 0x72;
 
   Message.prototype.EVENT = {
     0x4E: 'data',
     0x4F: 'ackdata',
     0x50: 'burstdata',
+    0x5F: 'extburstdata',
     0x72: 'advburstdata'
   };
 
@@ -362,7 +364,7 @@
     0x4F: "Acknowledged Data",
 
     0x50: "Burst Transfer Data",
-
+    0x5F: "Extended Burst Data",
     0x72: "Advanced Burst Transfer Data",
 
   };

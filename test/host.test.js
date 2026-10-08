@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
 const Message = require('../messages/Message');
+const ExtendedBurstDataMessage = require('../messages/data/ExtendedBurstDataMessage');
 const ANTFSHostChannel = require('../profiles/antfs/ANTFSHostChannel');
 
 const message = {
@@ -264,6 +265,60 @@ test('sendMessage delivers successful response events without calling the callba
     callbackCalls++;
     assert.equal(error, undefined);
     assert.equal(result, response);
+  });
+
+  test('Host.sleep sends a Sleep Message', () => {
+    const { host } = createHost();
+    let sentMessage;
+
+    host.sendMessage = message => { sentMessage = message; };
+    host.sleep(() => {});
+
+    assert.equal(sentMessage.id, Message.prototype.SLEEP_MESSAGE);
+    assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
+  });
+
+  test('Host sends extended burst packets with sequence and Channel ID fields', () => {
+    const { host } = createHost();
+    const sent = [];
+    const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
+    const payload = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+    host.sendMessage = (message, _event, _channel, callback) => {
+      sent.push(message);
+      callback();
+    };
+
+    host.sendExtendedBurstTransfer(2, channelId, payload, error => {
+      assert.equal(error, undefined);
+    });
+
+    assert.equal(sent.length, 2);
+    assert.ok(sent.every(message => message instanceof ExtendedBurstDataMessage));
+    assert.equal(sent[0].sequenceNr, 0);
+    assert.equal(sent[1].sequenceNr, 5);
+    assert.equal(sent[0].channelId.deviceNumber, 0x1234);
+    assert.deepEqual(Array.from(sent[1].packet), [9, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
+  test('Host.deserialize emits extended burst packets and the completed burst', () => {
+    const { host } = createHost();
+    const channel = host.channel[1];
+    const packets = [];
+    let completedBurst;
+    const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
+    const first = new ExtendedBurstDataMessage();
+    const last = new ExtendedBurstDataMessage();
+
+    channel.on('extburstdata', message => packets.push(message));
+    channel.on('burst', payload => { completedBurst = payload; });
+    first.encode(1, channelId, Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]));
+    last.encode(0xA1, channelId, Uint8Array.from([9, 10, 11, 12, 13, 14, 15, 16]));
+
+    host.deserialize(Buffer.concat([Buffer.from(first.serialize()), Buffer.from(last.serialize())]));
+
+    assert.equal(packets.length, 2);
+    assert.deepEqual(Array.from(completedBurst), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
   });
   completeTransfer(undefined, 'transfer result');
   assert.equal(callbackCalls, 0);

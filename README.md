@@ -184,7 +184,7 @@ is included in the lint run.
 | Control | Close Channel                       | Y |
 | Control | Request Message                     | Y |
 | Control | Open RX Scan Mode                   | Y |
-| Control | Sleep                               | N |
+| Control | Sleep                               | Y |
 | Data | Broadcast Data                         | Y |
 | Data | Acknowledged Data                      | Y |
 | Data | Burst Transfer Data                    | Y |
@@ -207,4 +207,8 @@ is included in the lint run.
 | Test Mode | CW Test                                         | N |
 | Extended Data (legacy) | Extended Broadcast Data            | N |
 | Extended Data (legacy) | Extended Acknowledged Data         | N |
-| Extended Data (legacy) | Extended Burst Data                | N |
+| Extended Data (legacy) | Extended Burst Data                | Y |
+
+The Sleep Message is supported only by specific ANT devices. Extended Burst
+Data uses the legacy format intended for AT3 devices; use Advanced Burst Data
+for the newer burst format where supported.

@@ -35,8 +35,10 @@ const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessag
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
 const BurstDataMessage = require('../messages/data/BurstDataMessage');
 const AdvancedBurstDataMessage = require('../messages/data/AdvancedBurstDataMessage');
+const ExtendedBurstDataMessage = require('../messages/data/ExtendedBurstDataMessage');
 const ChannelResponseMessage = require('../messages/ChannelResponseEvent/ChannelResponseMessage');
 const ResetSystemMessage = require('../messages/control/ResetSystemMessage');
+const SleepMessage = require('../messages/control/SleepMessage');
 const OpenRxScanModeMessage = require('../messages/control/OpenRxScanModeMessage');
 const ConfigureEventBufferMessage = require('../messages/configuration/ConfigureEventBufferMessage');
 const UnAssignChannelMessage = require('../messages/configuration/UnAssignChannelMessage');
@@ -312,6 +314,10 @@ test('ResetSystemMessage serializes to a valid reset frame', () => {
   assert.deepEqual(Array.from(reset.serialize()), [0xa4, 0x01, 0x4a, 0x00, 0xef]);
 });
 
+test('SleepMessage serializes the required zero filler byte', () => {
+  assert.deepEqual(Array.from(new SleepMessage().serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
+});
+
 test('Message.decode rejects incomplete frames and invalid CRCs', () => {
   const frame = new ResetSystemMessage().serialize();
 
@@ -490,6 +496,26 @@ test('Data message decoders reject short standard payloads and accept variable a
   assert.throws(() => new ChannelResponseMessage(shortChannelResponse), {
     name: 'RangeError',
     message: 'Channel response message must contain exactly 3 bytes'
+  });
+
+  test('ExtendedBurstDataMessage encodes and decodes channel ID, sequence, and data', () => {
+    const source = new ExtendedBurstDataMessage();
+    const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
+    const packet = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]);
+
+    source.encode(0xA3, channelId, packet);
+    const decoded = new ExtendedBurstDataMessage(source.serialize());
+
+    assert.equal(decoded.channel, 3);
+    assert.equal(decoded.sequenceNr, 5);
+    assert.equal(decoded.channelId.deviceNumber, 0x1234);
+    assert.equal(decoded.channelId.deviceType, 0x56);
+    assert.equal(decoded.channelId.transmissionType, 0x78);
+    assert.deepEqual(Array.from(decoded.packet), Array.from(packet));
+    assert.throws(() => source.encode(0x100, channelId, packet), {
+      name: 'RangeError',
+      message: 'Extended ANT burst sequence/channel must be a byte'
+    });
   });
 
   advancedBurst.encode(0, new Uint8Array(16));

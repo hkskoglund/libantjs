@@ -7,6 +7,7 @@ var EventEmitter = require('events'),
   BroadcastDataMessage = require('./messages/data/BroadcastDataMessage'),
   AcknowledgedDataMessage = require('./messages/data/AcknowledgedDataMessage'),
   BurstDataMessage = require('./messages/data/BurstDataMessage'),
+  ExtendedBurstDataMessage = require('./messages/data/ExtendedBurstDataMessage'),
   AdvancedBurstDataMessage = require('./messages/data/AdvancedBurstDataMessage'),
 
   Logger = require('./util/logger'),
@@ -18,6 +19,7 @@ var EventEmitter = require('events'),
   // Control ANT
 
   ResetSystemMessage = require('./messages/control/ResetSystemMessage'),
+  SleepMessage = require('./messages/control/SleepMessage'),
   OpenChannelMessage = require('./messages/control/OpenChannelMessage'),
   OpenRxScanModeMessage = require('./messages/control/OpenRxScanModeMessage'),
   CloseChannelMessage = require('./messages/control/CloseChannelMessage'),
@@ -431,6 +433,10 @@ Host.prototype.resetSystem = function(callback) {
   this.sendMessage(new ResetSystemMessage(), Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, onNotificationStartup);
 };
 
+Host.prototype.sleep = function(callback) {
+  this.sendMessage(new SleepMessage(), undefined, undefined, callback);
+};
+
 Host.prototype.getChannelId = function(channel, callback) {
 
   this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), Message.prototype.MESSAGE[Message.prototype.SET_CHANNEL_ID], undefined, callback);
@@ -671,6 +677,67 @@ Host.prototype.sendBurstTransferPacket = function(sequenceChannel, packet, callb
   this.sendMessage(msg, undefined, undefined, callback);
 };
 
+Host.prototype.sendExtendedBurstTransfer = function(channel, channelId, data, callback) {
+  var packetCount,
+    packetIndex = 0,
+    sequenceNr = 0,
+    packet,
+    paddedPacket,
+    sequenceChannel,
+    message,
+    sendNextPacket;
+
+  if (Array.isArray(data))
+    data = new Uint8Array(data);
+  if (!data || typeof data.subarray !== 'function' || typeof data.byteLength !== 'number')
+    throw new TypeError('Extended burst payload must be a byte array');
+  if (typeof callback !== 'function')
+    throw new TypeError('Extended burst transfer requires a callback');
+  if (!Number.isInteger(channel) || channel < 0 || channel > 0x1F)
+    throw new RangeError('Extended burst channel must be between 0 and 31');
+
+  packetCount = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH);
+
+  sendNextPacket = function() {
+    if (sequenceNr > 3)
+      sequenceNr = 1;
+    if (packetIndex === packetCount - 1)
+      sequenceNr |= 0x04;
+
+    packet = data.subarray(
+      packetIndex * Message.prototype.PAYLOAD_LENGTH,
+      (packetIndex + 1) * Message.prototype.PAYLOAD_LENGTH
+    );
+    if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
+      paddedPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
+      paddedPacket.set(packet);
+      packet = paddedPacket;
+    }
+
+    sequenceChannel = (sequenceNr << 5) | channel;
+    message = new ExtendedBurstDataMessage();
+    message.encode(sequenceChannel, channelId, packet);
+    this.sendMessage(message, undefined, undefined, function(error, sentMessage) {
+      if (error) {
+        callback(error, sentMessage);
+        return;
+      }
+
+      packetIndex++;
+      sequenceNr++;
+      if (packetIndex < packetCount)
+        sendNextPacket();
+      else
+        callback();
+    });
+  }.bind(this);
+
+  if (packetCount === 0)
+    throw new RangeError('Extended burst payload must not be empty');
+
+  sendNextPacket();
+};
+
 // Sends bulk data
 // EVENT_TRANSFER_TX_START - next channel period after message sent to device
 // EVENT_TRANSFER_TX_COMPLETED
@@ -906,6 +973,21 @@ Host.prototype.deserialize = function(data) {
         this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
         if (message.sequenceNr & 0x04) // Last packet
+          this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
+
+        break;
+
+      case Message.prototype.EXTENDED_BURST_TRANSFER_DATA:
+
+        message = new ExtendedBurstDataMessage(msgBytes);
+        this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.EXTENDED_BURST_TRANSFER_DATA], message);
+
+        if (message.sequenceNr === 0)
+          this.channel[message.channel].burst = new Uint8Array();
+
+        this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
+
+        if (message.sequenceNr & 0x04)
           this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
 
         break;
