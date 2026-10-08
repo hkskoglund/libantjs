@@ -29,38 +29,38 @@
   // Set RR interval based on previous heart event time and heart beat count
   HRMPage.prototype.calcRRInterval = function() {
 
-
-    var previousPage = this.profile.getPreviousPageValidateRolloverTime(),
+    var previousPage,
+      receivedPages = this.profile.receivedPage || [],
+      previousPageIndex,
       heartBeatCountDelta,
       heartBeatEventTimeDelta,
       previousHeartBeatEventTime;
 
-    if (!previousPage) {
-      return;
-    }
-
-    heartBeatCountDelta = this.heartBeatCount - previousPage.heartBeatCount;
-
-    if (heartBeatCountDelta < 0) { // Toggle 255 -> 0 should give 1 beat difference
-      heartBeatCountDelta += 256;
-    }
-
-    // Only calculate RR for one beat difference
-    if (heartBeatCountDelta === 1) {
-
-      if (!this.previousHeartBeatEventTime) { // Page 0 doesnt have previousHeartBeatEventTime
-        previousHeartBeatEventTime = previousPage.heartBeatEventTime;
-      } else {
-        previousHeartBeatEventTime = this.previousHeartBeatEventTime;
-      }
-      heartBeatEventTimeDelta = this.heartBeatEventTime - previousHeartBeatEventTime;
-
-      if (heartBeatEventTimeDelta < 0) { // Roll over 65535 -> 0, should give 1 heart beat eventtime diff.
-        heartBeatEventTimeDelta += 65536;
+    if (this.previousHeartBeatEventTime !== undefined) {
+      previousHeartBeatEventTime = this.previousHeartBeatEventTime;
+    } else {
+      for (previousPageIndex = receivedPages.length - 1; previousPageIndex >= 0; previousPageIndex--) {
+        previousPage = receivedPages[previousPageIndex];
+        if (previousPage.heartBeatCount !== undefined && previousPage.heartBeatEventTime !== undefined) {
+          break;
+        }
       }
 
+      if (!previousPage || previousPageIndex < 0) {
+        return;
+      }
+
+      heartBeatCountDelta = (this.heartBeatCount - previousPage.heartBeatCount + 256) % 256;
+      if (heartBeatCountDelta !== 1) {
+        return;
+      }
+
+      previousHeartBeatEventTime = previousPage.heartBeatEventTime;
+    }
+
+    heartBeatEventTimeDelta = (this.heartBeatEventTime - previousHeartBeatEventTime + 65536) % 65536;
+    if (heartBeatEventTimeDelta > 0) {
       this.RRInterval = (heartBeatEventTimeDelta / 1024) * 1000; // ms.
-
     }
   };
 

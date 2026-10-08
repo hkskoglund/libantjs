@@ -12,6 +12,8 @@ const CumulativeOperatingTime0x52 = require('../legacy/cumulativeOperatingTime0x
 const SPDCADSharedPage = require('../legacy/bike_spdcad/SPDCADShared');
 const TemperaturePage1 = require('../legacy/environment/TemperaturePage1');
 const DeviceProfile_HRM = require('../legacy/hrm/deviceProfile_HRM');
+const HRMPage0 = require('../legacy/hrm/HRMPage0');
+const HRMPage4 = require('../legacy/hrm/HRMPage4');
 const DeviceProfile_SDM = require('../legacy/sdm/deviceProfile_SDM');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
@@ -680,6 +682,40 @@ test('HRM background pages are not decoded as heart-rate data', () => {
   assert.equal(page, backgroundPage);
   assert.equal(page.computedHeartRate, undefined);
   assert.equal(page.RRInterval, undefined);
+});
+
+test('HRM page 4 calculates RR interval from its own previous beat timestamp', () => {
+  const page = new HRMPage4(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([4, 0, 0xe8, 0x03, 0xe8, 0x07, 2, 100]) },
+    { receivedPage: [] },
+    4
+  );
+
+  assert.equal(page.RRInterval, 1000);
+});
+
+test('HRM legacy page finds the previous heart-rate page past background pages', () => {
+  const previousPage = { heartBeatCount: 10, heartBeatEventTime: 1024 };
+  const page = new HRMPage0(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([0, 0, 0, 0, 0, 8, 11, 100]) },
+    { receivedPage: [previousPage, { number: 2 }] },
+    0
+  );
+
+  assert.equal(page.RRInterval, 1000);
+});
+
+test('HRM page 4 accepts a previous beat timestamp of zero', () => {
+  const page = new HRMPage4(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([4, 0, 0, 0, 0, 4, 2, 100]) },
+    { receivedPage: [] },
+    4
+  );
+
+  assert.equal(page.RRInterval, 1000);
 });
 
 test('SDM dispatches common background pages without calling a missing decode method', () => {
