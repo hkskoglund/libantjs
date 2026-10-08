@@ -1,6 +1,6 @@
 'use strict';
 
-  var GeneralFilePermission = require('./generalFilePermission');
+  var GeneralFilePermission = require('./general-file-permission');
 
   function File(data, directory) {
     if (data)

@@ -1,9 +1,9 @@
 'use strict';
 
-var ANTFSHostChannel = require('../profiles/antfs/ANTFSHostChannel'),
-  HRMProfile = require('../profiles/antplus/hrm/deviceProfile_HRM'),
-  EnvironmentProfile = require('../profiles/antplus/environment/deviceProfile_ENVIRONMENT'),
-  LibConfig = require('../messages/extended/libConfig');
+var ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel'),
+  HRMProfile = require('../profiles/antplus/hrm/device-profile-hrm'),
+  EnvironmentProfile = require('../profiles/antplus/environment/device-profile-environment'),
+  LibConfig = require('../messages/extended/lib-config');
 
 module.exports = function(Host) {
   Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, onSearching) {

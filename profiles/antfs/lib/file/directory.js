@@ -1,6 +1,6 @@
 'use strict';
 
-var FitFile = require('./fitFile'),
+var FitFile = require('./fit-file'),
   File = require('./file');
 
 function Directory(data, host) {

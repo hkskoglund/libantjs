@@ -3,9 +3,9 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
-const Message = require('../messages/Message');
-const ExtendedBurstDataMessage = require('../messages/data/ExtendedBurstDataMessage');
-const ANTFSHostChannel = require('../profiles/antfs/ANTFSHostChannel');
+const Message = require('../messages/message');
+const ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message');
+const ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel');
 
 const message = {
   id: 0x4a,

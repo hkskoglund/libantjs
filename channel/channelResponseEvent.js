@@ -1,6 +1,6 @@
 'use strict';
 
-  var Message = require('../messages/Message');
+  var Message = require('../messages/message');
 
   function ChannelResponse(channel, initiatingId, code) {
     this.channel = channel;

@@ -1,11 +1,11 @@
 'use strict';
 
-var Message = require('../messages/Message'),
-  BroadcastDataMessage = require('../messages/data/BroadcastDataMessage'),
-  AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage'),
-  BurstDataMessage = require('../messages/data/BurstDataMessage'),
-  ExtendedBurstDataMessage = require('../messages/data/ExtendedBurstDataMessage'),
-  AdvancedBurstDataMessage = require('../messages/data/AdvancedBurstDataMessage');
+var Message = require('../messages/message'),
+  BroadcastDataMessage = require('../messages/data/broadcast-data-message'),
+  AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message'),
+  BurstDataMessage = require('../messages/data/burst-data-message'),
+  ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message'),
+  AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message');
 
 module.exports = function(Host) {
   Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, acknowledge) {
