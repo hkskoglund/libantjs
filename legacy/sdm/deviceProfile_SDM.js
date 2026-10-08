@@ -2,7 +2,8 @@
 
   var DeviceProfile = require('../deviceProfile'),
     SDMPage1 = require('./SDMPage1'),
-    SDMPage2 = require('./SDMPage2');
+    SDMPage2 = require('./SDMPage2'),
+    SDMPage3 = require('./SDMPage3');
 
   function DeviceProfile_SDM(configuration) {
 
@@ -43,6 +44,7 @@
     // Minimize GC
     this.SDMPage1 = new SDMPage1(configuration);
     this.SDMPage2 = new SDMPage2(configuration);
+    this.SDMPage3 = new SDMPage3(configuration);
 
   }
 
@@ -55,7 +57,7 @@
 
   DeviceProfile_SDM.prototype.CHANNEL_ID = {
     DEVICE_TYPE: 0x7C,
-    TRANSMISSION_TYPE: 1
+    TRANSMISSION_TYPE: 5
   };
 
   DeviceProfile_SDM.prototype.CHANNEL_PERIOD = 8134; // 4 hz
@@ -96,6 +98,13 @@
       case 2:
 
         page = this.SDMPage2;
+        page.decode(broadcast);
+
+        break;
+
+      case 3:
+
+        page = this.SDMPage3;
         page.decode(broadcast);
 
         break;

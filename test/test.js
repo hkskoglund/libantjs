@@ -20,6 +20,9 @@ const HRMPage5 = require('../legacy/hrm/HRMPage5');
 const HRMPage6 = require('../legacy/hrm/HRMPage6');
 const HRMPage9 = require('../legacy/hrm/HRMPage9');
 const DeviceProfile_SDM = require('../legacy/sdm/deviceProfile_SDM');
+const SDMPage1 = require('../legacy/sdm/SDMPage1');
+const SDMPage2 = require('../legacy/sdm/SDMPage2');
+const SDMPage3 = require('../legacy/sdm/SDMPage3');
 const Message = require('../messages/Message');
 const AcknowledgedDataMessage = require('../messages/data/AcknowledgedDataMessage');
 const BroadcastDataMessage = require('../messages/data/BroadcastDataMessage');
@@ -854,4 +857,59 @@ test('SDM dispatches common background pages without calling a missing decode me
 
   assert.equal(requestedBackgroundPage, 0x50);
   assert.equal(emittedPage.number, 0x50);
+});
+
+test('SDM uses the specified master transmission type and decodes page 3 calories', () => {
+  assert.equal(DeviceProfile_SDM.prototype.CHANNEL_ID.TRANSMISSION_TYPE, 0x05);
+
+  let emittedPage;
+  const profile = Object.create(DeviceProfile_SDM.prototype);
+  profile.verifyDeviceType = () => true;
+  profile.countBroadcast = () => {};
+  profile.isDuplicateMessage = () => false;
+  profile.SDMPage3 = new SDMPage3({ logger: { logging: false } });
+  profile.receivedBroadcastCounter = { sensor: 4 };
+  profile.log = { logging: false };
+  profile.onPage = page => { emittedPage = page; };
+  profile.broadCast({
+    data: Uint8Array.from([3, 0xff, 0xff, 90, 0, 5, 42, 1]),
+    channelId: { sensorId: 'sensor', deviceType: 0x7c }
+  });
+
+  assert.ok(emittedPage instanceof SDMPage3);
+  assert.equal(emittedPage.calories, 42);
+  assert.equal(emittedPage.cadence, 90);
+});
+
+test('SDM page 1 reconstructs time, distance, and stride counter rollovers per sensor', () => {
+  const page = new SDMPage1({ logger: { logging: false } });
+  const decode = (sensorId, data) => page.decode({
+    data: Uint8Array.from(data),
+    channelId: { sensorId }
+  });
+
+  decode('sensor-a', [1, 0, 255, 255, 0xf0, 0, 255, 0]);
+  assert.equal(page.cumulativeTime, 0);
+  assert.equal(page.cumulativeDistance, 0);
+  assert.equal(page.cumulativeStrideCount, 0);
+
+  decode('sensor-a', [1, 0, 0, 0, 0, 0, 0, 0]);
+  assert.equal(page.cumulativeTime, 1);
+  assert.equal(page.cumulativeDistance, 1 / 16);
+  assert.equal(page.cumulativeStrideCount, 1);
+
+  decode('sensor-b', [1, 0, 10, 20, 0, 0, 30, 0]);
+  assert.equal(page.cumulativeTime, 0);
+  assert.equal(page.cumulativeDistance, 0);
+  assert.equal(page.cumulativeStrideCount, 0);
+});
+
+test('SDM page 2 initializes status before decoding a constructor broadcast', () => {
+  const page = new SDMPage2(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([2, 0xff, 0xff, 90, 0, 0, 0xff, 0x41]) }
+  );
+
+  assert.equal(page.status.SDMLocation, 1);
+  assert.equal(page.status.UseState, 1);
 });

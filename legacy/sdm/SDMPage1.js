@@ -7,6 +7,7 @@
 
     GenericPage.call(this, configuration, broadcast);
 
+    this.counterState = new Map();
 
     if (broadcast)
       this.profile = broadcast.profile;
@@ -98,7 +99,42 @@
     // Byte 7 - update latency
     this.updateLatency = data[SDMPage1.prototype.BYTE.UPDATE_LATENCY] * SDMPage1.prototype.UNIT.UPDATE_LATENCY; // s
 
+    this.updateCumulativeCounters(broadcast);
 
+  };
+
+  SDMPage1.prototype.updateCumulativeCounters = function(broadcast) {
+    var sensorId = broadcast.channelId && broadcast.channelId.sensorId,
+      previous = this.counterState.get(sensorId),
+      current = {
+        time: this.time,
+        distance: this.distance,
+        strideCount: this.strideCount
+      };
+
+    if (!previous) {
+      this.cumulativeTime = 0;
+      this.cumulativeDistance = 0;
+      this.cumulativeStrideCount = 0;
+    } else {
+      this.cumulativeTime = previous.cumulativeTime +
+        this.getCounterDelta(previous.time, current.time, 256);
+      this.cumulativeDistance = previous.cumulativeDistance +
+        this.getCounterDelta(previous.distance, current.distance, 256);
+      this.cumulativeStrideCount = previous.cumulativeStrideCount +
+        this.getCounterDelta(previous.strideCount, current.strideCount, 256);
+    }
+
+    current.cumulativeTime = this.cumulativeTime;
+    current.cumulativeDistance = this.cumulativeDistance;
+    current.cumulativeStrideCount = this.cumulativeStrideCount;
+    this.counterState.set(sensorId, current);
+  };
+
+  SDMPage1.prototype.getCounterDelta = function(previous, current, rollover) {
+    var delta = current - previous;
+
+    return delta < 0 ? delta + rollover : delta;
   };
 
   SDMPage1.prototype.toString = function() {

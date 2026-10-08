@@ -10,15 +10,15 @@
     if (broadcast)
       this.profile = broadcast.profile;
 
-    if (broadcast && broadcast.data)
-      this.decode(broadcast);
-
     this.status = {
       SDMLocation: undefined,
       BatteryStatus: undefined,
       SDMHealth: undefined,
       UseState: undefined
     };
+
+    if (broadcast && broadcast.data)
+      this.decode(broadcast);
   }
 
   SDMPage2.prototype = Object.create(GenericPage.prototype);
