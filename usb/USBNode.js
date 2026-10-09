@@ -1,7 +1,7 @@
 'use strict';
 
 const USBDevice = require('./USBDevice.js');
-const usb = require('usb');
+const usb = require('usb').usb;
 
 class USBNode extends USBDevice {
   constructor(options = {}) {
