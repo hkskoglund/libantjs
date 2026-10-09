@@ -98,6 +98,19 @@ test('USBNode emits errors from USB and endpoint events', () => {
   assert.deepEqual(errors, [inError, outError, usbError]);
 });
 
+test('USBNode emits endpoint data as a copied Uint8Array', () => {
+  const node = new USBNode();
+  const input = Buffer.from([1, 2, 3]);
+  let receivedData;
+
+  node.on('data', data => { receivedData = data; });
+  node._onInEndpointData(input);
+  input[0] = 9;
+
+  assert.ok(receivedData instanceof Uint8Array);
+  assert.deepEqual(Array.from(receivedData), [1, 2, 3]);
+});
+
 test('USBNode preserves error listeners after exit', () => {
   const node = createExitNode(false, undefined);
   const expectedError = new Error('USB runtime failed');

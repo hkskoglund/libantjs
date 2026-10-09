@@ -1,77 +1,53 @@
 'use strict';
 
-  var Logger = require('../util/logger'),
-    EventEmitter = require('events');
+const EventEmitter = require('node:events');
+const Logger = require('../util/logger');
 
-  // Abstract USB device
-  function USBDevice(options) {
-
-    if (this.constructor === USBDevice) {
+class USBDevice extends EventEmitter {
+  constructor(options = {}) {
+    if (new.target === USBDevice) {
       throw new Error('USBDevice is abstract and cannot be instantiated directly');
     }
 
-    EventEmitter.call(this, options);
+    super();
 
-    this.options = options ? Object.assign({}, options) : undefined;
-    if (this.options)
-      this.options.logSource = this;
-
+    this.options = Object.assign({}, options, { logSource: this });
     this.log = new Logger(this.options);
-
   }
 
-  USBDevice.prototype = Object.create(EventEmitter.prototype);
-  USBDevice.prototype.constructor = USBDevice;
+  init(callback) {
+    throw new Error('Not implemented - should be overridden in descendant objects');
+  }
 
-  USBDevice.prototype.EVENT = {
+  exit(callback) {
+    throw new Error('Not implemented - should be overridden in descendant objects');
+  }
 
-    DATA: 'data',
-    ENUMERATION_COMPLETE: 'enumeration_complete',
-    LOG: 'log',
-    ERROR: 'error',
-    CLOSED: 'closed'
-
-  };
-
-  USBDevice.prototype.init = function(callback) {
-    throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
-  };
-
-  USBDevice.prototype.exit = function(callback) {
-
-    throw new Error('Not implemented - should be overridden in descendat objects in the prototype chain');
-  };
-
-  // Sets device timeout in ms.
-  USBDevice.prototype.setDeviceTimeout = function(timeout) {
+  setDeviceTimeout(timeout) {
     throw new Error('Func. should be overridden in descendant objects');
-  };
+  }
 
-  USBDevice.prototype.listen = function(successCallback) {
+  listen(successCallback) {
     throw new Error('Func. should be overridden in descendant objects');
-  };
+  }
 
-  USBDevice.prototype.transfer = function(chunk, successCallback) {
+  transfer(chunk, successCallback) {
     throw new Error('Func. should be overridden in descendant objects');
-  };
+  }
 
-  USBDevice.prototype.getDeviceWatcher = function() {
-    //throw new Error('Func. should be overridden in descendants objects');
+  getDeviceWatcher() {
     return undefined;
-  };
+  }
 
-  USBDevice.prototype.getDevicesFromManifest = function() {
-    // If no deviceId available, it will try to automatically connect to the first enumerated device that matches a known ANT device
-
+  getDevicesFromManifest() {
+    // Without a device ID, connect to the first enumerated supported ANT device.
     return [
-
       {
         name: 'ANT USB-2 Stick',
         id: undefined,
         vendorId: 0x0FCF,
         productId: 0x1008
       },
-
       {
         name: 'ANT USB-m Stick',
         id: undefined,
@@ -79,7 +55,15 @@
         productId: 0x1009
       }
     ];
-  };
+  }
+}
 
-  module.exports = USBDevice;
-  
+USBDevice.prototype.EVENT = {
+  DATA: 'data',
+  ENUMERATION_COMPLETE: 'enumeration_complete',
+  LOG: 'log',
+  ERROR: 'error',
+  CLOSED: 'closed'
+};
+
+module.exports = USBDevice;
