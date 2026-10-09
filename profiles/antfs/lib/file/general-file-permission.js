@@ -1,6 +1,7 @@
 'use strict';
 
-  function GeneralFilePermission(flags) {
+class GeneralFilePermission {
+  constructor(flags) {
     this.flags = flags;
 
     this.crypto = this.flags & GeneralFilePermission.prototype.BIT_MASK.CRYPTO ? true : false;
@@ -12,17 +13,8 @@
 
   }
 
-  GeneralFilePermission.prototype.BIT_MASK = {
-    CRYPTO: parseInt("00000100", 2),
-    APPEND: parseInt("00001000", 2),
-    ARCHIVE: parseInt("00010000", 2),
-    ERASE: parseInt("00100000", 2),
-    WRITE: parseInt("01000000", 2),
-    READ: parseInt("10000000", 2)
-  };
-
-  GeneralFilePermission.prototype.toString = function() {
-    var msg = ' Flags = 0x' + this.flags.toString(16) + ' ';
+  toString() {
+    let msg = ' Flags = 0x' + this.flags.toString(16) + ' ';
 
     if (this.crypto)
       msg += 'Crypto ';
@@ -43,7 +35,16 @@
       msg += 'Write ';
 
     return msg;
-  };
+  }
+}
 
-  module.exports = GeneralFilePermission;
-  
+GeneralFilePermission.prototype.BIT_MASK = {
+  CRYPTO: parseInt("00000100", 2),
+  APPEND: parseInt("00001000", 2),
+  ARCHIVE: parseInt("00010000", 2),
+  ERASE: parseInt("00100000", 2),
+  WRITE: parseInt("01000000", 2),
+  READ: parseInt("10000000", 2)
+};
+
+module.exports = GeneralFilePermission;

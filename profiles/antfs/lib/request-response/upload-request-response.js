@@ -1,25 +1,16 @@
 'use strict';
 
 // Spec; "The host sends an upload request to ready the client device to receive a data upload"
-function UploadRequestResponse(data) {
+class UploadRequestResponse {
+  constructor(data) {
+    if (data)
+      this.deserialize(data);
+  }
 
-  if (data)
-    this.deserialize(data);
-}
-
-UploadRequestResponse.prototype.OK                  = 0x00;
-UploadRequestResponse.prototype.NOT_EXIST           = 0x01;
-UploadRequestResponse.prototype.EXIST_NOT_WRITABLE  = 0x02;
-UploadRequestResponse.prototype.NOT_ENOUGH_SPACE    = 0x03;
-UploadRequestResponse.prototype.INVALID             = 0x04;
-UploadRequestResponse.prototype.NOT_READY           = 0x05;
-
-UploadRequestResponse.prototype.ID = 0x8A;
-
-UploadRequestResponse.prototype.deserialize = function(data) {
+  deserialize(data) {
 // Spec. table 12-15
 
-  var dv = new DataView(data.buffer);
+  const dv = new DataView(data.buffer);
 
   // PACKET 1 - BEACON stripped off
 
@@ -43,11 +34,11 @@ UploadRequestResponse.prototype.deserialize = function(data) {
 
   this.CRC = data[data.byteLength - 1] << 8 | data[data.byteLength - 2];
 
-};
+  }
 
-UploadRequestResponse.prototype.toString = function() {
+  toString() {
 
-  var msg = 'UPLOAD REQUEST ';
+  let msg = 'UPLOAD REQUEST ';
 
   switch (this.response) {
 
@@ -79,7 +70,15 @@ UploadRequestResponse.prototype.toString = function() {
   return msg + ' | Offset ' + this.offset + ' | Max file size ' +    this.maxFileSize +
          ' | Max block size ' + this.maxBlockSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
-};
+  }
+}
+
+UploadRequestResponse.prototype.OK = 0x00;
+UploadRequestResponse.prototype.NOT_EXIST = 0x01;
+UploadRequestResponse.prototype.EXIST_NOT_WRITABLE = 0x02;
+UploadRequestResponse.prototype.NOT_ENOUGH_SPACE = 0x03;
+UploadRequestResponse.prototype.INVALID = 0x04;
+UploadRequestResponse.prototype.NOT_READY = 0x05;
+UploadRequestResponse.prototype.ID = 0x8A;
 
 module.exports = UploadRequestResponse;
-

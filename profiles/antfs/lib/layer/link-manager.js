@@ -1,37 +1,32 @@
 'use strict';
 
-var EventEmitter = require('events'),
+const EventEmitter = require('events'),
   ClientBeacon = require('./client-beacon'),
   LinkRequest = require('../request-response/link-request'),
   DisconnectRequest = require('../request-response/disconnect-request'),
   State = require('./util/state');
 
-function LinkManager(host) {
+class LinkManager extends EventEmitter {
+  constructor(host) {
+    super();
 
-  EventEmitter.call(this);
+    this.host = host;
 
-  this.host = host;
+    this.log = this.host.log;
+    this.logger = this.host.log.log.bind(this.host.log);
 
-  this.log = this.host.log;
-  this.logger = this.host.log.log.bind(this.host.log);
+    this.host.on('reset', this.onReset.bind(this));
 
-  this.host.on('reset', this.onReset.bind(this));
+    this.host.on('beacon', this.onBeacon.bind(this));
 
-  this.host.on('beacon', this.onBeacon.bind(this));
+    this.linkBeaconCount = 0;
 
-  this.linkBeaconCount = 0;
+    this.once('link', this.onLink.bind(this));
+  }
 
-  this.once('link', this.onLink.bind(this));
+  onReset() {
 
-
-}
-
-LinkManager.prototype = Object.create(EventEmitter.prototype);
-LinkManager.prototype.constructor = LinkManager;
-
-LinkManager.prototype.onReset = function() {
-
-  var onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e)
+  const onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e)
   {
     if (e & this.log.logging)
       this.log.error( 'Failed to reset search frequency to default ANT-FS 2450 MHz');
@@ -43,10 +38,10 @@ LinkManager.prototype.onReset = function() {
   this.host.layerState.set(State.prototype.LINK);
   this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onSwitchedFreqPeriod);
 
-};
+  }
 
-LinkManager.prototype.onBeacon = function(beacon) {
-  var MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3; // Require client not sending a couple of LINK beacons and then closes channel
+  onBeacon(beacon) {
+  const MAX_LINK_BEACONS_BEFORE_CONNECT_ATTEMP = 3; // Require client not sending a couple of LINK beacons and then closes channel
 
   if (beacon.clientDeviceState.isLink()) {
     this.linkBeaconCount++;
@@ -58,11 +53,11 @@ LinkManager.prototype.onBeacon = function(beacon) {
     }
   }
 
-};
+  }
 
-LinkManager.prototype.onLink = function() {
+  onLink() {
 
-  var authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
+  const authentication_RF = this.host.authenticationManager.getAuthenticationRF(),
 
     onTxCompleted = function _onTxCompleted()
     {
@@ -97,7 +92,7 @@ LinkManager.prototype.onLink = function() {
 
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet() {
 
-      var linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
+      const linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
       this.once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
 
@@ -114,11 +109,11 @@ LinkManager.prototype.onLink = function() {
   else
     onFrequencyAndPeriodSet.call(this);
 
-};
+  }
 
-LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, callback) {
+  switchFrequencyAndPeriod(frequency, period, callback) {
 
-  var newPeriod,
+  let newPeriod,
     switchFreq = function _switchFreq() {
       if (this.host.frequency !== frequency)
         this.host.setFrequency(frequency, function _setFreq(err) {
@@ -175,33 +170,28 @@ LinkManager.prototype.switchFrequencyAndPeriod = function(frequency, period, cal
   }
 
   switchFreq();
-};
+  }
 
-LinkManager.prototype.disconnect = function(callback) {
+  disconnect(callback) {
+    const disconnectRequest = new DisconnectRequest(),
+      onSentToANT = function _onSentToANT(e) {
+        if (e && this.log.logging)
+          this.log.error('Failed to send disconnect request to ANT');
+      };
 
-  var disconnectRequest = new DisconnectRequest(),
-        onSentToANT = function _onSentToANT(e)
-        {
-          if (e)
-          {
-            if (this.log.logging)
-              this.log.error('Failed to send disconnect request to ANT');
-          }
-        };
+    this.host.layerState.set(State.prototype.LINK);
 
-  this.host.layerState.set(State.prototype.LINK);
+    this.host.once('EVENT_TRANSFER_TX_COMPLETED', callback);
+    this.host.once('EVENT_TRANSFER_TX_FAILED', function _disconnectFailed() {
+      const msg = 'Failed to send disconnect request to client, letting client timeout on session';
+      this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED', callback);
+      if (this.log.logging)
+        this.log.debug(msg);
+      callback(new Error(msg));
+    }.bind(this));
 
-  this.host.once('EVENT_TRANSFER_TX_COMPLETED', callback);
-  this.host.once('EVENT_TRANSFER_TX_FAILED', function _disconnectFailed (){
-    var msg = 'Failed to send disconnect request to client, letting client timeout on session';
-    this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED',callback);
-    if (this.log.logging)
-      this.log.debug(msg);
-    callback(new Error(msg));
-
-  }.bind(this));
-
-  this.host.sendAcknowledged(disconnectRequest, onSentToANT);
-};
+    this.host.sendAcknowledged(disconnectRequest, onSentToANT);
+  }
+}
 
 module.exports = LinkManager;

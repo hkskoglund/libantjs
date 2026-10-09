@@ -1,16 +1,12 @@
 'use strict';
 
-function UploadDataResponse(data) {
-  if (data)
-    this.deserialize(data);
-}
+class UploadDataResponse {
+  constructor(data) {
+    if (data)
+      this.deserialize(data);
+  }
 
-UploadDataResponse.prototype.OK = 0x00;
-UploadDataResponse.prototype.FAILED = 0x01;
-
-UploadDataResponse.prototype.ID = 0x8C;
-
-UploadDataResponse.prototype.deserialize = function(data) {
+  deserialize(data) {
 
   // PACKET 1 - BEACON - stripped off
 
@@ -21,11 +17,11 @@ UploadDataResponse.prototype.deserialize = function(data) {
 
   this.result = data[2];
 
-};
+  }
 
-UploadDataResponse.prototype.toString = function() {
+  toString() {
 
-  var msg = this.constructor.name;
+  let msg = this.constructor.name;
 
   switch (this.result) {
 
@@ -42,7 +38,11 @@ UploadDataResponse.prototype.toString = function() {
   }
 
   return msg;
-};
+  }
+}
+
+UploadDataResponse.prototype.OK = 0x00;
+UploadDataResponse.prototype.FAILED = 0x01;
+UploadDataResponse.prototype.ID = 0x8C;
 
 module.exports = UploadDataResponse;
-

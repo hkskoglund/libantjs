@@ -1,31 +1,24 @@
 'use strict';
 
-var CRC = require('../layer/util/crc'),
+const CRC = require('../layer/util/crc'),
     crc = new CRC();
 
 
-function UploadDataRequest(crcSeed, offset, data) {
-  this.request(crcSeed, offset, data);
-}
+class UploadDataRequest {
+  constructor(crcSeed, offset, data) {
+    this.request(crcSeed, offset, data);
+  }
 
-UploadDataRequest.prototype.ID = 0x0C;
-
-UploadDataRequest.prototype.HEADER_LENGTH              = 8;
-UploadDataRequest.prototype.FOOTER_LENGTH              = 8;
-UploadDataRequest.prototype.CRC_LENGTH                 = 2;
-UploadDataRequest.prototype.PACKET_LENGTH              = 8;
-
-UploadDataRequest.prototype.request = function(crcSeed, offset, data) {
-
-  this.crcSeed = crcSeed || 0;
-  this.offset = offset || 0;
-  this.data = data;
-};
+  request(crcSeed, offset, data) {
+    this.crcSeed = crcSeed || 0;
+    this.offset = offset || 0;
+    this.data = data;
+  }
 
 // Spec. 12.10 - burst: header packet, data packets (padded to 8 bytes) and a footer packet with 6 reserved bytes + CRC
-UploadDataRequest.prototype.serialize = function() {
+  serialize() {
 
-  var paddedLength = Math.ceil(this.data.byteLength / this.PACKET_LENGTH) * this.PACKET_LENGTH,
+  const paddedLength = Math.ceil(this.data.byteLength / this.PACKET_LENGTH) * this.PACKET_LENGTH,
       command = new Uint8Array(this.HEADER_LENGTH + paddedLength + this.FOOTER_LENGTH),
       dv      = new DataView(command.buffer);
 
@@ -42,11 +35,17 @@ UploadDataRequest.prototype.serialize = function() {
   dv.setUint16(command.byteLength - this.CRC_LENGTH, this.crc16, true);
 
   return command;
-};
+  }
 
-UploadDataRequest.prototype.toString = function() {
-  return this.constructor.name + ' id 0x' + this.ID.toString(16) + ' offset ' + this.offset +' CRC seed ' + this.crcSeed + ' length ' + this.data.byteLength;
-};
+  toString() {
+    return this.constructor.name + ' id 0x' + this.ID.toString(16) + ' offset ' + this.offset +' CRC seed ' + this.crcSeed + ' length ' + this.data.byteLength;
+  }
+}
+
+UploadDataRequest.prototype.ID = 0x0C;
+UploadDataRequest.prototype.HEADER_LENGTH = 8;
+UploadDataRequest.prototype.FOOTER_LENGTH = 8;
+UploadDataRequest.prototype.CRC_LENGTH = 2;
+UploadDataRequest.prototype.PACKET_LENGTH = 8;
 
 module.exports = UploadDataRequest;
-

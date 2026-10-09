@@ -1,6 +1,6 @@
 'use strict';
 
-var Channel = require('../../channel/channel'),
+const Channel = require('../../channel/channel'),
   ClientBeacon = require('./lib/layer/client-beacon'),
   State = require('./lib/layer/util/state'),
 
@@ -16,82 +16,78 @@ var Channel = require('../../channel/channel'),
   UploadRequest = require('./lib/request-response/upload-request'),
   UploadDataRequest = require('./lib/request-response/upload-data-request');
 
-function ANTFSHostChannel(options, ANTHost, channel) {
-  options = options || {};
+class ANTFSHostChannel extends Channel {
+  constructor(options, ANTHost, channel) {
+    options = options || {};
 
-  Channel.call(this, options, ANTHost, channel, options.net);
+    super(options, ANTHost, channel, options.net);
 
   // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
-  this.key = this.NET.KEY.ANTFS;
-  this.frequency = this.NET.FREQUENCY.ANTFS;
-  this.period = this.NET.PERIOD.ANTFS;
-  this.lowPrioritySearchTimeout = 0xFF; // INFINITE
+    this.key = this.NET.KEY.ANTFS;
+    this.frequency = this.NET.FREQUENCY.ANTFS;
+    this.period = this.NET.PERIOD.ANTFS;
+    this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
-  if (typeof options.deviceNumber === 'number') // Search for specific device
-   this.setId(options.deviceNumber,0,0);
+    if (typeof options.deviceNumber === 'number') // Search for specific device
+      this.setId(options.deviceNumber, 0, 0);
 
-  if (typeof options.hostname === 'string')
-   this.hostname = options.hostname;
-  else
-   this.hostname = 'antfsjs';
+    if (typeof options.hostname === 'string')
+      this.hostname = options.hostname;
+    else
+      this.hostname = 'antfsjs';
 
-  if (this.log.logging)
-    this.log.debug('Hostname ' + this.hostname);
+    if (this.log.logging)
+      this.log.debug('Hostname ' + this.hostname);
 
-  this.on('data', this.onBroadcast.bind(this)); // decodes client beacon
+    this.on('data', this.onBroadcast.bind(this)); // decodes client beacon
 
-  this.on('burst', this.onBurst.bind(this)); // decodes client beacon - 1 packet of burst
+    this.on('burst', this.onBurst.bind(this)); // decodes client beacon - 1 packet of burst
 
-  this.on('beacon', this.onBeacon.bind(this));
-
-
-  this.on('reset', this.onReset.bind(this));
+    this.on('beacon', this.onBeacon.bind(this));
 
 
-  this.on('directory', function _onDirectory(lsl) {
+    this.on('reset', this.onReset.bind(this));
 
-   if (options.ls)
-      this.log.console.log(lsl);
-  }.bind(this));
+
+    this.on('directory', function _onDirectory(lsl) {
+
+      if (options.ls)
+        this.log.console.log(lsl);
+    }.bind(this));
 
   // Initialize layer specific event handlers at the tail of event callbacks
   // Host has priority (in front of event callbacks) because it handles decoding of the client beacon
 
-  this.linkManager = new LinkManager(this);
+    this.linkManager = new LinkManager(this);
 
-  this.authenticationManager = new AuthenticationManager(this);
+    this.authenticationManager = new AuthenticationManager(this);
 
-  this.transportManager = new TransportManager(
-    this,
-    options.download,
-    options.erase,
-    options.ls,
-    options.skipNewFiles
-  );
+    this.transportManager = new TransportManager(
+      this,
+      options.download,
+      options.erase,
+      options.ls,
+      options.skipNewFiles
+    );
 
-  this.beacon = new ClientBeacon();
+    this.beacon = new ClientBeacon();
 
-  this.on('EVENT_TRANSFER_TX_FAILED', this.sendNow);
-  this.on('EVENT_TRANSFER_RX_FAILED', this.sendNow);
-  this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
-  this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch);
+    this.on('EVENT_TRANSFER_TX_FAILED', this.sendNow);
+    this.on('EVENT_TRANSFER_RX_FAILED', this.sendNow);
+    this.on('EVENT_TRANSFER_TX_COMPLETED', this.onTxCompleted);
+    this.on('EVENT_RX_FAIL_GO_TO_SEARCH', this.onRxFailGoToSearch);
 
-  this.session = {};
+    this.session = {};
+  }
 
-}
+  onRxFailGoToSearch(e, m) {
+    clearTimeout(this.session.burstResponseTimeout);
+    this.once('HOST_CHANNEL_OPEN', this.sendNow.bind(this, e, m)); // Queue on next beacon
+  }
 
-ANTFSHostChannel.prototype = Object.create(Channel.prototype);
-ANTFSHostChannel.prototype.constructor = ANTFSHostChannel;
-
-ANTFSHostChannel.prototype.onRxFailGoToSearch = function (e,m)
-{
-  clearTimeout(this.session.burstResponseTimeout);
-  this.once('HOST_CHANNEL_OPEN', this.sendNow.bind(this,e,m)); // Queue on next beacon
-};
-
-ANTFSHostChannel.prototype.onBeacon = function(beacon) {
-  var BEACON_TIMEOUT = 25000;
+  onBeacon(beacon) {
+  const BEACON_TIMEOUT = 25000;
 
   clearTimeout(this.beaconTimeout);
 
@@ -119,11 +115,11 @@ ANTFSHostChannel.prototype.onBeacon = function(beacon) {
     this.emit('CLIENT_NOT_BUSY'); // in case of pending transfer due to busy state
     this.emit('HOST_CHANNEL_OPEN'); // in case channel RX_FAIL_GOTO_SEARCH
   }
-};
+  }
 
-ANTFSHostChannel.prototype.onBroadcast = function(broadcast) {
+  onBroadcast(broadcast) {
 
-  var res = this.beacon.decode(broadcast.payload);
+  const res = this.beacon.decode(broadcast.payload);
 
   if (res === -1)
 
@@ -136,15 +132,15 @@ ANTFSHostChannel.prototype.onBroadcast = function(broadcast) {
     this.emit('beacon', this.beacon);
   }
 
-};
+  }
 
-ANTFSHostChannel.prototype.onBurst = function(burst) {
+  onBurst(burst) {
 
   clearTimeout(this.session.burstResponseTimeout);
 
   this.session.response = burst;
 
-  var res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
+  const res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
 
   if (res === -1)
 
@@ -158,11 +154,10 @@ ANTFSHostChannel.prototype.onBurst = function(burst) {
 
   }
 
-};
+  }
 
-ANTFSHostChannel.prototype.onTxCompleted = function ()
-{
-  var BURST_RESPONSE_TIMEOUT = this.period / 32768 * 1000 * 8,
+  onTxCompleted() {
+  let BURST_RESPONSE_TIMEOUT = this.period / 32768 * 1000 * 8,
       NO_ERROR;
 
   if (this.closed)
@@ -180,21 +175,21 @@ ANTFSHostChannel.prototype.onTxCompleted = function ()
      if (this.log.logging)
        this.log.debug( 'Burst response timeout in ' + BURST_RESPONSE_TIMEOUT +' ms');
      }
-};
+  }
 
-ANTFSHostChannel.prototype.getHostname = function() {
+  getHostname() {
   return this.hostname;
-};
+  }
 
-ANTFSHostChannel.prototype.getClientSerialNumber = function() {
+  getClientSerialNumber() {
   return this.authenticationManager.clientSerialNumber;
-};
+  }
 
-ANTFSHostChannel.prototype.getClientFriendlyname = function() {
+  getClientFriendlyname() {
   return this.authenticationManager.clientFriendlyname;
-};
+  }
 
-ANTFSHostChannel.prototype.onReset = function(err, callback) {
+  onReset(err, callback) {
 
   clearTimeout(this.beaconTimeout);
   clearTimeout(this.session.burstResponseTimeout);
@@ -202,21 +197,20 @@ ANTFSHostChannel.prototype.onReset = function(err, callback) {
   this.removeAllListeners('HOST_CHANNEL_OPEN');
   this.session = {};
 
-};
+  }
 
 // Stops all retry timers/listeners; called before the USB device is closed
-ANTFSHostChannel.prototype.shutdown = function ()
-{
+  shutdown() {
   this.closed = true;
   clearTimeout(this.beaconTimeout);
   clearTimeout(this.session.burstResponseTimeout);
   this.removeAllListeners('CLIENT_NOT_BUSY');
   this.removeAllListeners('HOST_CHANNEL_OPEN');
-};
+  }
 
-ANTFSHostChannel.prototype.connect = function(callback) {
+  connect(callback) {
 
-  var onConnecting = function _onConnecting(err, msg) {
+  const onConnecting = function _onConnecting(err, msg) {
 
     if (!err) {
       this.layerState = new State(State.prototype.LINK);
@@ -240,19 +234,18 @@ ANTFSHostChannel.prototype.connect = function(callback) {
 
   }.bind(this));
 
-};
+  }
 
-ANTFSHostChannel.prototype.setHostSerialNumber = function(serialNumber) {
+  setHostSerialNumber(serialNumber) {
   this.hostSerialNumber = serialNumber;
-};
+  }
 
-ANTFSHostChannel.prototype.getHostSerialNumber = function() {
+  getHostSerialNumber() {
   return this.hostSerialNumber;
-};
+  }
 
-ANTFSHostChannel.prototype.initRequest = function (request, callback)
-{
-  var NO_ERROR,
+  initRequest(request, callback) {
+  let NO_ERROR,
       serializedRequest = request.serialize();
 
   this.session = {};
@@ -269,7 +262,7 @@ ANTFSHostChannel.prototype.initRequest = function (request, callback)
 
   if (serializedRequest.length <= 8)
   {
-    var acknowledgedRequest = new Uint8Array(8);
+    const acknowledgedRequest = new Uint8Array(8);
     acknowledgedRequest.set(serializedRequest);
     this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, acknowledgedRequest, callback);
   }
@@ -278,11 +271,10 @@ ANTFSHostChannel.prototype.initRequest = function (request, callback)
 
 
   this.sendRequest(NO_ERROR,request);
-};
+  }
 
-ANTFSHostChannel.prototype.sendNow = function (e,m)
-{
-  var MAX_RETRIES = 15,
+  sendNow(e, m) {
+  let MAX_RETRIES = 15,
       err;
 
   if (this.closed || !this.isTracking()) // in case RX_FAIL_GOTO_SEARCH
@@ -332,17 +324,15 @@ ANTFSHostChannel.prototype.sendNow = function (e,m)
       }
 }
 
-};
+  }
 
 
 // Queue an overwrite of the file at directory index with data (Uint8Array). Call before the transport state is reached.
-ANTFSHostChannel.prototype.upload = function (index, data)
-{
-  this.transportManager.addUploadTask(index, data);
-};
+  upload(index, data) {
+    this.transportManager.addUploadTask(index, data);
+  }
 
-ANTFSHostChannel.prototype.sendRequest = function (e,m)
-{
+  sendRequest(e, m) {
 
 
   if (this.beacon.clientDeviceState.isBusy())
@@ -355,33 +345,32 @@ ANTFSHostChannel.prototype.sendRequest = function (e,m)
   else
     this.sendNow(e,m);
 
-};
+  }
 
 // Override Channel
-ANTFSHostChannel.prototype.sendAcknowledged = function(request, callback) {
-  this.initRequest(request, callback);
-};
+  sendAcknowledged(request, callback) {
+    this.initRequest(request, callback);
+  }
 
 // Override Channel
-ANTFSHostChannel.prototype.sendBurst = function(request, callback) {
-  this.initRequest(request,callback);
-};
+  sendBurst(request, callback) {
+    this.initRequest(request, callback);
+  }
 
-ANTFSHostChannel.prototype.disconnect = function (callback)
-{
-var onDisconnect = function _onDisconnect(e,m)
-  {
-    this.removeAllListeners('beacon');
+  disconnect(callback) {
+    const onDisconnect = function _onDisconnect(e, m) {
+      this.removeAllListeners('beacon');
 
-    this.emit('reset');
+      this.emit('reset');
 
-    if (typeof callback === 'function') {
-      callback.call(this,arguments);
-    }
-  }.bind(this);
+      if (typeof callback === 'function') {
+        callback.call(this, arguments);
+      }
+    }.bind(this);
 
 
-  this.linkManager.disconnect(onDisconnect);
-};
+    this.linkManager.disconnect(onDisconnect);
+  }
+}
 
 module.exports = ANTFSHostChannel;

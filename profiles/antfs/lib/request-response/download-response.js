@@ -1,29 +1,15 @@
 'use strict';
 
-  function DownloadResponse(data) {
+class DownloadResponse {
+  constructor(data) {
     if (data)
       this.deserialize(data);
   }
 
-  DownloadResponse.prototype.OK = 0x00;
-  DownloadResponse.prototype.NOT_EXIST = 0x01;
-  DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE = 0x02;
-  DownloadResponse.prototype.NOT_READY = 0x03;
-  DownloadResponse.prototype.INVALID = 0x04;
-  DownloadResponse.prototype.CRC_INCORRECT = 0x05;
-
-  DownloadResponse.prototype.ID = 0x89;
-
-  DownloadResponse.prototype.HEADER_LENGTH = 16;
-  DownloadResponse.prototype.FOOTER_LENGTH = 8;
-  DownloadResponse.prototype.FOOTER_RESERVED_PAD_LENGTH = 6;
-  DownloadResponse.prototype.CRC_LENGTH = 2;
-  DownloadResponse.prototype.PACKET_LENGTH = 8;
-
-  DownloadResponse.prototype.deserialize = function(data) {
+  deserialize(data) {
     // overview p. 59 in spec of response format
 
-    var dv = new DataView(data.buffer),
+    let dv = new DataView(data.buffer),
       iStart,
       iEnd;
 
@@ -51,13 +37,27 @@
 
     this.CRC = data[data.byteLength - 1] << 8 | data[data.byteLength - 2];
 
-  };
+  }
 
-  DownloadResponse.prototype.toString = function() {
+  toString() {
     return this.constructor.name + ' | Length ' + this.length + ' | Offset ' + this.offset + ' | Size ' +
       this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
-  };
+  }
+}
+
+DownloadResponse.prototype.OK = 0x00;
+DownloadResponse.prototype.NOT_EXIST = 0x01;
+DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE = 0x02;
+DownloadResponse.prototype.NOT_READY = 0x03;
+DownloadResponse.prototype.INVALID = 0x04;
+DownloadResponse.prototype.CRC_INCORRECT = 0x05;
+DownloadResponse.prototype.ID = 0x89;
+DownloadResponse.prototype.HEADER_LENGTH = 16;
+DownloadResponse.prototype.FOOTER_LENGTH = 8;
+DownloadResponse.prototype.FOOTER_RESERVED_PAD_LENGTH = 6;
+DownloadResponse.prototype.CRC_LENGTH = 2;
+DownloadResponse.prototype.PACKET_LENGTH = 8;
 
   module.exports = DownloadResponse;
   

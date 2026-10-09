@@ -1,16 +1,14 @@
 'use strict';
 
-  function LinkRequest(frequency, period, hostSerialNumber) {
-
+class LinkRequest {
+  constructor(frequency, period, hostSerialNumber) {
     this.frequency = frequency;
     this.period = period;
     this.hostSerialNumber = hostSerialNumber;
   }
 
-  LinkRequest.prototype.ID = 0x02;
-
-  LinkRequest.prototype.serialize = function() {
-    var command = new Uint8Array(8),
+  serialize() {
+    const command = new Uint8Array(8),
       dv = new DataView(command.buffer);
 
     command[0] = 0x44; // ANT-FS COMMAND message
@@ -20,11 +18,13 @@
     dv.setUint32(4, this.hostSerialNumber, true);
 
     return command;
-  };
+  }
 
-  LinkRequest.prototype.toString = function() {
+  toString() {
     return 'LinkRequest ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host ' + this.hostSerialNumber;
-  };
+  }
+}
 
-  module.exports = LinkRequest;
-  
+LinkRequest.prototype.ID = 0x02;
+
+module.exports = LinkRequest;

@@ -1,39 +1,31 @@
 'use strict';
 
-  function AuthenticateRequest(commandType, authenticationStringLength, hostSerialNumber) {
+class AuthenticateRequest {
+  constructor(commandType, authenticationStringLength, hostSerialNumber) {
     this.commandType = commandType || AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT;
     this.authenticationStringLength = authenticationStringLength || 0;
     this.hostSerialNumber = hostSerialNumber || 0;
-
   }
 
-  AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT = 0x00; // Pass-through
-  AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER = 0x01;
-  AuthenticateRequest.prototype.REQUEST_PAIRING = 0x02;
-  AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE = 0x03;
-
-  AuthenticateRequest.prototype.ID = 0x04;
-
-  AuthenticateRequest.prototype.requestProceedToTransport = function(hostSerialNumber) {
+  requestProceedToTransport(hostSerialNumber) {
     this.request(AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT, hostSerialNumber);
-  };
+  }
 
-  AuthenticateRequest.prototype.requestSerialNumber = function(hostSerialNumber) {
+  requestSerialNumber(hostSerialNumber) {
     this.request(AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, hostSerialNumber);
-  };
+  }
 
-  AuthenticateRequest.prototype.requestPairing = function(hostSerialNumber, hostname) {
-
+  requestPairing(hostSerialNumber, hostname) {
     if (hostname)
       this.hostname = hostname;
     this.request(AuthenticateRequest.prototype.REQUEST_PAIRING, hostSerialNumber, hostname);
-  };
+  }
 
-  AuthenticateRequest.prototype.requestPasskeyExchange = function(hostSerialNumber, passkey) {
+  requestPasskeyExchange(hostSerialNumber, passkey) {
     this.request(AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE, hostSerialNumber, passkey);
-  };
+  }
 
-  AuthenticateRequest.prototype.request = function(commandType, hostSerialNumber, authenticationString) {
+  request(commandType, hostSerialNumber, authenticationString) {
     this.commandType = commandType;
 
     if (authenticationString) {
@@ -43,10 +35,10 @@
       this.authenticationStringLength = 0;
 
     this.hostSerialNumber = hostSerialNumber;
-  };
+  }
 
-  AuthenticateRequest.prototype.serialize = function() {
-    var command = new Uint8Array(8 + this.authenticationStringLength),
+  serialize() {
+    let command = new Uint8Array(8 + this.authenticationStringLength),
       dv = new DataView(command.buffer),
       byteNr;
 
@@ -65,10 +57,10 @@
     }
 
     return command;
-  };
+  }
 
-  AuthenticateRequest.prototype.toString = function() {
-    var cmdType;
+  toString() {
+    let cmdType;
 
     switch (this.commandType) {
 
@@ -96,7 +88,13 @@
     }
 
     return 'AUTHENTICATE ' + cmdType + ' host serial number ' + this.hostSerialNumber;
-  };
+  }
+}
 
-  module.exports = AuthenticateRequest;
-  
+AuthenticateRequest.prototype.PROCEED_TO_TRANSPORT = 0x00; // Pass-through
+AuthenticateRequest.prototype.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER = 0x01;
+AuthenticateRequest.prototype.REQUEST_PAIRING = 0x02;
+AuthenticateRequest.prototype.REQUEST_PASSKEY_EXCHANGE = 0x03;
+AuthenticateRequest.prototype.ID = 0x04;
+
+module.exports = AuthenticateRequest;

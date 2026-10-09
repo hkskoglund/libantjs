@@ -1,17 +1,12 @@
 'use strict';
 
-  function EraseResponse(data) {
+class EraseResponse {
+  constructor(data) {
     if (data)
       this.deserialize(data);
   }
 
-  EraseResponse.prototype.OK = 0x00;
-  EraseResponse.prototype.FAILED = 0x01;
-  EraseResponse.prototype.NOT_READY = 0x03;
-
-  EraseResponse.prototype.ID = 0x8B;
-
-  EraseResponse.prototype.deserialize = function(data) {
+  deserialize(data) {
     // overview p. 59 in spec of response format
 
     // HEADER
@@ -21,11 +16,10 @@
 
     this.result = data[2];
 
-  };
+  }
 
-  EraseResponse.prototype.toString = function() {
-
-    var msg = 'ERASE ';
+  toString() {
+    let msg = 'ERASE ';
 
     switch (this.result) {
 
@@ -47,7 +41,12 @@
     }
 
     return msg;
-  };
+  }
+}
 
-  module.exports = EraseResponse;
-  
+EraseResponse.prototype.OK = 0x00;
+EraseResponse.prototype.FAILED = 0x01;
+EraseResponse.prototype.NOT_READY = 0x03;
+EraseResponse.prototype.ID = 0x8B;
+
+module.exports = EraseResponse;

@@ -1,26 +1,27 @@
 'use strict';
 
-function EraseRequest(index) {
-  this.index = index;
+class EraseRequest {
+  constructor(index) {
+    this.index = index;
+  }
+
+  // Spec 12.7 Downloading - its a two packet burst
+  serialize() {
+    const command = new Uint8Array(4),
+      dv = new DataView(command.buffer);
+
+    command[0] = 0x44; // ANT-FS COMMAND message
+    command[1] = this.ID;
+    dv.setUint16(2, this.index, true);
+
+    return command;
+  }
+
+  toString() {
+    return 'ERASE index ' + this.index;
+  }
 }
 
 EraseRequest.prototype.ID = 0x0B;
 
-// Spec 12.7 Downloading - its a two packet burst
-EraseRequest.prototype.serialize = function() {
-  var command = new Uint8Array(4),
-    dv = new DataView(command.buffer);
-
-  command[0] = 0x44; // ANT-FS COMMAND message
-  command[1] = this.ID;
-  dv.setUint16(2, this.index, true);
-
-  return command;
-};
-
-EraseRequest.prototype.toString = function() {
-  return 'ERASE index ' + this.index;
-};
-
 module.exports = EraseRequest;
-

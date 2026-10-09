@@ -1,7 +1,7 @@
 'use strict';
 
-  function AuthenticateResponse(type, authenticationStringLength, clientSerialNumber) {
-
+class AuthenticateResponse {
+  constructor(type, authenticationStringLength, clientSerialNumber) {
     if (typeof type === 'object' && type.constructor.name === 'Uint8Array') {
       this.deserialize(type);
     } else {
@@ -11,14 +11,8 @@
     }
   }
 
-  AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER = 0x00;
-  AuthenticateResponse.prototype.ACCEPT = 0x01;
-  AuthenticateResponse.prototype.REJECT = 0x02;
-
-  AuthenticateResponse.prototype.ID = 0x84;
-
-  AuthenticateResponse.prototype.deserialize = function(data) {
-    var dv = new DataView(data.buffer),
+  deserialize(data) {
+    let dv = new DataView(data.buffer),
       i;
 
     // data[0] should be 0x44 ANT-FS RESPONSE/COMMAND
@@ -33,10 +27,10 @@
       this.authenticationString += String.fromCharCode(data[8 + i]); // Static method on String
     }
 
-  };
+  }
 
-  AuthenticateResponse.prototype.toString = function() {
-    var msg = 'AUTHENTICATE ';
+  toString() {
+    let msg = 'AUTHENTICATE ';
 
     switch (this.type) {
       case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER:
@@ -56,7 +50,12 @@
     }
 
     return msg + ', client serial number ' + this.clientSerialNumber;
-  };
+  }
+}
 
-  module.exports = AuthenticateResponse;
-  
+AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER = 0x00;
+AuthenticateResponse.prototype.ACCEPT = 0x01;
+AuthenticateResponse.prototype.REJECT = 0x02;
+AuthenticateResponse.prototype.ID = 0x84;
+
+module.exports = AuthenticateResponse;
