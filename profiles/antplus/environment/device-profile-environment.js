@@ -4,9 +4,11 @@
     TempPage0 = require('./temperature-page0'),
     TempPage1 = require('./temperature-page1');
 
-  function DeviceProfile_ENVIRONMENT(configuration) {
+  class DeviceProfile_ENVIRONMENT extends DeviceProfile {
+  constructor(configuration) {
 
-    DeviceProfile.call(this, configuration);
+
+    super(configuration);
 
     var channelPeriod = configuration && configuration.channelPeriod;
     if (channelPeriod !== undefined &&
@@ -18,34 +20,15 @@
     this.initMasterSlaveConfiguration(channelPeriod);
 
     this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY);
-
   }
 
-  DeviceProfile_ENVIRONMENT.prototype = Object.create(DeviceProfile.prototype);
-  DeviceProfile_ENVIRONMENT.prototype.constructor = DeviceProfile_ENVIRONMENT;
+  getPageNumber(broadcast) {
 
-  DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 5000;
-
-  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 25, // 0x19
-    TRANSMISSION_TYPE: 0x05 // Low nibble
-  };
-
-  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8192, // 4Hz
-    ALTERNATIVE: 65535 // 0.5 Hz low power
-  };
-
-
-  //    DeviceProfile_ENVIRONMENT.prototype.channelResponse = function (channelResponse) //{
-  //    };
-
-
-  DeviceProfile_ENVIRONMENT.prototype.getPageNumber = function(broadcast) {
     return broadcast.data[0];
-  };
+  }
 
-  DeviceProfile_ENVIRONMENT.prototype.getPage = function(broadcast) {
+  getPage(broadcast) {
+
     var page,
       pageNumber = this.getPageNumber(broadcast);
 
@@ -79,8 +62,23 @@
     }
 
     return page;
+  }
+}
 
+
+
+
+  DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 5000;
+
+  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
+    DEVICE_TYPE: 25, // 0x19
+    TRANSMISSION_TYPE: 0x05 // Low nibble
   };
 
+  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD = {
+    DEFAULT: 8192, // 4Hz
+    ALTERNATIVE: 65535 // 0.5 Hz low power
+  };
+
+
   module.exports = DeviceProfile_ENVIRONMENT;
-  

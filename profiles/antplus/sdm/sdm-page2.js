@@ -3,9 +3,11 @@
   var GenericPage = require('../page');
 
 
-  function SDMPage2(configuration, broadcast) {
+  class SDMPage2 extends GenericPage {
+  constructor(configuration, broadcast) {
 
-    GenericPage.call(this, configuration, broadcast);
+
+    super(configuration, broadcast);
 
     if (broadcast)
       this.profile = broadcast.profile;
@@ -21,72 +23,8 @@
       this.decode(broadcast);
   }
 
-  SDMPage2.prototype = Object.create(GenericPage.prototype);
-  SDMPage2.prototype.constructor = SDMPage2;
+  decode(broadcast) {
 
-  // Bit field layout
-  SDMPage2.prototype.BIT_FIELD = {
-
-    SDMLocation: {
-      START_BIT: 6,
-      LENGTH: 2
-    },
-    BatteryStatus: {
-      START_BIT: 4,
-      LENGTH: 2
-    },
-    SDMHealth: {
-      START_BIT: 2,
-      LENGTH: 2
-    },
-    UseState: {
-      START_BIT: 0,
-      LENGTH: 2
-    },
-
-    CadenceFractional: {
-      START_BIT: 4,
-      LENGTH: 4
-    }
-
-
-  };
-
-  // Bit mask to pinpoint BIT_FIELD
-
-  SDMPage2.prototype.BIT_MASK = {
-
-    SDMLocation: parseInt("11000000", 2),
-    BatteryStatus: parseInt("00110000", 2),
-    SDMHealth: parseInt("00001100", 2),
-    UseState: parseInt("00000011", 2),
-
-    UPPER_NIBBLE: 0xF0,
-    LOWER_NIBBLE: 0X0F
-
-  };
-
-  // Byte layout
-  SDMPage2.prototype.BYTE = {
-    PAGE_NUMBER: 0,
-    RESERVED_1: 1,
-    RESERVED_2: 2,
-    CADENCE_INTEGER: 3,
-    CADENCE_FRACTIONAL: 4, // Upper nibble
-    SPEED_INTEGER: 4, // Lower nibble
-    SPEED_FRACTIONAL: 5,
-    RESERVED_6: 6,
-    STATUS: 7
-
-  };
-
-  SDMPage2.prototype.UNIT = {
-    CADENCE_FRACTIONAL: 1 / 16, // strides pr minute
-    SPEED_FRACTIONAL: 1 / 256 // m/s
-  };
-
-
-  SDMPage2.prototype.decode = function(broadcast) {
 
     var data = broadcast.data;
 
@@ -195,11 +133,10 @@
         this.status.UseStateFriendly = "? " + this.status.UseState;
         break;
     }
+  }
 
+  toString() {
 
-  };
-
-  SDMPage2.prototype.toString = function() {
 
     var msg = "P# " + this.number + " ",
       UNUSED = 0x00;
@@ -218,8 +155,78 @@
     msg += " Location: " + this.status.SDMLocationFriendly + " Battery: " + this.status.BatteryStatusFriendly + " Health: " + this.status.SDMHealthFriendly + " State: " + this.status.UseStateFriendly;
 
     return msg;
+  }
+}
+
+
+
+
+  // Bit field layout
+  SDMPage2.prototype.BIT_FIELD = {
+
+    SDMLocation: {
+      START_BIT: 6,
+      LENGTH: 2
+    },
+    BatteryStatus: {
+      START_BIT: 4,
+      LENGTH: 2
+    },
+    SDMHealth: {
+      START_BIT: 2,
+      LENGTH: 2
+    },
+    UseState: {
+      START_BIT: 0,
+      LENGTH: 2
+    },
+
+    CadenceFractional: {
+      START_BIT: 4,
+      LENGTH: 4
+    }
+
+
   };
+
+  // Bit mask to pinpoint BIT_FIELD
+
+  SDMPage2.prototype.BIT_MASK = {
+
+    SDMLocation: parseInt("11000000", 2),
+    BatteryStatus: parseInt("00110000", 2),
+    SDMHealth: parseInt("00001100", 2),
+    UseState: parseInt("00000011", 2),
+
+    UPPER_NIBBLE: 0xF0,
+    LOWER_NIBBLE: 0X0F
+
+  };
+
+  // Byte layout
+  SDMPage2.prototype.BYTE = {
+    PAGE_NUMBER: 0,
+    RESERVED_1: 1,
+    RESERVED_2: 2,
+    CADENCE_INTEGER: 3,
+    CADENCE_FRACTIONAL: 4, // Upper nibble
+    SPEED_INTEGER: 4, // Lower nibble
+    SPEED_FRACTIONAL: 5,
+    RESERVED_6: 6,
+    STATUS: 7
+
+  };
+
+  SDMPage2.prototype.UNIT = {
+    CADENCE_FRACTIONAL: 1 / 16, // strides pr minute
+    SPEED_FRACTIONAL: 1 / 256 // m/s
+  };
+
+
+
+
+
 
   module.exports = SDMPage2;
 
-  
+

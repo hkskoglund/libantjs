@@ -5,9 +5,11 @@
     SDMPage2 = require('./sdm-page2'),
     SDMPage3 = require('./sdm-page3');
 
-  function DeviceProfile_SDM(configuration) {
+  class DeviceProfile_SDM extends DeviceProfile {
+  constructor(configuration) {
 
-    DeviceProfile.call(this, configuration);
+
+    super(configuration);
 
     this.addConfiguration("slave", {
       description: "Slave configuration for ANT+ SDM device profile",
@@ -45,26 +47,10 @@
     this.SDMPage1 = new SDMPage1(configuration);
     this.SDMPage2 = new SDMPage2(configuration);
     this.SDMPage3 = new SDMPage3(configuration);
-
   }
 
-  DeviceProfile_SDM.prototype = Object.create(DeviceProfile.prototype);
-  DeviceProfile_SDM.prototype.constructor = DeviceProfile_SDM;
+  broadCast(broadcast) {
 
-  //util.inherits(DeviceProfile_SDM, DeviceProfile);
-
-  DeviceProfile_SDM.prototype.NAME = 'SDM';
-
-  DeviceProfile_SDM.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x7C,
-    TRANSMISSION_TYPE: 5
-  };
-
-  DeviceProfile_SDM.prototype.CHANNEL_PERIOD = 8134; // 4 hz
-
-  DeviceProfile_SDM.prototype.ALTERNATIVE_CHANNEL_PERIOD = 16268; // 2 Hz
-
-  DeviceProfile_SDM.prototype.broadCast = function(broadcast) {
     var page,
       pageNumber = broadcast.data[0],
       sensorId = broadcast.channelId.sensorId,
@@ -129,9 +115,19 @@
         this.log.warn( 'Skipping page, broadcast for SDM sensor ' + sensorId + ' is ' + this.receivedBroadcastCounter[sensorId] + ' which is  threshold for UI update ' + BROADCAST_LIMIT_BEFORE_UI_UPDATE);
 
     }
+  }
+}
+  DeviceProfile_SDM.prototype.NAME = 'SDM';
 
-
+  DeviceProfile_SDM.prototype.CHANNEL_ID = {
+    DEVICE_TYPE: 0x7C,
+    TRANSMISSION_TYPE: 5
   };
 
+  DeviceProfile_SDM.prototype.CHANNEL_PERIOD = 8134; // 4 hz
+
+  DeviceProfile_SDM.prototype.ALTERNATIVE_CHANNEL_PERIOD = 16268; // 2 Hz
+
+
+
   module.exports = DeviceProfile_SDM;
-  

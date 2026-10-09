@@ -8,9 +8,11 @@
     ProductId0x51 = require('./product-id0x51'),
     CumulativeOperatingTime0x52 = require('./cumulative-operating-time0x52');
 
-  function DeviceProfile(configuration) {
+  class DeviceProfile extends Channel {
+  constructor(configuration) {
 
-    Channel.call(this, configuration);
+
+    super(configuration);
 
     // Unfiltered broadcasts
     this.broadcast = [];
@@ -42,27 +44,10 @@
       this.log.info( 'Device is not capable of page toggeling', this);
     }
     this.sensorId = undefined;
-
   }
 
-  DeviceProfile.prototype = Object.create(Channel.prototype);
-  DeviceProfile.prototype.constructor = DeviceProfile;
+  getBackgroundPage(broadcast, pageNumber) {
 
-  DeviceProfile.prototype.PAGE_TOGGLE_STATE = {
-
-    PREINIT: 'preinit', // Before any page toggeling is observed
-    INIT: 'init',
-    TOGGELING: 'toggeling',
-    NOT_TOGGELING: 'not toggeling',
-
-  };
-
-  DeviceProfile.prototype.MAX_UNFILTERED_BROADCAST_BUFFER = 240; // 4 msg/sec * 60 sec = 240 broadcast/min
-
-  DeviceProfile.prototype.MIN_BROADCAST_THRESHOLD = 2; // Minimum number of broadcast before accepted
-
-  // Is called by a particular device profile after reading pageNumber
-  DeviceProfile.prototype.getBackgroundPage = function(broadcast, pageNumber) {
 
     var page;
 
@@ -125,19 +110,16 @@
     }
 
     return page;
+  }
 
-  };
+  getPageNumber(broadcast) {
 
-
-  DeviceProfile.prototype.getPageNumber = function(broadcast) {
 
     throw new Error('Should be overridden in descendants');
+  }
 
-  };
+  pageToggleFilter(broadcast) {
 
-
-  // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
-  DeviceProfile.prototype.pageToggleFilter = function(broadcast) {
     var pageToggleBit,
       data = broadcast.data,
       sensorId = this.sensorId,
@@ -198,9 +180,10 @@
         this.log.info( sensorId, 'No page toggeling after B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'Its a legacy device using page 0 format', 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
       }
     }
-  };
+  }
 
-  DeviceProfile.prototype.filterAndCountBroadcast = function(broadcast) {
+  filterAndCountBroadcast(broadcast) {
+
 
     var FILTER = true;
 
@@ -241,9 +224,10 @@
     } else {
       return !FILTER;
     }
-  };
+  }
 
-  DeviceProfile.prototype.initMasterSlaveConfiguration = function(channelPeriod) {
+  initMasterSlaveConfiguration(channelPeriod) {
+
 
     if (channelPeriod === undefined) {
       channelPeriod = this.CHANNEL_PERIOD.DEFAULT;
@@ -280,21 +264,20 @@
       channelPeriod: channelPeriod
 
     });
+  }
 
-  };
+  stop() {
 
-  DeviceProfile.prototype.stop = function() {
 
     if (this.timer.onPage !== undefined) {
       clearInterval(this.timer.onPage);
     }
 
     this.removeAllListeners('page');
+  }
 
-  };
+  getLatestPage(processCB) {
 
-  // This function is called by setInterval, e.g each second to get the latest pages of main/background
-  DeviceProfile.prototype.getLatestPage = function(processCB) {
 
     var latestPage,
       pageNumber;
@@ -321,10 +304,10 @@
       }
 
     }
+  }
 
-  };
+  requestPageUpdate(timeout, processHook) {
 
-  DeviceProfile.prototype.requestPageUpdate = function _requestPageUpdate(timeout, processHook) {
 
     // In case requestPageUpdate is called more than one time
 
@@ -342,10 +325,10 @@
     }
 
     setTimeout(this.getLatestPage.bind(this, processHook), 1000); // Run fast update first time
+  }
 
-  };
+  getPreviousPageValidateRolloverTime() {
 
-  DeviceProfile.prototype.getPreviousPageValidateRolloverTime = function() {
 
     var previousPage = this.getPreviousPage(),
       rollOverThreshold = this.ROLLOVER_THRESHOLD;
@@ -366,22 +349,20 @@
     }
 
     return previousPage;
-  };
+  }
 
-  DeviceProfile.prototype.getPreviousPage = function() {
+  getPreviousPage() {
+
     return this.receivedPage[this.receivedPage.length - 1];
+  }
 
-  };
+  getPage(broadcast) {
 
-  // Deserialization of broadcast (8-byte packet) into a page object
-
-  DeviceProfile.prototype.getPage = function(broadcast) {
     throw new Error('getPage should be overridden in descendants');
-  };
+  }
 
+  broadCast(broadcast) {
 
-  // Filter and deserialize into page object
-  DeviceProfile.prototype.broadCast = function(broadcast) {
 
     var page;
 
@@ -417,11 +398,10 @@
     page = this.getPage(broadcast);
 
     this.addPage(page);
+  }
 
-  };
+  addPage(page) {
 
-  // Keeps track of received pages that are passed through filtering
-  DeviceProfile.prototype.addPage = function(page) {
 
     if (!page) {
       if (this.log && this.log.logging) {
@@ -438,19 +418,20 @@
     }
 
     this.receivedPage.push(page);
+  }
 
-  };
+  isPageToggle() {
 
-  DeviceProfile.prototype.isPageToggle = function() {
 
     if (this.PAGE_TOGGLE_CAPABLE) {
       return this.pageToggle.state === this.PAGE_TOGGLE_STATE.TOGGELING;
     } else {
       return false;
     }
-  };
+  }
 
-  DeviceProfile.prototype.getHashCode = function(broadcast) {
+  getHashCode(broadcast) {
+
     var byteNr,
       data = broadcast.data,
       hashCode = '',
@@ -474,10 +455,10 @@
     }
 
     return 'hash' + hashCode;
-  };
+  }
 
-  // FILTER - Skip duplicate messages from same master
-  DeviceProfile.prototype.filterDuplicateBroadcast = function(broadcast) {
+  filterDuplicateBroadcast(broadcast) {
+
 
     var hashCode = this.getHashCode(broadcast); // hash+8 hex code of broadcast payload
 
@@ -495,10 +476,10 @@
     }
 
     return false;
+  }
 
-  };
+  verifyDeviceType(deviceType, broadcast) {
 
-  DeviceProfile.prototype.verifyDeviceType = function(deviceType, broadcast) {
 
     var isEqualDeviceType = broadcast.channelId.deviceType === deviceType;
 
@@ -509,9 +490,70 @@
     }
 
     return isEqualDeviceType;
+  }
+}
+
+
+
+
+  DeviceProfile.prototype.PAGE_TOGGLE_STATE = {
+
+    PREINIT: 'preinit', // Before any page toggeling is observed
+    INIT: 'init',
+    TOGGELING: 'toggeling',
+    NOT_TOGGELING: 'not toggeling',
 
   };
 
+  DeviceProfile.prototype.MAX_UNFILTERED_BROADCAST_BUFFER = 240; // 4 msg/sec * 60 sec = 240 broadcast/min
+
+  DeviceProfile.prototype.MIN_BROADCAST_THRESHOLD = 2; // Minimum number of broadcast before accepted
+
+  // Is called by a particular device profile after reading pageNumber
+
+
+
+
+
+
+  // Determine page toggle state (tricky format leads to tricky code...), e.g HRM legacy (no toggeling/page 0), vs HRM (toggeling page 4 + background pages)
+
+
+
+
+
+
+
+
+  // This function is called by setInterval, e.g each second to get the latest pages of main/background
+
+
+
+
+
+
+
+
+  // Deserialization of broadcast (8-byte packet) into a page object
+
+
+
+
+  // Filter and deserialize into page object
+
+
+  // Keeps track of received pages that are passed through filtering
+
+
+
+
+
+
+  // FILTER - Skip duplicate messages from same master
+
+
+
+
 
   module.exports = DeviceProfile;
-  
+

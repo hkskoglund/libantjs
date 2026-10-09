@@ -2,14 +2,14 @@
 
   var MainPage = require('../main-page');
 
-  function BikePowerDataPage(configuration, broadcast, profile, pageNumber) {
-    MainPage.call(this, configuration, broadcast, profile, pageNumber);
+  class BikePowerDataPage extends MainPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
+
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  BikePowerDataPage.prototype = Object.create(MainPage.prototype);
-  BikePowerDataPage.prototype.constructor = BikePowerDataPage;
+  readCommonBytes(broadcast) {
 
-  BikePowerDataPage.prototype.readCommonBytes = function(broadcast) {
     var data = broadcast.data,
       dataView = new DataView(data.buffer, data.byteOffset, data.byteLength);
 
@@ -57,13 +57,15 @@
         this.torqueTicksStamp = dataView.getUint16(6, false);
         break;
     }
-  };
+  }
 
-  BikePowerDataPage.prototype.readPercentage = function(value) {
+  readPercentage(value) {
+
     return value === 0xFF ? undefined : value / 2;
-  };
+  }
 
-  BikePowerDataPage.prototype.toString = function() {
+  toString() {
+
     var details = [];
 
     if (this.instantaneousCadence !== undefined)
@@ -80,6 +82,16 @@
       details.push('Subpage ' + this.subpageNumber);
 
     return 'P# ' + this.number + (details.length ? ' ' + details.join(', ') : '');
-  };
+  }
+}
+
+
+
+
+
+
+
+
+
 
   module.exports = BikePowerDataPage;

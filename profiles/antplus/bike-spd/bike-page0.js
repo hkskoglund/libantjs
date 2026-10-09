@@ -2,39 +2,33 @@
 
   var SPDCADSharedPage = require('../bike-spdcad/spdcad-shared');
 
-  function BikePage0(configuration, broadcast, profile, pageNumber) {
+  class BikePage0 extends SPDCADSharedPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    SPDCADSharedPage.call(this, configuration, broadcast, profile, pageNumber);
 
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  BikePage0.prototype = Object.create(SPDCADSharedPage.prototype);
-  BikePage0.prototype.constructor = BikePage0;
+  readCommonBytes() {
 
-  // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
-  BikePage0.prototype.BYTE = {
-
-    BIKE_SPEED_EVENT_TIME: 4,
-    CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
-  };
-
-  BikePage0.prototype.readCommonBytes = function() {
     this.readSpeed();
 
     if (this.number === 5) {
       this.stopIndicator = (this.broadcast.data[1] & 0x01) === 0x01;
     }
-  };
+  }
 
-  BikePage0.prototype.update = function() {
+  update() {
+
     this.calcSpeed();
 
     if (this.stopIndicator) {
       this.speed = 0;
     }
-  };
+  }
 
-  BikePage0.prototype.toString = function() {
+  toString() {
+
 
     var msg;
 
@@ -52,7 +46,24 @@
       ' wheel circumference (m) ' + this.profile.WHEEL_CIRCUMFERENCE;
 
     return msg;
+  }
+}
+
+
+
+
+  // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
+  BikePage0.prototype.BYTE = {
+
+    BIKE_SPEED_EVENT_TIME: 4,
+    CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
   };
 
+
+
+
+
+
+
   module.exports = BikePage0;
-  
+

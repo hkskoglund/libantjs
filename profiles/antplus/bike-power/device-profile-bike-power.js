@@ -9,38 +9,24 @@
     BikePowerDataPage = require('../bike-power/bike-power-data-page');
 
 
-  function DeviceProfile_BikePower(configuration) {
+  class DeviceProfile_BikePower extends DeviceProfile {
+  constructor(configuration) {
 
-    DeviceProfile.call(this, configuration);
+
+    super(configuration);
 
     this.initMasterSlaveConfiguration();
 
     this.requestPageUpdate(this.DEFAULT_PAGE_UPDATE_DELAY);
   }
 
-  DeviceProfile_BikePower.prototype = Object.create(DeviceProfile.prototype);
-  DeviceProfile_BikePower.prototype.constructor = DeviceProfile_BikePower;
+  createManualZeroRequest() {
 
-  DeviceProfile_BikePower.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
-
-  // Transmission from power sensor each 8182/32768 seconds -> approx 4.00 Hz, ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1 - p. 19 CHANNEL configuration
-  DeviceProfile_BikePower.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8182,
-
-  };
-
-  DeviceProfile_BikePower.prototype.NAME = 'BIKE_POWER';
-
-  DeviceProfile_BikePower.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x0B,
-    TRANSMISSION_TYPE: 0x05
-  };
-
-  DeviceProfile_BikePower.prototype.createManualZeroRequest = function() {
     return Uint8Array.from([0x01, 0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
-  };
+  }
 
-  DeviceProfile_BikePower.prototype.requestManualZero = function(sendAcknowledged, callback) {
+  requestManualZero(sendAcknowledged, callback) {
+
     if (typeof sendAcknowledged !== 'function') {
       throw new TypeError('sendAcknowledged must be a function bound to the sensor channel');
     }
@@ -50,20 +36,20 @@
     }
 
     return sendAcknowledged(this.createManualZeroRequest(), callback);
-  };
+  }
 
-  DeviceProfile_BikePower.prototype.getPageNumber = function(broadcast) {
+  getPageNumber(broadcast) {
+
     var data = broadcast.data,
       pageNumber;
 
     pageNumber = data[0];
 
     return pageNumber;
+  }
 
-  };
+  getPage(broadcast) {
 
-  // Parse received page
-  DeviceProfile_BikePower.prototype.getPage = function(broadcast) {
     var page,
       pageNumber = this.getPageNumber(broadcast);
 
@@ -132,8 +118,35 @@
     }
 
     return page;
+  }
+}
+
+
+
+
+  DeviceProfile_BikePower.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
+
+  // Transmission from power sensor each 8182/32768 seconds -> approx 4.00 Hz, ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1 - p. 19 CHANNEL configuration
+  DeviceProfile_BikePower.prototype.CHANNEL_PERIOD = {
+    DEFAULT: 8182,
 
   };
 
+  DeviceProfile_BikePower.prototype.NAME = 'BIKE_POWER';
+
+  DeviceProfile_BikePower.prototype.CHANNEL_ID = {
+    DEVICE_TYPE: 0x0B,
+    TRANSMISSION_TYPE: 0x05
+  };
+
+
+
+
+
+
+
+  // Parse received page
+
+
   module.exports = DeviceProfile_BikePower;
-  
+

@@ -2,13 +2,71 @@
 
   var MainPage = require('../main-page');
 
-  function CalibrationMain(configuration, broadcast, profile, pageNumber) {
+  class CalibrationMain extends MainPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    MainPage.call(this, configuration, broadcast, profile, pageNumber);
+
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  CalibrationMain.prototype = Object.create(MainPage.prototype);
-  CalibrationMain.prototype.constructor = CalibrationMain;
+  readResponse() {
+
+    var data = this.broadcast.data,
+      dataView = new DataView(data.buffer);
+
+    this.calibrationID = data[1];
+    this.calibrationPayload = Uint8Array.from(data.subarray(2));
+
+    switch (this.calibrationID) {
+      case 0xAC: // Calibration Successfull
+      case 0xAF: // Calibration Failed
+
+        this.autoZeroStatus = data[2];
+
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView/getInt16
+
+        // Spec. p 45 ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1
+
+        // This value is passed back from the sensor to the display to provide an indication to the user about the quality of the calibration
+        // It is intended to indicate the result of the calibration to the user. If the calibration data value is significantly different from the number the user is accustomed to seeing, it may indicate to the user that calibration should be performed again or that the power sensor requires service
+        this.calibrationData = dataView.getInt16(data.byteOffset + 6, true);
+
+        break;
+
+      case 0x12:
+        this.autoZeroSupported = (data[2] & 0x01) !== 0;
+        this.autoZeroEnabled = (data[2] & 0x02) !== 0;
+        break;
+    }
+  }
+
+  readCommonBytes() {
+
+    this.readResponse();
+  }
+
+  toString() {
+
+    var idName = this.ID[this.calibrationID] || 'Unknown calibration message',
+      msg = 'Calibration ID: ' + idName + ' (0x' + this.calibrationID.toString(16) + ')';
+
+    if (this.autoZeroStatus !== undefined) {
+      msg += ', ' + (this.AUTO_ZERO[this.autoZeroStatus] || 'Unknown auto zero status') +
+        ' (0x' + this.autoZeroStatus.toString(16) + '), Calibration data ' + this.calibrationData;
+    } else if (this.calibrationID === 0x12) {
+      msg += ', Auto zero supported ' + this.autoZeroSupported +
+        ', enabled ' + this.autoZeroEnabled;
+    } else {
+      msg += ', Data ' + Array.from(this.calibrationPayload).map(value =>
+        value.toString(16).padStart(2, '0')).join(' ');
+    }
+
+    return msg;
+  }
+}
+
+
+
 
   CalibrationMain.prototype.ID = {
     REQUEST_MANUAL_ZERO: 0xAA,
@@ -61,58 +119,11 @@
       };
   */
 
-  CalibrationMain.prototype.readResponse = function() {
-    var data = this.broadcast.data,
-      dataView = new DataView(data.buffer);
 
-    this.calibrationID = data[1];
-    this.calibrationPayload = Uint8Array.from(data.subarray(2));
 
-    switch (this.calibrationID) {
-      case 0xAC: // Calibration Successfull
-      case 0xAF: // Calibration Failed
 
-        this.autoZeroStatus = data[2];
 
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView/getInt16
 
-        // Spec. p 45 ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1
-
-        // This value is passed back from the sensor to the display to provide an indication to the user about the quality of the calibration
-        // It is intended to indicate the result of the calibration to the user. If the calibration data value is significantly different from the number the user is accustomed to seeing, it may indicate to the user that calibration should be performed again or that the power sensor requires service
-        this.calibrationData = dataView.getInt16(data.byteOffset + 6, true);
-
-        break;
-
-      case 0x12:
-        this.autoZeroSupported = (data[2] & 0x01) !== 0;
-        this.autoZeroEnabled = (data[2] & 0x02) !== 0;
-        break;
-    }
-
-  };
-
-  CalibrationMain.prototype.readCommonBytes = function() {
-    this.readResponse();
-  };
-
-  CalibrationMain.prototype.toString = function() {
-    var idName = this.ID[this.calibrationID] || 'Unknown calibration message',
-      msg = 'Calibration ID: ' + idName + ' (0x' + this.calibrationID.toString(16) + ')';
-
-    if (this.autoZeroStatus !== undefined) {
-      msg += ', ' + (this.AUTO_ZERO[this.autoZeroStatus] || 'Unknown auto zero status') +
-        ' (0x' + this.autoZeroStatus.toString(16) + '), Calibration data ' + this.calibrationData;
-    } else if (this.calibrationID === 0x12) {
-      msg += ', Auto zero supported ' + this.autoZeroSupported +
-        ', enabled ' + this.autoZeroEnabled;
-    } else {
-      msg += ', Data ' + Array.from(this.calibrationPayload).map(value =>
-        value.toString(16).padStart(2, '0')).join(' ');
-    }
-
-    return msg;
-  };
 
   module.exports = CalibrationMain;
-  
+

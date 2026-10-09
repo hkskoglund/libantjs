@@ -4,82 +4,14 @@
 
   // Data page 1 - Temperature
 
-  function TemperaturePage1(configuration, broadcast, profile, pageNumber) {
-    MainPage.call(this, configuration, broadcast, profile, pageNumber);
+  class TemperaturePage1 extends MainPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  TemperaturePage1.prototype = Object.create(MainPage.prototype);
-  TemperaturePage1.prototype.constructor = TemperaturePage1;
+  readCommonBytes(broadcast) {
 
-  // Byte layout
-  TemperaturePage1.prototype.BYTE_OFFSET = {
-    PAGE_NUMBER: 0,
-    // Reserved
-    EVENT_COUNT: 2,
-    HOUR24_LOW_LSB: 3,
-    HOUR24_LOW_MSN: 4,
-    HOUR24_HIGH_LSN: 4,
-    HOUR24_HIGH_MSB: 5,
-    CURRENT_TEMP_LSB: 6,
-    CURRENT_TEMP_MSB: 7
-  };
-
-  // Bit field layout
-  TemperaturePage1.prototype.BIT_FIELD = {
-
-    HOUR24_LOW_MSN: {
-      START_BIT: 4,
-      LENGTH: 4
-    },
-    SIGN_HOUR24_LOW_MSN: {
-      START_BIT: 3,
-      LENGTH: 1
-    },
-
-    HOUR24_HIGH_LSN: {
-      START_BIT: 4,
-      LENGTH: 4
-    },
-    SIGN_HOUR24_HIGH_MSB: {
-      START_BIT: 7,
-      LENGTH: 1
-    },
-
-    SIGN_CURRENT_TEMP: {
-      START_BIT: 7,
-      LENGTH: 1
-    }
-
-  };
-
-  // Bit mask to pinpoint BIT_FIELD
-  TemperaturePage1.prototype.BIT_MASK = {
-
-    HOUR24_LOW_MSN: parseInt("11110000", 2),
-    HOUR24_HIGH_LSN: parseInt("00001111", 2),
-
-    SIGN_CURRENT_TEMP: parseInt("10000000", 2),
-    VALUE_CURRENT_TEMP_MSB: parseInt("01111111", 2),
-
-    SIGN_HOUR24_HIGH_MSB: parseInt("10000000", 2),
-    VALUE_HOUR24_HIGH_MSB: parseInt("01111111", 2),
-
-    VALUE_HOUR24_LOW_MSN: parseInt("0111", 2),
-
-    MAGNITUDE_LOW_HIGH: parseInt("011111111111", 2),
-
-    MAGNITUDE_CURRENT_TEMP: parseInt("0111111111111111", 2)
-
-  };
-
-  TemperaturePage1.prototype.UNIT = {
-    HOUR24_LOW: 0.1,
-    HOUR24_HIGH: 0.1,
-    CURRENT_TEMP: 0.01
-  };
-
-  TemperaturePage1.prototype.readCommonBytes = function(broadcast) {
     var data = broadcast.data;
 
     // Byte 0 - page number  Read in deviceprofile
@@ -166,9 +98,10 @@
       this.currentTemp = valueCurrentTemp * signCurrentTempMSB * TemperaturePage1.prototype.UNIT.CURRENT_TEMP;
     } else
       this.currentTemp = undefined;
-  };
+  }
 
-  TemperaturePage1.prototype.toString = function() {
+  toString() {
+
     var formatTemperature = function(value, precision) {
       return value === undefined ? 'N/A' : value.toFixed(precision);
     };
@@ -176,7 +109,82 @@
       formatTemperature(this.hour24High, 1) + "°C Current Temp " + formatTemperature(this.currentTemp, 2) + "°C";
 
     return msg;
+  }
+}
+
+
+
+
+  // Byte layout
+  TemperaturePage1.prototype.BYTE_OFFSET = {
+    PAGE_NUMBER: 0,
+    // Reserved
+    EVENT_COUNT: 2,
+    HOUR24_LOW_LSB: 3,
+    HOUR24_LOW_MSN: 4,
+    HOUR24_HIGH_LSN: 4,
+    HOUR24_HIGH_MSB: 5,
+    CURRENT_TEMP_LSB: 6,
+    CURRENT_TEMP_MSB: 7
   };
 
+  // Bit field layout
+  TemperaturePage1.prototype.BIT_FIELD = {
+
+    HOUR24_LOW_MSN: {
+      START_BIT: 4,
+      LENGTH: 4
+    },
+    SIGN_HOUR24_LOW_MSN: {
+      START_BIT: 3,
+      LENGTH: 1
+    },
+
+    HOUR24_HIGH_LSN: {
+      START_BIT: 4,
+      LENGTH: 4
+    },
+    SIGN_HOUR24_HIGH_MSB: {
+      START_BIT: 7,
+      LENGTH: 1
+    },
+
+    SIGN_CURRENT_TEMP: {
+      START_BIT: 7,
+      LENGTH: 1
+    }
+
+  };
+
+  // Bit mask to pinpoint BIT_FIELD
+  TemperaturePage1.prototype.BIT_MASK = {
+
+    HOUR24_LOW_MSN: parseInt("11110000", 2),
+    HOUR24_HIGH_LSN: parseInt("00001111", 2),
+
+    SIGN_CURRENT_TEMP: parseInt("10000000", 2),
+    VALUE_CURRENT_TEMP_MSB: parseInt("01111111", 2),
+
+    SIGN_HOUR24_HIGH_MSB: parseInt("10000000", 2),
+    VALUE_HOUR24_HIGH_MSB: parseInt("01111111", 2),
+
+    VALUE_HOUR24_LOW_MSN: parseInt("0111", 2),
+
+    MAGNITUDE_LOW_HIGH: parseInt("011111111111", 2),
+
+    MAGNITUDE_CURRENT_TEMP: parseInt("0111111111111111", 2)
+
+  };
+
+  TemperaturePage1.prototype.UNIT = {
+    HOUR24_LOW: 0.1,
+    HOUR24_HIGH: 0.1,
+    CURRENT_TEMP: 0.01
+  };
+
+
+
+
+
   module.exports = TemperaturePage1;
-  
+

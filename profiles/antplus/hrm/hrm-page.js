@@ -2,16 +2,15 @@
 
   var MainPage = require('../main-page');
 
-  function HRMPage(configuration, broadcast, profile, pageNumber) {
+  class HRMPage extends MainPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    MainPage.call(this, configuration, broadcast, profile, pageNumber);
+
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  HRMPage.prototype = Object.create(MainPage.prototype);
-  HRMPage.prototype.constructor = HRMPage;
+  readHR() {
 
-  // Deviceprofile p. 17 "Bytes 4-7 have the same definition for every data page"
-  HRMPage.prototype.readHR = function() {
     var data = this.broadcast.data,
       dataView = new DataView(data.buffer);
 
@@ -23,11 +22,10 @@
 
     // Intantaneous heart rate, invalid = 0x00, valid = 1-255, can be displayed without further intepretation
     this.computedHeartRate = data[7];
+  }
 
-  };
+  calcRRInterval() {
 
-  // Set RR interval based on previous heart event time and heart beat count
-  HRMPage.prototype.calcRRInterval = function() {
 
     var previousPage,
       receivedPages = this.profile.receivedPage || [],
@@ -62,13 +60,15 @@
     if (heartBeatEventTimeDelta > 0) {
       this.RRInterval = (heartBeatEventTimeDelta / 1024) * 1000; // ms.
     }
-  };
+  }
 
-  HRMPage.prototype.update = function() {
+  update() {
+
     this.calcRRInterval();
-  };
+  }
 
-  HRMPage.prototype.toString = function() {
+  toString() {
+
 
     var msg = "HR " + this.computedHeartRate + " C " + this.heartBeatCount + " Tn " + this.heartBeatEventTime + " Tn-1 " + this.previousHeartBeatEventTime + " T - Tn-1 " + (this.heartBeatEventTime - this.previousHeartBeatEventTime);
 
@@ -76,7 +76,21 @@
       msg += " RR " + this.RRInterval.toFixed(1) + " ms";
     }
     return msg;
-  };
+  }
+}
+
+
+
+
+  // Deviceprofile p. 17 "Bytes 4-7 have the same definition for every data page"
+
+
+  // Set RR interval based on previous heart event time and heart beat count
+
+
+
+
+
 
   module.exports = HRMPage;
-  
+

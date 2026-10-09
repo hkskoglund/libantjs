@@ -3,17 +3,28 @@
   var DeviceProfileBikeShared = require('../bike-spdcad/device-profile-bike-shared'),
     BikePage0 = require('./bike-page0');
 
-  function DeviceProfile_BikeSpd(configuration) {
+  class DeviceProfile_BikeSpd extends DeviceProfileBikeShared {
+  constructor(configuration) {
 
-    DeviceProfileBikeShared.call(this, configuration);
+
+    super(configuration);
 
     this.initMasterSlaveConfiguration();
 
     this.requestPageUpdate(DeviceProfile_BikeSpd.prototype.DEFAULT_PAGE_UPDATE_DELAY);
   }
 
-  DeviceProfile_BikeSpd.prototype = Object.create(DeviceProfileBikeShared.prototype);
-  DeviceProfile_BikeSpd.prototype.constructor = DeviceProfile_BikeSpd;
+  getPage(broadcast) {
+
+    return this.getBikePage(broadcast, BikePage0, function(prototype) {
+      BikePage0.prototype.readSpeed.call(this, prototype);
+      BikePage0.prototype.calcSpeed.call(this, prototype);
+    });
+  }
+}
+
+
+
 
 
   DeviceProfile_BikeSpd.prototype.NAME = 'BIKE_SPD';
@@ -30,12 +41,7 @@
   DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
 
 
-  DeviceProfile_BikeSpd.prototype.getPage = function(broadcast) {
-    return this.getBikePage(broadcast, BikePage0, function(prototype) {
-      BikePage0.prototype.readSpeed.call(this, prototype);
-      BikePage0.prototype.calcSpeed.call(this, prototype);
-    });
-  };
+
 
   module.exports = DeviceProfile_BikeSpd;
-  
+

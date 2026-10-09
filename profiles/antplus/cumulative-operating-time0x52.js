@@ -1,58 +1,71 @@
 'use strict';
 
-  var CumulativeOperatingTimeShared = require('./cumulative-operating-time-shared');
+const CumulativeOperatingTimeShared = require('./cumulative-operating-time-shared');
 
-  function CumulativeOperatingTime(configuration, broadcast, profile, pageNumber) {
-
-    CumulativeOperatingTimeShared.call(this, configuration, broadcast, profile, pageNumber);
-
-    this.read(broadcast);
-
+class BatteryStatus {
+  constructor(dataByte) {
+    this.batteryStatus = (dataByte & 0x70) >> 4;
   }
 
-  CumulativeOperatingTime.prototype = Object.create(CumulativeOperatingTimeShared.prototype);
-  CumulativeOperatingTime.prototype.constructor = CumulativeOperatingTime;
+  toString() {
+    switch (this.batteryStatus) {
+      case 0x00:
+      case 0x06:
+        return "Reserved";
+      case 0x01:
+        return "New";
+      case 0x02:
+        return "Good";
+      case 0x03:
+        return "OK";
+      case 0x04:
+        return "Low";
+      case 0x05:
+        return "Critical";
+      case 0x07:
+        return "Invalid";
+      default:
+        return "? - " + this.batteryStatus;
+    }
+  }
+}
 
+class CumulativeOperatingTime extends CumulativeOperatingTimeShared {
+  constructor(configuration, broadcast, profile, pageNumber) {
+    super(configuration, broadcast, profile, pageNumber);
+    this.read(broadcast);
+  }
 
   // Background Page 1
-  CumulativeOperatingTime.prototype.read = function(broadcast) {
-    var data = broadcast.data;
-
-    // Byte 2
+  read(broadcast) {
+    const data = broadcast.data;
 
     this.batteryIdentifier = data[2] === 0xFF ? undefined : data[2] >> 4;
     this.numberOfBatteries = data[2] === 0xFF ? undefined : data[2] & 0x0F;
-
-    // Byte 7
-
     this.descriptive = {
       coarseVoltage: data[7] & 0x0F,
       batteryStatus: new BatteryStatus(data[7]),
-      resolution: (data[7] & 0x80) >> 7 // Bit 7 0 = 16 s, 1 = 2 s
+      resolution: (data[7] & 0x80) >> 7
     };
 
-    var unit_multiplier = (this.descriptive.resolution === 1) ? 2 : 16;
-
-    // Byte 3-5
+    const unitMultiplier = this.descriptive.resolution === 1 ? 2 : 16;
 
     if (data[3] === 0xFF && data[4] === 0xFF && data[5] === 0xFF) {
       this.cumulativeOperatingTime = undefined;
       this.cumulativeOperatingTimeString = undefined;
       this.lastBatteryReset = undefined;
     } else {
-      this.readCumulativeOperatingTime(broadcast, 3, unit_multiplier);
+      this.readCumulativeOperatingTime(broadcast, 3, unitMultiplier);
     }
 
-    // Byte 6
-
-    this.fractionalBatteryVoltage = data[6] / 256; // Volt
+    this.fractionalBatteryVoltage = data[6] / 256;
     if (this.descriptive.coarseVoltage !== 0x0F) {
       this.batteryVoltage = this.fractionalBatteryVoltage + this.descriptive.coarseVoltage;
     }
-  };
+  }
 
-  CumulativeOperatingTime.prototype.toString = function() {
-    var msg = "P# " + this.number + " Cumulative operating time ";
+  toString() {
+    let msg = "P# " + this.number + " Cumulative operating time ";
 
     if (this.cumulativeOperatingTime === undefined) {
       msg += "unavailable";
@@ -64,53 +77,14 @@
       msg += " Battery identifier " + this.batteryIdentifier + " of " + this.numberOfBatteries;
     }
 
-    if (this.descriptive.coarseVoltage !== 0x0F) { // Filter invalid voltage
+    if (this.descriptive.coarseVoltage !== 0x0F) {
       msg += " Battery (V) " + this.batteryVoltage.toFixed(1);
     }
 
     msg += " Battery status " + this.descriptive.batteryStatus.toString();
 
     return msg;
-  };
-
-  function BatteryStatus(dataByte) {
-    this.batteryStatus = (dataByte & 0x70) >> 4;
   }
+}
 
-  BatteryStatus.prototype.toString = function() {
-    var batteryStatusString;
-
-    switch (this.batteryStatus) {
-      case 0x00:
-        batteryStatusString = "Reserved";
-        break;
-      case 0x01:
-        batteryStatusString = "New";
-        break;
-      case 0x02:
-        batteryStatusString = "Good";
-        break;
-      case 0x03:
-        batteryStatusString = "OK";
-        break;
-      case 0x04:
-        batteryStatusString = "Low";
-        break;
-      case 0x05:
-        batteryStatusString = "Critical";
-        break;
-      case 0x06:
-        batteryStatusString = "Reserved";
-        break;
-      case 0x07:
-        batteryStatusString = "Invalid";
-        break;
-      default:
-        batteryStatusString = "? - " + this.batteryStatus;
-    }
-
-    return batteryStatusString;
-  };
-
-  module.exports = CumulativeOperatingTime;
-  
+module.exports = CumulativeOperatingTime;

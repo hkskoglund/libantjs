@@ -6,50 +6,46 @@ var DeviceProfile_SDM = require('./device-profile-sdm.js');
 var DeviceProfile_SPDCAD = require('./device-profile-spdcad.js');
 var Channel = require('../channel.js');
 var Network = require('../network.js');
-var util = require('util');
 
+class BackgroundScanningChannel extends DeviceProfile {
+  constructor(configuration) {
 
-function BackgroundScanningChannel(configuration) {
-  DeviceProfile.call(this, configuration);
-  this._configuration = configuration;
-}
-
-//BackgroundScanningChannel.prototype = Object.create(DeviceProfile.prototype);  
-
-//BackgroundScanningChannel.prototype.constructor = BackgroundScanningChannel;  
-
-util.inherits(BackgroundScanningChannel, DeviceProfile);
-
-BackgroundScanningChannel.prototype.getSlaveChannelConfiguration = function(config) {
-  // networkNr, channelNr, deviceNr, deviceType, transmissionType, lowPrioritySearchTimeout
-  // Setup channel parameters for background scanning
-  var broadCastDataParserFunc,
-    channelResponseEventFunc;
-
-  this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_only_channel, config.networkNr, this._configuration.network_keys.ANT_PLUS);
-
-  this.channel.setExtendedAssignment(Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE);
-  this.channel.setChannelId(config.deviceNr, config.deviceType, config.transmissionType, false);
-  this.channel.setLowPrioritySearchTimeout(config.searchTimeoutLP);
-
-  if (config.searchTimeoutHP !== 0x00) {
-    this.log.debug( Date.now(), "High priority search timeout is not disabled = " + config.searchTimeoutHP.toString(16) + " , forced disable = 0x00 for background scanning");
-    config.searchTimeoutHP = 0x00;
+    super(configuration);
+    this._configuration = configuration;
   }
-  this.channel.setChannelSearchTimeout(config.searchTimeoutHP); // Disable High priority search
-  this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
 
-  broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
-  channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
+  getSlaveChannelConfiguration(config) {
 
-  this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
-  this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
+    // networkNr, channelNr, deviceNr, deviceType, transmissionType, lowPrioritySearchTimeout
+    // Setup channel parameters for background scanning
+    var broadCastDataParserFunc,
+      channelResponseEventFunc;
+
+    this.channel = new Channel(config.channelNr, Channel.prototype.CHANNEL_TYPE.receive_only_channel, config.networkNr, this._configuration.network_keys.ANT_PLUS);
+
+    this.channel.setExtendedAssignment(Channel.prototype.EXTENDED_ASSIGNMENT.BACKGROUND_SCANNING_ENABLE);
+    this.channel.setChannelId(config.deviceNr, config.deviceType, config.transmissionType, false);
+    this.channel.setLowPrioritySearchTimeout(config.searchTimeoutLP);
+
+    if (config.searchTimeoutHP !== 0x00) {
+      this.log.debug( Date.now(), "High priority search timeout is not disabled = " + config.searchTimeoutHP.toString(16) + " , forced disable = 0x00 for background scanning");
+      config.searchTimeoutHP = 0x00;
+    }
+    this.channel.setChannelSearchTimeout(config.searchTimeoutHP); // Disable High priority search
+    this.channel.setChannelFrequency(this._configuration.frequency.ANT_PLUS);
+
+    broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
+    channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
+
+    this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+    this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
 
 
-  return this.channel;
-};
+    return this.channel;
+  }
 
-BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
+  broadCastDataParser(data) {
+
     //channelID:
     //    { channelNumber: 0,
     //        deviceNumber: 51144,
@@ -138,11 +134,9 @@ BackgroundScanningChannel.prototype.broadCastDataParser = function(data) {
             self.log.debug( Date.now() + "Found ANT device type", this.channelID.deviceTypeID, " device profile not implemented/supported");
             break;
         }
+  }
 
-  };
-
-  BackgroundScanningChannel.prototype.channelResponseEvent = function(data) {
-  };
-
+  channelResponseEvent(data) {}
+}
 
   module.exports = BackgroundScanningChannel;

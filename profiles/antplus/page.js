@@ -2,7 +2,9 @@
 
   var Logger = require('../../util/logger');
 
-  function GenericPage(configuration, broadcast, profile, pageNumber) {
+  class GenericPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
+
 
     this.log = configuration.logger || new Logger(configuration);
 
@@ -45,15 +47,8 @@
     }
   }
 
-  GenericPage.prototype.BIT_MASK = {
-    PAGE_NUMBER: parseInt("01111111", 2), // 7 lsb of byte 0 ANT+ format
-    PAGE_TOGGLE: parseInt("10000000", 2) // msb of byte 0 ANT+ format
-  };
+  clone() {
 
-  GenericPage.prototype.COMMON = {};
-
-  // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
-  GenericPage.prototype.clone = function() {
 
     var clone = Object.create(null), // Pure object
       ownEnumerableProperties = Object.keys(this),
@@ -92,9 +87,19 @@
     }
 
     return clone;
+  }
+}
 
+  GenericPage.prototype.BIT_MASK = {
+    PAGE_NUMBER: parseInt("01111111", 2), // 7 lsb of byte 0 ANT+ format
+    PAGE_TOGGLE: parseInt("10000000", 2) // msb of byte 0 ANT+ format
   };
+
+  GenericPage.prototype.COMMON = {};
+
+  // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
+
 
   module.exports = GenericPage;
 
-  
+

@@ -8,676 +8,514 @@ var ANT = require('libant');
 var fs = require('fs');
 var Channel = require('../channel.js');
 var PathSeparator = require('path').sep; // Win32 = \\, *nix = /
-var util = require('util');
 
-function DeviceProfile_ANTFS(configuration) {
-  DeviceProfile.call(this, configuration); // Call parent
-  var self = this;
-  this._commandQueue = [];
-  this._commandIndex = [];
-  this._mutex = {};
+class DeviceProfile_ANTFS extends DeviceProfile {
+  constructor(configuration) {
 
-  this.state = DeviceProfile_ANTFS.prototype.STATE.INIT; // Init state before first LINK beacon received from device
+    super(configuration); // Call parent
+    var self = this;
+    this._commandQueue = [];
+    this._commandIndex = [];
+    this._mutex = {};
 
-  // Verify that root directory exists
+    this.state = DeviceProfile_ANTFS.prototype.STATE.INIT; // Init state before first LINK beacon received from device
 
-  fs.exists(DeviceProfile_ANTFS.prototype.ROOT_DIR, function(exists) {
-    if (!exists) {
-      self.log.debug( "Root directory does not exists");
-      fs.mkdir(DeviceProfile_ANTFS.prototype.ROOT_DIR, function completionCB() {
-        self.log.debug( "New root directory created at " + DeviceProfile_ANTFS.prototype.ROOT_DIR);
-      });
-    } else
-      self.log.debug( Date.now() + " Root directory (for storage of device FIT files)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
-  });
+    // Verify that root directory exists
 
-}
+    fs.exists(DeviceProfile_ANTFS.prototype.ROOT_DIR, function(exists) {
+      if (!exists) {
+        self.log.debug( "Root directory does not exists");
+        fs.mkdir(DeviceProfile_ANTFS.prototype.ROOT_DIR, function completionCB() {
+          self.log.debug( "New root directory created at " + DeviceProfile_ANTFS.prototype.ROOT_DIR);
+        });
+      } else
+        self.log.debug( Date.now() + " Root directory (for storage of device FIT files)", DeviceProfile_ANTFS.prototype.ROOT_DIR);
+    });
+  }
 
-util.inherits(DeviceProfile_ANTFS, DeviceProfile);
+  addCommand(command) {
 
-//DeviceProfile_ANTFS.prototype = Object.create(DeviceProfile.prototype);
+    this._commandQueue.push(command);
+  }
 
-//DeviceProfile_ANTFS.prototype.constructor = DeviceProfile_ANTFS;
+  addIndex(index) {
 
-DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD = 4096;
+    this._commandIndex.push(index);
+  }
 
-DeviceProfile_ANTFS.prototype.SEARCH_WAVEFORM = [0x53, 0x00];
+  setHomeDirectory(homeDir) {
 
-DeviceProfile_ANTFS.prototype.BEACON_ID = 0x43;
+    var self = this;
+    this.homeDirectory = homeDir;
 
-DeviceProfile_ANTFS.prototype.STATE = {
-  INIT: 0x0F,
-  LINK_LAYER: 0x00,
-  AUTHENTICATION_LAYER: 0x01,
-  TRANSPORT_LAYER: 0x02,
-  BUSY: 0x03,
-  0x00: "LINK State",
-  0x01: "AUTHENTICATION State",
-  0x02: "TRANSPORT State",
-  0x03: "BUSY State",
-  0x0F: "INIT State"
-};
+    fs.exists(this.homeDirectory, function(exists) {
+      if (!exists) {
+        fs.mkdir(self.homeDirectory, function(err) {
+          if (err) {
+            self.log.debug( Date.now() + " Could not create home directory: " + err);
+            throw err;
+          } else {
+            self.log.debug( Date.now() + " Created home directory at " + self.homeDirectory);
+          }
+        });
+      } else {
+        self.log.debug( Date.now() + " Setting home directory to " + self.homeDirectory);
+      }
+    });
+  }
 
-// ANTFS TS p. 50 - commands are send either as acknowledged data or bursts depending on payload size
-// COMMAND format : p. 49 ANTFS Command/Response ID = 0x44, Command, Parameters ...
-DeviceProfile_ANTFS.prototype.COMMAND_ID = {
-  COMMAND_RESPONSE_ID: 0x44,
-  LINK: 0x02,
-  DISCONNECT: 0x03,
-  AUTHENTICATE: 0x04,
-  PING: 0x05,
-  DOWNLOAD: 0x09,
-  UPLOAD: 0x0A,
-  ERASE: 0x0B,
-  UPLOAD_DATA: 0x0C,
-  AUTHENTICATE_RESPONSE: 0x84,
-  DOWNLOAD_RESPONSE: 0x89,
-  ERASE_RESPONSE: 0x8B
-};
+  getHomeDirectory() {
 
-// ANTFS TS p. 51
-DeviceProfile_ANTFS.prototype.RESPONSE_ID = {
-  authenticate: 0x84,
-  download: 0x89,
-  upload: 0x8A,
-  erase: 0x8b,
-  upload_data: 0x8c
-};
+    return this.homeDirectory;
+  }
 
-DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD = {
-  HzHalf: 0x00, // 0.5 Hz
-  Hz1: 0x01,
-  Hz2: 0x02,
-  Hz4: 0x03,
-  Hz8: 0x04, // 8 Hz
-  0x00: "0.5 Hz (65535)", // 000
-  0x01: "1 Hz (32768)", // 001
-  0x02: "2 Hz (16384)", // 010
-  0x03: "4 Hz (8192)", // 011
-  0x04: "8 Hz (4096)", // 100
-  0x07: "Match established channel period (broadcast ANT-FS only)" // 111
-};
+  parseBurstData(channelNr, data) {
 
-DeviceProfile_ANTFS.prototype.AUTHENTICATION_TYPE = {
-  PASS_THROUGH: 0x00,
-  PAIRING_ONLY: 0x02,
-  PASSKEY_AND_PAIRING_ONLY: 0x03,
-  0x00: "Pass-through supported (pairing & passkey optional)",
-  0x02: "Pairing only",
-  0x03: "Passkey and Pairing only"
-};
+    var self = this,
+      beacon,
+      authenticate_response = {},
+      download_response = {},
+      currentCRCSeed,
+      erase_response = {},
+      resumeIndex,
+      resumeDataOffset,
+      resumeCRCSeed,
+      currentDataOffset,
+      homeDirectory,
+      downloadRequestType;
 
-DeviceProfile_ANTFS.prototype.DISCONNECT_COMMAND = {
-  RETURN_TO_LINK_LAYER: 0x00,
-  RETURN_TO_BROADCAST_MODE: 0x01
-    // 2-127 reserved
-    // 128 - 255 device specific disconnect
-};
-
-DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND = {
-  PROCEED_TO_TRANSPORT: 0x00, // Pass-through
-  REQUEST_CLIENT_DEVICE_SERIAL_NUMBER: 0x01,
-  REQUEST_PAIRING: 0x02,
-  REQUEST_PASSKEY_EXCHANGE: 0x03
-};
-
-DeviceProfile_ANTFS.prototype.FRIENDLY_NAME = "GETFIT.JS";
-
-DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST = {
-  CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER: 0x00,
-  NEW_TRANSFER: 0x01
-};
-
-DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE = {
-  REQUEST_OK: 0x00,
-  CRC_INCORRECT: 0x05,
-  0x00: "Download Request OK",
-  0x01: "Data does not exist",
-  0x02: "Data exists but is not downloadable",
-  0x03: "Not ready to download",
-  0x04: "Request invalid",
-  0x05: "CRC incorrect"
-};
-
-DeviceProfile_ANTFS.prototype.ERASE_RESPONSE = {
-  ERASE_SUCCESSFULL: 0x00,
-  ERASE_FAILED: 0x01,
-  NOT_READY: 0x02,
-  0x00: "Erase successfull",
-  0x01: "Erase failed",
-  0x02: "Not ready"
-};
-
-DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX = {
-  DIRECTORY_STRUCTURE: 0x00,
-  // 0xFC00 - 0xFFFD Reserved
-  COMMAND_PIPE: 0xFFFE,
-  // 0xFFFF - Reserved
-};
-
-DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE = {
-  CLIENT_SN: 0x00,
-  ACCEPT: 0x01,
-  REJECT: 0x02,
-  0x00: "Client Device Serial Number",
-  0x01: "Accept of pairing or passkey",
-  0x02: "Reject"
-};
-
-DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB = 16; // Size of download buffer in MB
-
-DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY = 3000; // Time in ms. to wait for burst response on a request before retrying previous request
-
-DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + PathSeparator + 'getFIT-archive';
-
-DeviceProfile_ANTFS.prototype.NODECOMMAND = {
-  DOWNLOAD_MULTIPLE: 0x03,
-  DOWNLOAD_ALL: 0x02,
-  DOWNLOAD_NEW: 0x00,
-  ERASE_MULTIPLE: 0x01,
-};
-
-DeviceProfile_ANTFS.prototype.REQUEST_TRANSFER_TYPE = {
-  ACKNOWLEDGED: 0x00,
-  BURST: 0x01
-};
-
-DeviceProfile_ANTFS.prototype.REQUEST_TYPE = {
-  DOWNLOAD: 0x00,
-  ERASE: 0x01
-};
-
-DeviceProfile_ANTFS.prototype.REQUEST_STATE = {
-  0x00: "request",
-  REQUEST: 0x00,
-  SENT: 0x01,
-  0x01: "sent",
-  ERROR: 0x02,
-  0x02: "error",
-  BUSY: 0x03,
-  0x03: "busy"
-};
-
-DeviceProfile_ANTFS.prototype.FILE_TYPE = {
-  FIT: 0x80
-};
-
-DeviceProfile_ANTFS.prototype.addCommand = function(command) {
-  this._commandQueue.push(command);
-};
-
-DeviceProfile_ANTFS.prototype.addIndex = function(index) {
-  this._commandIndex.push(index);
-};
-
-DeviceProfile_ANTFS.prototype.setHomeDirectory = function(homeDir) {
-  var self = this;
-  this.homeDirectory = homeDir;
-
-  fs.exists(this.homeDirectory, function(exists) {
-    if (!exists) {
-      fs.mkdir(self.homeDirectory, function(err) {
-        if (err) {
-          self.log.debug( Date.now() + " Could not create home directory: " + err);
-          throw err;
-        } else {
-          self.log.debug( Date.now() + " Created home directory at " + self.homeDirectory);
-        }
-      });
-    } else {
-      self.log.debug( Date.now() + " Setting home directory to " + self.homeDirectory);
+    function removeLastBlock() {
+      // Remove data block with CRC error
+      self.dataOffset.pop();
+      self.dataLength.pop();
+      self.CRCSeed.pop();
     }
-  });
-};
 
+    function processRequestCallback() {
+      // Call callback if requested
+      if (typeof self.request.callback === "function")
+        self.request.callback();
+      else
+        console.warn(Date.now() + " No request callback specified");
+    }
 
-DeviceProfile_ANTFS.prototype.getHomeDirectory = function() {
-  return this.homeDirectory;
-};
+    function repeatLastRequest() {
+      self.log.debug( Date.now() + " Repeat request", self.request);
 
-DeviceProfile_ANTFS.prototype.parseBurstData = function(channelNr, data) {
-  var self = this,
-    beacon,
-    authenticate_response = {},
-    download_response = {},
-    currentCRCSeed,
-    erase_response = {},
-    resumeIndex,
-    resumeDataOffset,
-    resumeCRCSeed,
-    currentDataOffset,
-    homeDirectory,
-    downloadRequestType;
+      if (self.request.request === DeviceProfile_ANTFS.prototype.REQUEST_TYPE.DOWNLOAD) {
+        self.sendDownloadRequest(self.request.dataIndex, self.request.dataOffset,
+          self.request.initialRequest, self.request.CRCSeed, 0, self.request.callback); // Reuse previous callback for new request
 
-  function removeLastBlock() {
-    // Remove data block with CRC error
-    self.dataOffset.pop();
-    self.dataLength.pop();
-    self.CRCSeed.pop();
-  }
+      } else
+        console.warn(self.request.request + " request not implemented");
+    }
 
-  function processRequestCallback() {
-    // Call callback if requested
-    if (typeof self.request.callback === "function")
-      self.request.callback();
-    else
-      console.warn(Date.now() + " No request callback specified");
-  }
+    if (channelNr !== self.channel.number) // Filter out burst for other channels
+    {
+      console.error(Date.now() + " Received burst data for channel ", channelNr, " intended for channel ", self.number);
+      return;
+    }
 
-  function repeatLastRequest() {
-    self.log.debug( Date.now() + " Repeat request", self.request);
-
-    if (self.request.request === DeviceProfile_ANTFS.prototype.REQUEST_TYPE.DOWNLOAD) {
-      self.sendDownloadRequest(self.request.dataIndex, self.request.dataOffset,
-        self.request.initialRequest, self.request.CRCSeed, 0, self.request.callback); // Reuse previous callback for new request
-
+    if (self.retryRequestTimeoutID) {
+      clearInterval(self.retryRequestTimeoutID);
+      self.retryTimeout = 0;
     } else
-      console.warn(self.request.request + " request not implemented");
-  }
-
-  if (channelNr !== self.channel.number) // Filter out burst for other channels
-  {
-    console.error(Date.now() + " Received burst data for channel ", channelNr, " intended for channel ", self.number);
-    return;
-  }
-
-  if (self.retryRequestTimeoutID) {
-    clearInterval(self.retryRequestTimeoutID);
-    self.retryTimeout = 0;
-  } else
-    self.retryTimeout = 0;
+      self.retryTimeout = 0;
 
 
-  if (data[0] !== DeviceProfile_ANTFS.prototype.BEACON_ID)
-    console.error("Expected beacon id. (0x43) in the first packet of burst payload", data);
-  else {
-    // Packet 1 BEACON
-    beacon = this.parseClientBeacon.call(this, data, true);
+    if (data[0] !== DeviceProfile_ANTFS.prototype.BEACON_ID)
+      console.error("Expected beacon id. (0x43) in the first packet of burst payload", data);
+    else {
+      // Packet 1 BEACON
+      beacon = this.parseClientBeacon.call(this, data, true);
 
-    if (beacon.hostSerialNumber !== this.ANT.serialNumber) {
-      console.warn("Beacon in bulk transfer header/packet 1, was for ", beacon.hostSerialNumber, ", our device serial number is ", this.ANT.serialNumber, "beacon packet ", data);
+      if (beacon.hostSerialNumber !== this.ANT.serialNumber) {
+        console.warn("Beacon in bulk transfer header/packet 1, was for ", beacon.hostSerialNumber, ", our device serial number is ", this.ANT.serialNumber, "beacon packet ", data);
 
-    } else {
-
-      self.log.debug( Date.now(), beacon.toString(), " burst data length:", data.length);
-
-      self.lastBeacon = {
-        beacon: beacon,
-        timestamp: Date.now()
-      };
-
-      // Packet 2 ANT-FS RESPONSE
-      if (data[8] !== DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID) {
-        console.error("Expected ANT-FS COMMAND ID 0x44 at start of packet 2", data, "bytes:", data.length);
-        repeatLastRequest();
       } else {
 
-        // ANT-FS Command responses
-        switch (data[9]) {
-          // P. 56 ANT-FS spec.
-          case DeviceProfile_ANTFS.prototype.COMMAND_ID.AUTHENTICATE_RESPONSE:
+        self.log.debug( Date.now(), beacon.toString(), " burst data length:", data.length);
 
-            authenticate_response.responseType = data[10];
-            authenticate_response.authenticationStringLength = data[11];
+        self.lastBeacon = {
+          beacon: beacon,
+          timestamp: Date.now()
+        };
 
-            if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.CLIENT_SN) // For client serial number
-            {
-              authenticate_response.clientSerialNumber = data.readUInt32LE(12);
-              // in this case, authentication string will be the friendly name of the client device
-              if (authenticate_response.authenticationStringLength > 0) {
-                authenticate_response.authenticationString = data.toString('utf8', 16, 16 + authenticate_response.authenticationStringLength);
-                authenticate_response.clientFriendlyName = authenticate_response.authenticationString;
+        // Packet 2 ANT-FS RESPONSE
+        if (data[8] !== DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID) {
+          console.error("Expected ANT-FS COMMAND ID 0x44 at start of packet 2", data, "bytes:", data.length);
+          repeatLastRequest();
+        } else {
+
+          // ANT-FS Command responses
+          switch (data[9]) {
+            // P. 56 ANT-FS spec.
+            case DeviceProfile_ANTFS.prototype.COMMAND_ID.AUTHENTICATE_RESPONSE:
+
+              authenticate_response.responseType = data[10];
+              authenticate_response.authenticationStringLength = data[11];
+
+              if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.CLIENT_SN) // For client serial number
+              {
+                authenticate_response.clientSerialNumber = data.readUInt32LE(12);
+                // in this case, authentication string will be the friendly name of the client device
+                if (authenticate_response.authenticationStringLength > 0) {
+                  authenticate_response.authenticationString = data.toString('utf8', 16, 16 + authenticate_response.authenticationStringLength);
+                  authenticate_response.clientFriendlyName = authenticate_response.authenticationString;
+                }
+
+                // Setup home directory for device - and create device directory under root directory
+                homeDirectory = DeviceProfile_ANTFS.prototype.ROOT_DIR + PathSeparator + authenticate_response.clientSerialNumber;
+
+                self.setHomeDirectory(homeDirectory);
+
+                if (typeof self.request.callback === "function")
+                  self.request.callback();
+                else
+                  self.log.debug( Date.now() + " No callback specified after authentication response for client device serial number");
               }
 
-              // Setup home directory for device - and create device directory under root directory
-              homeDirectory = DeviceProfile_ANTFS.prototype.ROOT_DIR + PathSeparator + authenticate_response.clientSerialNumber;
+              // Accept of pairing bulk response
+              // Packet 1 : BEACON            <Buffer 43 24 03 03 96 99 27 00
+              // Packet 2 : ANT-FS RESPONSE           44 84 01 08 00 00 00 00
+              // Packet 3 : Authentication String :   36 58 b2 a7 8b 3d 2a 98
 
-              self.setHomeDirectory(homeDirectory);
-
-              if (typeof self.request.callback === "function")
-                self.request.callback();
-              else
-                self.log.debug( Date.now() + " No callback specified after authentication response for client device serial number");
-            }
-
-            // Accept of pairing bulk response
-            // Packet 1 : BEACON            <Buffer 43 24 03 03 96 99 27 00
-            // Packet 2 : ANT-FS RESPONSE           44 84 01 08 00 00 00 00
-            // Packet 3 : Authentication String :   36 58 b2 a7 8b 3d 2a 98
-
-            if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.ACCEPT) // Accept of pairing request or the provided passkey
-            {
-              if (authenticate_response.authenticationStringLength > 0) {
-                authenticate_response.authenticationString = data.slice(16, 16 + authenticate_response.authenticationStringLength); // Passkey
-                // TO DO : write to file client serial number + friendlyname + passkey + { channel id (device nr./type+transmission type) ? }
-                fs.writeFile(self.getHomeDirectory() + PathSeparator + 'passkey.json', JSON.stringify({
-                  passkey: authenticate_response.authenticationString
-                }), function(err) {
-                  if (err)
-                    self.log.debug( Date.now() + " Error writing to passkey file", err);
-                  else
-                    self.log.debug( Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + PathSeparator + 'passkey.BIN');
-                });
-              }
-            }
-
-            if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.REJECT) // Reject
-            {
-              self.log.debug( "Authorization rejected (pairing not accepted or wrong passkey provided)");
-            }
-
-            // add authenticateResponse to device profile instance
-            self.authenticate_response = authenticate_response;
-
-            self.log.debug( Date.now(), authenticate_response, DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE[authenticate_response.responseType]);
-            break;
-
-            // Observation : FR 910XT sends data in chuncks of 512 bytes
-
-          case DeviceProfile_ANTFS.prototype.COMMAND_ID.DOWNLOAD_RESPONSE:
-            // Downloaded file is sent as bulk data is blocks
-
-            // Packet 2
-            download_response.response = data[10];
-            download_response.responseFriendly = DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE[data[10]];
-
-            if (download_response.response === DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE.REQUEST_OK) {
-
-              download_response.totalRemainingLength = data.readUInt32LE(12); // Seems to be equal to block size
-
-              // Packet 3
-              download_response.dataOffset = data.readUInt32LE(16);
-
-              download_response.fileSize = data.readUInt32LE(20);
-
-              // Packet 4:N-1
-              download_response.data = data.slice(24, -8); // Last packet is 000000 + 2 CRC bytes -> slice it off -> -8
-
-              if (download_response.dataOffset === 0) {
-                self.downloadFile = Buffer.alloc(DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB * 1024 * 1024); // First block of data - allocate 16MB buffer -> should handle most cases if client grows file dynamically
-                self.dataOffset = [];
-                self.CRCSeed = [];
-                self.dataLength = [];
+              if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.ACCEPT) // Accept of pairing request or the provided passkey
+              {
+                if (authenticate_response.authenticationStringLength > 0) {
+                  authenticate_response.authenticationString = data.slice(16, 16 + authenticate_response.authenticationStringLength); // Passkey
+                  // TO DO : write to file client serial number + friendlyname + passkey + { channel id (device nr./type+transmission type) ? }
+                  fs.writeFile(self.getHomeDirectory() + PathSeparator + 'passkey.json', JSON.stringify({
+                    passkey: authenticate_response.authenticationString
+                  }), function(err) {
+                    if (err)
+                      self.log.debug( Date.now() + " Error writing to passkey file", err);
+                    else
+                      self.log.debug( Date.now() + " Saved passkey received from device", authenticate_response.authenticationString, "to file : ", self.getHomeDirectory() + PathSeparator + 'passkey.BIN');
+                  });
+                }
               }
 
+              if (authenticate_response.responseType === DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE.REJECT) // Reject
+              {
+                self.log.debug( "Authorization rejected (pairing not accepted or wrong passkey provided)");
+              }
 
-              //for (var eNr = 0; eNr < data.length; eNr++)
+              // add authenticateResponse to device profile instance
+              self.authenticate_response = authenticate_response;
 
-              // Put the data chunck received into our buffer at the specified offset
-              download_response.data.copy(self.downloadFile, download_response.dataOffset);
+              self.log.debug( Date.now(), authenticate_response, DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE[authenticate_response.responseType]);
+              break;
 
+              // Observation : FR 910XT sends data in chuncks of 512 bytes
 
-              // If more data remains, send a new continuation request for more
-              if (download_response.totalRemainingLength > 0) {
+            case DeviceProfile_ANTFS.prototype.COMMAND_ID.DOWNLOAD_RESPONSE:
+              // Downloaded file is sent as bulk data is blocks
 
-                // Packet N
-                download_response.CRC = data.readUInt16LE(data.length - 2);
+              // Packet 2
+              download_response.response = data[10];
+              download_response.responseFriendly = DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE[data[10]];
 
-                // Verify CRC
+              if (download_response.response === DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE.REQUEST_OK) {
+
+                download_response.totalRemainingLength = data.readUInt32LE(12); // Seems to be equal to block size
+
+                // Packet 3
+                download_response.dataOffset = data.readUInt32LE(16);
+
+                download_response.fileSize = data.readUInt32LE(20);
+
+                // Packet 4:N-1
+                download_response.data = data.slice(24, -8); // Last packet is 000000 + 2 CRC bytes -> slice it off -> -8
 
                 if (download_response.dataOffset === 0) {
-                  if (self.request.dataIndex !== 0x00)
-                    self.log.debug( Date.now() + " Expecting a file with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
-                  else
-                    self.log.debug( Date.now() + " Expecting a directory with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
-
-                  currentCRCSeed = CRC.Calc16(download_response.data);
-                  self.CRCSeed.push(currentCRCSeed);
-                } else {
-                  currentCRCSeed = self.CRCSeed[self.CRCSeed.length - 1];
-                  self.CRCSeed.push(CRC.UpdateCRC16(currentCRCSeed, download_response.data));
-                  currentCRCSeed = self.CRCSeed[self.CRCSeed.length - 1];
+                  self.downloadFile = Buffer.alloc(DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB * 1024 * 1024); // First block of data - allocate 16MB buffer -> should handle most cases if client grows file dynamically
+                  self.dataOffset = [];
+                  self.CRCSeed = [];
+                  self.dataLength = [];
                 }
 
 
-                self.dataLength.push(download_response.totalRemainingLength);
-                self.dataOffset.push(download_response.dataOffset);
+                //for (var eNr = 0; eNr < data.length; eNr++)
 
-                if (download_response.CRC !== currentCRCSeed) {
-
-                  console.warn(Date.now() + " Block ", self.dataOffset.length - 1, " CRC of data block ", download_response.CRC, " differs from calculated CRC-16 of data block ", currentCRCSeed);
-
-                  if (self.dataOffset.length >= 2) {
-                    resumeIndex = self.dataOffset.length - 2;
-                    currentDataOffset = self.dataOffset[resumeIndex] + self.dataLength[resumeIndex];
-                    currentCRCSeed = self.CRCSeed[resumeIndex];
-                    downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER;
-                  } else // CRC error in block 1
-                  {
-                    resumeIndex = 0;
-                    currentDataOffset = 0;
-                    currentCRCSeed = 0;
-                    downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER;
-                  }
+                // Put the data chunck received into our buffer at the specified offset
+                download_response.data.copy(self.downloadFile, download_response.dataOffset);
 
 
-                  removeLastBlock();
+                // If more data remains, send a new continuation request for more
+                if (download_response.totalRemainingLength > 0) {
 
-                  // Try to resume download with last good CRC
-                  self.log.debug( Date.now() + " Resume block " + resumeIndex + " data offset: " + currentDataOffset + " CRC Seed: " + currentCRCSeed);
+                  // Packet N
+                  download_response.CRC = data.readUInt16LE(data.length - 2);
 
-                } else {
-                  currentDataOffset = download_response.dataOffset + download_response.totalRemainingLength;
-                  downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER;
+                  // Verify CRC
 
-                }
-
-
-                self.sendDownloadRequest(self.request.dataIndex, currentDataOffset,
-                  downloadRequestType, currentCRCSeed, 0, self.request.callback); // Reuse previous callback for new request
-
-                // Kick in retry if no burst response
-
-                self.retryRequestTimeoutID = setInterval(function _retryDownloadRequest() {
-                  self.retryTimeout++;
-                  if (self.retryTimeout < 10) {
-                    self.log.debug( Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.retryTimeout);
-                    self.sendDownloadRequest(self.request.dataIndex, currentDataOffset, downloadRequestType, currentCRCSeed, 0, self.request.callback);
-                  } else {
-                    self.log.debug( Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
-                    self.emit('error', new Error('Unable to receive burst response for download request. Reached maximum retries.'));
-                    self.disconnectFromDevice();
-                  }
-                }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
-
-              } else if (download_response.totalRemainingLength === 0) {
-
-                self.response = {
-                  timestamp: Date.now(),
-                  downloadFile: self.downloadFile.slice(0, download_response.fileSize)
-                };
-
-                if (self.request.dataIndex !== DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE) {
-
-                  var fName = self.getHomeDirectory() + PathSeparator + self.directory.index[self.request.dataIndex].fileName;
-                  self.log.debug( Date.now() + " Downloaded file ", fName, download_response.fileSize, "bytes");
-                  fs.writeFile(fName, self.response.downloadFile, function(err) {
-                    if (err)
-                      self.log.debug( Date.now() + " Error writing " + fName, err);
+                  if (download_response.dataOffset === 0) {
+                    if (self.request.dataIndex !== 0x00)
+                      self.log.debug( Date.now() + " Expecting a file with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
                     else
-                      self.log.debug( Date.now() + " Saved " + fName);
-                  });
+                      self.log.debug( Date.now() + " Expecting a directory with size : " + download_response.fileSize, "at directory index ", self.request.dataIndex);
+
+                    currentCRCSeed = CRC.Calc16(download_response.data);
+                    self.CRCSeed.push(currentCRCSeed);
+                  } else {
+                    currentCRCSeed = self.CRCSeed[self.CRCSeed.length - 1];
+                    self.CRCSeed.push(CRC.UpdateCRC16(currentCRCSeed, download_response.data));
+                    currentCRCSeed = self.CRCSeed[self.CRCSeed.length - 1];
+                  }
+
+
+                  self.dataLength.push(download_response.totalRemainingLength);
+                  self.dataOffset.push(download_response.dataOffset);
+
+                  if (download_response.CRC !== currentCRCSeed) {
+
+                    console.warn(Date.now() + " Block ", self.dataOffset.length - 1, " CRC of data block ", download_response.CRC, " differs from calculated CRC-16 of data block ", currentCRCSeed);
+
+                    if (self.dataOffset.length >= 2) {
+                      resumeIndex = self.dataOffset.length - 2;
+                      currentDataOffset = self.dataOffset[resumeIndex] + self.dataLength[resumeIndex];
+                      currentCRCSeed = self.CRCSeed[resumeIndex];
+                      downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER;
+                    } else // CRC error in block 1
+                    {
+                      resumeIndex = 0;
+                      currentDataOffset = 0;
+                      currentCRCSeed = 0;
+                      downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER;
+                    }
+
+
+                    removeLastBlock();
+
+                    // Try to resume download with last good CRC
+                    self.log.debug( Date.now() + " Resume block " + resumeIndex + " data offset: " + currentDataOffset + " CRC Seed: " + currentCRCSeed);
+
+                  } else {
+                    currentDataOffset = download_response.dataOffset + download_response.totalRemainingLength;
+                    downloadRequestType = DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER;
+
+                  }
+
+
+                  self.sendDownloadRequest(self.request.dataIndex, currentDataOffset,
+                    downloadRequestType, currentCRCSeed, 0, self.request.callback); // Reuse previous callback for new request
+
+                  // Kick in retry if no burst response
+
+                  self.retryRequestTimeoutID = setInterval(function _retryDownloadRequest() {
+                    self.retryTimeout++;
+                    if (self.retryTimeout < 10) {
+                      self.log.debug( Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms. Retrying " + self.retryTimeout);
+                      self.sendDownloadRequest(self.request.dataIndex, currentDataOffset, downloadRequestType, currentCRCSeed, 0, self.request.callback);
+                    } else {
+                      self.log.debug( Date.now() + " Unable to receive burst response for download request. Cannot proceed. Reached maximum retries.", self.retryTimeout);
+                      self.emit('error', new Error('Unable to receive burst response for download request. Reached maximum retries.'));
+                      self.disconnectFromDevice();
+                    }
+                  }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
+
+                } else if (download_response.totalRemainingLength === 0) {
+
+                  self.response = {
+                    timestamp: Date.now(),
+                    downloadFile: self.downloadFile.slice(0, download_response.fileSize)
+                  };
+
+                  if (self.request.dataIndex !== DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX.DIRECTORY_STRUCTURE) {
+
+                    var fName = self.getHomeDirectory() + PathSeparator + self.directory.index[self.request.dataIndex].fileName;
+                    self.log.debug( Date.now() + " Downloaded file ", fName, download_response.fileSize, "bytes");
+                    fs.writeFile(fName, self.response.downloadFile, function(err) {
+                      if (err)
+                        self.log.debug( Date.now() + " Error writing " + fName, err);
+                      else
+                        self.log.debug( Date.now() + " Saved " + fName);
+                    });
+
+                  }
+
+                  processRequestCallback();
 
                 }
+              } else if (download_response.response === DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE.CRC_INCORRECT) {
+                self.log.debug( Date.now() + " Download response : ", download_response);
 
-                processRequestCallback();
+                resumeIndex = self.dataOffset.length - 2;
+                resumeDataOffset = self.dataOffset[resumeIndex] + self.dataLength[resumeIndex];
+                resumeCRCSeed = self.CRCSeed[resumeIndex];
 
-              }
-            } else if (download_response.response === DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE.CRC_INCORRECT) {
-              self.log.debug( Date.now() + " Download response : ", download_response);
+                removeLastBlock();
 
-              resumeIndex = self.dataOffset.length - 2;
-              resumeDataOffset = self.dataOffset[resumeIndex] + self.dataLength[resumeIndex];
-              resumeCRCSeed = self.CRCSeed[resumeIndex];
+                // Try to resume download with last good CRC
+                self.log.debug( Date.now() + " Resume block " + resumeIndex + " data offset: " + resumeDataOffset + " CRC Seed: " + resumeCRCSeed);
 
-              removeLastBlock();
+                self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
+                  DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
 
-              // Try to resume download with last good CRC
-              self.log.debug( Date.now() + " Resume block " + resumeIndex + " data offset: " + resumeDataOffset + " CRC Seed: " + resumeCRCSeed);
-
-              self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
-                DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
-
-              self.retryRequestTimeoutID = setInterval(function retry() {
-                self.retryTimeout++;
-                if (self.retryTimeout < 10) {
-                  self.log.debug( Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
-                  self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
-                    DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
-                } else {
-                  var errMsg = "Lost the link to the device. Cannot proceed.";
-                  self.log.debug( Date.now() + " " + errMsg);
-                  self.emit('error', new Error(errMsg));
-
-                }
-              }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
-            } else {
-              self.log.debug( Date.now() + " Download response : ", download_response);
-              processRequestCallback();
-            }
-
-            break;
-
-          case DeviceProfile_ANTFS.prototype.COMMAND_ID.ERASE_RESPONSE:
-
-            erase_response.response = data[10];
-
-            self.log.debug( Date.now() + " Erase response: " + DeviceProfile_ANTFS.prototype.ERASE_RESPONSE[erase_response.response]);
-
-            if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_FAILED ||
-              erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.NOT_READY) {
-
-              if (++self.request.retry <= 3) {
-                self.sendEraseRequest(self.request.dataIndex, false);
                 self.retryRequestTimeoutID = setInterval(function retry() {
                   self.retryTimeout++;
                   if (self.retryTimeout < 10) {
-                    self.log.debug( Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.retryTimeout);
-
-                    self.sendEraseRequest(self.request.dataIndex, false);
+                    self.log.debug( Date.now() + " Received no burst response for previous download request in about ", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, "ms . Retrying now.");
+                    self.sendDownloadRequest(self.request.dataIndex, resumeDataOffset,
+                      DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER, resumeCRCSeed, 0);
                   } else {
-                    var errMsg = "Something is wrong with the link to the device. Cannot proceed.";
+                    var errMsg = "Lost the link to the device. Cannot proceed.";
                     self.log.debug( Date.now() + " " + errMsg);
                     self.emit('error', new Error(errMsg));
+
                   }
                 }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
               } else {
-                self.log.debug( Date.now() + " Reached maximum number of retries, file is probably not deleted", self.request.retry);
+                self.log.debug( Date.now() + " Download response : ", download_response);
                 processRequestCallback();
               }
 
-            } else if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_SUCCESSFULL) {
-              self.log.debug( Date.now() + " Erased file at index ", self.request.dataIndex);
-              processRequestCallback();
-            } else
-              console.warn(Date.now() + " Received unknown erase response", erase_response.response);
+              break;
 
-            break;
+            case DeviceProfile_ANTFS.prototype.COMMAND_ID.ERASE_RESPONSE:
 
-          default:
-            console.warn(Date.now() + " Not implemented parsing of ANT-FS Command response code ", data[9]);
-            break;
+              erase_response.response = data[10];
+
+              self.log.debug( Date.now() + " Erase response: " + DeviceProfile_ANTFS.prototype.ERASE_RESPONSE[erase_response.response]);
+
+              if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_FAILED ||
+                erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.NOT_READY) {
+
+                if (++self.request.retry <= 3) {
+                  self.sendEraseRequest(self.request.dataIndex, false);
+                  self.retryRequestTimeoutID = setInterval(function retry() {
+                    self.retryTimeout++;
+                    if (self.retryTimeout < 10) {
+                      self.log.debug( Date.now() + " Received no burst response for previous erase request in about", DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY, " ms. Retrying " + self.retryTimeout);
+
+                      self.sendEraseRequest(self.request.dataIndex, false);
+                    } else {
+                      var errMsg = "Something is wrong with the link to the device. Cannot proceed.";
+                      self.log.debug( Date.now() + " " + errMsg);
+                      self.emit('error', new Error(errMsg));
+                    }
+                  }, DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY);
+                } else {
+                  self.log.debug( Date.now() + " Reached maximum number of retries, file is probably not deleted", self.request.retry);
+                  processRequestCallback();
+                }
+
+              } else if (erase_response.response === DeviceProfile_ANTFS.prototype.ERASE_RESPONSE.ERASE_SUCCESSFULL) {
+                self.log.debug( Date.now() + " Erased file at index ", self.request.dataIndex);
+                processRequestCallback();
+              } else
+                console.warn(Date.now() + " Received unknown erase response", erase_response.response);
+
+              break;
+
+            default:
+              console.warn(Date.now() + " Not implemented parsing of ANT-FS Command response code ", data[9]);
+              break;
+          }
         }
       }
     }
   }
-};
 
-DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Download = function(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize) {
+  ANTFSCOMMAND_Download(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize) {
 
-  var payload = Buffer.alloc(16);
 
-  // Packet 1
+    var payload = Buffer.alloc(16);
 
-  payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
-  payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DOWNLOAD;
-  payload.writeUInt16LE(dataIndex, 2);
-  payload.writeUInt32LE(dataOffset, 4);
+    // Packet 1
 
-  // Packet 2
+    payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
+    payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DOWNLOAD;
+    payload.writeUInt16LE(dataIndex, 2);
+    payload.writeUInt32LE(dataOffset, 4);
 
-  payload[8] = 0;
-  if (typeof initialRequest === "undefined") {
-    this.log.warn( "Initial request is undefined", new Error().stack);
+    // Packet 2
+
+    payload[8] = 0;
+    if (typeof initialRequest === "undefined") {
+      this.log.warn( "Initial request is undefined", new Error().stack);
+    }
+    payload[9] = initialRequest;
+
+    if (initialRequest === DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER) {
+      if (CRCSeed !== 0)
+        console.warn("CRC seed specified is ", CRCSeed, " for new transfer CRC seed should be set to 0 -> forced to 0 now");
+      payload.writeUInt16LE(0, 10); // Force CRC seed to 0
+    } else
+      payload.writeUInt16LE(CRCSeed, 10);
+
+    payload.writeUInt32LE(maximumBlockSize, 12);
+
+    return payload;
   }
-  payload[9] = initialRequest;
 
-  if (initialRequest === DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST.NEW_TRANSFER) {
-    if (CRCSeed !== 0)
-      console.warn("CRC seed specified is ", CRCSeed, " for new transfer CRC seed should be set to 0 -> forced to 0 now");
-    payload.writeUInt16LE(0, 10); // Force CRC seed to 0
-  } else
-    payload.writeUInt16LE(CRCSeed, 10);
+  ANTFSCOMMAND_Link(channelFreq, channelPeriod, hostSerialNumber) {
 
-  payload.writeUInt32LE(maximumBlockSize, 12);
+    var payload = Buffer.alloc(8);
 
-  return payload;
+    payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
+    payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.LINK;
+    payload[2] = channelFreq; // Offset from 2400 Mhz
+    payload[3] = channelPeriod; // 0x04 = 8 Hz
+    payload.writeUInt32LE(hostSerialNumber, 4);
 
-};
+    return {
+      buffer: payload,
+      friendly: "ANT-FS LINK Command"
+    };
+  }
 
-// host serial number is available on antInstance.serialNumber if getDeviceSerialNumber has been executed
-DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Link = function(channelFreq,channelPeriod,hostSerialNumber) {
-var payload = Buffer.alloc(8);
+  ANTFSCOMMAND_Disconnect(commandType, timeDuration, applicationSpecificDuration) {
 
-payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
-payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.LINK;
-payload[2] = channelFreq; // Offset from 2400 Mhz
-payload[3] = channelPeriod; // 0x04 = 8 Hz
-payload.writeUInt32LE(hostSerialNumber, 4);
+    // timeDuration - 0x00 - Disabled/Invalid
+    // application specific duration - 0x00 - Disabled/Invalid
+    var payload = Buffer.alloc(5);
 
-return {
-  buffer: payload,
-  friendly: "ANT-FS LINK Command"
-};
-};
+    payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
+    payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DISCONNECT;
+    payload[2] = commandType;
+    payload[3] = timeDuration;
+    payload[4] = applicationSpecificDuration;
 
-// p. 52 ANT-FS technical spec.
-DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Disconnect = function(commandType, timeDuration, applicationSpecificDuration) {
-  // timeDuration - 0x00 - Disabled/Invalid
-  // application specific duration - 0x00 - Disabled/Invalid
-  var payload = Buffer.alloc(5);
+    return {
+      buffer: payload,
+      friendly: "ANT-FS DISCONNECT Command"
+    };
+  }
 
-  payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
-  payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.DISCONNECT;
-  payload[2] = commandType;
-  payload[3] = timeDuration;
-  payload[4] = applicationSpecificDuration;
+  ANTFSCOMMAND_Authentication(commandType, authStringLength, hostSerialNumber) {
 
-  return {
-    buffer: payload,
-    friendly: "ANT-FS DISCONNECT Command"
-  };
-};
+    var payload = Buffer.alloc(8);
 
-DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Authentication = function(commandType, authStringLength, hostSerialNumber) {
-var payload = Buffer.alloc(8);
+    payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
+    payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.AUTHENTICATE;
+    payload[2] = commandType;
+    payload[3] = authStringLength; // "Set to 0 if no authentication is to be supplied", "string is bursts to the client immediately following this command", "..If Auth String Length parameter is set to 0, this msg. may be sent as an acknowledged message"
+    payload.writeUInt32LE(hostSerialNumber, 4);
 
-payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
-payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.AUTHENTICATE;
-payload[2] = commandType;
-payload[3] = authStringLength; // "Set to 0 if no authentication is to be supplied", "string is bursts to the client immediately following this command", "..If Auth String Length parameter is set to 0, this msg. may be sent as an acknowledged message"
-payload.writeUInt32LE(hostSerialNumber, 4);
+    return {
+      buffer: payload,
+      friendly: "ANT-FS AUTHENTICATION Command"
+    };
+  }
 
-return {
-  buffer: payload,
-  friendly: "ANT-FS AUTHENTICATION Command"
-};
-};
+  ANTFSCOMMAND_Erase(dataIndex) {
 
-DeviceProfile_ANTFS.prototype.ANTFSCOMMAND_Erase = function(dataIndex) {
-var payload = Buffer.alloc(4);
+    var payload = Buffer.alloc(4);
 
-payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
-payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.ERASE;
-payload.writeUInt16LE(dataIndex, 2);
+    payload[0] = DeviceProfile_ANTFS.prototype.COMMAND_ID.COMMAND_RESPONSE_ID; // 0x44;
+    payload[1] = DeviceProfile_ANTFS.prototype.COMMAND_ID.ERASE;
+    payload.writeUInt16LE(dataIndex, 2);
 
-return {
-  buffer: payload,
-  friendly: "ANT-FS ERASE Command"
-};
-};
+    return {
+      buffer: payload,
+      friendly: "ANT-FS ERASE Command"
+    };
+  }
 
-DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
+  getSlaveChannelConfiguration(config) {
+
     //  {
     //      networkNr :
     //      channelNr
@@ -712,9 +550,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
     this.channel.addListener(Channel.prototype.EVENT.BURST, parseBurstDataFunc.bind(this));
 
     return this.channel;
-  };
+  }
 
-    DeviceProfile_ANTFS.prototype.channelResponseEvent = function(data) {
+  channelResponseEvent(data) {
+
       var self = this,
         antInstance = this.ANT,
         channelNr = self.channel.number;
@@ -728,15 +567,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         self.log.debug( Date.now() + " ANT-FS Channel " + channelNr + " reached search timeout. Device did not send any ANT data in the search periode.");
       else if (antInstance.isEvent(ANT.prototype.RESPONSE_EVENT_CODES.EVENT_CHANNEL_CLOSED, data))
         self.log.debug( Date.now() + " ANT-FS Channel " + channelNr + " closed.");
+  }
 
-    };
+  decodeClientBeacon(data, onlyDataPayload) {
 
-    // It seems like the Garmin 910XT ANTFS client open the channel for about 1.75 sec. each 20 seconds. At 8Hz message rate max 16 beacon messages can be expected. -> maybe to conserve power
-    // The generates a series of EVENT_RX_FAIL which eventually leads to EVENT_RX_FAIL_GO_TO_SEARCH -> host expected messages to arrive, but
-    // client (910XT) has closed the channel, fallback for host is to return to search mode again
-    // I suppose that when authentication succeeds and we enter transport layer state, the client will step up its game and provide continous stream of data
-    // ANT-FS Technical specification p. 40 s. 9.1 Beacon "Client beacon rates will be application dependent. A trade off is made between power and latecy"
-    DeviceProfile_ANTFS.prototype.decodeClientBeacon = function(data, onlyDataPayload) {
 
       // if onlyDataPayload === true, SYNC MSG. LENGTH MSG ID CHANNEL NR is stripped off beacon -> used when assembling burst transfer that contain a beacon in the first packet
       var substractIndex, self = this; // Used to get the adjust index in the data
@@ -817,15 +651,17 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
 
 
       return beaconInfo;
-    };
+  }
 
-    DeviceProfile_ANTFS.prototype.sendLinkCommand = function(errorCallback, successCallback) {
+  sendLinkCommand(errorCallback, successCallback) {
+
       var channelNr = this.channel.number;
       var linkMsg = this.ANTFSCOMMAND_Link(ANT.prototype.ANTFS_FREQUENCY, DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD.Hz8, this.ANT.serialNumber);
       this.ANT.sendAcknowledgedData(channelNr, linkMsg, errorCallback, successCallback);
-    };
+  }
 
-    DeviceProfile_ANTFS.prototype.sendDisconnect = function(errorCallback, successCallback) {
+  sendDisconnect(errorCallback, successCallback) {
+
       var channelNr = this.channel.number,
         self = this;
       var disconnectMsg = this.ANTFSCOMMAND_Disconnect(DeviceProfile_ANTFS.prototype.DISCONNECT_COMMAND.RETURN_TO_LINK_LAYER, 0x00, 0x00);
@@ -841,14 +677,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           }, 10000);
           successCallback();
         });
-    };
+  }
 
-    // Sending this command -> gives a burst of 4 packets 9 bytes in length (including CS/CRC); auth. beacon + 0x84 authenticate response + authorization string on the FR 910XT
-    //1368702944969 Rx:  <Buffer a4 09 50 01 43 04 01 03 96 99 27 00 91> * NO parser specified *
-    //1368702944972 Rx:  <Buffer a4 09 50 21 44 84 00 10 30 67 0b e5 b5> * NO parser specified *
-    //1368702944975 Rx:  <Buffer a4 09 50 41 46 6f 72 65 72 75 6e 6e 85> * NO parser specified *
-    //1368702944983 Rx:  <Buffer a4 09 50 e1 65 72 20 39 31 30 58 54 1f> * NO parser specified *
-    DeviceProfile_ANTFS.prototype.sendRequestForClientDeviceSerialNumber = function(errorCB, successCB, authenticationResponseCB) {
+  sendRequestForClientDeviceSerialNumber(errorCB, successCB, authenticationResponseCB) {
+
       var channelNr = this.channel.number,
         self = this,
         authMsg = this.ANTFSCOMMAND_Authentication(DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND.REQUEST_CLIENT_DEVICE_SERIAL_NUMBER, 0, this.ANT.serialNumber);
@@ -873,10 +705,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           else
             console.warn(Date.now() + " No callback specified after send request for client device serial number");
         });
-    };
+  }
 
-    // Pairing request sent to client device, if friendlyname is provided its sent as a bulk data request otherwise acknowledged
-    DeviceProfile_ANTFS.prototype.sendRequestForPairing = function(friendlyName, errorCB, successCB) {
+  sendRequestForPairing(friendlyName, errorCB, successCB) {
+
       var channelNr = this.channel.number,
         self = this,
         authStringLength = 0,
@@ -913,9 +745,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
             self.log.debug( Date.now() + " Sent burst transfer with request for pairing", data);
           }, "Pairing request");
       }
-    };
+  }
 
-    DeviceProfile_ANTFS.prototype.sendRequestWithPasskey = function(passkey, errorCB, successCB) {
+  sendRequestWithPasskey(passkey, errorCB, successCB) {
+
       var authStringLength, authMsg, data, authenticationString, channelNr = this.channel.number,
         self = this;
 
@@ -938,10 +771,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
           self.log.debug( Date.now() + " Sent burst transfer with passkey", data);
           successCB();
         }, "Transfer with passkey");
-    };
+  }
 
-    // Parses ANT-FS directory at reserved file index 0
-    DeviceProfile_ANTFS.prototype.decodeDirectory = function(data) {
+  decodeDirectory(data) {
+
       var self = this,
         numberOfFiles, fileNr, file, structureLength, addIndex, totalBytesInDirectory = 0;
 
@@ -1048,43 +881,45 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         return dateStr;
       }
 
-      function FileOnDevice(fdata, faddIndex) {
-        this.buffer = fdata.slice(16 + faddIndex, 16 + faddIndex + structureLength);
-        this.index = fdata.readUInt16LE(16 + faddIndex);
-        this.dataType = fdata[18 + faddIndex];
-        this.identifier = fdata.readUInt32LE(19 + faddIndex) & 0x00FFFFFF;
-        this.dataTypeFlags = fdata[22 + faddIndex];
-        this.generalFlags = {
-          read: fdata[23 + faddIndex] & 0x80 ? true : false,
-          write: fdata[23 + faddIndex] & 0x40 ? true : false,
-          erase: fdata[23 + faddIndex] & 0x20 ? true : false,
-          archive: fdata[23 + faddIndex] & 0x10 ? true : false,
-          append: fdata[23 + faddIndex] & 0x08 ? true : false,
-          crypto: fdata[23 + faddIndex] & 0x04 ? true : false,
-          //reserved bit 0-1
-        };
-        this.size = fdata.readUInt32LE(24 + faddIndex);
-        this.date = fdata.readUInt32LE(28 + faddIndex);
+      class FileOnDevice {
+        constructor(fdata, faddIndex) {
+          this.buffer = fdata.slice(16 + faddIndex, 16 + faddIndex + structureLength);
+          this.index = fdata.readUInt16LE(16 + faddIndex);
+          this.dataType = fdata[18 + faddIndex];
+          this.identifier = fdata.readUInt32LE(19 + faddIndex) & 0x00FFFFFF;
+          this.dataTypeFlags = fdata[22 + faddIndex];
+          this.generalFlags = {
+            read: fdata[23 + faddIndex] & 0x80 ? true : false,
+            write: fdata[23 + faddIndex] & 0x40 ? true : false,
+            erase: fdata[23 + faddIndex] & 0x20 ? true : false,
+            archive: fdata[23 + faddIndex] & 0x10 ? true : false,
+            append: fdata[23 + faddIndex] & 0x08 ? true : false,
+            crypto: fdata[23 + faddIndex] & 0x04 ? true : false,
+            // reserved bits 0-1
+          };
+          this.size = fdata.readUInt32LE(24 + faddIndex);
+          this.date = fdata.readUInt32LE(28 + faddIndex);
 
-        if (this.dataType === DeviceProfile_ANTFS.prototype.FILE_TYPE.FIT) {
-          this.dataTypeFriendly = 'FIT';
-          this.dataSubType = fdata[19 + faddIndex];
-          this.dataSubTypeFriendly = getDataSubTypeFriendly(fdata[19 + faddIndex]);
-          this.number = fdata.readUInt16LE(20 + faddIndex);
-        } else
-          this.dataTypeFriendly = 'Datatype-' + this.dataType.toString();
+          if (this.dataType === DeviceProfile_ANTFS.prototype.FILE_TYPE.FIT) {
+            this.dataTypeFriendly = 'FIT';
+            this.dataSubType = fdata[19 + faddIndex];
+            this.dataSubTypeFriendly = getDataSubTypeFriendly(fdata[19 + faddIndex]);
+            this.number = fdata.readUInt16LE(20 + faddIndex);
+          } else {
+            this.dataTypeFriendly = 'Datatype-' + this.dataType.toString();
+          }
 
-        this.fileName = this.getFileName();
-      }
+          this.fileName = this.getFileName();
+        }
 
-      FileOnDevice.prototype.getFileName = function() {
+        getFileName() {
         if (this.dataType === DeviceProfile_ANTFS.prototype.FILE_TYPE.FIT)
           return this.dataTypeFriendly + "-" + this.dataSubTypeFriendly + "-" + this.index + "-" + getDateAsString(this.date, true) + ".FIT";
         else
           return this.dataTypeFriendly + "-" + getDateAsString(this.date) + "-" + this.index + ".BIN";
-      };
+        }
 
-      FileOnDevice.prototype.toString = function() {
+        toString() {
         var generalFlags = "",
           dataType = this.dataType,
           date = "",
@@ -1132,7 +967,8 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         }
         // (Skip this.identifier in output->not useful)
         return "Index " + this.index + " " + dataType + " " + dataTypeFlags + " " + generalFlags + " " + this.size + " " + date;
-      };
+        }
+      }
 
       for (fileNr = 0; fileNr < numberOfFiles; fileNr++) {
 
@@ -1174,10 +1010,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
         self.log.debug( "Erasable files : ", self.directory.eraseIndex.length);
       else
         self.log.debug( "No erasable files in directory");
+  }
 
-    };
+  sendDownloadRequest(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize, downloadFinishedCB) {
 
-    DeviceProfile_ANTFS.prototype.sendDownloadRequest = function(dataIndex, dataOffset, initialRequest, CRCSeed, maximumBlockSize, downloadFinishedCB) {
       var downloadMsg,
         channelNr = this.channel.number,
         self = this;
@@ -1234,9 +1070,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       }
 
       retry();
-    };
+  }
 
-    DeviceProfile_ANTFS.prototype.sendEraseRequest = function(dataIndex, initRequest, eraseFinishedCB) {
+  sendEraseRequest(dataIndex, initRequest, eraseFinishedCB) {
+
       var eraseMsg, channelNr = this.channel.number,
         self = this;
 
@@ -1279,9 +1116,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       }
 
       retryIfBusy();
-    };
+  }
 
-    DeviceProfile_ANTFS.prototype.downloadMultipleFiles = function(files, completeCB) {
+  downloadMultipleFiles(files, completeCB) {
+
       var self = this;
 
       self.log.debug( Date.now() + " Downloading ", files.length, " files.");
@@ -1303,10 +1141,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       }
 
       downloadNextFile();
+  }
 
-    };
+  eraseMultipleFiles(files, completeCB) {
 
-    DeviceProfile_ANTFS.prototype.eraseMultipleFiles = function(files, completeCB) {
       var self = this;
 
       self.log.debug( Date.now() + " Erasing ", files.length, " files.");
@@ -1331,10 +1169,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
       }
 
       eraseNextFile();
+  }
 
-    };
+  disconnectFromDevice(completeCB) {
 
-    DeviceProfile_ANTFS.prototype.disconnectFromDevice = function(completeCB) {
       var self = this;
       self.sendDisconnect(function error() {
           self.log.debug( Date.now() + " Failed to send ANT-FS disconnect command to device");
@@ -1350,13 +1188,10 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
             console.warn(Date.now() + " No completion callback specified after disconnect");
 
         }); // Request device return to LINK layer
-    };
+  }
 
-    // Listener for broadcast event for all channels -> must filter
-    // When this function is called from emit function of EventEmitter -> this will be the eventEmitter = ANT instance
-    // This can be verified by looking at the code for emit in REPL console : console.log((new (require('events').EventEmitter)).emit.toString()) ->
-    // event handler is called using handler.call(this=ANT Instance,...)
-    DeviceProfile_ANTFS.prototype.broadCastDataParser = function(data) {
+  broadCastDataParser(data) {
+
         // Function context -
 
 
@@ -1611,6 +1446,241 @@ DeviceProfile_ANTFS.prototype.getSlaveChannelConfiguration = function(config) {
                   break;
               }
           }
-        };
-      
+  }
+}
+
+
+
+DeviceProfile_ANTFS.prototype.CHANNEL_PERIOD = 4096;
+
+DeviceProfile_ANTFS.prototype.SEARCH_WAVEFORM = [0x53, 0x00];
+
+DeviceProfile_ANTFS.prototype.BEACON_ID = 0x43;
+
+DeviceProfile_ANTFS.prototype.STATE = {
+  INIT: 0x0F,
+  LINK_LAYER: 0x00,
+  AUTHENTICATION_LAYER: 0x01,
+  TRANSPORT_LAYER: 0x02,
+  BUSY: 0x03,
+  0x00: "LINK State",
+  0x01: "AUTHENTICATION State",
+  0x02: "TRANSPORT State",
+  0x03: "BUSY State",
+  0x0F: "INIT State"
+};
+
+// ANTFS TS p. 50 - commands are send either as acknowledged data or bursts depending on payload size
+// COMMAND format : p. 49 ANTFS Command/Response ID = 0x44, Command, Parameters ...
+DeviceProfile_ANTFS.prototype.COMMAND_ID = {
+  COMMAND_RESPONSE_ID: 0x44,
+  LINK: 0x02,
+  DISCONNECT: 0x03,
+  AUTHENTICATE: 0x04,
+  PING: 0x05,
+  DOWNLOAD: 0x09,
+  UPLOAD: 0x0A,
+  ERASE: 0x0B,
+  UPLOAD_DATA: 0x0C,
+  AUTHENTICATE_RESPONSE: 0x84,
+  DOWNLOAD_RESPONSE: 0x89,
+  ERASE_RESPONSE: 0x8B
+};
+
+// ANTFS TS p. 51
+DeviceProfile_ANTFS.prototype.RESPONSE_ID = {
+  authenticate: 0x84,
+  download: 0x89,
+  upload: 0x8A,
+  erase: 0x8b,
+  upload_data: 0x8c
+};
+
+DeviceProfile_ANTFS.prototype.BEACON_CHANNEL_PERIOD = {
+  HzHalf: 0x00, // 0.5 Hz
+  Hz1: 0x01,
+  Hz2: 0x02,
+  Hz4: 0x03,
+  Hz8: 0x04, // 8 Hz
+  0x00: "0.5 Hz (65535)", // 000
+  0x01: "1 Hz (32768)", // 001
+  0x02: "2 Hz (16384)", // 010
+  0x03: "4 Hz (8192)", // 011
+  0x04: "8 Hz (4096)", // 100
+  0x07: "Match established channel period (broadcast ANT-FS only)" // 111
+};
+
+DeviceProfile_ANTFS.prototype.AUTHENTICATION_TYPE = {
+  PASS_THROUGH: 0x00,
+  PAIRING_ONLY: 0x02,
+  PASSKEY_AND_PAIRING_ONLY: 0x03,
+  0x00: "Pass-through supported (pairing & passkey optional)",
+  0x02: "Pairing only",
+  0x03: "Passkey and Pairing only"
+};
+
+DeviceProfile_ANTFS.prototype.DISCONNECT_COMMAND = {
+  RETURN_TO_LINK_LAYER: 0x00,
+  RETURN_TO_BROADCAST_MODE: 0x01
+    // 2-127 reserved
+    // 128 - 255 device specific disconnect
+};
+
+DeviceProfile_ANTFS.prototype.AUTHENTICATE_COMMAND = {
+  PROCEED_TO_TRANSPORT: 0x00, // Pass-through
+  REQUEST_CLIENT_DEVICE_SERIAL_NUMBER: 0x01,
+  REQUEST_PAIRING: 0x02,
+  REQUEST_PASSKEY_EXCHANGE: 0x03
+};
+
+DeviceProfile_ANTFS.prototype.FRIENDLY_NAME = "GETFIT.JS";
+
+DeviceProfile_ANTFS.prototype.INITIAL_DOWNLOAD_REQUEST = {
+  CONTINUATION_OF_PARTIALLY_COMPLETED_TRANSFER: 0x00,
+  NEW_TRANSFER: 0x01
+};
+
+DeviceProfile_ANTFS.prototype.DOWNLOAD_RESPONSE = {
+  REQUEST_OK: 0x00,
+  CRC_INCORRECT: 0x05,
+  0x00: "Download Request OK",
+  0x01: "Data does not exist",
+  0x02: "Data exists but is not downloadable",
+  0x03: "Not ready to download",
+  0x04: "Request invalid",
+  0x05: "CRC incorrect"
+};
+
+DeviceProfile_ANTFS.prototype.ERASE_RESPONSE = {
+  ERASE_SUCCESSFULL: 0x00,
+  ERASE_FAILED: 0x01,
+  NOT_READY: 0x02,
+  0x00: "Erase successfull",
+  0x01: "Erase failed",
+  0x02: "Not ready"
+};
+
+DeviceProfile_ANTFS.prototype.RESERVED_FILE_INDEX = {
+  DIRECTORY_STRUCTURE: 0x00,
+  // 0xFC00 - 0xFFFD Reserved
+  COMMAND_PIPE: 0xFFFE,
+  // 0xFFFF - Reserved
+};
+
+DeviceProfile_ANTFS.prototype.AUTHENTICATE_RESPONSE = {
+  CLIENT_SN: 0x00,
+  ACCEPT: 0x01,
+  REJECT: 0x02,
+  0x00: "Client Device Serial Number",
+  0x01: "Accept of pairing or passkey",
+  0x02: "Reject"
+};
+
+DeviceProfile_ANTFS.prototype.DOWNLOAD_BUFFER_MB = 16; // Size of download buffer in MB
+
+DeviceProfile_ANTFS.prototype.REQUEST_BURST_RESPONSE_DELAY = 3000; // Time in ms. to wait for burst response on a request before retrying previous request
+
+DeviceProfile_ANTFS.prototype.ROOT_DIR = process.env.HOME + PathSeparator + 'getFIT-archive';
+
+DeviceProfile_ANTFS.prototype.NODECOMMAND = {
+  DOWNLOAD_MULTIPLE: 0x03,
+  DOWNLOAD_ALL: 0x02,
+  DOWNLOAD_NEW: 0x00,
+  ERASE_MULTIPLE: 0x01,
+};
+
+DeviceProfile_ANTFS.prototype.REQUEST_TRANSFER_TYPE = {
+  ACKNOWLEDGED: 0x00,
+  BURST: 0x01
+};
+
+DeviceProfile_ANTFS.prototype.REQUEST_TYPE = {
+  DOWNLOAD: 0x00,
+  ERASE: 0x01
+};
+
+DeviceProfile_ANTFS.prototype.REQUEST_STATE = {
+  0x00: "request",
+  REQUEST: 0x00,
+  SENT: 0x01,
+  0x01: "sent",
+  ERROR: 0x02,
+  0x02: "error",
+  BUSY: 0x03,
+  0x03: "busy"
+};
+
+DeviceProfile_ANTFS.prototype.FILE_TYPE = {
+  FIT: 0x80
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// host serial number is available on antInstance.serialNumber if getDeviceSerialNumber has been executed
+
+
+// p. 52 ANT-FS technical spec.
+
+
+
+
+
+
+
+
+
+
+    // It seems like the Garmin 910XT ANTFS client open the channel for about 1.75 sec. each 20 seconds. At 8Hz message rate max 16 beacon messages can be expected. -> maybe to conserve power
+    // The generates a series of EVENT_RX_FAIL which eventually leads to EVENT_RX_FAIL_GO_TO_SEARCH -> host expected messages to arrive, but
+    // client (910XT) has closed the channel, fallback for host is to return to search mode again
+    // I suppose that when authentication succeeds and we enter transport layer state, the client will step up its game and provide continous stream of data
+    // ANT-FS Technical specification p. 40 s. 9.1 Beacon "Client beacon rates will be application dependent. A trade off is made between power and latecy"
+
+
+
+
+
+
+    // Sending this command -> gives a burst of 4 packets 9 bytes in length (including CS/CRC); auth. beacon + 0x84 authenticate response + authorization string on the FR 910XT
+    //1368702944969 Rx:  <Buffer a4 09 50 01 43 04 01 03 96 99 27 00 91> * NO parser specified *
+    //1368702944972 Rx:  <Buffer a4 09 50 21 44 84 00 10 30 67 0b e5 b5> * NO parser specified *
+    //1368702944975 Rx:  <Buffer a4 09 50 41 46 6f 72 65 72 75 6e 6e 85> * NO parser specified *
+    //1368702944983 Rx:  <Buffer a4 09 50 e1 65 72 20 39 31 30 58 54 1f> * NO parser specified *
+
+
+    // Pairing request sent to client device, if friendlyname is provided its sent as a bulk data request otherwise acknowledged
+
+
+
+
+    // Parses ANT-FS directory at reserved file index 0
+
+
+
+
+
+
+
+
+
+
+
+
+    // Listener for broadcast event for all channels -> must filter
+    // When this function is called from emit function of EventEmitter -> this will be the eventEmitter = ANT instance
+    // This can be verified by looking at the code for emit in REPL console : console.log((new (require('events').EventEmitter)).emit.toString()) ->
+    // event handler is called using handler.call(this=ANT Instance,...)
+
+
         module.exports = DeviceProfile_ANTFS

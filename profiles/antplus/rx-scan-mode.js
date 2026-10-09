@@ -16,13 +16,15 @@
     }
   }
 
-  function RxScanMode(configuration) {
+  class RxScanMode extends DeviceProfile {
+  constructor(configuration) {
+
 
     var devNum = 0,
       devType = 0,
       transType = 0;
 
-    DeviceProfile.call(this, configuration);
+    super(configuration);
 
     if (configuration && configuration.channelId) {
       devNum = configuration.channelId.deviceNumber || 0;
@@ -57,26 +59,24 @@
     });
 
     this.profile = {}; // indexed by sensorId
-
   }
 
-  RxScanMode.prototype = Object.create(DeviceProfile.prototype);
-  RxScanMode.prototype.constructor = RxScanMode;
+  stop() {
 
-  // Override default stop of device profile
-  RxScanMode.prototype.stop = function() {
     this.removeAllListeners('page'); // In case someone is listening on our page event
 
     for (var sensorId in this.profile) {
       this.profile[sensorId].stop();
     }
-  };
+  }
 
-  RxScanMode.prototype.onPage = function(page) {
+  onPage(page) {
+
     this.emit('page', page);
-  };
+  }
 
-  RxScanMode.prototype.addProfile = function(profile, broadcast) {
+  addProfile(profile, broadcast) {
+
 
     var sensorId = broadcast.channelId.sensorId;
 
@@ -87,11 +87,10 @@
     if (this.log.logging) {
       this.log.info( 'Added profile for sensorId ' + sensorId + ' to RX SCAN mode channel', profile);
     }
-  };
+  }
 
-  // Scan mode receives all broadcasts on channel 0
-  // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
-  RxScanMode.prototype.broadCast = function(broadcast) {
+  broadCast(broadcast) {
+
 
     var currentProfile;
 
@@ -175,8 +174,22 @@
         currentProfile.broadCast(broadcast);
       }
     }
+  }
+}
 
-  };
+
+
+
+  // Override default stop of device profile
+
+
+
+
+
+
+  // Scan mode receives all broadcasts on channel 0
+  // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
+
 
   module.exports = RxScanMode;
-  
+

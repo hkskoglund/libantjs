@@ -2,16 +2,18 @@
 
   var GenericPage = require('./page');
 
-  function MainPage(configuration, broadcast, profile, pageNumber) {
+  class MainPage extends GenericPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    GenericPage.call(this, configuration, broadcast, profile, pageNumber);
 
+    super(configuration, broadcast, profile, pageNumber);
   }
+}
 
-  MainPage.prototype = Object.create(GenericPage.prototype);
-  MainPage.prototype.constructor = MainPage;
+
+
 
   module.exports = MainPage;
-  
+
 
 // TO DO : Remove?

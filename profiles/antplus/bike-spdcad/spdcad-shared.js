@@ -2,20 +2,15 @@
 
   var MainPage = require('../main-page');
 
-  function SPDCADSharedPage(configuration, broadcast, profile, pageNumber) {
+  class SPDCADSharedPage extends MainPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    MainPage.call(this, configuration, broadcast, profile, pageNumber);
 
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  SPDCADSharedPage.prototype = Object.create(MainPage.prototype);
-  SPDCADSharedPage.prototype.constructor = SPDCADSharedPage;
+  readCadence(proto) {
 
-  // SPDCAD page 0
-  //   byteoffset  : 0
-  // BIKECAD page 0
-  //   byteoffset : 4 (Spec. Table 11: Page 0 Bike Cadence Data Format, p.27)
-  SPDCADSharedPage.prototype.readCadence = function(proto) {
 
     var data = this.broadcast.data,
       dataView = new DataView(this.broadcast.data.buffer),
@@ -28,9 +23,10 @@
     // Byte 2-3 - Cumulative Cadence Revolution Count LSB MSB - total number of pedal revolutions - rollover : 65536
 
     this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + prototype.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
-  };
+  }
 
-  SPDCADSharedPage.prototype.readSpeed = function(proto) {
+  readSpeed(proto) {
+
 
     var data = this.broadcast.data,
       dataView = new DataView(this.broadcast.data.buffer),
@@ -43,9 +39,10 @@
     // Byte 6-7 - Cumulative Speed Revolution LSB MSB - total number of wheel revolutions - rollover : 65536
 
     this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
-  };
+  }
 
-  SPDCADSharedPage.prototype.calcSpeed = function() {
+  calcSpeed() {
+
 
     var previousPage = this.profile.getPreviousBikeMeasurementPageValidateRolloverTime(this);
 
@@ -96,9 +93,10 @@
     if (this.unCalibratedSpeed !== undefined) {
       this.speed = this.unCalibratedSpeed * this.profile.WHEEL_CIRCUMFERENCE;
     }
-  };
+  }
 
-  SPDCADSharedPage.prototype.calcCadence = function() {
+  calcCadence() {
+
 
     var previousPage = this.profile.getPreviousBikeMeasurementPageValidateRolloverTime(this);
 
@@ -141,8 +139,23 @@
       this.cadence = undefined;
 
     }
+  }
+}
 
-  };
+
+
+
+  // SPDCAD page 0
+  //   byteoffset  : 0
+  // BIKECAD page 0
+  //   byteoffset : 4 (Spec. Table 11: Page 0 Bike Cadence Data Format, p.27)
+
+
+
+
+
+
+
 
   module.exports = SPDCADSharedPage;
-  
+

@@ -3,9 +3,11 @@
   var DeviceProfile = require('../device-profile'),
     GenericPage = require('../page');
 
-  function DeviceProfile_BikeShared(configuration) {
+  class DeviceProfile_BikeShared extends DeviceProfile {
+  constructor(configuration) {
 
-    DeviceProfile.call(this, configuration);
+
+    super(configuration);
 
     if (configuration && configuration.wheelCircumference !== undefined) {
       if (!Number.isFinite(configuration.wheelCircumference) || configuration.wheelCircumference <= 0) {
@@ -19,16 +21,8 @@
     this.measurementPages = [];
   }
 
-  DeviceProfile_BikeShared.prototype = Object.create(DeviceProfile.prototype);
-  DeviceProfile_BikeShared.prototype.constructor = DeviceProfile_BikeShared;
+  getPageNumber(broadcast) {
 
-  DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
-
-  DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE = 2.07; // meters
-
-  DeviceProfile_BikeShared.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
-
-  DeviceProfile_BikeShared.prototype.getPageNumber = function(broadcast) {
     var data = broadcast.data,
       pageNumber;
 
@@ -43,9 +37,10 @@
     }
 
     return pageNumber;
-  };
+  }
 
-  DeviceProfile_BikeShared.prototype.getBikePage = function(broadcast, PageConstructor, processBackgroundPage) {
+  getBikePage(broadcast, PageConstructor, processBackgroundPage) {
+
     var pageNumber = this.getPageNumber(broadcast),
       page;
 
@@ -64,9 +59,10 @@
     }
 
     return page;
-  };
+  }
 
-  DeviceProfile_BikeShared.prototype.addPage = function(page) {
+  addPage(page) {
+
     DeviceProfile.prototype.addPage.call(this, page);
 
     if (!page) {
@@ -82,9 +78,10 @@
     }
 
     this.measurementPages.push(page);
-  };
+  }
 
-  DeviceProfile_BikeShared.prototype.getPreviousBikeMeasurementPageValidateRolloverTime = function(currentPage) {
+  getPreviousBikeMeasurementPageValidateRolloverTime(currentPage) {
+
     var previousPage = this.measurementPages[this.measurementPages.length - 1];
 
     if (!previousPage) {
@@ -100,7 +97,25 @@
     }
 
     return previousPage;
-  };
+  }
+}
+
+
+
+
+  DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
+
+  DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE = 2.07; // meters
+
+  DeviceProfile_BikeShared.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
+
+
+
+
+
+
+
+
 
   module.exports = DeviceProfile_BikeShared;
-  
+

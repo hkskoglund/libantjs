@@ -2,16 +2,15 @@
 
   var HRMPage = require('./hrm-page');
 
-  function HRMPage4(configuration, broadcast, profile, pageNumber) {
+  class HRMPage4 extends HRMPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    HRMPage.call(this, configuration, broadcast, profile, pageNumber);
 
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  HRMPage4.prototype = Object.create(HRMPage.prototype);
-  HRMPage4.prototype.constructor = HRMPage4;
+  readCommonBytes() {
 
-  HRMPage4.prototype.readCommonBytes = function() {
     var data = this.broadcast.data,
       dataView = new DataView(this.broadcast.data.buffer);
 
@@ -22,9 +21,14 @@
     // Spec. section 5.3.6 p. 19 "this format provides a level of redundancy in the transmitted datastream"
 
     this.previousHeartBeatEventTime = dataView.getUint16(data.byteOffset + 2, true);
+  }
+}
 
-  };
+
+
+
+
 
 
   module.exports = HRMPage4;
-  
+

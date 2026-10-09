@@ -2,22 +2,26 @@
 
   var HRMPage = require('./hrm-page');
 
-  function HRMPage0(configuration, broadcast, profile, pageNumber) {
+  class HRMPage0 extends HRMPage {
+  constructor(configuration, broadcast, profile, pageNumber) {
 
-    HRMPage.call(this, configuration, broadcast, profile, pageNumber);
 
+    super(configuration, broadcast, profile, pageNumber);
   }
 
-  HRMPage0.prototype = Object.create(HRMPage.prototype);
-  HRMPage0.prototype.constructor = HRMPage0;
+  readCommonBytes() {
 
-  HRMPage0.prototype.readCommonBytes = function() {
 
     this.readHR();
 
     // Old legacy format doesnt have previous heart beat event time
+  }
+}
 
-  };
+
+
+
+
 
   module.exports = HRMPage0;
-  
+

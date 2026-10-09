@@ -1,10 +1,13 @@
 'use strict';
 
   // Use named function to allow for tracing in profiler
-  function ReceivedPages(sensorId) {
+  class ReceivedPages {
+  constructor(sensorId) {
+
 
     this.all = [];
   }
+}
 
   module.exports = ReceivedPages;
-  
+
