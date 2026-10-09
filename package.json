@@ -30,7 +30,7 @@
   "homepage": "https://github.com/hkskoglund/libantjs",
   "dependencies": {
     "loglevel": "^1.9.2",
-    "usb": "^2.19.1"
+    "usb": "^3.2.1"
   },
   "allowScripts": {
     "usb@2.19.1": true

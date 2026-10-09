@@ -11,9 +11,8 @@ class HostDevices {
     this.channel[channel.channel] = channel;
   }
 
-  getDevices() {
-    return this.usb.getDevices();
-
+  getDevices(callback) {
+    return this.usb.getDevices(callback);
   }
 
   deviceToString(device, callback) {

@@ -6,7 +6,7 @@
 
 - Node.js 22 or newer (use a currently maintained Node.js release).
 - A supported ANT USB stick. The library currently recognizes the ANT USB-2 Stick and ANT USB-m Stick.
-- A working libusb-compatible USB environment. Linux, macOS, and Windows are intended targets; the project does not currently run a platform CI matrix.
+- A working USB environment (`usb@3`, prebuilt native binaries; no libusb needed). Linux, macOS, and Windows are intended targets; the project does not currently run a platform CI matrix.
 - On Linux, the user running the application must have permission to access the stick. Configure USB permissions (for example, with a udev rule) rather than running the application as root.
 
 ## Installation
