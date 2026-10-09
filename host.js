@@ -47,6 +47,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
   var msgBytes,
     messageStr,
     responseEvent,
+    hasCallback = typeof callback === 'function',
 
     onSentToANT = function _onSentToANT(error, msg) {
 
@@ -56,7 +57,7 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
           this.log.error( 'TX failed of ' + messageStr, error);
         }
 
-        if (event) {
+        if (event && hasCallback) {
           if (typeof channel !== 'number') {
             this.removeListener(event, callback);
           } else {
@@ -64,18 +65,20 @@ Host.prototype.sendMessage = function(message, event, channel, callback) {
           }
         }
 
-        callback(error, msg);
+        if (hasCallback) {
+          callback(error, msg);
+        }
         return;
       }
 
-      if (!event) { // i.e send acknowledged data
+      if (!event && hasCallback) { // i.e send acknowledged data
         callback(error, msg);
       }
 
 
     }.bind(this);
 
-  if (event) {
+  if (event && hasCallback) {
 
     if (typeof channel !== 'number') {
 

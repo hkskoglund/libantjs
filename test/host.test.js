@@ -4,8 +4,10 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const Host = require('../host');
 const Message = require('../messages/message');
+const AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message');
 const ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message');
 const ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel');
+const DisconnectCommand = require('../profiles/antfs/lib/request-response/disconnect-request');
 
 const message = {
   id: 0x4a,
@@ -263,6 +265,38 @@ test('sendMessage removes a channel response listener when the transfer fails', 
 
   assert.equal(callbackCalls, 1);
   assert.equal(host.channel[0].listenerCount(responseEvent), 0);
+});
+
+test('sendMessage safely completes transfers without an optional callback', () => {
+  const eventless = createHost();
+  const response = createHost();
+
+  eventless.host.sendMessage(message);
+  assert.doesNotThrow(() => eventless.completeTransfer());
+
+  response.host.sendMessage(message, 'response');
+  assert.equal(response.host.listenerCount('response'), 0);
+  assert.doesNotThrow(() => response.completeTransfer(new Error('transfer failed')));
+});
+
+test('ANT-FS pads short acknowledged requests to the ANT payload size', () => {
+  let encodedMessage;
+  const antfsChannel = {
+    channel: 0,
+    host: {
+      sendAcknowledgedData(channel, data) {
+        encodedMessage = new AcknowledgedDataMessage();
+        encodedMessage.encode(channel, data);
+      }
+    },
+    sendRequest() {
+      this.session.sendFunc();
+    }
+  };
+
+  ANTFSHostChannel.prototype.initRequest.call(antfsChannel, new DisconnectCommand(), () => {});
+
+  assert.deepEqual(Array.from(encodedMessage.payload), [0x44, 0x03, 0, 0, 0, 0, 0, 0]);
 });
 
 test('sendMessage delivers successful response events without calling the callback on USB completion', () => {

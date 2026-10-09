@@ -268,7 +268,11 @@ ANTFSHostChannel.prototype.initRequest = function (request, callback)
   this.session.retry = -1;
 
   if (serializedRequest.length <= 8)
-   this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, serializedRequest, callback);
+  {
+    var acknowledgedRequest = new Uint8Array(8);
+    acknowledgedRequest.set(serializedRequest);
+    this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, acknowledgedRequest, callback);
+  }
   else
    this.session.sendFunc = Channel.prototype.sendBurst.bind(this, serializedRequest, callback);
 
