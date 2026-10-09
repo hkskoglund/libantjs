@@ -1,30 +1,35 @@
 'use strict';
 
-  // Function names based on Dynastram Android SDK v 4.00 documentation
-  function RXTimestamp(rxTimestamp) {
+// Function names based on Dynastram Android SDK v 4.00 documentation
+class RXTimestamp {
+  constructor(rxTimestamp) {
+
     this.timestamp = rxTimestamp;
   }
 
-  RXTimestamp.prototype.decode = function(timestamp) {
+  decode(timestamp) {
 
     this.timestamp = (new DataView(timestamp.buffer)).getUint16(0 + timestamp.byteOffset, true);
+  }
 
-  };
+  getRxTimestamp() {
 
-  RXTimestamp.prototype.getRxTimestamp = function() {
     return this.timestamp;
-  };
+  }
 
-  RXTimestamp.prototype.convertRXTimestampToSeconds = function(timestamp) {
+  convertRXTimestampToSeconds(timestamp) {
+
     if (timestamp)
       return timestamp / 32768;
     else
       return (this.timestamp / 32768);
-  };
+  }
 
-  RXTimestamp.prototype.toString = function() {
+  toString() {
+
     return "RX Timestamp " + this.getRxTimestamp() + " " + this.convertRXTimestampToSeconds().toFixed(3) + " s";
-  };
+  }
+}
 
-  module.exports = RXTimestamp;
-  
+module.exports = RXTimestamp;
+

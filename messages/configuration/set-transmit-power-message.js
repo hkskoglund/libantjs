@@ -1,30 +1,28 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetTransmitPowerMessage(transmitPower) {
+class SetTransmitPowerMessage extends Message {
+  constructor(transmitPower) {
 
-    Message.call(this, undefined, Message.prototype.SET_TRANSMIT_POWER);
+    super(undefined, Message.prototype.SET_TRANSMIT_POWER);
     this.encode(transmitPower);
-
   }
 
-  SetTransmitPowerMessage.prototype = Object.create(Message.prototype);
+  encode(transmitPower) {
 
-  SetTransmitPowerMessage.prototype.constructor = SetTransmitPowerMessage;
-
-  SetTransmitPowerMessage.prototype.encode = function(transmitPower) {
     var msgBuffer = new Uint8Array([Message.prototype.FILLER_BYTE, transmitPower]);
 
     this.transmitPower = transmitPower;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetTransmitPowerMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + ' transmit power ' + this.transmitPower;
-  };
+  }
+}
 
-  module.exports = SetTransmitPowerMessage;
-  
+module.exports = SetTransmitPowerMessage;
+

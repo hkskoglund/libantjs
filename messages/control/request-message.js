@@ -1,21 +1,18 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  // p.89 "ANT Message Protocol and Usage, rev 5.0b"
-  // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
-  function RequestMessage(channel, requestedMessageId, NVMaddr, NVMsize) {
+// p.89 "ANT Message Protocol and Usage, rev 5.0b"
+// "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
+class RequestMessage extends Message {
+  constructor(channel, requestedMessageId, NVMaddr, NVMsize) {
 
-    Message.call(this, undefined, Message.prototype.REQUEST);
+    super(undefined, Message.prototype.REQUEST);
     this.encode(channel, requestedMessageId, NVMaddr, NVMsize);
-
   }
 
-  RequestMessage.prototype = Object.create(Message.prototype);
+  encode(channel, requestedMessageId, NVMaddr, NVMsize) {
 
-  RequestMessage.prototype.constructor = RequestMessage;
-
-  RequestMessage.prototype.encode = function(channel, requestedMessageId, NVMaddr, NVMsize) {
     var msgBuffer = new Uint8Array([channel || 0, requestedMessageId]);
 
     this.requestId = requestedMessageId;
@@ -39,15 +36,15 @@
     }
 
     this.setContent(msgBuffer);
+  }
 
+  getRequestId() {
 
-  };
-
-  RequestMessage.prototype.getRequestId = function() {
     return this.requestId;
-  };
+  }
 
-  RequestMessage.prototype.toString = function() {
+  toString() {
+
     var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " ID 0x" + this.requestId.toString(16) + ' ' + Message.prototype.MESSAGE[this.requestId];
     if (this.NVMaddr)
       msg += " NVMaddr " + this.NVMaddr;
@@ -55,8 +52,8 @@
       msg += " NVMsize " + this.NVMsize;
 
     return msg;
+  }
+}
 
-  };
+module.exports = RequestMessage;
 
-  module.exports = RequestMessage;
-  

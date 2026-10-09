@@ -1,19 +1,17 @@
 'use strict';
 
-  var Message = require('../message'),
-    Channel = require('../../channel/channel');
+var Message = require('../message'),
+  Channel = require('../../channel/channel');
 
-  function AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment) {
+class AssignChannelMessage extends Message {
+  constructor(channel, channelType, networkNumber, extendedAssignment) {
 
-    Message.call(this, undefined, Message.prototype.ASSIGN_CHANNEL);
+    super(undefined, Message.prototype.ASSIGN_CHANNEL);
     this.encode(channel, channelType, networkNumber, extendedAssignment);
   }
 
-  AssignChannelMessage.prototype = Object.create(Message.prototype);
+  encode(channel, channelType, networkNumber, extendedAssignment) {
 
-  AssignChannelMessage.prototype.constructor = AssignChannelMessage;
-
-  AssignChannelMessage.prototype.encode = function(channel, channelType, networkNumber, extendedAssignment) {
     var content;
 
     if (extendedAssignment)
@@ -29,16 +27,18 @@
       this.extendedAssignment = extendedAssignment;
 
     this.setContent(content);
-  };
+  }
 
-  AssignChannelMessage.prototype.toString = function() {
+  toString() {
+
     var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.prototype.TYPE[this.type];
 
     if (this.extendedAssignment)
       msg += " extended assignment " + this.extendedAssignment;
 
     return msg;
-  };
+  }
+}
 
-  module.exports = AssignChannelMessage;
-  
+module.exports = AssignChannelMessage;
+

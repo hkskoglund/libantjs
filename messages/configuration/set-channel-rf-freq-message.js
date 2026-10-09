@@ -1,20 +1,17 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetChannelRFFreqMessage(channel, RFFreq) {
+class SetChannelRFFreqMessage extends Message {
+  constructor(channel, RFFreq) {
 
-    Message.call(this, undefined, Message.prototype.SET_CHANNEL_RFFREQ);
+    super(undefined, Message.prototype.SET_CHANNEL_RFFREQ);
 
     this.encode(channel, RFFreq);
-
   }
 
-  SetChannelRFFreqMessage.prototype = Object.create(Message.prototype);
+  encode(channel, RFFreq) {
 
-  SetChannelRFFreqMessage.prototype.constructor = SetChannelRFFreqMessage;
-
-  SetChannelRFFreqMessage.prototype.encode = function(channel, RFFreq) {
     var msgBuffer = new Uint8Array(2);
 
     if (typeof RFFreq === 'undefined')
@@ -27,13 +24,13 @@
     this.RFFreq = RFFreq;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-
-  SetChannelRFFreqMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " RF freq. " + this.RFFreq;
-  };
+  }
+}
 
-  module.exports = SetChannelRFFreqMessage;
-  
+module.exports = SetChannelRFFreqMessage;
+

@@ -1,21 +1,20 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function ResetSystemMessage() {
+class ResetSystemMessage extends Message {
+  constructor() {
 
-    Message.call(this, undefined, Message.prototype.RESET_SYSTEM);
+    super(undefined, Message.prototype.RESET_SYSTEM);
 
     this.encode();
   }
 
-  ResetSystemMessage.prototype = Object.create(Message.prototype);
+  encode() {
 
-  ResetSystemMessage.prototype.constructor = ResetSystemMessage;
-
-  ResetSystemMessage.prototype.encode = function() {
     this.setContent(new Uint8Array(1));
-  };
+  }
+}
 
-  module.exports = ResetSystemMessage;
-  
+module.exports = ResetSystemMessage;
+

@@ -1,6 +1,7 @@
 'use strict';
-  // Function names based on Dynastram Android SDK v 4.00 documentation
-  function RSSI(measurementType, RSSIValue, proximityBinThreshold) {
+// Function names based on Dynastram Android SDK v 4.00 documentation
+class RSSI {
+  constructor(measurementType, RSSIValue, proximityBinThreshold) {
 
     if (typeof measurementType !== "undefined")
       this.measurementType = measurementType;
@@ -14,7 +15,8 @@
     }
   }
 
-  RSSI.prototype.decode = function(extendedData) {
+  decode(extendedData) {
+
     var extendedDataView = new DataView(extendedData.buffer);
 
     this.measurementType = extendedData[0];
@@ -25,30 +27,35 @@
     this.RSSIValue = extendedDataView.getInt8(extendedData.byteOffset + 1);
 
     this.thresholdConfigurationValue = extendedDataView.getInt8(extendedData.byteOffset + 2); // Signed int (2's complement ?)
-  };
+  }
 
-  RSSI.prototype.getRawMeasurementType = function() {
+  getRawMeasurementType() {
+
     return this.measurementType;
-  };
+  }
 
-  RSSI.prototype.getRSSIValue = function() {
+  getRSSIValue() {
+
     return this.RSSIValue;
-  };
+  }
 
-  RSSI.prototype.getThresholdConfigDB = function() {
+  getThresholdConfigDB() {
+
     return this.thresholdConfigurationValue;
-  };
+  }
 
-  RSSI.prototype.toString = function() {
+  toString() {
+
     return "RSSI " + this.RSSIValue + " " + RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue + " dBm";
-  };
+  }
+}
 
-  // http://en.wikipedia.org/wiki/DBm
-  // 0dBm = 1mW
-  RSSI.prototype.MEASUREMENT_TYPE = {
-    0x20: "dBm",
-    dBm: 0x20 // Units of dBm
-  };
+// http://en.wikipedia.org/wiki/DBm
+// 0dBm = 1mW
+RSSI.prototype.MEASUREMENT_TYPE = {
+  0x20: "dBm",
+  dBm: 0x20 // Units of dBm
+};
 
-  module.exports = RSSI;
-  
+module.exports = RSSI;
+

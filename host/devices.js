@@ -2,35 +2,33 @@
 
 var USBDevice = require('../usb/USBDevice');
 
-module.exports = function(Host) {
-  Host.prototype.onUSBError = function(error) {
+class HostDevices {
+  onUSBError(error) {
     this.emit(this.EVENT.ERROR, error);
-  };
+  }
 
-  Host.prototype.setChannel = function(channel) {
+  setChannel(channel) {
     this.channel[channel.channel] = channel;
-  };
+  }
 
-  Host.prototype.getDevices = function() {
+  getDevices() {
     return this.usb.getDevices();
 
-  };
+  }
 
-  Host.prototype.deviceToString = function (device,callback)
-  {
+  deviceToString(device, callback) {
     this.usb.deviceToString(device,callback);
-  };
+  }
 
-  Host.prototype.listDevices = function ()
-  {
+  listDevices() {
     var str = '';
 
     this.usb.getDevices().forEach (function (device,index) { str += index + ' ' + this.usb.deviceToString(device) + '\n'; }.bind(this));
 
     return str;
-  };
+  }
 
-  Host.prototype.init = function(iDevice, onInit) {
+  init(iDevice, onInit) {
 
     var onUSBinit = function(onInit, error) {
 
@@ -62,16 +60,14 @@ module.exports = function(Host) {
                           _doLibConfigCB(error);
                   }.bind(this)); */
 
-
-
     this.usb.init(iDevice, onUSBinit.bind(this, onInit));
 
-  };
+  }
 
-  Host.prototype.exit = function(callback) {
+  exit(callback) {
 
     // Stop profile retry timers so nothing is sent on the USB device after it is closed
-    for (var i = 0; i < Host.prototype.MAX_CHAN; i++) {
+    for (var i = 0; i < this.MAX_CHAN; i++) {
       if (this.channel[i] && typeof this.channel[i].shutdown === 'function') {
         this.channel[i].shutdown();
       }
@@ -79,7 +75,7 @@ module.exports = function(Host) {
 
     this.resetSystem(function _onReset(resetError, notificationStartup) {
 
-      for (var c = 0; c < Host.prototype.MAX_CHAN; c++) {
+      for (var c = 0; c < this.MAX_CHAN; c++) {
         this.channel[c].removeAllListeners();
       }
 
@@ -100,6 +96,14 @@ module.exports = function(Host) {
 
     }.bind(this));
 
-  };
+  }
 
+}
+
+module.exports = function(Host) {
+  for (const methodName of Object.getOwnPropertyNames(HostDevices.prototype)) {
+    if (methodName !== 'constructor') {
+      Host.prototype[methodName] = HostDevices.prototype[methodName];
+    }
+  }
 };

@@ -1,24 +1,16 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function ConfigureAdvancedBurstMessage(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount) {
+class ConfigureAdvancedBurstMessage extends Message {
+  constructor(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
 
-      Message.call(this, undefined, Message.prototype.CONFIGURE_ADVANCED_BURST);
-      this.encode(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount);
-
+    super(undefined, Message.prototype.CONFIGURE_ADVANCED_BURST);
+    this.encode(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount);
   }
 
-  ConfigureAdvancedBurstMessage.prototype = Object.create(Message.prototype);
-  ConfigureAdvancedBurstMessage.prototype.constructor = ConfigureAdvancedBurstMessage;
+  encode(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
 
-  ConfigureAdvancedBurstMessage.prototype.ENABLE = 0x01;
-  ConfigureAdvancedBurstMessage.prototype.DISABLE = 0x00;
-  ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_8BYTES = 0x01;
-  ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_16BYTES = 0x02;
-  ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_24BYTES = 0x03;
-
-  ConfigureAdvancedBurstMessage.prototype.encode = function(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount) {
     var msgBuffer;
 
     if (typeof stallCount !== 'number' && typeof retryCount !== 'number')
@@ -52,13 +44,20 @@
     this.optionalFeatures = optionalFeatures;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  ConfigureAdvancedBurstMessage.prototype.toString = function () {
     return Message.prototype.toString.call(this)+ ' enabled '+this.enable+' max packet length '+
           this.maxPacketLength+' required '+this.requiredFeatures+ ' optional '+this.optionalFeatures;
-  };
+  }
+}
 
-  module.exports = ConfigureAdvancedBurstMessage;
-  
+ConfigureAdvancedBurstMessage.prototype.ENABLE = 0x01;
+ConfigureAdvancedBurstMessage.prototype.DISABLE = 0x00;
+ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_8BYTES = 0x01;
+ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_16BYTES = 0x02;
+ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_24BYTES = 0x03;
+
+module.exports = ConfigureAdvancedBurstMessage;
+

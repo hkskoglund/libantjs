@@ -21,8 +21,8 @@ var Message = require('../messages/message'),
   ChannelResponseMessage = require('../messages/channel-response-event/channel-response-message'),
   ChannelResponseEvent = require('../channel/channel-response-event');
 
-module.exports = function(Host) {
-  Host.prototype.deserialize = function(data) {
+class HostDeserialize {
+  deserialize(data) {
     var msgBytes,
       iStartOfMessage = 0,
       metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
@@ -241,6 +241,14 @@ module.exports = function(Host) {
     }
 
     this.previousPacket = undefined;
-  };
+  }
 
+}
+
+module.exports = function(Host) {
+  for (const methodName of Object.getOwnPropertyNames(HostDeserialize.prototype)) {
+    if (methodName !== 'constructor') {
+      Host.prototype[methodName] = HostDeserialize.prototype[methodName];
+    }
+  }
 };

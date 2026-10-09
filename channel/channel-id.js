@@ -1,7 +1,8 @@
 'use strict';
-  // Function names based on Dynastram Android SDK v 4.00 documentation
+// Function names based on Dynastram Android SDK v 4.00 documentation
 
-  function ChannelId(deviceNumber, deviceType, transmissionType, pair) {
+class ChannelId {
+  constructor(deviceNumber, deviceType, transmissionType, pair) {
 
     // Allow for new ChannelId(), when parsing broadcast data
     if (arguments.length === 0) {
@@ -23,41 +24,10 @@
     // "The extended device number is not intended as a number that must be displayed - it is intended to increase a device's chance of pairing to the right device every time - even in crowded environments."
 
     this._check20BitDeviceNumber();
-
   }
 
-  ChannelId.prototype.BITMASK = {
-    DEVICE_TYPE: {
-      PAIR: parseInt("10000000", 2)
-    },
-    TRANSMISSION_TYPE: {
-      SHARED_ADDRESS: parseInt("11", 2),
-      ANTPLUS_GLOBAL_PAGES: parseInt("100", 2),
-      BIT20_ADDRESS_NIBBLE: parseInt("11110000", 2)
-    },
-  };
+  _check20BitDeviceNumber() {
 
-  ChannelId.prototype.BIT_FIELD = {
-    TRANSMISSION_TYPE: {
-      ANTPLUS_GLOBAL_PAGES: {
-        start_bit: 2,
-        length: 1
-      },
-
-      BIT20_ADDRESS_NIBBLE: {
-        start_bit: 4,
-        length: 4
-      }
-
-    }
-  };
-
-  ChannelId.prototype.ANY_DEVICE_NUMBER = 0x00;
-  ChannelId.prototype.ANY_DEVICE_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
-  ChannelId.prototype.ANY_TRANSMISSION_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
-
-
-  ChannelId.prototype._check20BitDeviceNumber = function() {
     var transferTypeMSN;
 
     delete this.deviceNumber20BIT;
@@ -66,35 +36,38 @@
       transferTypeMSN = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
       this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
     }
-  };
+  }
 
-  ChannelId.prototype.getUniqueId = function(networkNr, channelNr) {
+  getUniqueId(networkNr, channelNr) {
+
     var pageScheme = 'ant';
 
     pageScheme = pageScheme + ':' + networkNr + '.' + channelNr + ':' + this.deviceNumber + '.' + this.deviceType + '.' + this.transmissionType;
 
     return pageScheme;
+  }
 
-  };
+  getDeviceNumber() {
 
-  ChannelId.prototype.getDeviceNumber = function() {
     return this.deviceNumber;
-  };
+  }
 
-  ChannelId.prototype.getDeviceType = function() {
+  getDeviceType() {
+
     return this.deviceType;
-  };
+  }
 
-  ChannelId.prototype.getTransmissionType = function() {
+  getTransmissionType() {
+
     return this.transmissionType;
-  };
+  }
 
-  ChannelId.prototype.getPair = function() {
+  getPair() {
+
     return this.pair;
-  };
+  }
 
-  // Parse channel ID if enabled via LIBConfig
-  ChannelId.prototype.decode = function(extendedData) {
+  decode(extendedData) {
 
     if (!extendedData || extendedData.length < 4) {
       throw new RangeError('Channel ID data must contain at least 4 bytes');
@@ -115,36 +88,24 @@
     this._check20BitDeviceNumber();
 
     this.globalDataPagesNonANTPlusManaged = this.hasGlobalDataPages();
+  }
 
-  };
+  getSharedAddressType() {
 
-
-
-  // Get the 2 least significatiant bit (LSB) of transmission type that determines whether the channel is independent or using 1/2-byte shared address
-  ChannelId.prototype.getSharedAddressType = function() {
     return this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS;
-  };
+  }
 
-  ChannelId.prototype.SHARED_ADDRESS_TYPE = {
-    INDEPENDENT_CHANNEL: 0x01,
-    ADDRESS_1BYTE: 0x02,
-    ADDRESS_2BYTE: 0x03
-  };
+  has20BitDeviceNumber() {
 
-  ChannelId.prototype.has20BitDeviceNumber = function() {
     return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
-  };
+  }
 
+  hasGlobalDataPages() {
 
-  // ANT Message Protocol and Usage, Rev. 5.1, p. 18
-  // "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"
-  // Optional bit for non-ANT+ managed networks: table 5-2
-
-  ChannelId.prototype.hasGlobalDataPages = function() {
     return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
-  };
+  }
 
-  ChannelId.prototype.toString = function() {
+  toString() {
 
     var formatTransmissionType = function() {
       var msg = "";
@@ -180,7 +141,52 @@
     }.bind(this);
 
     return "Id 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
-  };
+  }
+}
 
-  module.exports = ChannelId;
-  
+ChannelId.prototype.BITMASK = {
+  DEVICE_TYPE: {
+    PAIR: parseInt("10000000", 2)
+  },
+  TRANSMISSION_TYPE: {
+    SHARED_ADDRESS: parseInt("11", 2),
+    ANTPLUS_GLOBAL_PAGES: parseInt("100", 2),
+    BIT20_ADDRESS_NIBBLE: parseInt("11110000", 2)
+  },
+};
+
+ChannelId.prototype.BIT_FIELD = {
+  TRANSMISSION_TYPE: {
+    ANTPLUS_GLOBAL_PAGES: {
+      start_bit: 2,
+      length: 1
+    },
+
+    BIT20_ADDRESS_NIBBLE: {
+      start_bit: 4,
+      length: 4
+    }
+
+  }
+};
+
+ChannelId.prototype.ANY_DEVICE_NUMBER = 0x00;
+ChannelId.prototype.ANY_DEVICE_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
+ChannelId.prototype.ANY_TRANSMISSION_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
+
+// Parse channel ID if enabled via LIBConfig
+
+// Get the 2 least significatiant bit (LSB) of transmission type that determines whether the channel is independent or using 1/2-byte shared address
+
+ChannelId.prototype.SHARED_ADDRESS_TYPE = {
+  INDEPENDENT_CHANNEL: 0x01,
+  ADDRESS_1BYTE: 0x02,
+  ADDRESS_2BYTE: 0x03
+};
+
+// ANT Message Protocol and Usage, Rev. 5.1, p. 18
+// "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"
+// Optional bit for non-ANT+ managed networks: table 5-2
+
+module.exports = ChannelId;
+

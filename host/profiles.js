@@ -5,8 +5,8 @@ var ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel'),
   EnvironmentProfile = require('../profiles/antplus/environment/device-profile-environment'),
   LibConfig = require('../messages/extended/lib-config');
 
-module.exports = function(Host) {
-  Host.prototype.connectANTFS = function(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, onSearching) {
+class HostProfiles {
+  connectANTFS(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, onSearching) {
     var antfsOptions,
       antfsHost;
 
@@ -39,9 +39,9 @@ module.exports = function(Host) {
 
     this.setChannel(antfsHost);
     antfsHost.connect(antfsOptions.onSearching);
-  };
+  }
 
-  Host.prototype.connectANTPlusSensor = function(channelNumber, sensorType, options, callback) {
+  connectANTPlusSensor(channelNumber, sensorType, options, callback) {
     var channel = this.channel[channelNumber],
       profile,
       deviceNumber,
@@ -140,6 +140,14 @@ module.exports = function(Host) {
 
     runStep(0);
     return channel;
-  };
+  }
 
+}
+
+module.exports = function(Host) {
+  for (const methodName of Object.getOwnPropertyNames(HostProfiles.prototype)) {
+    if (methodName !== 'constructor') {
+      Host.prototype[methodName] = HostProfiles.prototype[methodName];
+    }
+  }
 };

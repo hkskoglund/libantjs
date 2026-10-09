@@ -1,18 +1,15 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function AdvancedBurstCurrentConfigurationMessage(data) {
+class AdvancedBurstCurrentConfigurationMessage extends Message {
+  constructor(data) {
 
-    Message.call(this, data);
-
+    super(data);
   }
 
-  AdvancedBurstCurrentConfigurationMessage.prototype = Object.create(Message.prototype);
+  decode(data) {
 
-  AdvancedBurstCurrentConfigurationMessage.prototype.constructor = AdvancedBurstCurrentConfigurationMessage;
-
-  AdvancedBurstCurrentConfigurationMessage.prototype.decode = function(data) {
     this.maxPacketLength = this.content[0];
 
     this.requiredFeature = {
@@ -31,10 +28,9 @@
 
     if (this.content.length >= 10)
       this.retryCount = this.content[9];
+  }
 
-  };
-
-  AdvancedBurstCurrentConfigurationMessage.prototype.toString = function() {
+  toString() {
 
     var msg = Message.prototype.toString.call(this) + ' Current config. ';
 
@@ -70,7 +66,8 @@
       msg += ' | Retry count : ' + this.retryCount + ' (' + this.retryCount * 5 + ' retries)';
 
     return msg;
-  };
+  }
+}
 
-  module.exports = AdvancedBurstCurrentConfigurationMessage;
-  
+module.exports = AdvancedBurstCurrentConfigurationMessage;
+

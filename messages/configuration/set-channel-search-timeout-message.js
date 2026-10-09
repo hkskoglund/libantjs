@@ -1,18 +1,16 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetChannelSearchTimeoutMessage(channel, searchTimeout) {
+class SetChannelSearchTimeoutMessage extends Message {
+  constructor(channel, searchTimeout) {
 
-    Message.call(this, undefined, Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
+    super(undefined, Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
     this.encode(channel, searchTimeout);
   }
 
-  SetChannelSearchTimeoutMessage.prototype = Object.create(Message.prototype);
+  encode(channel, searchTimeout) {
 
-  SetChannelSearchTimeoutMessage.prototype.constructor = SetChannelSearchTimeoutMessage;
-
-  SetChannelSearchTimeoutMessage.prototype.encode = function(channel, searchTimeout) {
     var msgBuffer = new Uint8Array(2);
 
     msgBuffer[0] = channel;
@@ -22,12 +20,13 @@
 
     this.channel = channel;
     this.highPrioritySearchTimeout = searchTimeout;
+  }
 
-  };
+  toString() {
 
-  SetChannelSearchTimeoutMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + "Ch " + this.channel + " high priority search timeout" + this.highPrioritySearchTimeout;
-  };
+  }
+}
 
-  module.exports = SetChannelSearchTimeoutMessage;
-  
+module.exports = SetChannelSearchTimeoutMessage;
+

@@ -1,48 +1,15 @@
 'use strict';
-  var Message = require('../message');
+var Message = require('../message');
 
-  // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
-  function NotificationStartup(data) {
+// Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
+class NotificationStartup extends Message {
+  constructor(data) {
 
-    Message.call(this, data, Message.prototype.NOTIFICATION_STARTUP);
+    super(data, Message.prototype.NOTIFICATION_STARTUP);
   }
 
-  NotificationStartup.prototype = Object.create(Message.prototype);
+  decode(data) {
 
-  NotificationStartup.prototype.constructor = NotificationStartup;
-
-  NotificationStartup.prototype.POWER_ON_RESET = {
-    BIT_MASK: 0x00,
-    MESSAGE: 'POWER_ON_RESET'
-  };
-
-  NotificationStartup.prototype.HARDWARE_RESET_LINE = {
-    BIT_MASK: 0x01,
-    MESSAGE: 'HARDWARE_RESET_LINE'
-  };
-
-  NotificationStartup.prototype.WATCH_DOG_RESET = {
-    BIT_MASK: 1 << 2,
-    MESSAGE: 'WATCH_DOG_RESET'
-  };
-
-  NotificationStartup.prototype.COMMAND_RESET = {
-    BIT_MASK: 1 << 5,
-    MESSAGE: 'COMMAND_RESET'
-  };
-
-  NotificationStartup.prototype.SYNCHRONOUS_RESET = {
-    BIT_MASK: 1 << 6,
-    MESSAGE: 'SYNCHRONOUS_RESET'
-  };
-
-  NotificationStartup.prototype.SUSPEND_RESET = {
-    BIT_MASK: 1 << 7,
-    MESSAGE: 'SUSPEND_RESET'
-  };
-
-
-  NotificationStartup.prototype.decode = function(data) {
     var msg,
       startupMessage = this.getContent()[0];
 
@@ -63,12 +30,43 @@
     this.message = msg;
 
     return this.message;
+  }
 
-  };
+  toString() {
 
-  NotificationStartup.prototype.toString = function() {
     return Message.prototype.toString.call(this) + ' ' + this.message;
-  };
+  }
+}
 
-  module.exports = NotificationStartup;
-  
+NotificationStartup.prototype.POWER_ON_RESET = {
+  BIT_MASK: 0x00,
+  MESSAGE: 'POWER_ON_RESET'
+};
+
+NotificationStartup.prototype.HARDWARE_RESET_LINE = {
+  BIT_MASK: 0x01,
+  MESSAGE: 'HARDWARE_RESET_LINE'
+};
+
+NotificationStartup.prototype.WATCH_DOG_RESET = {
+  BIT_MASK: 1 << 2,
+  MESSAGE: 'WATCH_DOG_RESET'
+};
+
+NotificationStartup.prototype.COMMAND_RESET = {
+  BIT_MASK: 1 << 5,
+  MESSAGE: 'COMMAND_RESET'
+};
+
+NotificationStartup.prototype.SYNCHRONOUS_RESET = {
+  BIT_MASK: 1 << 6,
+  MESSAGE: 'SYNCHRONOUS_RESET'
+};
+
+NotificationStartup.prototype.SUSPEND_RESET = {
+  BIT_MASK: 1 << 7,
+  MESSAGE: 'SUSPEND_RESET'
+};
+
+module.exports = NotificationStartup;
+

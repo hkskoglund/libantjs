@@ -1,27 +1,23 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function AdvancedBurstCapabilitiesMessage(data) {
+class AdvancedBurstCapabilitiesMessage extends Message {
+  constructor(data) {
 
-    Message.call(this, data);
-
+    super(data);
   }
 
-  AdvancedBurstCapabilitiesMessage.prototype = Object.create(Message.prototype);
+  decode(data) {
 
-  AdvancedBurstCapabilitiesMessage.prototype.constructor = AdvancedBurstCapabilitiesMessage;
-
-  AdvancedBurstCapabilitiesMessage.prototype.decode = function(data) {
     this.maxPacketLength = this.content[0];
 
     // Supported features
 
     this.ADV_BURST_FREQUENCY_HOP_ENABLED = this.content[1] & 0x01;
+  }
 
-  };
-
-  AdvancedBurstCapabilitiesMessage.prototype.toString = function() {
+  toString() {
 
     var msg = Message.prototype.toString.call(this);
 
@@ -45,7 +41,8 @@
     msg += (this.ADV_BURST_FREQUENCY_HOP_ENABLED ? '+' : '-') + " Advanced Burst Frequency Hop | ";
 
     return msg;
-  };
+  }
+}
 
-  module.exports = AdvancedBurstCapabilitiesMessage;
-  
+module.exports = AdvancedBurstCapabilitiesMessage;
+

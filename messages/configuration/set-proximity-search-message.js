@@ -1,31 +1,28 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetProximitySearchMessage(channel, searchThreshold) {
+class SetProximitySearchMessage extends Message {
+  constructor(channel, searchThreshold) {
 
-    Message.call(this, undefined, Message.prototype.SET_PROXIMITY_SEARCH);
+    super(undefined, Message.prototype.SET_PROXIMITY_SEARCH);
     this.encode(channel, searchThreshold);
-
   }
 
-  SetProximitySearchMessage.prototype = Object.create(Message.prototype);
-
-  SetProximitySearchMessage.prototype.constructor = SetProximitySearchMessage;
-
-  SetProximitySearchMessage.prototype.encode = function(channel, searchThreshold) {
+  encode(channel, searchThreshold) {
 
     var msgBuffer = new Uint8Array([channel, searchThreshold]);
 
     this.searchThreshold = searchThreshold;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetProximitySearchMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " search threshold " + this.searchThreshold;
-  };
+  }
+}
 
-  module.exports = SetProximitySearchMessage;
-  
+module.exports = SetProximitySearchMessage;
+

@@ -1,23 +1,17 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType) {
+class SetChannelIDMessage extends Message {
+  constructor(channel, deviceNum, deviceType, transmissionType) {
 
-    Message.call(this, undefined, Message.prototype.SET_CHANNEL_ID);
+    super(undefined, Message.prototype.SET_CHANNEL_ID);
 
     this.encode(channel, deviceNum, deviceType, transmissionType);
   }
 
-  SetChannelIDMessage.prototype = Object.create(Message.prototype);
+  encode(channel, deviceNum, deviceType, transmissionType) {
 
-  SetChannelIDMessage.prototype.constructor = SetChannelIDMessage;
-
-  SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
-
-  SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
-
-  SetChannelIDMessage.prototype.encode = function(channel, deviceNum, deviceType, transmissionType) {
     var
       msgBuffer = new Uint8Array(5),
       msgView = new DataView(msgBuffer.buffer),
@@ -34,12 +28,17 @@
     this.pair = pairingRequest;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetChannelIDMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
-  };
+  }
+}
 
-  module.exports = SetChannelIDMessage;
-  
+SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
+
+SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
+
+module.exports = SetChannelIDMessage;
+

@@ -1,30 +1,33 @@
 'use strict';
 
-  var Message = require('../message'),
-    ChannelId = require('../../channel/channel-id');
+var Message = require('../message'),
+  ChannelId = require('../../channel/channel-id');
 
-  function ChannelIdMessage(data) {
-    Message.call(this, data);
+class ChannelIdMessage extends Message {
+  constructor(data) {
+
+    super(data);
   }
 
-  ChannelIdMessage.prototype = Object.create(Message.prototype);
-  ChannelIdMessage.prototype.constructor = ChannelIdMessage;
+  decode() {
 
-  ChannelIdMessage.prototype.decode = function() {
     var deviceNum = (new DataView(this.content.buffer)).getUint16(this.content.byteOffset + 1, true),
       deviceType = this.content[3],
       transmissionType = this.content[4];
 
     this.channelId = new ChannelId(deviceNum, deviceType, transmissionType);
-  };
+  }
 
-  ChannelIdMessage.prototype.getId = function() {
+  getId() {
+
     return this.channelId;
-  };
+  }
 
-  ChannelIdMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " " + this.channelId.toString();
-  };
+  }
+}
 
-  module.exports = ChannelIdMessage;
-  
+module.exports = ChannelIdMessage;
+

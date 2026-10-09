@@ -1,19 +1,16 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetChannelTxPowerMessage(channel, transmitPower) {
+class SetChannelTxPowerMessage extends Message {
+  constructor(channel, transmitPower) {
 
-    Message.call(this, undefined, Message.prototype.SET_CHANNEL_TX_POWER);
+    super(undefined, Message.prototype.SET_CHANNEL_TX_POWER);
     this.encode(channel, transmitPower);
-
   }
 
-  SetChannelTxPowerMessage.prototype = Object.create(Message.prototype);
+  encode(channel, transmitPower) {
 
-  SetChannelTxPowerMessage.prototype.constructor = SetChannelTxPowerMessage;
-
-  SetChannelTxPowerMessage.prototype.encode = function(channel, transmitPower) {
     var msgBuffer = new Uint8Array(2);
 
     msgBuffer[0] = channel;
@@ -23,12 +20,13 @@
     this.transmitPower = transmitPower;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetChannelTxPowerMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' transmit power ' + this.transmitPower;
-  };
+  }
+}
 
-  module.exports = SetChannelTxPowerMessage;
-  
+module.exports = SetChannelTxPowerMessage;
+

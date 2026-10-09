@@ -7,8 +7,8 @@ var Message = require('../messages/message'),
   ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message'),
   AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message');
 
-module.exports = function(Host) {
-  Host.prototype.sendBroadcastData = function(channel, broadcastData, callback, acknowledge) {
+class HostTransfers {
+  sendBroadcastData(channel, broadcastData, callback, acknowledge) {
     var data = broadcastData,
       msg;
 
@@ -23,19 +23,19 @@ module.exports = function(Host) {
     msg.encode(channel, data);
 
     this.sendMessage(msg, undefined, channel, callback);
-  };
+  }
 
   // p. 96 ANT Message protocol and usave rev. 5.0
   // Event TRANSFER_TX_COMPLETED channel event if successfull,
   // Event TRANSFER_TX_FAILED -> msg. failed to reach master or response from master failed to reach the slave -> slave may retry
   // Event GO_TO_SEARCH is received if channel is dropped -> channel should be unassigned
-  Host.prototype.sendAcknowledgedData = function(channel, acknowledgedData, callback) {
+  sendAcknowledgedData(channel, acknowledgedData, callback) {
 
     this.sendBroadcastData(channel, acknowledgedData, callback, true);
-  };
+  }
 
   // Send an individual packet as part of a burst transfer
-  Host.prototype.sendBurstTransferPacket = function(sequenceChannel, packet, callback) {
+  sendBurstTransferPacket(sequenceChannel, packet, callback) {
     var msg;
 
     if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH) // Use ordinary burst if only 8-byte packets
@@ -48,9 +48,9 @@ module.exports = function(Host) {
     msg.encode(sequenceChannel, packet);
 
     this.sendMessage(msg, undefined, undefined, callback);
-  };
+  }
 
-  Host.prototype.sendExtendedBurstTransfer = function(channel, channelId, data, callback) {
+  sendExtendedBurstTransfer(channel, channelId, data, callback) {
     var packetCount,
       packetIndex = 0,
       sequenceNr = 0,
@@ -109,13 +109,13 @@ module.exports = function(Host) {
       throw new RangeError('Extended burst payload must not be empty');
 
     sendNextPacket();
-  };
+  }
 
   // Sends bulk data
   // EVENT_TRANSFER_TX_START - next channel period after message sent to device
   // EVENT_TRANSFER_TX_COMPLETED
   // EVENT_TRANSFER_TX_FAILED : After 5 retries
-  Host.prototype.sendBurstTransfer = function(channel, data, packetsPerURB, callback) {
+  sendBurstTransfer(channel, data, packetsPerURB, callback) {
     var cb,
       numberOfPackets,
       packetLength,
@@ -186,12 +186,20 @@ module.exports = function(Host) {
 
     sendPacket();
 
-  };
+  }
 
   // For compability with spec. interface 9.5.5.4 Advanced Burst Data 0x72
-  Host.prototype.sendAdvancedTransfer = function(channel, data, size, packetsPerURB, callback) {
+  sendAdvancedTransfer(channel, data, size, packetsPerURB, callback) {
     // Note size ignored/not necessary
     this.sendBurstTransfer(channel, data, packetsPerURB, callback);
-  };
+  }
 
+}
+
+module.exports = function(Host) {
+  for (const methodName of Object.getOwnPropertyNames(HostTransfers.prototype)) {
+    if (methodName !== 'constructor') {
+      Host.prototype[methodName] = HostTransfers.prototype[methodName];
+    }
+  }
 };

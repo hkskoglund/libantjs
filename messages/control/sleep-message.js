@@ -1,17 +1,18 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SleepMessage() {
-    Message.call(this, undefined, Message.prototype.SLEEP_MESSAGE);
+class SleepMessage extends Message {
+  constructor() {
+
+    super(undefined, Message.prototype.SLEEP_MESSAGE);
     this.encode();
   }
 
-  SleepMessage.prototype = Object.create(Message.prototype);
-  SleepMessage.prototype.constructor = SleepMessage;
+  encode() {
 
-  SleepMessage.prototype.encode = function() {
     this.setContent(new Uint8Array([0]));
-  };
+  }
+}
 
-  module.exports = SleepMessage;
+module.exports = SleepMessage;

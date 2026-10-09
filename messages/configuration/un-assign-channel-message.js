@@ -1,30 +1,28 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function UnAssignChannelMessage(channel) {
+class UnAssignChannelMessage extends Message {
+  constructor(channel) {
 
-    Message.call(this, undefined, Message.prototype.UNASSIGN_CHANNEL);
+    super(undefined, Message.prototype.UNASSIGN_CHANNEL);
     this.encode(channel);
-
   }
 
-  UnAssignChannelMessage.prototype = Object.create(Message.prototype);
+  encode(channel) {
 
-  UnAssignChannelMessage.prototype.constructor = UnAssignChannelMessage;
-
-  UnAssignChannelMessage.prototype.encode = function(channel) {
     var msgBuffer = new Uint8Array([channel]);
 
     this.channel = channel;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  UnAssignChannelMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Ch " + this.channel;
-  };
+  }
+}
 
-  module.exports = UnAssignChannelMessage;
-  
+module.exports = UnAssignChannelMessage;
+

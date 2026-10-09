@@ -1,23 +1,16 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetSerialNumChannelIdMessage(channel, deviceType, transmissionType) {
+class SetSerialNumChannelIdMessage extends Message {
+  constructor(channel, deviceType, transmissionType) {
 
-    Message.call(this, undefined, Message.prototype.SET_SERIAL_NUM_CHANNEL_ID);
+    super(undefined, Message.prototype.SET_SERIAL_NUM_CHANNEL_ID);
     this.encode(channel, deviceType, transmissionType);
-
   }
 
-  SetSerialNumChannelIdMessage.prototype = Object.create(Message.prototype);
+  encode(channel, deviceType, transmissionType) {
 
-  SetSerialNumChannelIdMessage.prototype.constructor = SetSerialNumChannelIdMessage;
-
-  SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
-
-  SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
-
-  SetSerialNumChannelIdMessage.prototype.encode = function(channel, deviceType, transmissionType) {
     var msgBuffer = new Uint8Array(4),
       pairingRequest = (deviceType & SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
@@ -30,12 +23,17 @@
     this.transmissionType = transmissionType;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetSerialNumChannelIdMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
-  };
+  }
+}
 
-  module.exports = SetSerialNumChannelIdMessage;
-  
+SetSerialNumChannelIdMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
+
+SetSerialNumChannelIdMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
+
+module.exports = SetSerialNumChannelIdMessage;
+

@@ -1,14 +1,14 @@
 'use strict';
 
-  var BroadcastDataMessage = require('./broadcast-data-message'),
-    Message = require('../message');
+var BroadcastDataMessage = require('./broadcast-data-message'),
+  Message = require('../message');
 
-  function AcknowledgedDataMessage(data) {
-    Message.call(this, data, Message.prototype.ACKNOWLEDGED_DATA);
+class AcknowledgedDataMessage extends BroadcastDataMessage {
+  constructor(data, id = Message.prototype.ACKNOWLEDGED_DATA) {
+
+    super(data, id);
   }
+}
 
-  AcknowledgedDataMessage.prototype = Object.create(BroadcastDataMessage.prototype);
-  AcknowledgedDataMessage.prototype.constructor = AcknowledgedDataMessage;
+module.exports = AcknowledgedDataMessage;
 
-  module.exports = AcknowledgedDataMessage;
-  

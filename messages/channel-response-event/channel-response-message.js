@@ -1,18 +1,16 @@
 'use strict';
 
-  var Message = require('../message'),
-    ChannelResponseEvent = require('../../channel/channel-response-event');
+var Message = require('../message'),
+  ChannelResponseEvent = require('../../channel/channel-response-event');
 
-  function ChannelResponseMessage(data) {
+class ChannelResponseMessage extends Message {
+  constructor(data) {
 
-    Message.call(this, data, Message.prototype.CHANNEL_RESPONSE);
+    super(data, Message.prototype.CHANNEL_RESPONSE);
   }
 
-  ChannelResponseMessage.prototype = Object.create(Message.prototype);
+  decode() {
 
-  ChannelResponseMessage.prototype.constructor = ChannelResponseMessage;
-
-  ChannelResponseMessage.prototype.decode = function() {
     if (this.content.byteLength !== 3)
       throw new RangeError('Channel response message must contain exactly 3 bytes');
 
@@ -20,16 +18,17 @@
       code = this.content[2];
 
     this.response = new ChannelResponseEvent(this.channel, initiatingId, code);
+  }
 
-  };
+  isRFevent() {
 
-  ChannelResponseMessage.prototype.isRFevent = function ()
-  {
     return this.response.isRFevent();
-  };
+  }
 
-  ChannelResponseMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this) + " " + this.response.toString();
-  };
+  }
+}
 
-  module.exports = ChannelResponseMessage;
+module.exports = ChannelResponseMessage;

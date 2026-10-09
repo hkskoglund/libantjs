@@ -1,18 +1,15 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function VersionMessage(data) {
+class VersionMessage extends Message {
+  constructor(data) {
 
-    Message.call(this, data);
-
+    super(data);
   }
 
-  VersionMessage.prototype = Object.create(Message.prototype);
+  decode(data) {
 
-  VersionMessage.prototype.constructor = VersionMessage;
-
-  VersionMessage.prototype.decode = function(data) {
     var version = this.content,
       versionStr = '';
 
@@ -20,16 +17,18 @@
       versionStr += String.fromCharCode(version[i]);
 
     this.version = versionStr;
+  }
 
-  };
+  getVersion() {
 
-  VersionMessage.prototype.getVersion = function() {
     return this.version;
-  };
+  }
 
-  VersionMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this) + ' ' + this.version;
-  };
+  }
+}
 
-  module.exports = VersionMessage;
-  
+module.exports = VersionMessage;
+

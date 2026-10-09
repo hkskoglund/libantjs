@@ -1,34 +1,15 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function NotificationSerialError(data) {
+class NotificationSerialError extends Message {
+  constructor(data) {
 
-    Message.call(this, data);
-
+    super(data);
   }
 
-  NotificationSerialError.prototype = Object.create(Message.prototype);
+  decode(data) {
 
-  NotificationSerialError.prototype.constructor = NotificationSerialError;
-
-  NotificationSerialError.prototype.SERIAL_ERROR = {
-    FIRST_BYTE_NOT_SYNC: {
-      CODE: 0x00,
-      MESSAGE: 'First byte of USB packet not SYNC = 0xA4'
-    },
-    CRC_INCORRECT: {
-      CODE: 0x02,
-      MESSAGE: 'CRC of ANT message incorrect'
-    },
-    MESSAGE_TOO_LARGE: {
-      CODE: 0x03,
-      MESSAGE: 'ANT Message is too large'
-    }
-  };
-
-
-  NotificationSerialError.prototype.decode = function(data) {
     var msg,
       code,
       errorCode = this.channel,
@@ -53,11 +34,28 @@
     };
 
     return this.message;
-  };
+  }
 
-  NotificationSerialError.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this) + " " + this.length + " " + this.message.text;
-  };
+  }
+}
 
-  module.exports = NotificationSerialError;
-  
+NotificationSerialError.prototype.SERIAL_ERROR = {
+  FIRST_BYTE_NOT_SYNC: {
+    CODE: 0x00,
+    MESSAGE: 'First byte of USB packet not SYNC = 0xA4'
+  },
+  CRC_INCORRECT: {
+    CODE: 0x02,
+    MESSAGE: 'CRC of ANT message incorrect'
+  },
+  MESSAGE_TOO_LARGE: {
+    CODE: 0x03,
+    MESSAGE: 'ANT Message is too large'
+  }
+};
+
+module.exports = NotificationSerialError;
+

@@ -1,24 +1,24 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function CloseChannelMessage(channel) {
+class CloseChannelMessage extends Message {
+  constructor(channel) {
 
-    Message.call(this, undefined, Message.prototype.CLOSE_CHANNEL);
+    super(undefined, Message.prototype.CLOSE_CHANNEL);
     this.encode(channel);
   }
 
-  CloseChannelMessage.prototype = Object.create(Message.prototype);
+  encode(channel) {
 
-  CloseChannelMessage.prototype.constructor = CloseChannelMessage;
-
-  CloseChannelMessage.prototype.encode = function(channel) {
     this.setContent(new Uint8Array([channel]));
-  };
+  }
 
-  CloseChannelMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this);
-  };
+  }
+}
 
-  module.exports = CloseChannelMessage;
-  
+module.exports = CloseChannelMessage;
+

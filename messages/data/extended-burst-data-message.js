@@ -1,16 +1,16 @@
 'use strict';
 
-  var ChannelId = require('../../channel/channel-id'),
-    Message = require('../message');
+var ChannelId = require('../../channel/channel-id'),
+  Message = require('../message');
 
-  function ExtendedBurstDataMessage(data) {
-    Message.call(this, data, Message.prototype.EXTENDED_BURST_TRANSFER_DATA);
+class ExtendedBurstDataMessage extends Message {
+  constructor(data) {
+
+    super(data, Message.prototype.EXTENDED_BURST_TRANSFER_DATA);
   }
 
-  ExtendedBurstDataMessage.prototype = Object.create(Message.prototype);
-  ExtendedBurstDataMessage.prototype.constructor = ExtendedBurstDataMessage;
+  encode(sequenceChannel, channelId, data) {
 
-  ExtendedBurstDataMessage.prototype.encode = function(sequenceChannel, channelId, data) {
     if (!Number.isInteger(sequenceChannel) || sequenceChannel < 0 || sequenceChannel > 0xFF)
       throw new RangeError('Extended ANT burst sequence/channel must be a byte');
 
@@ -35,9 +35,10 @@
     this.sequenceNr = (sequenceChannel & 0xE0) >> 5;
     this.channelId = channelId;
     this.packet = data;
-  };
+  }
 
-  ExtendedBurstDataMessage.prototype.decode = function(data) {
+  decode(data) {
+
     if (this.content.byteLength !== 13)
       throw new RangeError('Extended ANT burst message must contain a sequence/channel, channel ID and 8 data bytes');
 
@@ -46,11 +47,13 @@
     this.channelId = new ChannelId();
     this.channelId.decode(this.content.subarray(1, 5));
     this.packet = this.content.subarray(5, 13);
-  };
+  }
 
-  ExtendedBurstDataMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' Sequence ' + this.sequenceNr +
       ' ' + this.channelId.toString();
-  };
+  }
+}
 
-  module.exports = ExtendedBurstDataMessage;
+module.exports = ExtendedBurstDataMessage;

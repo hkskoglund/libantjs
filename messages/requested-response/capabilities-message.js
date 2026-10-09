@@ -1,19 +1,14 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function CapabilitiesMessage(data) {
+class CapabilitiesMessage extends Message {
+  constructor(data) {
 
-    Message.call(this, data);
-
+    super(data);
   }
 
-  CapabilitiesMessage.prototype = Object.create(Message.prototype);
-
-  CapabilitiesMessage.prototype.constructor = CapabilitiesMessage;
-
-  // ANT Message Protocol and Usage. rev 5.0b - page 115
-  CapabilitiesMessage.prototype.decode = function(data) {
+  decode(data) {
 
     this.MAX_CHAN = this.content[0];
     this.MAX_NET = this.content[1];
@@ -71,10 +66,9 @@
       this.RFACTIVE_NOTIFICATION_ENABLED = this.advancedOptions4 & 0x01; // Bit 0
       // Bit 1-7 reserved
     }
+  }
 
-  };
-
-  CapabilitiesMessage.prototype.toString = function() {
+  toString() {
 
     var msg = Message.prototype.toString.call(this) + " Channels " + this.MAX_CHAN + " | Networks " + this.MAX_NET + ' | sensRcore channels ' + this.maxSensRcoreChannels + ' | ';
 
@@ -90,7 +84,6 @@
 
     msg += (this.NO_BURST_MESSAGES ? '+' : '-') + "No burst messages | ";
 
-
     msg += (this.NETWORK_ENABLED ? '+' : '-') + "Network | ";
 
     msg += (this.SERIAL_NUMBER_ENABLED ? '+' : '-') + "Serial number | ";
@@ -102,7 +95,6 @@
     msg += (this.SCRIPT_ENABLED ? '+' : '-') + "Script | ";
 
     msg += (this.SEARCH_LIST_ENABLED ? '+' : '-') + "Search list | ";
-
 
     if (this.advancedOptions2 !== undefined) {
       msg += (this.LED_ENABLED ? '+' : '-') + "Led | ";
@@ -148,7 +140,10 @@
     if (this.advancedOptions4 !== undefined) msg += ' A.O4 ' + this.advancedOptions4.toString(2) + "b " + this.advancedOptions4;
 
     return msg;
-  };
+  }
+}
 
-  module.exports = CapabilitiesMessage;
-  
+// ANT Message Protocol and Usage. rev 5.0b - page 115
+
+module.exports = CapabilitiesMessage;
+

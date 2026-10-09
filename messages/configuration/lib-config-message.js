@@ -1,30 +1,27 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function LibConfigMessage(libConfig) {
+class LibConfigMessage extends Message {
+  constructor(libConfig) {
 
-    Message.call(this, undefined, Message.prototype.LIBCONFIG);
+    super(undefined, Message.prototype.LIBCONFIG);
 
     this.encode(libConfig || 0);
   }
 
-  LibConfigMessage.prototype = Object.create(Message.prototype);
-
-  LibConfigMessage.prototype.constructor = LibConfigMessage;
-
-
-  LibConfigMessage.prototype.encode = function(libConfig) {
+  encode(libConfig) {
 
     this.libConfig = libConfig;
 
     this.setContent(new Uint8Array([Message.prototype.FILLER_BYTE, libConfig]));
-  };
+  }
 
+  toString() {
 
-  LibConfigMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " libconfig " + this.libConfig;
-  };
+  }
+}
 
-  module.exports = LibConfigMessage;
-  
+module.exports = LibConfigMessage;
+

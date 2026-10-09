@@ -1,19 +1,16 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function SetNetworkKeyMessage(net, key) {
+class SetNetworkKeyMessage extends Message {
+  constructor(net, key) {
 
-    Message.call(this, undefined, Message.prototype.SET_NETWORK_KEY);
+    super(undefined, Message.prototype.SET_NETWORK_KEY);
     this.encode(net, key);
-
   }
 
-  SetNetworkKeyMessage.prototype = Object.create(Message.prototype);
+  encode(net, key) {
 
-  SetNetworkKeyMessage.prototype.constructor = SetNetworkKeyMessage;
-
-  SetNetworkKeyMessage.prototype.encode = function(net, key) {
     var msgBuffer = new Uint8Array(9);
 
     msgBuffer[0] = net;
@@ -23,12 +20,13 @@
     this.key = key;
 
     this.setContent(msgBuffer);
+  }
 
-  };
+  toString() {
 
-  SetNetworkKeyMessage.prototype.toString = function() {
     return Message.prototype.toString.call(this) + " Net " + this.net + " key " + this.key;
-  };
+  }
+}
 
-  module.exports = SetNetworkKeyMessage;
-  
+module.exports = SetNetworkKeyMessage;
+

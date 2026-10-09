@@ -1,24 +1,24 @@
 'use strict';
 
-  var Message = require('../message');
+var Message = require('../message');
 
-  function OpenChannelMessage(channel) {
+class OpenChannelMessage extends Message {
+  constructor(channel) {
 
-    Message.call(this, undefined, Message.prototype.OPEN_CHANNEL);
+    super(undefined, Message.prototype.OPEN_CHANNEL);
     this.encode(channel);
   }
 
-  OpenChannelMessage.prototype = Object.create(Message.prototype);
+  encode(channel) {
 
-  OpenChannelMessage.prototype.constructor = OpenChannelMessage;
-
-  OpenChannelMessage.prototype.encode = function(channel) {
     this.setContent(new Uint8Array([channel]));
-  };
+  }
 
-  OpenChannelMessage.prototype.toString = function() {
+  toString() {
+
     return Message.prototype.toString.call(this);
-  };
+  }
+}
 
-  module.exports = OpenChannelMessage;
-  
+module.exports = OpenChannelMessage;
+
