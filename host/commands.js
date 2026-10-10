@@ -20,6 +20,18 @@ import SetTransmitPowerMessage from '../messages/configuration/set-transmit-powe
 import SetChannelTxPowerMessage from '../messages/configuration/set-channel-tx-power-message.js';
 import SetProximitySearchMessage from '../messages/configuration/set-proximity-search-message.js';
 import SetChannelSearchPriorityMessage from '../messages/configuration/set-channel-search-priority-message.js';
+import AddChannelIdMessage from '../messages/configuration/add-channel-id-message.js';
+import ConfigIdListMessage from '../messages/configuration/config-id-list-message.js';
+import EnableExtRxMessagesMessage from '../messages/configuration/enable-ext-rx-messages-message.js';
+import EnableLedMessage from '../messages/configuration/enable-led-message.js';
+import EnableCrystalMessage from '../messages/configuration/enable-crystal-message.js';
+import ConfigFrequencyAgilityMessage from '../messages/configuration/config-frequency-agility-message.js';
+import Set128BitNetworkKeyMessage from '../messages/configuration/set-128-bit-network-key-message.js';
+import ConfigHighDutySearchMessage from '../messages/configuration/config-high-duty-search-message.js';
+import SetChannelSearchSharingMessage from '../messages/configuration/set-channel-search-sharing-message.js';
+import SetUsbDescriptorStringMessage from '../messages/configuration/set-usb-descriptor-string-message.js';
+import InitCwTestModeMessage from '../messages/test-mode/init-cw-test-mode-message.js';
+import CwTestModeMessage from '../messages/test-mode/cw-test-mode-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import OpenChannelMessage from '../messages/control/open-channel-message.js';
 import CloseChannelMessage from '../messages/control/close-channel-message.js';
@@ -196,6 +208,77 @@ class HostCommands {
   setProximitySearch(channel, searchThreshold) {
 
     return this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.constructor.EVENT.OK, channel);
+  }
+
+  // Add a Channel ID to the inclusion/exclusion list of a slave channel, index 0..3 (spec 9.5.2.10)
+  addChannelId(channel, deviceNum, deviceType, transmissionType, listIndex) {
+
+    return this.sendMessage(new AddChannelIdMessage(channel, deviceNum, deviceType, transmissionType, listIndex), this.constructor.EVENT.OK, channel);
+  }
+
+  // Activate the ID list: listSize 0..4 entries, exclude = false for an inclusion list (spec 9.5.2.12)
+  configIdList(channel, listSize, exclude) {
+
+    return this.sendMessage(new ConfigIdListMessage(channel, listSize, exclude), this.constructor.EVENT.OK, channel);
+  }
+
+  // Legacy extended messaging, only the channel ID is added to received data (spec 9.5.2.17); prefer libConfig
+  enableExtRxMessages(enable) {
+
+    return this.sendMessage(new EnableExtRxMessagesMessage(enable), this.constructor.EVENT.OK, 0);
+  }
+
+  enableLed(enable) {
+
+    return this.sendMessage(new EnableLedMessage(enable), this.constructor.EVENT.OK, 0);
+  }
+
+  // Enables the external 32 kHz crystal (spec 9.5.2.19)
+  enableCrystal() {
+
+    return this.sendMessage(new EnableCrystalMessage(), this.constructor.EVENT.OK, 0);
+  }
+
+  // Frequencies 0..124, requires frequency agility in the extended assignment byte of assignChannel (spec 9.5.2.21)
+  configFrequencyAgility(channel, frequency1, frequency2, frequency3) {
+
+    return this.sendMessage(new ConfigFrequencyAgilityMessage(channel, frequency1, frequency2, frequency3), this.constructor.EVENT.OK, channel);
+  }
+
+  // Multi-mode devices only; the response channel byte carries the network number
+  set128BitNetworkKey(netNumber, key) {
+
+    return this.sendMessage(new Set128BitNetworkKeyMessage(netNumber, key), this.constructor.EVENT.OK, netNumber);
+  }
+
+  // suppressionCycle 0..5 in 250 ms steps is optional and not supported by all parts (spec 9.5.2.26)
+  configHighDutySearch(enable, suppressionCycle) {
+
+    return this.sendMessage(new ConfigHighDutySearchMessage(enable, suppressionCycle), this.constructor.EVENT.OK, 0);
+  }
+
+  // Search cycles to run before alternating between search channels, 0 disables (spec 9.5.2.35)
+  setChannelSearchSharing(channel, searchSharingCycles) {
+
+    return this.sendMessage(new SetChannelSearchSharingMessage(channel, searchSharingCycles), this.constructor.EVENT.OK, channel);
+  }
+
+  // 0 = VID/PID (4 bytes), 1 = manufacturer, 2 = device, 3 = serial number string (spec 9.5.2.37)
+  setUsbDescriptorString(stringNumber, characters) {
+
+    return this.sendMessage(new SetUsbDescriptorStringMessage(stringNumber, characters), this.constructor.EVENT.OK, stringNumber);
+  }
+
+  // Only directly after reset (spec 9.5.8.1)
+  initCwTestMode() {
+
+    return this.sendMessage(new InitCwTestModeMessage(), this.constructor.EVENT.OK, 0);
+  }
+
+  // Unmodulated carrier at 2400 + rfFrequency MHz, transmitPower 0..4 (spec 9.5.8.2)
+  setCwTestMode(transmitPower, rfFrequency) {
+
+    return this.sendMessage(new CwTestModeMessage(transmitPower, rfFrequency), this.constructor.EVENT.OK, 0);
   }
 
   // Higher search priority pre-empts lower priority search channels (spec 9.5.2.24), 0..255

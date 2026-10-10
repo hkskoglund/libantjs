@@ -213,6 +213,26 @@ class Channel extends EventEmitter {
     return this.host.setChannelSearchPriority(this.channel, searchPriority);
   }
 
+  addChannelId(deviceNum, deviceType, transmissionType, listIndex) {
+
+    return this.host.addChannelId(this.channel, deviceNum, deviceType, transmissionType, listIndex);
+  }
+
+  configIdList(listSize, exclude) {
+
+    return this.host.configIdList(this.channel, listSize, exclude);
+  }
+
+  configFrequencyAgility(frequency1, frequency2, frequency3) {
+
+    return this.host.configFrequencyAgility(this.channel, frequency1, frequency2, frequency3);
+  }
+
+  setSearchSharing(searchSharingCycles) {
+
+    return this.host.setChannelSearchSharing(this.channel, searchSharingCycles);
+  }
+
   async open() {
 
     const response = await this.host.openChannel(this.channel);

@@ -39,6 +39,18 @@ import ChannelResponseMessage from '../messages/channel-response-event/channel-r
 import ResetSystemMessage from '../messages/control/reset-system-message.js';
 import SleepMessage from '../messages/control/sleep-message.js';
 import SetChannelSearchPriorityMessage from '../messages/configuration/set-channel-search-priority-message.js';
+import AddChannelIdMessage from '../messages/configuration/add-channel-id-message.js';
+import ConfigIdListMessage from '../messages/configuration/config-id-list-message.js';
+import EnableExtRxMessagesMessage from '../messages/configuration/enable-ext-rx-messages-message.js';
+import EnableLedMessage from '../messages/configuration/enable-led-message.js';
+import EnableCrystalMessage from '../messages/configuration/enable-crystal-message.js';
+import ConfigFrequencyAgilityMessage from '../messages/configuration/config-frequency-agility-message.js';
+import Set128BitNetworkKeyMessage from '../messages/configuration/set-128-bit-network-key-message.js';
+import ConfigHighDutySearchMessage from '../messages/configuration/config-high-duty-search-message.js';
+import SetChannelSearchSharingMessage from '../messages/configuration/set-channel-search-sharing-message.js';
+import SetUsbDescriptorStringMessage from '../messages/configuration/set-usb-descriptor-string-message.js';
+import InitCwTestModeMessage from '../messages/test-mode/init-cw-test-mode-message.js';
+import CwTestModeMessage from '../messages/test-mode/cw-test-mode-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
 import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
@@ -468,6 +480,21 @@ test('CapabilitiesMessage stringifies decoded capability fields', () => {
   assert.match(output, /\+No receive channels/);
   assert.match(output, /\+Network/);
   assert.match(output, /\+Event buffering/);
+});
+
+test('CapabilitiesMessage decodes standard option bits per spec 9.5.7.4', () => {
+  const decode = standardOptions => new CapabilitiesMessage(messageFrame(
+    0x54,
+    Uint8Array.from([8, 8, standardOptions, 0, 0, 0, 0, 0])
+  ));
+  const flags = ['NO_RECEIVE_CHANNELS', 'NO_TRANSMIT_CHANNELS', 'NO_RECEIVE_MESSAGES',
+    'NO_TRANSMIT_MESSAGES', 'NO_ACKD_MESSAGES', 'NO_BURST_MESSAGES'];
+
+  flags.forEach((flag, bit) => {
+    const message = decode(1 << bit);
+
+    flags.forEach(other => assert.equal(Boolean(message[other]), other === flag, flag + ' bit ' + bit));
+  });
 });
 
 test('SetChannelRFFreqMessage preserves zero offsets and defaults omitted offsets', () => {
@@ -1245,4 +1272,41 @@ test('Bike Power calibration page renders all defined calibration IDs safely', (
   assert.match(autoZero.toString(), /Auto zero supported true, enabled true/);
   assert.match(customCalibration.toString(), /Custom Calibration Parameter Request/);
   assert.match(manualZeroResponse.toString(), /Calibration data -1/);
+});
+
+// Frame: sync, length, id, content, XOR checksum
+function frame(id, content) {
+  const bytes = [0xa4, content.length, id, ...content];
+
+  return [...bytes, bytes.reduce((checksum, byte) => checksum ^ byte)];
+}
+
+test('Spec 5.1 configuration and test mode messages serialize to the documented layout', () => {
+  const key = Uint8Array.from({ length: 16 }, (_, index) => index);
+  const cases = [
+    [new AddChannelIdMessage(0, 145, 120, 123, 1), 0x59, [0, 145, 0, 120, 123, 1]],
+    [new ConfigIdListMessage(0, 2, false), 0x5a, [0, 2, 0]],
+    [new ConfigIdListMessage(0, 2, true), 0x5a, [0, 2, 1]],
+    [new EnableExtRxMessagesMessage(true), 0x66, [0, 1]],
+    [new EnableLedMessage(false), 0x68, [0, 0]],
+    [new EnableCrystalMessage(), 0x6d, [0]],
+    [new ConfigFrequencyAgilityMessage(0, 5, 23, 80), 0x70, [0, 5, 23, 80]],
+    [new Set128BitNetworkKeyMessage(1, key), 0x76, [1, ...key]],
+    [new ConfigHighDutySearchMessage(true), 0x77, [0, 1]],
+    [new ConfigHighDutySearchMessage(true, 3), 0x77, [0, 1, 3]],
+    [new SetChannelSearchSharingMessage(1, 1), 0x81, [1, 1]],
+    [new SetUsbDescriptorStringMessage(0, [0xcf, 0x0f, 0x08, 0x10]), 0xc7, [0, 0xcf, 0x0f, 0x08, 0x10]],
+    [new SetUsbDescriptorStringMessage(3, '123'), 0xc7, [3, 0x31, 0x32, 0x33, 0]],
+    [new InitCwTestModeMessage(), 0x53, [0]],
+    [new CwTestModeMessage(3, 57), 0x48, [0, 3, 57]]
+  ];
+
+  for (const [message, id, content] of cases)
+    assert.deepEqual(Array.from(message.serialize()), frame(id, content), message.constructor.name);
+});
+
+test('Spec 5.1 configuration messages reject invalid arguments', () => {
+  assert.throws(() => new Set128BitNetworkKeyMessage(1, new Uint8Array(8)), RangeError);
+  assert.throws(() => new SetUsbDescriptorStringMessage(4, 'x'), RangeError);
+  assert.throws(() => new SetUsbDescriptorStringMessage(0, [1, 2]), RangeError);
 });

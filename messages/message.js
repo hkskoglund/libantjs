@@ -229,6 +229,17 @@ class Message {
   static SET_PROXIMITY_SEARCH = 0x71;
   static EVENT_BUFFER_CONFIGURATION = 0x74;
   static SET_CHANNEL_SEARCH_PRIORITY = 0x75;
+  static ADD_CHANNEL_ID = 0x59;
+  static CONFIG_ID_LIST = 0x5A;
+  static ENABLE_LED = 0x68;
+  static ENABLE_CRYSTAL = 0x6D;
+  static FREQUENCY_AGILITY = 0x70;
+  static SET_128BIT_NETWORK_KEY = 0x76;
+  static HIGH_DUTY_SEARCH = 0x77;
+  static CHANNEL_SEARCH_SHARING = 0x81;
+  static SET_USB_DESCRIPTOR_STRING = 0xC7;
+  static INIT_CW_TEST_MODE = 0x53;
+  static CW_TEST_MODE = 0x48;
   static ADVANCED_BURST_CAPABILITIES = 0x78;
   static CONFIGURE_ADVANCED_BURST = 0x78;
   static RESET_SYSTEM = 0x4A;
@@ -329,6 +340,30 @@ class Message {
   0x71: "Set Proximity Search",
 
   0x75: "Channel Search Priority",
+
+  0x59: "Add Channel ID to List",
+
+  0x5A: "Config ID List",
+
+  0x68: "Enable LED",
+
+  0x6D: "Enable Crystal",
+
+  0x70: "Frequency Agility",
+
+  0x76: "Set 128-bit Network Key",
+
+  0x77: "High Duty Search",
+
+  0x81: "Channel Search Sharing",
+
+  0xC7: "Set USB Descriptor String",
+
+  // Test mode
+
+  0x53: "Init CW Test Mode",
+
+  0x48: "CW Test Mode",
 
   // Data messages
 

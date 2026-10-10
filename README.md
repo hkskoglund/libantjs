@@ -129,23 +129,23 @@ is included in the lint run.
 | Config | Set Network Key                      | Y |
 | Config | Transmit Power                       | Y |
 | Config | Search Waveform                      | Y |
-| Config | Add Channel ID to List               | N |
+| Config | Add Channel ID to List               | Y |
 | Config | Add Encryption ID to List            | N |
-| Config | Config ID List                       | N |
+| Config | Config ID List                       | Y |
 | Config | Config Encryption ID List            | N |
 | Config | Set Channel Transmit Power           | Y |
 | Config | Low Priority Search Timeout          | Y |
 | Config | Serial Number Set Channel ID         | Y |
-| Config | Enable Ext RX Messages               | N |
-| Config | Enable LED                           | N |
-| Config | Crystal Enable                       | N |
+| Config | Enable Ext RX Messages               | Y |
+| Config | Enable LED                           | Y |
+| Config | Crystal Enable                       | Y |
 | Config | Lib Config                           | Y |
-| Config | Frequency Agility                    | N |
+| Config | Frequency Agility                    | Y |
 | Config | Proximity Search                     | Y |
 | Config | Configure Event Buffer               | Y |
 | Config | Channel Search Priority              | Y |
-| Config | Set 128-bit Network Key              | N |
-| Config | High Duty Search                     | N |
+| Config | Set 128-bit Network Key              | Y |
+| Config | High Duty Search                     | Y |
 | Config | Configure Advanced Burst             | Y |
 | Config | Configure Event Filter               | N |
 | Config | Configure Selective Data Updates     | N |
@@ -154,9 +154,9 @@ is included in the lint run.
 | Config | Enable Single Channel Encryption     | N |
 | Config | Set Encryption Key                   | N |
 | Config | Set Encryption Info                  | N |
-| Config | Channel Search Sharing               | N |
+| Config | Channel Search Sharing               | Y |
 | Config | Load/Store Encryption Key            | N |
-| Config | Set USB Descriptor String            | N |
+| Config | Set USB Descriptor String            | Y |
 | Notifications | Start-up Message              | Y |
 | Notifications | Serial Error Message          | Y |
 | Control | Reset System                        | Y |
@@ -183,8 +183,8 @@ is included in the lint run.
 | Requested response | Selective Data Update Mask Setting     | N |
 | Requested response | User NVM                               | N |
 | Requested response | Encryption Mode Parameters             | N |
-| Test Mode | CW Init                                         | N |
-| Test Mode | CW Test                                         | N |
+| Test Mode | CW Init                                         | Y |
+| Test Mode | CW Test                                         | Y |
 | Extended Data (legacy) | Extended Broadcast Data            | N |
 | Extended Data (legacy) | Extended Acknowledged Data         | N |
 | Extended Data (legacy) | Extended Burst Data                | Y |
