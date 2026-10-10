@@ -229,6 +229,9 @@ class Message {
   static SET_PROXIMITY_SEARCH = 0x71;
   static EVENT_BUFFER_CONFIGURATION = 0x74;
   static SET_CHANNEL_SEARCH_PRIORITY = 0x75;
+  static CONFIG_EVENT_FILTER = 0x79;
+  static CONFIG_SELECTIVE_DATA_UPDATE = 0x7A;
+  static SET_SDU_MASK = 0x7B;
   static ADD_CHANNEL_ID = 0x59;
   static CONFIG_ID_LIST = 0x5A;
   static ENABLE_LED = 0x68;
@@ -340,6 +343,12 @@ class Message {
   0x71: "Set Proximity Search",
 
   0x75: "Channel Search Priority",
+
+  0x79: "Event Filter",
+
+  0x7A: "Selective Data Update",
+
+  0x7B: "SDU Mask",
 
   0x59: "Add Channel ID to List",
 

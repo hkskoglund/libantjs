@@ -147,9 +147,9 @@ is included in the lint run.
 | Config | Set 128-bit Network Key              | Y |
 | Config | High Duty Search                     | Y |
 | Config | Configure Advanced Burst             | Y |
-| Config | Configure Event Filter               | N |
-| Config | Configure Selective Data Updates     | N |
-| Config | Set Selective Data Update (SDU) Mask | N |
+| Config | Configure Event Filter               | Y |
+| Config | Configure Selective Data Updates     | Y |
+| Config | Set Selective Data Update (SDU) Mask | Y |
 | Config | Configure User NVM                   | N |
 | Config | Enable Single Channel Encryption     | N |
 | Config | Set Encryption Key                   | N |
@@ -179,8 +179,8 @@ is included in the lint run.
 | Requested response | Event Buffer Configuration             | Y |
 | Requested response | Advanced Burst Capabilities            | Y |
 | Requested response | Advanced Burst Current Configuration   | Y |
-| Requested response | Event Filter                           | N |
-| Requested response | Selective Data Update Mask Setting     | N |
+| Requested response | Event Filter                           | Y |
+| Requested response | Selective Data Update Mask Setting     | Y |
 | Requested response | User NVM                               | N |
 | Requested response | Encryption Mode Parameters             | N |
 | Test Mode | CW Init                                         | Y |

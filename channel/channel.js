@@ -233,6 +233,16 @@ class Channel extends EventEmitter {
     return this.host.setChannelSearchSharing(this.channel, searchSharingCycles);
   }
 
+  configSelectiveDataUpdate(maskNumber, includeAcknowledged) {
+
+    return this.host.configSelectiveDataUpdate(this.channel, maskNumber, includeAcknowledged);
+  }
+
+  disableSelectiveDataUpdate() {
+
+    return this.host.disableSelectiveDataUpdate(this.channel);
+  }
+
   async open() {
 
     const response = await this.host.openChannel(this.channel);

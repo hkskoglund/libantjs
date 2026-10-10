@@ -51,6 +51,11 @@ import SetChannelSearchSharingMessage from '../messages/configuration/set-channe
 import SetUsbDescriptorStringMessage from '../messages/configuration/set-usb-descriptor-string-message.js';
 import InitCwTestModeMessage from '../messages/test-mode/init-cw-test-mode-message.js';
 import CwTestModeMessage from '../messages/test-mode/cw-test-mode-message.js';
+import ConfigEventFilterMessage from '../messages/configuration/config-event-filter-message.js';
+import ConfigSelectiveDataUpdateMessage from '../messages/configuration/config-selective-data-update-message.js';
+import SetSduMaskMessage from '../messages/configuration/set-sdu-mask-message.js';
+import EventFilterMessage from '../messages/requested-response/event-filter-message.js';
+import SduMaskMessage from '../messages/requested-response/sdu-mask-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
 import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
@@ -1309,4 +1314,34 @@ test('Spec 5.1 configuration messages reject invalid arguments', () => {
   assert.throws(() => new Set128BitNetworkKeyMessage(1, new Uint8Array(8)), RangeError);
   assert.throws(() => new SetUsbDescriptorStringMessage(4, 'x'), RangeError);
   assert.throws(() => new SetUsbDescriptorStringMessage(0, [1, 2]), RangeError);
+});
+
+test('Event filter and selective data update messages serialize to the documented layout', () => {
+  const mask = Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0xff);
+  const cases = [
+    [new ConfigEventFilterMessage(0x04), 0x79, [0, 0x04, 0x00]],
+    [new ConfigEventFilterMessage(0x8001), 0x79, [0, 0x01, 0x80]],
+    [new ConfigSelectiveDataUpdateMessage(0, 1, true), 0x7a, [0, 0x81]],
+    [new ConfigSelectiveDataUpdateMessage(2, 5), 0x7a, [2, 0x05]],
+    [ConfigSelectiveDataUpdateMessage.disable(1), 0x7a, [1, 0xff]],
+    [new SetSduMaskMessage(1, mask), 0x7b, [1, ...mask]]
+  ];
+
+  for (const [message, id, content] of cases)
+    assert.deepEqual(Array.from(message.serialize()), frame(id, content), message.constructor.name);
+
+  assert.throws(() => new ConfigSelectiveDataUpdateMessage(0, 32), RangeError);
+  assert.throws(() => new SetSduMaskMessage(1, new Uint8Array(4)), RangeError);
+});
+
+test('EventFilterMessage and SduMaskMessage decode requested responses', () => {
+  const filter = new EventFilterMessage(messageFrame(0x79, Uint8Array.of(0, 0x04, 0x80)));
+  const sdu = new SduMaskMessage(messageFrame(0x7b, Uint8Array.of(3, 0, 0, 0, 0, 0, 0, 0, 0xff)));
+
+  assert.equal(filter.eventFilter, 0x8004);
+  assert.equal(filter.isFiltered(3), true);
+  assert.equal(filter.isFiltered(1), false);
+  assert.equal(filter.isFiltered(16), true);
+  assert.equal(sdu.maskNumber, 3);
+  assert.deepEqual(Array.from(sdu.mask), [0, 0, 0, 0, 0, 0, 0, 0xff]);
 });

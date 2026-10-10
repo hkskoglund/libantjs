@@ -32,6 +32,9 @@ import SetChannelSearchSharingMessage from '../messages/configuration/set-channe
 import SetUsbDescriptorStringMessage from '../messages/configuration/set-usb-descriptor-string-message.js';
 import InitCwTestModeMessage from '../messages/test-mode/init-cw-test-mode-message.js';
 import CwTestModeMessage from '../messages/test-mode/cw-test-mode-message.js';
+import ConfigEventFilterMessage from '../messages/configuration/config-event-filter-message.js';
+import ConfigSelectiveDataUpdateMessage from '../messages/configuration/config-selective-data-update-message.js';
+import SetSduMaskMessage from '../messages/configuration/set-sdu-mask-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import OpenChannelMessage from '../messages/control/open-channel-message.js';
 import CloseChannelMessage from '../messages/control/close-channel-message.js';
@@ -279,6 +282,41 @@ class HostCommands {
   setCwTestMode(transmitPower, rfFrequency) {
 
     return this.sendMessage(new CwTestModeMessage(transmitPower, rfFrequency), this.constructor.EVENT.OK, 0);
+  }
+
+  // Bit N of eventFilter prevents event N+1 from being sent to the host, 0 clears the filter (spec 9.5.2.28)
+  configEventFilter(eventFilter) {
+
+    return this.sendMessage(new ConfigEventFilterMessage(eventFilter), this.constructor.EVENT.OK, 0);
+  }
+
+  // Resolves with the current filter; ANT sends no RESPONSE_NO_ERROR for requests (spec 9.5.7.9)
+  getEventFilter() {
+
+    return this.sendMessage(new RequestMessage(0, Message.CONFIG_EVENT_FILTER), Message.MESSAGE[Message.CONFIG_EVENT_FILTER]);
+  }
+
+  // Define SDU mask maskNumber: 8 bytes, set bits are compared for changes (spec 9.5.2.30)
+  setSduMask(maskNumber, mask) {
+
+    // The response carries the mask number in its channel byte
+    return this.sendMessage(new SetSduMaskMessage(maskNumber, mask), this.constructor.EVENT.OK, maskNumber);
+  }
+
+  getSduMask(maskNumber) {
+
+    return this.sendMessage(new RequestMessage(maskNumber, Message.SET_SDU_MASK), Message.MESSAGE[Message.SET_SDU_MASK]);
+  }
+
+  // Only send data messages when bits selected by the SDU mask change (spec 9.5.2.29); not applied to burst
+  configSelectiveDataUpdate(channel, maskNumber, includeAcknowledged) {
+
+    return this.sendMessage(new ConfigSelectiveDataUpdateMessage(channel, maskNumber, includeAcknowledged), this.constructor.EVENT.OK, channel);
+  }
+
+  disableSelectiveDataUpdate(channel) {
+
+    return this.sendMessage(ConfigSelectiveDataUpdateMessage.disable(channel), this.constructor.EVENT.OK, channel);
   }
 
   // Higher search priority pre-empts lower priority search channels (spec 9.5.2.24), 0..255
