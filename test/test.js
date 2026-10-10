@@ -38,6 +38,7 @@ import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-messa
 import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
 import ResetSystemMessage from '../messages/control/reset-system-message.js';
 import SleepMessage from '../messages/control/sleep-message.js';
+import SetChannelSearchPriorityMessage from '../messages/configuration/set-channel-search-priority-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
 import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
@@ -445,10 +446,15 @@ test('VersionMessage decodes its null-terminated version from content', () => {
   assert.equal(message.getVersion(), 'ANT+ 1.');
 });
 
-test('OpenRxScanModeMessage serializes the requested channel', () => {
-  const message = new OpenRxScanModeMessage(3);
+test('OpenRxScanModeMessage serializes filler and optional sync-only flag', () => {
+  assert.deepEqual(Array.from(new OpenRxScanModeMessage().serialize().subarray(3, -1)), [0]);
+  assert.deepEqual(Array.from(new OpenRxScanModeMessage(true).serialize().subarray(3, -1)), [0, 1]);
+});
 
-  assert.deepEqual(Array.from(message.serialize().subarray(3, -1)), [3]);
+test('SetChannelSearchPriorityMessage serializes channel and priority', () => {
+  const message = new SetChannelSearchPriorityMessage(1, 2);
+
+  assert.deepEqual(Array.from(message.serialize()), [0xa4, 0x02, 0x75, 1, 2, 0xa4 ^ 0x02 ^ 0x75 ^ 1 ^ 2]);
 });
 
 test('CapabilitiesMessage stringifies decoded capability fields', () => {

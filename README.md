@@ -135,7 +135,7 @@ is included in the lint run.
 | Config | Config Encryption ID List            | N |
 | Config | Set Channel Transmit Power           | Y |
 | Config | Low Priority Search Timeout          | Y |
-| Config | Serial Number Set Channel ID         | N |
+| Config | Serial Number Set Channel ID         | Y |
 | Config | Enable Ext RX Messages               | N |
 | Config | Enable LED                           | N |
 | Config | Crystal Enable                       | N |
@@ -143,7 +143,7 @@ is included in the lint run.
 | Config | Frequency Agility                    | N |
 | Config | Proximity Search                     | Y |
 | Config | Configure Event Buffer               | Y |
-| Config | Channel Search Priority              | N |
+| Config | Channel Search Priority              | Y |
 | Config | Set 128-bit Network Key              | N |
 | Config | High Duty Search                     | N |
 | Config | Configure Advanced Burst             | Y |

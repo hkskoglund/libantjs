@@ -19,6 +19,7 @@ import SetSearchWaveformMessage from '../messages/configuration/set-search-wavef
 import SetTransmitPowerMessage from '../messages/configuration/set-transmit-power-message.js';
 import SetChannelTxPowerMessage from '../messages/configuration/set-channel-tx-power-message.js';
 import SetProximitySearchMessage from '../messages/configuration/set-proximity-search-message.js';
+import SetChannelSearchPriorityMessage from '../messages/configuration/set-channel-search-priority-message.js';
 import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
 import OpenChannelMessage from '../messages/control/open-channel-message.js';
 import CloseChannelMessage from '../messages/control/close-channel-message.js';
@@ -197,9 +198,16 @@ class HostCommands {
     return this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.constructor.EVENT.OK, channel);
   }
 
-  openRxScanMode(channel) {
+  // Higher search priority pre-empts lower priority search channels (spec 9.5.2.24), 0..255
+  setChannelSearchPriority(channel, searchPriority) {
 
-    return this.sendMessage(new OpenRxScanModeMessage(channel), this.constructor.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelSearchPriorityMessage(channel, searchPriority), this.constructor.EVENT.OK, channel);
+  }
+
+  // Scan mode always uses channel 0 (spec 9.5.4.5)
+  openRxScanMode(syncChannelPacketsOnly) {
+
+    return this.sendMessage(new OpenRxScanModeMessage(syncChannelPacketsOnly), this.constructor.EVENT.OK, 0);
   }
 
   // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)

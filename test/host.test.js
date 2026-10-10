@@ -320,6 +320,16 @@ test('Host.sleep sends a Sleep Message', async () => {
   assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
 });
 
+test('Host.disableAdvancedBurst sends 0x00 in the enable byte', async () => {
+  const { host } = createHost();
+  let sentMessage;
+
+  host.sendMessage = async message => { sentMessage = message; };
+  await host.disableAdvancedBurst();
+
+  assert.equal(sentMessage.content[1], 0x00);
+});
+
 test('Host sends extended burst packets with sequence and Channel ID fields', async () => {
   const { host } = createHost();
   const sent = [];

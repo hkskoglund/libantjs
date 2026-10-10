@@ -15,7 +15,7 @@ class Host extends EventEmitter {
 
   static ADVANCED_BURST = {
     ENABLE: 0x01,
-    DISABLE: 0x02,
+    DISABLE: 0x00,
     MAX_PACKET_8BYTES: 0x01,
     MAX_PACKET_16BYTES: 0x02,
     MAX_PACKET_24BYTES: 0x03

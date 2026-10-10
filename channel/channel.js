@@ -207,6 +207,12 @@ class Channel extends EventEmitter {
     return this.host.setLowPriorityChannelSearchTimeout(this.channel, this.lowPrioritySearchTimeout);
   }
 
+  setSearchPriority(searchPriority) {
+
+    this.searchPriority = searchPriority;
+    return this.host.setChannelSearchPriority(this.channel, searchPriority);
+  }
+
   async open() {
 
     const response = await this.host.openChannel(this.channel);
@@ -216,9 +222,9 @@ class Channel extends EventEmitter {
     return response;
   }
 
-  openScan() {
+  openScan(syncChannelPacketsOnly) {
 
-    return this.host.openRxScanMode(this.channel);
+    return this.host.openRxScanMode(syncChannelPacketsOnly);
   }
 
   close() {
