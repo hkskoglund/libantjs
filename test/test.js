@@ -36,6 +36,12 @@ import BurstDataMessage from '../messages/data/burst-data-message.js';
 import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
 import ExtendedBroadcastDataMessage from '../messages/data/extended-broadcast-data-message.js';
 import ExtendedAcknowledgedDataMessage from '../messages/data/extended-acknowledged-data-message.js';
+import AddEncryptionIdMessage from '../messages/configuration/add-encryption-id-message.js';
+import EnableChannelEncryptionMessage from '../messages/configuration/enable-channel-encryption-message.js';
+import SetEncryptionKeyMessage from '../messages/configuration/set-encryption-key-message.js';
+import SetEncryptionInfoMessage from '../messages/configuration/set-encryption-info-message.js';
+import CryptoKeyNvmOpMessage from '../messages/configuration/crypto-key-nvm-op-message.js';
+import EncryptionParametersMessage from '../messages/requested-response/encryption-parameters-message.js';
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
 import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
 import ResetSystemMessage from '../messages/control/reset-system-message.js';
@@ -590,7 +596,7 @@ test('Data message decoders reject short standard payloads and accept variable a
   });
   assert.throws(() => new ChannelResponseMessage(shortChannelResponse), {
     name: 'RangeError',
-    message: 'Channel response message must contain exactly 3 bytes'
+    message: 'Channel response message must contain at least 3 bytes'
   });
 
   test('ExtendedBurstDataMessage encodes and decodes channel ID, sequence, and data', () => {
@@ -1368,4 +1374,48 @@ test('Extended broadcast and acknowledged data encode and decode channel ID and 
 
   assert.throws(() => new ExtendedBroadcastDataMessage().encode(0, id, new Uint8Array(4)), RangeError);
   assert.throws(() => new ExtendedBroadcastDataMessage().encode(0, {}, data), TypeError);
+});
+
+test('Single channel encryption configuration messages serialize per spec', () => {
+  const key = Uint8Array.from({ length: 16 }, (_, i) => i + 1);
+  const cases = [
+    [new AddEncryptionIdMessage(0, Uint8Array.of(1, 2, 3, 4), 2), 0x59, [0, 1, 2, 3, 4, 2]],
+    [new EnableChannelEncryptionMessage(1, 2, 0, 4), 0x7d, [1, 2, 0, 4]],
+    [new SetEncryptionKeyMessage(0, key), 0x7e, [0, ...key]],
+    [new SetEncryptionInfoMessage(SetEncryptionInfoMessage.ENCRYPTION_ID, Uint8Array.of(0, 0, 4, 2)), 0x7f, [0, 0, 0, 4, 2]],
+    [new SetEncryptionInfoMessage(SetEncryptionInfoMessage.RANDOM_NUMBER_SEED, key), 0x7f, [2, ...key]],
+    [new CryptoKeyNvmOpMessage(CryptoKeyNvmOpMessage.LOAD, 1, 0), 0x83, [0, 1, 0]],
+    [new CryptoKeyNvmOpMessage(CryptoKeyNvmOpMessage.STORE, 0, key), 0x83, [1, 0, ...key]]
+  ];
+
+  for (const [message, id, content] of cases)
+    assert.deepEqual(Array.from(message.serialize()), frame(id, content), message.constructor.name);
+
+  assert.throws(() => new AddEncryptionIdMessage(0, Uint8Array.of(1, 2, 3), 0), RangeError);
+  assert.throws(() => new AddEncryptionIdMessage(0, Uint8Array.of(1, 2, 3, 4), 4), RangeError);
+  assert.throws(() => new EnableChannelEncryptionMessage(0, 3), RangeError);
+  assert.throws(() => new EnableChannelEncryptionMessage(0, 1, 0, 0), RangeError);
+  assert.throws(() => new SetEncryptionKeyMessage(0, new Uint8Array(8)), RangeError);
+  assert.throws(() => new SetEncryptionInfoMessage(1, new Uint8Array(4)), RangeError);
+  assert.throws(() => new SetEncryptionInfoMessage(5, new Uint8Array(4)), RangeError);
+  assert.throws(() => new CryptoKeyNvmOpMessage(1, 0, new Uint8Array(4)), RangeError);
+  assert.throws(() => new CryptoKeyNvmOpMessage(2, 0), RangeError);
+});
+
+test('EncryptionParametersMessage decodes requested parameters', () => {
+  const mode = new EncryptionParametersMessage(messageFrame(0x7d, Uint8Array.of(0, 2)));
+  const id = new EncryptionParametersMessage(messageFrame(0x7d, Uint8Array.of(1, 9, 8, 7, 6)));
+
+  assert.equal(mode.maxSupportedMode, 2);
+  assert.deepEqual(Array.from(id.encryptionId), [9, 8, 7, 6]);
+});
+
+test('ChannelResponseMessage decodes encryption negotiation extended event parameters', () => {
+  const info = Uint8Array.from({ length: 19 }, (_, i) => 0x30 + i);
+  const success = new ChannelResponseMessage(messageFrame(0x40, Uint8Array.of(1, 1, 0x38, 1, 2, 3, 4, ...info)));
+  const fail = new ChannelResponseMessage(messageFrame(0x40, Uint8Array.of(1, 1, 0x39)));
+
+  assert.deepEqual(Array.from(success.response.encryptionId), [1, 2, 3, 4]);
+  assert.deepEqual(Array.from(success.response.userInformationString), Array.from(info));
+  assert.equal(fail.response.encryptionId, undefined);
 });

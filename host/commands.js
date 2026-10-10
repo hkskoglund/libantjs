@@ -27,6 +27,11 @@ import EnableLedMessage from '../messages/configuration/enable-led-message.js';
 import EnableCrystalMessage from '../messages/configuration/enable-crystal-message.js';
 import ConfigFrequencyAgilityMessage from '../messages/configuration/config-frequency-agility-message.js';
 import Set128BitNetworkKeyMessage from '../messages/configuration/set-128-bit-network-key-message.js';
+import AddEncryptionIdMessage from '../messages/configuration/add-encryption-id-message.js';
+import EnableChannelEncryptionMessage from '../messages/configuration/enable-channel-encryption-message.js';
+import SetEncryptionKeyMessage from '../messages/configuration/set-encryption-key-message.js';
+import SetEncryptionInfoMessage from '../messages/configuration/set-encryption-info-message.js';
+import CryptoKeyNvmOpMessage from '../messages/configuration/crypto-key-nvm-op-message.js';
 import ConfigHighDutySearchMessage from '../messages/configuration/config-high-duty-search-message.js';
 import SetChannelSearchSharingMessage from '../messages/configuration/set-channel-search-sharing-message.js';
 import SetUsbDescriptorStringMessage from '../messages/configuration/set-usb-descriptor-string-message.js';
@@ -252,6 +257,53 @@ class HostCommands {
   set128BitNetworkKey(netNumber, key) {
 
     return this.sendMessage(new Set128BitNetworkKeyMessage(netNumber, key), this.constructor.EVENT.OK, netNumber);
+  }
+
+  // Single channel encryption (spec 5.5.1). Set the key and encryption ID first, advanced burst must be enabled.
+  // The response channel byte of messages without a channel carries the first content byte.
+  setEncryptionKey(volatileKeyIndex, key) {
+
+    return this.sendMessage(new SetEncryptionKeyMessage(volatileKeyIndex, key), this.constructor.EVENT.OK, volatileKeyIndex);
+  }
+
+  // parameter: SetEncryptionInfoMessage.ENCRYPTION_ID (4 bytes), USER_INFORMATION_STRING (19), RANDOM_NUMBER_SEED (16)
+  setEncryptionInfo(parameter, data) {
+
+    return this.sendMessage(new SetEncryptionInfoMessage(parameter, data), this.constructor.EVENT.OK, parameter);
+  }
+
+  // mode 0 = disable, 1 = enable, 2 = enable and include user information string; decimation rate is 1 on a master
+  enableChannelEncryption(channel, mode, volatileKeyIndex, decimationRate) {
+
+    return this.sendMessage(new EnableChannelEncryptionMessage(channel, mode, volatileKeyIndex, decimationRate), this.constructor.EVENT.OK, channel);
+  }
+
+  // Encrypted master channels, index 0..3 (spec 9.5.2.11)
+  addEncryptionId(channel, encryptionId, listIndex) {
+
+    return this.sendMessage(new AddEncryptionIdMessage(channel, encryptionId, listIndex), this.constructor.EVENT.OK, channel);
+  }
+
+  // Whitelist (blacklist = false) or blacklist of the first listSize encryption IDs, 0 disables (spec 9.5.2.13)
+  configEncryptionIdList(channel, listSize, blacklist) {
+
+    return this.sendMessage(new ConfigIdListMessage(channel, listSize, blacklist), this.constructor.EVENT.OK, channel);
+  }
+
+  // parameter: 0 = max supported encryption mode, 1 = encryption ID, 2 = user information string (spec 9.5.7.12)
+  getEncryptionParameter(parameter) {
+
+    return this.sendMessage(new RequestMessage(parameter, Message.ENABLE_CHANNEL_ENCRYPTION), Message.MESSAGE[Message.ENABLE_CHANNEL_ENCRYPTION]);
+  }
+
+  loadEncryptionKeyFromNvm(nvmKeyIndex, volatileKeyIndex = 0) {
+
+    return this.sendMessage(new CryptoKeyNvmOpMessage(CryptoKeyNvmOpMessage.LOAD, nvmKeyIndex, volatileKeyIndex), this.constructor.EVENT.OK, CryptoKeyNvmOpMessage.LOAD);
+  }
+
+  storeEncryptionKeyInNvm(nvmKeyIndex, key) {
+
+    return this.sendMessage(new CryptoKeyNvmOpMessage(CryptoKeyNvmOpMessage.STORE, nvmKeyIndex, key), this.constructor.EVENT.OK, CryptoKeyNvmOpMessage.STORE);
   }
 
   // suppressionCycle 0..5 in 250 ms steps is optional and not supported by all parts (spec 9.5.2.26)

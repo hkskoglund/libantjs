@@ -130,9 +130,9 @@ is included in the lint run.
 | Config | Transmit Power                       | Y |
 | Config | Search Waveform                      | Y |
 | Config | Add Channel ID to List               | Y |
-| Config | Add Encryption ID to List            | N |
+| Config | Add Encryption ID to List            | Y |
 | Config | Config ID List                       | Y |
-| Config | Config Encryption ID List            | N |
+| Config | Config Encryption ID List            | Y |
 | Config | Set Channel Transmit Power           | Y |
 | Config | Low Priority Search Timeout          | Y |
 | Config | Serial Number Set Channel ID         | Y |
@@ -151,11 +151,11 @@ is included in the lint run.
 | Config | Configure Selective Data Updates     | Y |
 | Config | Set Selective Data Update (SDU) Mask | Y |
 | Config | Configure User NVM                   | N |
-| Config | Enable Single Channel Encryption     | N |
-| Config | Set Encryption Key                   | N |
-| Config | Set Encryption Info                  | N |
+| Config | Enable Single Channel Encryption     | Y |
+| Config | Set Encryption Key                   | Y |
+| Config | Set Encryption Info                  | Y |
 | Config | Channel Search Sharing               | Y |
-| Config | Load/Store Encryption Key            | N |
+| Config | Load/Store Encryption Key            | Y |
 | Config | Set USB Descriptor String            | Y |
 | Notifications | Start-up Message              | Y |
 | Notifications | Serial Error Message          | Y |
@@ -182,7 +182,7 @@ is included in the lint run.
 | Requested response | Event Filter                           | Y |
 | Requested response | Selective Data Update Mask Setting     | Y |
 | Requested response | User NVM                               | N |
-| Requested response | Encryption Mode Parameters             | N |
+| Requested response | Encryption Mode Parameters             | Y |
 | Test Mode | CW Init                                         | Y |
 | Test Mode | CW Test                                         | Y |
 | Extended Data (legacy) | Extended Broadcast Data            | Y |

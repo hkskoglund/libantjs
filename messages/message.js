@@ -232,6 +232,10 @@ class Message {
   static CONFIG_EVENT_FILTER = 0x79;
   static CONFIG_SELECTIVE_DATA_UPDATE = 0x7A;
   static SET_SDU_MASK = 0x7B;
+  static ENABLE_CHANNEL_ENCRYPTION = 0x7D;
+  static SET_ENCRYPTION_KEY = 0x7E;
+  static SET_ENCRYPTION_INFO = 0x7F;
+  static CRYPTO_KEY_NVM_OP = 0x83;
   static ADD_CHANNEL_ID = 0x59;
   static CONFIG_ID_LIST = 0x5A;
   static ENABLE_LED = 0x68;
@@ -369,6 +373,11 @@ class Message {
   0x77: "High Duty Search",
 
   0x81: "Channel Search Sharing",
+
+  0x7D: "Enable Channel Encryption",
+  0x7E: "Set Encryption Key",
+  0x7F: "Set Encryption Info",
+  0x83: "Encryption Key NVM Operation",
 
   0xC7: "Set USB Descriptor String",
 

@@ -8,6 +8,7 @@ import ChannelStatusMessage from '../messages/requested-response/channel-status-
 import VersionMessage from '../messages/requested-response/version-message.js';
 import CapabilitiesMessage from '../messages/requested-response/capabilities-message.js';
 import EventFilterMessage from '../messages/requested-response/event-filter-message.js';
+import EncryptionParametersMessage from '../messages/requested-response/encryption-parameters-message.js';
 import SduMaskMessage from '../messages/requested-response/sdu-mask-message.js';
 import DeviceSerialNumberMessage from '../messages/requested-response/device-serial-number-message.js';
 import AdvancedBurstCapabilitiesMessage from '../messages/requested-response/advanced-burst-capabilities-message.js';
@@ -129,6 +130,13 @@ class HostDeserialize {
         case Message.SET_SDU_MASK:
 
           message = new SduMaskMessage(msgBytes);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
+
+          break;
+
+        case Message.ENABLE_CHANNEL_ENCRYPTION:
+
+          message = new EncryptionParametersMessage(msgBytes);
           this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;

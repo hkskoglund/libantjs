@@ -243,6 +243,26 @@ class Channel extends EventEmitter {
     return this.host.disableSelectiveDataUpdate(this.channel);
   }
 
+  enableEncryption(mode = 1, volatileKeyIndex = 0, decimationRate = 1) {
+
+    return this.host.enableChannelEncryption(this.channel, mode, volatileKeyIndex, decimationRate);
+  }
+
+  disableEncryption() {
+
+    return this.host.enableChannelEncryption(this.channel, 0, 0, 1);
+  }
+
+  addEncryptionId(encryptionId, listIndex) {
+
+    return this.host.addEncryptionId(this.channel, encryptionId, listIndex);
+  }
+
+  configEncryptionIdList(listSize, blacklist) {
+
+    return this.host.configEncryptionIdList(this.channel, listSize, blacklist);
+  }
+
   async open() {
 
     const response = await this.host.openChannel(this.channel);
