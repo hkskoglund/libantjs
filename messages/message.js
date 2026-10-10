@@ -261,12 +261,16 @@ class Message {
   static BROADCAST_DATA = 0x4E;
   static ACKNOWLEDGED_DATA = 0x4F;
   static BURST_TRANSFER_DATA = 0x50;
+  static EXTENDED_BROADCAST_DATA = 0x5D;
+  static EXTENDED_ACKNOWLEDGED_DATA = 0x5E;
   static EXTENDED_BURST_TRANSFER_DATA = 0x5F;
   static ADVANCED_BURST_TRANSFER_DATA = 0x72;
   static EVENT = {
   0x4E: 'data',
   0x4F: 'ackdata',
   0x50: 'burstdata',
+  0x5D: 'extdata',
+  0x5E: 'extackdata',
   0x5F: 'extburstdata',
   0x72: 'advburstdata'
 };
@@ -381,6 +385,8 @@ class Message {
   0x4F: "Acknowledged Data",
 
   0x50: "Burst Transfer Data",
+  0x5D: "Extended Broadcast Data",
+  0x5E: "Extended Acknowledged Data",
   0x5F: "Extended Burst Data",
   0x72: "Advanced Burst Transfer Data",
 

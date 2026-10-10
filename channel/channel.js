@@ -283,6 +283,23 @@ class Channel extends EventEmitter {
     return this.host.sendBroadcastData(this.channel, broadcastData);
   }
 
+  sendExtended(channelId, broadcastData) {
+
+    return this.host.sendExtendedBroadcastData(this.channel, channelId, broadcastData);
+  }
+
+  async sendExtendedAcknowledged(channelId, ackData) {
+
+    this.transferInProgress = true;
+
+    try {
+      return await this.host.sendExtendedAcknowledgedData(this.channel, channelId, ackData);
+    } catch (error) {
+      this.transferInProgress = false;
+      throw error;
+    }
+  }
+
   async sendAcknowledged(ackData) {
 
     this.transferInProgress = true;

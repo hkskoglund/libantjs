@@ -2,6 +2,8 @@
 import Message from '../messages/message.js';
 import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
 import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
+import ExtendedBroadcastDataMessage from '../messages/data/extended-broadcast-data-message.js';
+import ExtendedAcknowledgedDataMessage from '../messages/data/extended-acknowledged-data-message.js';
 import BurstDataMessage from '../messages/data/burst-data-message.js';
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
 import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
@@ -33,6 +35,20 @@ class HostTransfers {
   sendAcknowledgedData(channel, acknowledgedData) {
 
     return this.sendBroadcastData(channel, acknowledgedData, true);
+  }
+
+  // Spec 9.5.9.1 - transmit to a specific channel ID (device number, device type, transmission type)
+  sendExtendedBroadcastData(channel, channelId, data, acknowledge) {
+    const msg = acknowledge ? new ExtendedAcknowledgedDataMessage() : new ExtendedBroadcastDataMessage();
+
+    msg.encode(channel, channelId, Array.isArray(data) ? new Uint8Array(data) : data);
+
+    return this.sendMessage(msg, undefined, channel);
+  }
+
+  sendExtendedAcknowledgedData(channel, channelId, data) {
+
+    return this.sendExtendedBroadcastData(channel, channelId, data, true);
   }
 
   // Send an individual packet as part of a burst transfer

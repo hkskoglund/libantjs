@@ -17,6 +17,8 @@ import ConfigureEventBufferMessage from '../messages/configuration/configure-eve
 import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
 import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
 import BurstDataMessage from '../messages/data/burst-data-message.js';
+import ExtendedBroadcastDataMessage from '../messages/data/extended-broadcast-data-message.js';
+import ExtendedAcknowledgedDataMessage from '../messages/data/extended-acknowledged-data-message.js';
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
 import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
 import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
@@ -177,6 +179,20 @@ class HostDeserialize {
 
           message = new AcknowledgedDataMessage(msgBytes);
           this.channel[message.channel].emit(Message.EVENT[Message.ACKNOWLEDGED_DATA], message);
+
+          break;
+
+        case Message.EXTENDED_BROADCAST_DATA:
+
+          message = new ExtendedBroadcastDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.EVENT[Message.EXTENDED_BROADCAST_DATA], message);
+
+          break;
+
+        case Message.EXTENDED_ACKNOWLEDGED_DATA:
+
+          message = new ExtendedAcknowledgedDataMessage(msgBytes);
+          this.channel[message.channel].emit(Message.EVENT[Message.EXTENDED_ACKNOWLEDGED_DATA], message);
 
           break;
 

@@ -34,6 +34,8 @@ import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.
 import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
 import BurstDataMessage from '../messages/data/burst-data-message.js';
 import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
+import ExtendedBroadcastDataMessage from '../messages/data/extended-broadcast-data-message.js';
+import ExtendedAcknowledgedDataMessage from '../messages/data/extended-acknowledged-data-message.js';
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
 import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
 import ResetSystemMessage from '../messages/control/reset-system-message.js';
@@ -1344,4 +1346,26 @@ test('EventFilterMessage and SduMaskMessage decode requested responses', () => {
   assert.equal(filter.isFiltered(16), true);
   assert.equal(sdu.maskNumber, 3);
   assert.deepEqual(Array.from(sdu.mask), [0, 0, 0, 0, 0, 0, 0, 0xff]);
+});
+
+test('Extended broadcast and acknowledged data encode and decode channel ID and data', () => {
+  const id = { deviceNumber: 0x1234, deviceType: 0x78, transmissionType: 0x05 };
+  const data = Uint8Array.of(1, 2, 3, 4, 5, 6, 7, 8);
+
+  for (const [Type, msgId] of [[ExtendedBroadcastDataMessage, 0x5d], [ExtendedAcknowledgedDataMessage, 0x5e]]) {
+    const source = new Type();
+    source.encode(2, id, data);
+
+    assert.deepEqual(Array.from(source.serialize()), frame(msgId, [2, 0x34, 0x12, 0x78, 0x05, 1, 2, 3, 4, 5, 6, 7, 8]));
+
+    const decoded = new Type(source.serialize());
+    assert.equal(decoded.channel, 2);
+    assert.equal(decoded.channelId.deviceNumber, 0x1234);
+    assert.equal(decoded.channelId.deviceType, 0x78);
+    assert.equal(decoded.channelId.transmissionType, 5);
+    assert.deepEqual(Array.from(decoded.payload), Array.from(data));
+  }
+
+  assert.throws(() => new ExtendedBroadcastDataMessage().encode(0, id, new Uint8Array(4)), RangeError);
+  assert.throws(() => new ExtendedBroadcastDataMessage().encode(0, {}, data), TypeError);
 });

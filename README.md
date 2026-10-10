@@ -185,8 +185,8 @@ is included in the lint run.
 | Requested response | Encryption Mode Parameters             | N |
 | Test Mode | CW Init                                         | Y |
 | Test Mode | CW Test                                         | Y |
-| Extended Data (legacy) | Extended Broadcast Data            | N |
-| Extended Data (legacy) | Extended Acknowledged Data         | N |
+| Extended Data (legacy) | Extended Broadcast Data            | Y |
+| Extended Data (legacy) | Extended Acknowledged Data         | Y |
 | Extended Data (legacy) | Extended Burst Data                | Y |
 
 The Sleep Message is supported only by specific ANT devices. Extended Burst
