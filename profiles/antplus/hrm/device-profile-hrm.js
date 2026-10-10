@@ -1,12 +1,19 @@
 'use strict';
+import DeviceProfile from '../device-profile.js';
+import HRMPage4 from './hrm-page4.js';
+import HRMPage0 from './hrm-page0.js';
+import HRMPage5 from './hrm-page5.js';
+import HRMPage6 from './hrm-page6.js';
+import HRMPage9 from './hrm-page9.js';
+import GenericPage from '../page.js';
 
-const DeviceProfile = require('../device-profile');
-const HRMPage4 = require('./hrm-page4');
-const HRMPage0 = require('./hrm-page0');
-const HRMPage5 = require('./hrm-page5');
-const HRMPage6 = require('./hrm-page6');
-const HRMPage9 = require('./hrm-page9');
-const GenericPage = require('../page');
+
+
+
+
+
+
+
 
 class DeviceProfile_HRM extends DeviceProfile {
   constructor(configuration) {
@@ -85,4 +92,4 @@ class DeviceProfile_HRM extends DeviceProfile {
 
 
 
-module.exports = DeviceProfile_HRM;
+export default DeviceProfile_HRM;

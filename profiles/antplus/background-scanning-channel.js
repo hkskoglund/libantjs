@@ -1,11 +1,17 @@
 'use strict';
+import DeviceProfile from './device-profile.js';
+import DeviceProfile_HRM from './device-profile-hrm.js';
+import DeviceProfile_SDM from './device-profile-sdm.js';
+import DeviceProfile_SPDCAD from './device-profile-spdcad.js';
+import Channel from '../channel.js';
+import Network from '../network.js';
 
-var DeviceProfile = require('./device-profile.js');
-var DeviceProfile_HRM = require('./device-profile-hrm.js');
-var DeviceProfile_SDM = require('./device-profile-sdm.js');
-var DeviceProfile_SPDCAD = require('./device-profile-spdcad.js');
-var Channel = require('../channel.js');
-var Network = require('../network.js');
+
+
+
+
+
+
 
 class BackgroundScanningChannel extends DeviceProfile {
   constructor(configuration) {
@@ -139,4 +145,4 @@ class BackgroundScanningChannel extends DeviceProfile {
   channelResponseEvent(data) {}
 }
 
-  module.exports = BackgroundScanningChannel;
+  export default BackgroundScanningChannel;

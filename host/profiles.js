@@ -1,9 +1,10 @@
 'use strict';
+import ANTFSHostChannel from '../profiles/antfs/antfs-host-channel.js';
+import HRMProfile from '../profiles/antplus/hrm/device-profile-hrm.js';
+import EnvironmentProfile from '../profiles/antplus/environment/device-profile-environment.js';
+import LibConfig from '../messages/extended/lib-config.js';
 
-var ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel'),
-  HRMProfile = require('../profiles/antplus/hrm/device-profile-hrm'),
-  EnvironmentProfile = require('../profiles/antplus/environment/device-profile-environment'),
-  LibConfig = require('../messages/extended/lib-config');
+
 
 class HostProfiles {
   async connectANTFS(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles) {
@@ -84,7 +85,7 @@ class HostProfiles {
 
 }
 
-module.exports = function(Host) {
+export default function(Host) {
   for (const methodName of Object.getOwnPropertyNames(HostProfiles.prototype)) {
     if (methodName !== 'constructor') {
       Host.prototype[methodName] = HostProfiles.prototype[methodName];

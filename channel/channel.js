@@ -1,8 +1,9 @@
 'use strict';
+import Logger from '../util/logger.js';
+import EventEmitter from 'node:events';
+import ChannelId from './channel-id.js';
 
-var Logger = require('../util/logger'),
-  EventEmitter = require('events'),
-  ChannelId = require('./channel-id');
+
 
 class Channel extends EventEmitter {
   constructor(options, host, channelNumber, net, type) {
@@ -384,4 +385,4 @@ class Channel extends EventEmitter {
 
 // Data
 
-module.exports = Channel;
+export default Channel;

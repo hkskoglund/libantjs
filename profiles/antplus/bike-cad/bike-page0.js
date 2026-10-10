@@ -1,6 +1,7 @@
 'use strict';
+import SPDCADSharedPage from '../bike-spdcad/spdcad-shared.js';
 
-  var SPDCADSharedPage = require('../bike-spdcad/spdcad-shared');
+
 
   class BikePage0 extends SPDCADSharedPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -67,5 +68,5 @@
 
 
 
-  module.exports = BikePage0;
+  export default BikePage0;
 

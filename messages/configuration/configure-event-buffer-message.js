@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class ConfigureEventBufferMessage extends Message {
   constructor(configOrData, size, time) {
@@ -69,5 +70,5 @@ class ConfigureEventBufferMessage extends Message {
  // Unit : 10ms
 
 
-module.exports = ConfigureEventBufferMessage;
+export default ConfigureEventBufferMessage;
 

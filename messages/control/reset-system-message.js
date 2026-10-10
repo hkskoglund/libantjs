@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class ResetSystemMessage extends Message {
   constructor() {
@@ -16,5 +17,5 @@ class ResetSystemMessage extends Message {
   }
 }
 
-module.exports = ResetSystemMessage;
+export default ResetSystemMessage;
 

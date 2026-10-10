@@ -24,7 +24,7 @@ Connect the ANT USB stick before initializing the host. On Linux, confirm that y
 This example opens a wildcard receive channel on the public ANT network and prints received broadcast payloads:
 
 ```js
-const Host = require('libantjs');
+import Host from 'libantjs';
 
 const host = new Host();
 host.on('error', (error) => {

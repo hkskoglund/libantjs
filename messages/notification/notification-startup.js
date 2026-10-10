@@ -1,5 +1,6 @@
 'use strict';
-var Message = require('../message');
+import Message from '../message.js';
+
 
 // Notification startup raw buffer for COMMAND_RESET : <Buffer a4 01 6f 20 ea>
 class NotificationStartup extends Message {
@@ -75,5 +76,5 @@ class NotificationStartup extends Message {
 
 
 
-module.exports = NotificationStartup;
+export default NotificationStartup;
 

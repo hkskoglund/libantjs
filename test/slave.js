@@ -1,4 +1,5 @@
-const Host = require('../host');
+import Host from '../host.js';
+
 
 const slaveHost = new Host({ log: true });
 const slavePort = 1;

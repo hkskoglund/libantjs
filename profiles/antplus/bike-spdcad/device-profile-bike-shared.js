@@ -1,7 +1,8 @@
 'use strict';
+import DeviceProfile from '../device-profile.js';
+import GenericPage from '../page.js';
 
-  var DeviceProfile = require('../device-profile'),
-    GenericPage = require('../page');
+
 
   class DeviceProfile_BikeShared extends DeviceProfile {
   constructor(configuration) {
@@ -121,5 +122,5 @@
 
 
 
-  module.exports = DeviceProfile_BikeShared;
+  export default DeviceProfile_BikeShared;
 

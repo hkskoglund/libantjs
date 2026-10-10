@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class DeviceSerialNumberMessage extends Message {
   constructor(data) {
@@ -23,5 +24,5 @@ class DeviceSerialNumberMessage extends Message {
   }
 }
 
-module.exports = DeviceSerialNumberMessage;
+export default DeviceSerialNumberMessage;
 

@@ -1,6 +1,7 @@
 'use strict';
+import loglevel from 'loglevel';
 
-const loglevel = require('loglevel');
+
 
 let nextLoggerId = 0;
 
@@ -133,4 +134,4 @@ class Logger {
   }
 }
 
-module.exports = Logger;
+export default Logger;

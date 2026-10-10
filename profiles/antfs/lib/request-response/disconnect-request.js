@@ -34,4 +34,4 @@ class DisconnectCommand {
 
 
 
-module.exports = DisconnectCommand;
+export default DisconnectCommand;

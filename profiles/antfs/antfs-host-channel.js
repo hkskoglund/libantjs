@@ -1,21 +1,18 @@
 'use strict';
+import Channel from '../../channel/channel.js';
+import ChannelId from '../../channel/channel-id.js';
+import ClientBeacon from './lib/layer/client-beacon.js';
+import State from './lib/layer/util/state.js';
+import LinkManager from './lib/layer/link-manager.js';
+import AuthenticationManager from './lib/layer/authentication-manager.js';
+import TransportManager from './lib/layer/transport-manager.js';
+import AuthenticateRequest from './lib/request-response/authenticate-request.js';
+import DownloadRequest from './lib/request-response/download-request.js';
+import EraseRequest from './lib/request-response/erase-request.js';
+import UploadRequest from './lib/request-response/upload-request.js';
+import UploadDataRequest from './lib/request-response/upload-data-request.js';
 
-const Channel = require('../../channel/channel'),
-  ChannelId = require('../../channel/channel-id'),
-  ClientBeacon = require('./lib/layer/client-beacon'),
-  State = require('./lib/layer/util/state'),
 
-  // Layers
-
-  LinkManager = require('./lib/layer/link-manager'),
-  AuthenticationManager = require('./lib/layer/authentication-manager'),
-  TransportManager = require('./lib/layer/transport-manager'),
-
-  AuthenticateRequest = require('./lib/request-response/authenticate-request'),
-  DownloadRequest  = require('./lib/request-response/download-request'),
-  EraseRequest = require('./lib/request-response/erase-request'),
-  UploadRequest = require('./lib/request-response/upload-request'),
-  UploadDataRequest = require('./lib/request-response/upload-data-request');
 
 class ANTFSHostChannel extends Channel {
   constructor(options, ANTHost, channel) {
@@ -378,4 +375,4 @@ class ANTFSHostChannel extends Channel {
   }
 }
 
-module.exports = ANTFSHostChannel;
+export default ANTFSHostChannel;

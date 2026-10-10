@@ -1,4 +1,5 @@
-const Host = require('../host');
+import Host from '../host.js';
+
 
 const slaveHost = new Host({ log: false, debugLevel: 0 });
 const slaveChannel0 = slaveHost.channel[0];

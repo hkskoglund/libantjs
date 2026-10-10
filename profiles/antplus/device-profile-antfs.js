@@ -1,13 +1,19 @@
 ﻿
 
 'use strict';
+import DeviceProfile from './device-profile.js';
+import CRC from '../crc.js';
+import ANT from 'libant';
+import fs from 'node:fs';
+import Channel from '../channel.js';
+import path from 'node:path';
 
-var DeviceProfile = require('./device-profile.js');
-var CRC = require('../crc.js');
-var ANT = require('libant');
-var fs = require('fs');
-var Channel = require('../channel.js');
-var PathSeparator = require('path').sep; // Win32 = \\, *nix = /
+
+
+
+
+
+const PathSeparator = path.sep; // Win32 = \\, *nix = /
 
 class DeviceProfile_ANTFS extends DeviceProfile {
   constructor(configuration) {
@@ -1704,8 +1710,8 @@ class DeviceProfile_ANTFS extends DeviceProfile {
 
     // Listener for broadcast event for all channels -> must filter
     // When this function is called from emit function of EventEmitter -> this will be the eventEmitter = ANT instance
-    // This can be verified by looking at the code for emit in REPL console : console.log((new (require('events').EventEmitter)).emit.toString()) ->
+    // EventEmitter invokes listeners with the emitter as their `this` value.
     // event handler is called using handler.call(this=ANT Instance,...)
 
 
-        module.exports = DeviceProfile_ANTFS
+        export default DeviceProfile_ANTFS

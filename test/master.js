@@ -1,4 +1,5 @@
-const Host = require('../host');
+import Host from '../host.js';
+
 
 const masterHost = new Host({ log: true, debugLevel: 0 });
 const masterPort = 0;

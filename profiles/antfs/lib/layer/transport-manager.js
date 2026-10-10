@@ -1,30 +1,22 @@
 'use strict';
+import EventEmitter from 'node:events';
+import ClientBeacon from './client-beacon.js';
+import DownloadRequest from '../request-response/download-request.js';
+import DownloadResponse from '../request-response/download-response.js';
+import EraseRequest from '../request-response/erase-request.js';
+import EraseResponse from '../request-response/erase-response.js';
+import UploadRequest from '../request-response/upload-request.js';
+import UploadResponse from '../request-response/upload-request-response.js';
+import UploadDataRequest from '../request-response/upload-data-request.js';
+import UploadDataResponse from '../request-response/upload-data-response.js';
+import CRC from './util/crc.js';
+import State from './util/state.js';
+import Directory from '../file/directory.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-const EventEmitter = require('events'),
-  ClientBeacon = require('./client-beacon'),
-
-  DownloadRequest = require('../request-response/download-request'),
-  DownloadResponse = require('../request-response/download-response'),
-
-  EraseRequest = require('../request-response/erase-request'),
-  EraseResponse = require('../request-response/erase-response'),
-
-  UploadRequest = require('../request-response/upload-request'),
-  UploadResponse = require('../request-response/upload-request-response'),
-
-  UploadDataRequest = require('../request-response/upload-data-request'),
-  UploadDataResponse = require('../request-response/upload-data-response'),
-
-  CRC = require('./util/crc'),
-  crc = new CRC(),
-
-  State = require('./util/state'),
-
-  Directory = require('../file/directory'),
-
-  fs = require('fs'),
-  os = require('os'),
-  path = require('path');
+const crc = new CRC();
 
 class TransportManager extends EventEmitter {
   constructor(host, download, erase, ls, skipNewFiles) {
@@ -963,4 +955,4 @@ class TransportManager extends EventEmitter {
 
 
 
-module.exports = TransportManager;
+export default TransportManager;

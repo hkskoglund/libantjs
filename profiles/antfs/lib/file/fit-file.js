@@ -1,7 +1,8 @@
 'use strict';
+import File from './file.js';
+import FitFilePermission from './fit-file-permission.js';
 
-const File = require('./file'),
-  FitFilePermission = require('./fit-file-permission');
+
 
 class FitFile extends File {
   constructor(data, directory) {
@@ -109,4 +110,4 @@ class FitFile extends File {
 
 
 
-module.exports = FitFile;
+export default FitFile;

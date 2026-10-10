@@ -1,7 +1,8 @@
 'use strict';
+import Message from '../message.js';
+import ChannelId from '../../channel/channel-id.js';
 
-var Message = require('../message'),
-  ChannelId = require('../../channel/channel-id');
+
 
 class ChannelIdMessage extends Message {
   constructor(data) {
@@ -29,5 +30,5 @@ class ChannelIdMessage extends Message {
   }
 }
 
-module.exports = ChannelIdMessage;
+export default ChannelIdMessage;
 

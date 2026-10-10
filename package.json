@@ -2,6 +2,7 @@
   "name": "libantjs",
   "version": "1.0.0",
   "description": "ANT wireless USB library",
+  "type": "module",
   "main": "host.js",
   "engines": {
     "node": ">=22"

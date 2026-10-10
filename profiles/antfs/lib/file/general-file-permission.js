@@ -49,4 +49,4 @@ class GeneralFilePermission {
 
 
 
-module.exports = GeneralFilePermission;
+export default GeneralFilePermission;

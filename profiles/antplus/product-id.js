@@ -1,6 +1,7 @@
 'use strict';
+import BackgroundPage from './background-page.js';
 
-const BackgroundPage = require('./background-page');
+
 
 class ProductId extends BackgroundPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -22,4 +23,4 @@ class ProductId extends BackgroundPage {
   }
 }
 
-module.exports = ProductId;
+export default ProductId;

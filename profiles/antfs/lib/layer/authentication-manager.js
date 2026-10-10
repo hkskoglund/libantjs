@@ -1,13 +1,14 @@
 'use strict';
+import EventEmitter from 'node:events';
+import ClientBeacon from './client-beacon.js';
+import AuthenticateRequest from '../request-response/authenticate-request.js';
+import AuthenticateResponse from '../request-response/authenticate-response.js';
+import State from './util/state.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-const EventEmitter = require('events'),
-  ClientBeacon = require('./client-beacon'),
-  AuthenticateRequest = require('../request-response/authenticate-request'),
-  AuthenticateResponse = require('../request-response/authenticate-response'),
-  State = require('./util/state'),
-  fs = require('fs'),
-  os = require('os'),
-  path = require('path');
+
 
 class AuthenticationManager extends EventEmitter {
   constructor(host) {
@@ -388,4 +389,4 @@ class AuthenticationManager extends EventEmitter {
 
 
 
-module.exports = AuthenticationManager;
+export default AuthenticationManager;

@@ -1,15 +1,12 @@
 'use strict';
+import LibConfig from './extended/lib-config.js';
+import ChannelId from '../channel/channel-id.js';
+import RSSI from './extended/rssi.js';
+import RXTimestamp from './extended/rx-timestamp.js';
 
 // Standard message :  bSYNC bLENGTH bID bCHANNELNUMBER CONTENT (8 bytes) bCRC (total length meta+content = 5+8 = 13 bytes)
 
-var
 
-// Extended data if requested by libconfig
-
-  LibConfig = require('./extended/lib-config'),
-  ChannelId = require('../channel/channel-id'),
-  RSSI = require('./extended/rssi'),
-  RXTimestamp = require('./extended/rx-timestamp');
 
 class Message {
   constructor(data, id, content) {
@@ -428,4 +425,4 @@ This function create a raw message
 
 
 
-module.exports = Message;
+export default Message;

@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class OpenRxScanModeMessage extends Message {
   constructor(channel) {
@@ -15,5 +16,5 @@ class OpenRxScanModeMessage extends Message {
   }
 }
 
-module.exports = OpenRxScanModeMessage;
+export default OpenRxScanModeMessage;
 

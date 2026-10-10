@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetChannelPeriodMessage extends Message {
   constructor(channel, messagePeriod) {
@@ -29,5 +30,5 @@ class SetChannelPeriodMessage extends Message {
   }
 }
 
-module.exports = SetChannelPeriodMessage;
+export default SetChannelPeriodMessage;
 

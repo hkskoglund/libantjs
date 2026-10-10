@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetNetworkKeyMessage extends Message {
   constructor(net, key) {
@@ -28,5 +29,5 @@ class SetNetworkKeyMessage extends Message {
   }
 }
 
-module.exports = SetNetworkKeyMessage;
+export default SetNetworkKeyMessage;
 

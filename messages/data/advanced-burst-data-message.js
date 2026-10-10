@@ -1,7 +1,8 @@
 'use strict';
+import AcknowledgedDataMessage from './acknowledged-data-message.js';
+import Message from '../message.js';
 
-var AcknowledgedDataMessage = require('./acknowledged-data-message'),
-  Message = require('../message');
+
 
 class AdvancedBurstDataMessage extends AcknowledgedDataMessage {
   constructor(data) {
@@ -26,5 +27,5 @@ class AdvancedBurstDataMessage extends AcknowledgedDataMessage {
   }
 }
 
-module.exports = AdvancedBurstDataMessage;
+export default AdvancedBurstDataMessage;
 

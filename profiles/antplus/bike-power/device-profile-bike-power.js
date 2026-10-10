@@ -1,12 +1,11 @@
 'use strict';
+import DeviceProfile from '../device-profile.js';
+import PowerOnlyMainPage0x10 from '../bike-power/power-only-main-page0x10.js';
+import BackgroundPage from '../background-page.js';
+import CalibrationMainPage from '../bike-power/calibration-main.js';
+import BikePowerDataPage from '../bike-power/bike-power-data-page.js';
 
-  var
 
-    DeviceProfile = require('../device-profile'),
-    PowerOnlyMainPage0x10 = require('../bike-power/power-only-main-page0x10'),
-    BackgroundPage = require('../background-page'),
-    CalibrationMainPage = require('../bike-power/calibration-main'),
-    BikePowerDataPage = require('../bike-power/bike-power-data-page');
 
 
   class DeviceProfile_BikePower extends DeviceProfile {
@@ -149,5 +148,5 @@
   // Parse received page
 
 
-  module.exports = DeviceProfile_BikePower;
+  export default DeviceProfile_BikePower;
 

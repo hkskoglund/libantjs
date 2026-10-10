@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   // Data page 1 - Temperature
 
@@ -191,5 +192,5 @@
 
 
 
-  module.exports = TemperaturePage1;
+  export default TemperaturePage1;
 

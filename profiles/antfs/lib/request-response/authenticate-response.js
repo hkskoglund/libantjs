@@ -63,4 +63,4 @@ class AuthenticateResponse {
 
 
 
-module.exports = AuthenticateResponse;
+export default AuthenticateResponse;

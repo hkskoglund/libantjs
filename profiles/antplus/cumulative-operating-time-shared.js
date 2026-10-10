@@ -1,6 +1,7 @@
 'use strict';
+import BackgroundPage from './background-page.js';
 
-const BackgroundPage = require('./background-page');
+
 
 class CumulativeOperatingTimeShared extends BackgroundPage {
   readCumulativeOperatingTime(broadcast, offset, unitMultiplier) {
@@ -18,4 +19,4 @@ class CumulativeOperatingTimeShared extends BackgroundPage {
   }
 }
 
-module.exports = CumulativeOperatingTimeShared;
+export default CumulativeOperatingTimeShared;

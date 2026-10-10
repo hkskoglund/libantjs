@@ -63,4 +63,4 @@ class DownloadRequest {
 
 
 
-module.exports = DownloadRequest;
+export default DownloadRequest;

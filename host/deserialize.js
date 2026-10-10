@@ -1,25 +1,26 @@
 'use strict';
+import Message from '../messages/message.js';
+import Concat from '../util/concat.js';
+import Channel from '../channel/channel.js';
+import NotificationStartup from '../messages/notification/notification-startup.js';
+import NotificationSerialError from '../messages/notification/notification-serial-error.js';
+import ChannelStatusMessage from '../messages/requested-response/channel-status-message.js';
+import VersionMessage from '../messages/requested-response/version-message.js';
+import CapabilitiesMessage from '../messages/requested-response/capabilities-message.js';
+import DeviceSerialNumberMessage from '../messages/requested-response/device-serial-number-message.js';
+import AdvancedBurstCapabilitiesMessage from '../messages/requested-response/advanced-burst-capabilities-message.js';
+import AdvancedBurstCurrentConfigurationMessage from '../messages/requested-response/advanced-burst-current-configuration-message.js';
+import ChannelIdMessage from '../messages/requested-response/channel-id-message.js';
+import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
+import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
+import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
+import BurstDataMessage from '../messages/data/burst-data-message.js';
+import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
+import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
+import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
+import ChannelResponseEvent from '../channel/channel-response-event.js';
 
-var Message = require('../messages/message'),
-  Concat = require('../util/concat'),
-  Channel = require('../channel/channel'),
-  NotificationStartup = require('../messages/notification/notification-startup'),
-  NotificationSerialError = require('../messages/notification/notification-serial-error'),
-  ChannelStatusMessage = require('../messages/requested-response/channel-status-message'),
-  VersionMessage = require('../messages/requested-response/version-message'),
-  CapabilitiesMessage = require('../messages/requested-response/capabilities-message'),
-  DeviceSerialNumberMessage = require('../messages/requested-response/device-serial-number-message'),
-  AdvancedBurstCapabilitiesMessage = require('../messages/requested-response/advanced-burst-capabilities-message'),
-  AdvancedBurstCurrentConfigurationMessage = require('../messages/requested-response/advanced-burst-current-configuration-message'),
-  ChannelIdMessage = require('../messages/requested-response/channel-id-message'),
-  ConfigureEventBufferMessage = require('../messages/configuration/configure-event-buffer-message'),
-  BroadcastDataMessage = require('../messages/data/broadcast-data-message'),
-  AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message'),
-  BurstDataMessage = require('../messages/data/burst-data-message'),
-  ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message'),
-  AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message'),
-  ChannelResponseMessage = require('../messages/channel-response-event/channel-response-message'),
-  ChannelResponseEvent = require('../channel/channel-response-event');
+
 
 class HostDeserialize {
   deserialize(data) {
@@ -245,7 +246,7 @@ class HostDeserialize {
 
 }
 
-module.exports = function(Host) {
+export default function(Host) {
   for (const methodName of Object.getOwnPropertyNames(HostDeserialize.prototype)) {
     if (methodName !== 'constructor') {
       Host.prototype[methodName] = HostDeserialize.prototype[methodName];

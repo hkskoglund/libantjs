@@ -1,7 +1,8 @@
 'use strict';
+import State from './util/state.js';
+import AuthenticationType from './util/authentication-type.js';
 
-const State = require('./util/state'),
-  AuthenticationType = require('./util/authentication-type');
+
 
 class ClientBeacon {
   constructor(payload) {
@@ -119,4 +120,4 @@ class ClientBeacon {
 
 
 
-module.exports = ClientBeacon;
+export default ClientBeacon;

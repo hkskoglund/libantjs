@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetChannelRFFreqMessage extends Message {
   constructor(channel, RFFreq) {
@@ -32,5 +33,5 @@ class SetChannelRFFreqMessage extends Message {
   }
 }
 
-module.exports = SetChannelRFFreqMessage;
+export default SetChannelRFFreqMessage;
 

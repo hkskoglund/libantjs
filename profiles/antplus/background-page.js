@@ -1,6 +1,7 @@
 'use strict';
+import GenericPage from './page.js';
 
-const GenericPage = require('./page');
+
 
 class BackgroundPage extends GenericPage {
   getManufacturer(manufacturerID) {
@@ -125,4 +126,4 @@ class BackgroundPage extends GenericPage {
 
 
 
-module.exports = BackgroundPage;
+export default BackgroundPage;

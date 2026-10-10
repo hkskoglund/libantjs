@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class NotificationSerialError extends Message {
   constructor(data) {
@@ -59,5 +60,5 @@ class NotificationSerialError extends Message {
 
 
 
-module.exports = NotificationSerialError;
+export default NotificationSerialError;
 

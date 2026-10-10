@@ -1,6 +1,7 @@
 'use strict';
+import BackgroundPage from '../background-page.js';
 
-const BackgroundPage = require('../background-page');
+
 
 class HRMPage9 extends BackgroundPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -34,4 +35,4 @@ class HRMPage9 extends BackgroundPage {
 
 
 
-module.exports = HRMPage9;
+export default HRMPage9;

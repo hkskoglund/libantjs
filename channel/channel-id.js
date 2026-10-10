@@ -195,5 +195,5 @@ class ChannelId {
 // "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"
 // Optional bit for non-ANT+ managed networks: table 5-2
 
-module.exports = ChannelId;
+export default ChannelId;
 

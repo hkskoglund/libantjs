@@ -1,7 +1,8 @@
 'use strict';
+import BroadcastDataMessage from './broadcast-data-message.js';
+import Message from '../message.js';
 
-var BroadcastDataMessage = require('./broadcast-data-message'),
-  Message = require('../message');
+
 
 class AcknowledgedDataMessage extends BroadcastDataMessage {
   constructor(data, id = Message.ACKNOWLEDGED_DATA) {
@@ -10,5 +11,5 @@ class AcknowledgedDataMessage extends BroadcastDataMessage {
   }
 }
 
-module.exports = AcknowledgedDataMessage;
+export default AcknowledgedDataMessage;
 

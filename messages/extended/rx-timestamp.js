@@ -31,5 +31,5 @@ class RXTimestamp {
   }
 }
 
-module.exports = RXTimestamp;
+export default RXTimestamp;
 

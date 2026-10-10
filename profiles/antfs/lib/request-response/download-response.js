@@ -72,5 +72,5 @@ class DownloadResponse {
 
 
 
-  module.exports = DownloadResponse;
+  export default DownloadResponse;
 

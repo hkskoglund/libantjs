@@ -1,13 +1,21 @@
 'use strict';
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import Host from '../host.js';
+import Message from '../messages/message.js';
+import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
+import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
+import ANTFSHostChannel from '../profiles/antfs/antfs-host-channel.js';
+import DisconnectCommand from '../profiles/antfs/lib/request-response/disconnect-request.js';
 
-const assert = require('node:assert/strict');
-const test = require('node:test');
-const Host = require('../host');
-const Message = require('../messages/message');
-const AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message');
-const ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message');
-const ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel');
-const DisconnectCommand = require('../profiles/antfs/lib/request-response/disconnect-request');
+
+
+
+
+
+
+
+
 
 const message = {
   id: 0x4a,

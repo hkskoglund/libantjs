@@ -1,6 +1,7 @@
 'use strict';
+import GenericPage from './page.js';
 
-  var GenericPage = require('./page');
+
 
   class MainPage extends GenericPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -13,7 +14,7 @@
 
 
 
-  module.exports = MainPage;
+  export default MainPage;
 
 
 // TO DO : Remove?

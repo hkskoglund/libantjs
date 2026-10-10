@@ -49,4 +49,4 @@ class UploadDataResponse {
 
 
 
-module.exports = UploadDataResponse;
+export default UploadDataResponse;

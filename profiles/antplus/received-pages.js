@@ -9,5 +9,5 @@
   }
 }
 
-  module.exports = ReceivedPages;
+  export default ReceivedPages;
 

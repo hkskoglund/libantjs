@@ -1,7 +1,9 @@
 'use strict';
+import USBDevice from './USBDevice.js';
+import usbModule from 'usb';
 
-const USBDevice = require('./USBDevice.js');
-const usb = require('usb').usb;
+
+const usb = usbModule.usb;
 
 const INTERFACE_NUMBER = 0;
 const DEFAULT_ENDPOINT_NUMBER = 1;
@@ -431,4 +433,4 @@ class USBNode extends USBDevice {
 
 
 
-module.exports = USBNode;
+export default USBNode;

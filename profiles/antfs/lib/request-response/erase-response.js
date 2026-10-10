@@ -54,4 +54,4 @@ class EraseResponse {
 
 
 
-module.exports = EraseResponse;
+export default EraseResponse;

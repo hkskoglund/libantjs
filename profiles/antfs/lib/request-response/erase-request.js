@@ -26,4 +26,4 @@ class EraseRequest {
 
 
 
-module.exports = EraseRequest;
+export default EraseRequest;

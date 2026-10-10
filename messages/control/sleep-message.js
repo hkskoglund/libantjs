@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SleepMessage extends Message {
   constructor() {
@@ -15,4 +16,4 @@ class SleepMessage extends Message {
   }
 }
 
-module.exports = SleepMessage;
+export default SleepMessage;

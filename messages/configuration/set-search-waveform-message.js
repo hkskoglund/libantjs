@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetSearchWaveform extends Message {
   constructor(channel, searchWaveform) {
@@ -31,5 +32,5 @@ class SetSearchWaveform extends Message {
 
 
 
-module.exports = SetSearchWaveform;
+export default SetSearchWaveform;
 

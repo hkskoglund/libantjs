@@ -44,4 +44,4 @@ class AuthenticationType {
 
 
 
-module.exports = AuthenticationType;
+export default AuthenticationType;

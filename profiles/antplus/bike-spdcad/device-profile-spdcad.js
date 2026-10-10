@@ -1,7 +1,8 @@
 'use strict';
+import DeviceProfileBikeShared from './device-profile-bike-shared.js';
+import SPDCADPage0 from './spdcad-page0.js';
 
-  var DeviceProfileBikeShared = require('./device-profile-bike-shared'),
-    SPDCADPage0 = require('./spdcad-page0');
+
 
   class DeviceProfile_SPDCAD extends DeviceProfileBikeShared {
   constructor(configuration) {
@@ -47,5 +48,5 @@
 
 
 
-  module.exports = DeviceProfile_SPDCAD;
+  export default DeviceProfile_SPDCAD;
 

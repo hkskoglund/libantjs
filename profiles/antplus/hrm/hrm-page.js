@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   class HRMPage extends MainPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -92,5 +93,5 @@
 
 
 
-  module.exports = HRMPage;
+  export default HRMPage;
 

@@ -1,7 +1,7 @@
 'use strict';
+import CRC from '../layer/util/crc.js';
 
-const CRC = require('../layer/util/crc'),
-    crc = new CRC();
+const crc = new CRC();
 
 
 class UploadDataRequest {
@@ -54,4 +54,4 @@ class UploadDataRequest {
 
 
 
-module.exports = UploadDataRequest;
+export default UploadDataRequest;

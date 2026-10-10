@@ -103,4 +103,4 @@ class AuthenticateRequest {
 
 
 
-module.exports = AuthenticateRequest;
+export default AuthenticateRequest;

@@ -59,5 +59,5 @@ class RSSI {
 // 0dBm = 1mW
 
 
-module.exports = RSSI;
+export default RSSI;
 

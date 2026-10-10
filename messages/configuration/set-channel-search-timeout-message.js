@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetChannelSearchTimeoutMessage extends Message {
   constructor(channel, searchTimeout) {
@@ -28,5 +29,5 @@ class SetChannelSearchTimeoutMessage extends Message {
   }
 }
 
-module.exports = SetChannelSearchTimeoutMessage;
+export default SetChannelSearchTimeoutMessage;
 

@@ -1,6 +1,7 @@
 'use strict';
+import USBDevice from '../usb/USBDevice.js';
 
-var USBDevice = require('../usb/USBDevice');
+
 
 class HostDevices {
   onUSBError(error) {
@@ -86,7 +87,7 @@ class HostDevices {
 
 }
 
-module.exports = function(Host) {
+export default function(Host) {
   for (const methodName of Object.getOwnPropertyNames(HostDevices.prototype)) {
     if (methodName !== 'constructor') {
       Host.prototype[methodName] = HostDevices.prototype[methodName];

@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class CloseChannelMessage extends Message {
   constructor(channel) {
@@ -20,5 +21,5 @@ class CloseChannelMessage extends Message {
   }
 }
 
-module.exports = CloseChannelMessage;
+export default CloseChannelMessage;
 

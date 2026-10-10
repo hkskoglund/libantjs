@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class VersionMessage extends Message {
   constructor(data) {
@@ -30,5 +31,5 @@ class VersionMessage extends Message {
   }
 }
 
-module.exports = VersionMessage;
+export default VersionMessage;
 

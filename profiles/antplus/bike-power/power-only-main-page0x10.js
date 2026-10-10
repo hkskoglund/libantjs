@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   class PowerOnlyMainPage0x10 extends MainPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -61,5 +62,5 @@
 
 
 
-  module.exports = PowerOnlyMainPage0x10;
+  export default PowerOnlyMainPage0x10;
 

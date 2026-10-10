@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 // p.89 "ANT Message Protocol and Usage, rev 5.0b"
 // "Valid messages include channel status, channel ID, ANT version, capabilities, event buffer, advanced burst capabilitites/configuration, event filter, and user NVM
@@ -55,5 +56,5 @@ class RequestMessage extends Message {
   }
 }
 
-module.exports = RequestMessage;
+export default RequestMessage;
 

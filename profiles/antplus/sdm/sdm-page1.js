@@ -1,6 +1,7 @@
 'use strict';
+import GenericPage from '../page.js';
 
-  var GenericPage = require('../page');
+
 
   class SDMPage1 extends GenericPage {
   constructor(configuration, broadcast) {
@@ -193,6 +194,6 @@
 
 
 
-  module.exports = SDMPage1;
+  export default SDMPage1;
 
 

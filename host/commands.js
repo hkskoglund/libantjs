@@ -1,28 +1,29 @@
 'use strict';
+import Message from '../messages/message.js';
+import ResetSystemMessage from '../messages/control/reset-system-message.js';
+import SleepMessage from '../messages/control/sleep-message.js';
+import RequestMessage from '../messages/control/request-message.js';
+import ConfigureAdvancedBurstMessage from '../messages/configuration/configure-advanced-burst-message.js';
+import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
+import LibConfigMessage from '../messages/configuration/lib-config-message.js';
+import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
+import AssignChannelMessage from '../messages/configuration/assign-channel-message.js';
+import SetChannelIDMessage from '../messages/configuration/set-channel-id-message.js';
+import SetSerialNumChannelIdMessage from '../messages/configuration/set-serial-num-channel-id-message.js';
+import SetChannelPeriodMessage from '../messages/configuration/set-channel-period-message.js';
+import SetLowPriorityChannelSearchTimeoutMessage from '../messages/configuration/set-low-priority-channel-search-timeout-message.js';
+import SetChannelSearchTimeoutMessage from '../messages/configuration/set-channel-search-timeout-message.js';
+import SetChannelRFFreqMessage from '../messages/configuration/set-channel-rf-freq-message.js';
+import SetNetworkKeyMessage from '../messages/configuration/set-network-key-message.js';
+import SetSearchWaveformMessage from '../messages/configuration/set-search-waveform-message.js';
+import SetTransmitPowerMessage from '../messages/configuration/set-transmit-power-message.js';
+import SetChannelTxPowerMessage from '../messages/configuration/set-channel-tx-power-message.js';
+import SetProximitySearchMessage from '../messages/configuration/set-proximity-search-message.js';
+import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
+import OpenChannelMessage from '../messages/control/open-channel-message.js';
+import CloseChannelMessage from '../messages/control/close-channel-message.js';
 
-var Message = require('../messages/message'),
-  ResetSystemMessage = require('../messages/control/reset-system-message'),
-  SleepMessage = require('../messages/control/sleep-message'),
-  RequestMessage = require('../messages/control/request-message'),
-  ConfigureAdvancedBurstMessage = require('../messages/configuration/configure-advanced-burst-message'),
-  ConfigureEventBufferMessage = require('../messages/configuration/configure-event-buffer-message'),
-  LibConfigMessage = require('../messages/configuration/lib-config-message'),
-  UnAssignChannelMessage = require('../messages/configuration/un-assign-channel-message'),
-  AssignChannelMessage = require('../messages/configuration/assign-channel-message'),
-  SetChannelIDMessage = require('../messages/configuration/set-channel-id-message'),
-  SetSerialNumChannelIdMessage = require('../messages/configuration/set-serial-num-channel-id-message'),
-  SetChannelPeriodMessage = require('../messages/configuration/set-channel-period-message'),
-  SetLowPriorityChannelSearchTimeoutMessage = require('../messages/configuration/set-low-priority-channel-search-timeout-message'),
-  SetChannelSearchTimeoutMessage = require('../messages/configuration/set-channel-search-timeout-message'),
-  SetChannelRFFreqMessage = require('../messages/configuration/set-channel-rf-freq-message'),
-  SetNetworkKeyMessage = require('../messages/configuration/set-network-key-message'),
-  SetSearchWaveformMessage = require('../messages/configuration/set-search-waveform-message'),
-  SetTransmitPowerMessage = require('../messages/configuration/set-transmit-power-message'),
-  SetChannelTxPowerMessage = require('../messages/configuration/set-channel-tx-power-message'),
-  SetProximitySearchMessage = require('../messages/configuration/set-proximity-search-message'),
-  OpenRxScanModeMessage = require('../messages/control/open-rx-scan-mode-message'),
-  OpenChannelMessage = require('../messages/control/open-channel-message'),
-  CloseChannelMessage = require('../messages/control/close-channel-message');
+
 
 class HostCommands {
   async resetSystem() {
@@ -219,7 +220,7 @@ class HostCommands {
 
 }
 
-module.exports = function(Host) {
+export default function(Host) {
   for (const methodName of Object.getOwnPropertyNames(HostCommands.prototype)) {
     if (methodName !== 'constructor') {
       Host.prototype[methodName] = HostCommands.prototype[methodName];

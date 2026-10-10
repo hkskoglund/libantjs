@@ -1,7 +1,8 @@
 'use strict';
+import ChannelId from '../../channel/channel-id.js';
+import Message from '../message.js';
 
-var ChannelId = require('../../channel/channel-id'),
-  Message = require('../message');
+
 
 class ExtendedBurstDataMessage extends Message {
   constructor(data) {
@@ -56,4 +57,4 @@ class ExtendedBurstDataMessage extends Message {
   }
 }
 
-module.exports = ExtendedBurstDataMessage;
+export default ExtendedBurstDataMessage;

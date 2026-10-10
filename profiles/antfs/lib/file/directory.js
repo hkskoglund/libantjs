@@ -1,7 +1,8 @@
 'use strict';
+import FitFile from './fit-file.js';
+import File from './file.js';
 
-const FitFile = require('./fit-file'),
-  File = require('./file');
+
 
 class Directory {
   constructor(data, host) {
@@ -184,4 +185,4 @@ class Directory {
 
 
 
-module.exports = Directory;
+export default Directory;

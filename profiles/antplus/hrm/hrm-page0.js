@@ -1,6 +1,7 @@
 'use strict';
+import HRMPage from './hrm-page.js';
 
-  var HRMPage = require('./hrm-page');
+
 
   class HRMPage0 extends HRMPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -23,5 +24,5 @@
 
 
 
-  module.exports = HRMPage0;
+  export default HRMPage0;
 

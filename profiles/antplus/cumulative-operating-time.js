@@ -1,6 +1,7 @@
 'use strict';
+import CumulativeOperatingTimeShared from './cumulative-operating-time-shared.js';
 
-const CumulativeOperatingTimeShared = require('./cumulative-operating-time-shared');
+
 
 class CumulativeOperatingTime extends CumulativeOperatingTimeShared {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -13,4 +14,4 @@ class CumulativeOperatingTime extends CumulativeOperatingTimeShared {
   }
 }
 
-module.exports = CumulativeOperatingTime;
+export default CumulativeOperatingTime;

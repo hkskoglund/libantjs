@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class ConfigureAdvancedBurstMessage extends Message {
   constructor(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
@@ -65,5 +66,5 @@ class ConfigureAdvancedBurstMessage extends Message {
 
 
 
-module.exports = ConfigureAdvancedBurstMessage;
+export default ConfigureAdvancedBurstMessage;
 

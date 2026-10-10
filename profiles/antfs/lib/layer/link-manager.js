@@ -1,10 +1,11 @@
 'use strict';
+import EventEmitter from 'node:events';
+import ClientBeacon from './client-beacon.js';
+import LinkRequest from '../request-response/link-request.js';
+import DisconnectRequest from '../request-response/disconnect-request.js';
+import State from './util/state.js';
 
-const EventEmitter = require('events'),
-  ClientBeacon = require('./client-beacon'),
-  LinkRequest = require('../request-response/link-request'),
-  DisconnectRequest = require('../request-response/disconnect-request'),
-  State = require('./util/state');
+
 
 class LinkManager extends EventEmitter {
   constructor(host) {
@@ -184,4 +185,4 @@ class LinkManager extends EventEmitter {
   }
 }
 
-module.exports = LinkManager;
+export default LinkManager;

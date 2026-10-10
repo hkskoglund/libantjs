@@ -1,11 +1,12 @@
 'use strict';
+import Message from '../messages/message.js';
+import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
+import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
+import BurstDataMessage from '../messages/data/burst-data-message.js';
+import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
+import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
 
-var Message = require('../messages/message'),
-  BroadcastDataMessage = require('../messages/data/broadcast-data-message'),
-  AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message'),
-  BurstDataMessage = require('../messages/data/burst-data-message'),
-  ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message'),
-  AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message');
+
 
 class HostTransfers {
   sendBroadcastData(channel, broadcastData, acknowledge) {
@@ -139,7 +140,7 @@ class HostTransfers {
 
 }
 
-module.exports = function(Host) {
+export default function(Host) {
   for (const methodName of Object.getOwnPropertyNames(HostTransfers.prototype)) {
     if (methodName !== 'constructor') {
       Host.prototype[methodName] = HostTransfers.prototype[methodName];

@@ -1,6 +1,7 @@
 'use strict';
+import Logger from '../../util/logger.js';
 
-  var Logger = require('../../util/logger');
+
 
   class GenericPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -103,6 +104,6 @@
   // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
 
 
-  module.exports = GenericPage;
+  export default GenericPage;
 
 

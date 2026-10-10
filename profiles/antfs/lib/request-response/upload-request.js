@@ -47,4 +47,4 @@ class UploadRequest {
 
 
 
-module.exports = UploadRequest;
+export default UploadRequest;

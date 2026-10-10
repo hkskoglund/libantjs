@@ -1,8 +1,11 @@
 'use strict';
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import USBNode from '../usb/USBNode.js';
 
-const assert = require('node:assert/strict');
-const test = require('node:test');
-const USBNode = require('../usb/USBNode');
+
+
+
 
 function createUSB(deviceList) {
   const listeners = {};

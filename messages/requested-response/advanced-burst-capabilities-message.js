@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class AdvancedBurstCapabilitiesMessage extends Message {
   constructor(data) {
@@ -44,5 +45,5 @@ class AdvancedBurstCapabilitiesMessage extends Message {
   }
 }
 
-module.exports = AdvancedBurstCapabilitiesMessage;
+export default AdvancedBurstCapabilitiesMessage;
 

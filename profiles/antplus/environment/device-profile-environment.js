@@ -1,8 +1,9 @@
 'use strict';
+import DeviceProfile from '../device-profile.js';
+import TempPage0 from './temperature-page0.js';
+import TempPage1 from './temperature-page1.js';
 
-  var DeviceProfile = require('../device-profile'),
-    TempPage0 = require('./temperature-page0'),
-    TempPage1 = require('./temperature-page1');
+
 
   class DeviceProfile_ENVIRONMENT extends DeviceProfile {
   constructor(configuration) {
@@ -85,4 +86,4 @@
 
 
 
-  module.exports = DeviceProfile_ENVIRONMENT;
+  export default DeviceProfile_ENVIRONMENT;

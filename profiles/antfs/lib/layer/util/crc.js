@@ -49,4 +49,4 @@ class CRC {
   }
 }
 
-module.exports = CRC;
+export default CRC;

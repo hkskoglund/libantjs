@@ -1,9 +1,13 @@
 'use strict';
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import loglevel from 'loglevel';
+import Logger from '../util/logger.js';
 
-const assert = require('node:assert/strict');
-const test = require('node:test');
-const loglevel = require('loglevel');
-const Logger = require('../util/logger');
+
+
+
+
 
 test('Logger sends level methods through loglevel with timestamp and source', () => {
   const entries = [];

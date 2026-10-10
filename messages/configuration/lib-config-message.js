@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class LibConfigMessage extends Message {
   constructor(libConfig) {
@@ -23,5 +24,5 @@ class LibConfigMessage extends Message {
   }
 }
 
-module.exports = LibConfigMessage;
+export default LibConfigMessage;
 

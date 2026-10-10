@@ -1,10 +1,14 @@
 'use strict';
-
-var { EventEmitter, once } = require('events'),
-  Logger = require('./util/logger'),
-  Channel = require('./channel/channel'),
-  USBDevice = require('./usb/USBDevice'),
-  USBNode = require('./usb/USBNode');
+import { EventEmitter, once } from 'node:events';
+import Logger from './util/logger.js';
+import Channel from './channel/channel.js';
+import USBDevice from './usb/USBDevice.js';
+import USBNode from './usb/USBNode.js';
+import applyHostDevices from './host/devices.js';
+import applyHostProfiles from './host/profiles.js';
+import applyHostCommands from './host/commands.js';
+import applyHostTransfers from './host/transfers.js';
+import applyHostDeserialize from './host/deserialize.js';
 
 class Host extends EventEmitter {
   static MAX_CHAN = 8;
@@ -97,10 +101,10 @@ class Host extends EventEmitter {
   }
 }
 
-require('./host/devices')(Host);
-require('./host/profiles')(Host);
-require('./host/commands')(Host);
-require('./host/transfers')(Host);
-require('./host/deserialize')(Host);
+applyHostDevices(Host);
+applyHostProfiles(Host);
+applyHostCommands(Host);
+applyHostTransfers(Host);
+applyHostDeserialize(Host);
 
-module.exports = Host;
+export default Host;

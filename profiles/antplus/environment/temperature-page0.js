@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   // Data page 0 - General Information
   // "Provides general information about the device's capabilities", spec. p. 15
@@ -135,5 +136,5 @@
 
 
 
-  module.exports = TemperaturePage0;
+  export default TemperaturePage0;
 

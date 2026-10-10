@@ -1,60 +1,115 @@
 'use strict';
+import assert from 'node:assert/strict';
+import EventEmitter from 'node:events';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import CumulativeOperatingTime0x52 from '../profiles/antplus/cumulative-operating-time0x52.js';
+import DeviceProfile from '../profiles/antplus/device-profile.js';
+import ProductId0x51 from '../profiles/antplus/product-id0x51.js';
+import DeviceProfile_BikeShared from '../profiles/antplus/bike-spdcad/device-profile-bike-shared.js';
+import DeviceProfile_BikeCad from '../profiles/antplus/bike-cad/device-profile-bike-cad.js';
+import DeviceProfile_BikeSpd from '../profiles/antplus/bike-spd/device-profile-bike-spd.js';
+import DeviceProfile_SPDCAD from '../profiles/antplus/bike-spdcad/device-profile-spdcad.js';
+import DeviceProfile_ENVIRONMENT from '../profiles/antplus/environment/device-profile-environment.js';
+import SPDCADSharedPage from '../profiles/antplus/bike-spdcad/spdcad-shared.js';
+import DeviceProfile_BikePower from '../profiles/antplus/bike-power/device-profile-bike-power.js';
+import CalibrationMainPage from '../profiles/antplus/bike-power/calibration-main.js';
+import BikePowerDataPage from '../profiles/antplus/bike-power/bike-power-data-page.js';
+import PowerOnlyMainPage0x10 from '../profiles/antplus/bike-power/power-only-main-page0x10.js';
+import TemperaturePage1 from '../profiles/antplus/environment/temperature-page1.js';
+import DeviceProfile_HRM from '../profiles/antplus/hrm/device-profile-hrm.js';
+import HRMPage0 from '../profiles/antplus/hrm/hrm-page0.js';
+import HRMPage4 from '../profiles/antplus/hrm/hrm-page4.js';
+import HRMPage5 from '../profiles/antplus/hrm/hrm-page5.js';
+import HRMPage6 from '../profiles/antplus/hrm/hrm-page6.js';
+import HRMPage9 from '../profiles/antplus/hrm/hrm-page9.js';
+import DeviceProfile_SDM from '../profiles/antplus/sdm/device-profile-sdm.js';
+import SDMPage1 from '../profiles/antplus/sdm/sdm-page1.js';
+import SDMPage2 from '../profiles/antplus/sdm/sdm-page2.js';
+import SDMPage3 from '../profiles/antplus/sdm/sdm-page3.js';
+import Message from '../messages/message.js';
+import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
+import BroadcastDataMessage from '../messages/data/broadcast-data-message.js';
+import BurstDataMessage from '../messages/data/burst-data-message.js';
+import AdvancedBurstDataMessage from '../messages/data/advanced-burst-data-message.js';
+import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
+import ChannelResponseMessage from '../messages/channel-response-event/channel-response-message.js';
+import ResetSystemMessage from '../messages/control/reset-system-message.js';
+import SleepMessage from '../messages/control/sleep-message.js';
+import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message.js';
+import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
+import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
+import SetChannelRFFreqMessage from '../messages/configuration/set-channel-rf-freq-message.js';
+import VersionMessage from '../messages/requested-response/version-message.js';
+import CapabilitiesMessage from '../messages/requested-response/capabilities-message.js';
+import AdvancedBurstCurrentConfigurationMessage from '../messages/requested-response/advanced-burst-current-configuration-message.js';
+import ChannelIdMessage from '../messages/requested-response/channel-id-message.js';
+import ChannelId from '../channel/channel-id.js';
+import Directory from '../profiles/antfs/lib/file/directory.js';
+import File from '../profiles/antfs/lib/file/file.js';
+import FitFile from '../profiles/antfs/lib/file/fit-file.js';
+import ClientBeacon from '../profiles/antfs/lib/layer/client-beacon.js';
+import DownloadRequest from '../profiles/antfs/lib/request-response/download-request.js';
+import TransportManager from '../profiles/antfs/lib/layer/transport-manager.js';
+import CRC from '../profiles/antfs/lib/layer/util/crc.js';
 
-const assert = require('node:assert/strict');
-const EventEmitter = require('node:events');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
-const test = require('node:test');
-const CumulativeOperatingTime0x52 = require('../profiles/antplus/cumulative-operating-time0x52');
-const DeviceProfile = require('../profiles/antplus/device-profile');
-const ProductId0x51 = require('../profiles/antplus/product-id0x51');
-const DeviceProfile_BikeShared = require('../profiles/antplus/bike-spdcad/device-profile-bike-shared');
-const DeviceProfile_BikeCad = require('../profiles/antplus/bike-cad/device-profile-bike-cad');
-const DeviceProfile_BikeSpd = require('../profiles/antplus/bike-spd/device-profile-bike-spd');
-const DeviceProfile_SPDCAD = require('../profiles/antplus/bike-spdcad/device-profile-spdcad');
-const DeviceProfile_ENVIRONMENT = require('../profiles/antplus/environment/device-profile-environment');
-const SPDCADSharedPage = require('../profiles/antplus/bike-spdcad/spdcad-shared');
-const DeviceProfile_BikePower = require('../profiles/antplus/bike-power/device-profile-bike-power');
-const CalibrationMainPage = require('../profiles/antplus/bike-power/calibration-main');
-const BikePowerDataPage = require('../profiles/antplus/bike-power/bike-power-data-page');
-const PowerOnlyMainPage0x10 = require('../profiles/antplus/bike-power/power-only-main-page0x10');
-const TemperaturePage1 = require('../profiles/antplus/environment/temperature-page1');
-const DeviceProfile_HRM = require('../profiles/antplus/hrm/device-profile-hrm');
-const HRMPage0 = require('../profiles/antplus/hrm/hrm-page0');
-const HRMPage4 = require('../profiles/antplus/hrm/hrm-page4');
-const HRMPage5 = require('../profiles/antplus/hrm/hrm-page5');
-const HRMPage6 = require('../profiles/antplus/hrm/hrm-page6');
-const HRMPage9 = require('../profiles/antplus/hrm/hrm-page9');
-const DeviceProfile_SDM = require('../profiles/antplus/sdm/device-profile-sdm');
-const SDMPage1 = require('../profiles/antplus/sdm/sdm-page1');
-const SDMPage2 = require('../profiles/antplus/sdm/sdm-page2');
-const SDMPage3 = require('../profiles/antplus/sdm/sdm-page3');
-const Message = require('../messages/message');
-const AcknowledgedDataMessage = require('../messages/data/acknowledged-data-message');
-const BroadcastDataMessage = require('../messages/data/broadcast-data-message');
-const BurstDataMessage = require('../messages/data/burst-data-message');
-const AdvancedBurstDataMessage = require('../messages/data/advanced-burst-data-message');
-const ExtendedBurstDataMessage = require('../messages/data/extended-burst-data-message');
-const ChannelResponseMessage = require('../messages/channel-response-event/channel-response-message');
-const ResetSystemMessage = require('../messages/control/reset-system-message');
-const SleepMessage = require('../messages/control/sleep-message');
-const OpenRxScanModeMessage = require('../messages/control/open-rx-scan-mode-message');
-const ConfigureEventBufferMessage = require('../messages/configuration/configure-event-buffer-message');
-const UnAssignChannelMessage = require('../messages/configuration/un-assign-channel-message');
-const SetChannelRFFreqMessage = require('../messages/configuration/set-channel-rf-freq-message');
-const VersionMessage = require('../messages/requested-response/version-message');
-const CapabilitiesMessage = require('../messages/requested-response/capabilities-message');
-const AdvancedBurstCurrentConfigurationMessage = require('../messages/requested-response/advanced-burst-current-configuration-message');
-const ChannelIdMessage = require('../messages/requested-response/channel-id-message');
-const ChannelId = require('../channel/channel-id');
-const Directory = require('../profiles/antfs/lib/file/directory');
-const File = require('../profiles/antfs/lib/file/file');
-const FitFile = require('../profiles/antfs/lib/file/fit-file');
-const ClientBeacon = require('../profiles/antfs/lib/layer/client-beacon');
-const DownloadRequest = require('../profiles/antfs/lib/request-response/download-request');
-const TransportManager = require('../profiles/antfs/lib/layer/transport-manager');
-const CRC = require('../profiles/antfs/lib/layer/util/crc');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function downloadResponse(offset, fileSize, packets, crcSeed = 0) {
   const data = new Uint8Array(16 + packets.length + 8);

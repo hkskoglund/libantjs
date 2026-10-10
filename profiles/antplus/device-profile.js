@@ -1,12 +1,13 @@
-  var Channel = require('../../channel/channel'),
-    GenericPage = require('./page'),
-    BackgroundPage = require('./background-page'),
-    ManufacturerId = require('./manufacturer-id'),
-    ProductId = require('./product-id'),
-    CumulativeOperatingTime = require('./cumulative-operating-time'),
-    ManufacturerId0x50 = require('./manufacturer-id0x50'),
-    ProductId0x51 = require('./product-id0x51'),
-    CumulativeOperatingTime0x52 = require('./cumulative-operating-time0x52');
+import Channel from '../../channel/channel.js';
+import GenericPage from './page.js';
+import BackgroundPage from './background-page.js';
+import ManufacturerId from './manufacturer-id.js';
+import ProductId from './product-id.js';
+import CumulativeOperatingTime from './cumulative-operating-time.js';
+import ManufacturerId0x50 from './manufacturer-id0x50.js';
+import ProductId0x51 from './product-id0x51.js';
+import CumulativeOperatingTime0x52 from './cumulative-operating-time0x52.js';
+
 
   class DeviceProfile extends Channel {
   constructor(configuration) {
@@ -559,5 +560,5 @@
 
 
 
-  module.exports = DeviceProfile;
+  export default DeviceProfile;
 

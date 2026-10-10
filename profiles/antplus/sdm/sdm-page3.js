@@ -1,6 +1,7 @@
 'use strict';
+import SDMPage2 from './sdm-page2.js';
 
-  var SDMPage2 = require('./sdm-page2');
+
 
   class SDMPage3 extends SDMPage2 {
   constructor(configuration, broadcast) {
@@ -33,4 +34,4 @@
 
 
 
-  module.exports = SDMPage3;
+  export default SDMPage3;

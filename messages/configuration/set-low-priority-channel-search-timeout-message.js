@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 // No interruption of other opened channels during low priority search
 class SetLowPrioriyChannelSearchTimeoutMessage extends Message {
@@ -39,5 +40,5 @@ class SetLowPrioriyChannelSearchTimeoutMessage extends Message {
 
 
 
-module.exports = SetLowPrioriyChannelSearchTimeoutMessage;
+export default SetLowPrioriyChannelSearchTimeoutMessage;
 

@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetChannelTxPowerMessage extends Message {
   constructor(channel, transmitPower) {
@@ -28,5 +29,5 @@ class SetChannelTxPowerMessage extends Message {
   }
 }
 
-module.exports = SetChannelTxPowerMessage;
+export default SetChannelTxPowerMessage;
 

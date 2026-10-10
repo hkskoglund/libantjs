@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   class CalibrationMain extends MainPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -128,5 +129,5 @@
 
 
 
-  module.exports = CalibrationMain;
+  export default CalibrationMain;
 

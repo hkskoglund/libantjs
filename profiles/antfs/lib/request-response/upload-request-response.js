@@ -89,4 +89,4 @@ class UploadRequestResponse {
 
 
 
-module.exports = UploadRequestResponse;
+export default UploadRequestResponse;

@@ -1,17 +1,26 @@
 'use strict';
+import DeviceProfile from './device-profile.js';
+import TEMPProfile from './environment/device-profile-environment.js';
+import HRMProfile from './hrm/device-profile-hrm.js';
+import SPDCADProfile from './bike-spdcad/device-profile-spdcad.js';
+import BikeSpdProfile from './bike-spd/device-profile-bike-spd.js';
+import BikeCadProfile from './bike-cad/device-profile-bike-cad.js';
+import BikePowerProfile from './bike-power/device-profile-bike-power.js';
 
-  var DeviceProfile = require('./device-profile'),
-    TEMPProfile = require('./environment/device-profile-environment'),
-    HRMProfile = require('./hrm/device-profile-hrm'),
-    SPDCADProfile = require('./bike-spdcad/device-profile-spdcad'),
-    BikeSpdProfile = require('./bike-spd/device-profile-bike-spd'),
-    BikeCadProfile = require('./bike-cad/device-profile-bike-cad'),
-    BikePowerProfile = require('./bike-power/device-profile-bike-power');
+const modules = [
+  DeviceProfile,
+  TEMPProfile,
+  HRMProfile,
+  SPDCADProfile,
+  BikeSpdProfile,
+  BikeCadProfile,
+  BikePowerProfile
+];
 
   // Just in case errors with loading
 
-  for (var moduleNr = 0; moduleNr < arguments.length; moduleNr++) {
-    if (arguments[moduleNr] === undefined) {
+  for (var moduleNr = 0; moduleNr < modules.length; moduleNr++) {
+    if (modules[moduleNr] === undefined) {
       console.error('RXScanMode: Undefined module at argument nr', moduleNr);
     }
   }
@@ -191,5 +200,4 @@
   // The broadcast is forwared to a particular device profile (for parsing of page) based on the sensorId
 
 
-  module.exports = RxScanMode;
-
+  export default RxScanMode;

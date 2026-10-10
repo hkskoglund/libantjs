@@ -16,4 +16,4 @@ class Concat {
   }
 }
 
-module.exports = Concat;
+export default Concat;

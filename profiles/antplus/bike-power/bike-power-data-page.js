@@ -1,6 +1,7 @@
 'use strict';
+import MainPage from '../main-page.js';
 
-  var MainPage = require('../main-page');
+
 
   class BikePowerDataPage extends MainPage {
   constructor(configuration, broadcast, profile, pageNumber) {
@@ -94,4 +95,4 @@
 
 
 
-  module.exports = BikePowerDataPage;
+  export default BikePowerDataPage;

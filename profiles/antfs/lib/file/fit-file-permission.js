@@ -21,4 +21,4 @@ class FitFilePermission {
 
 
 
-module.exports = FitFilePermission;
+export default FitFilePermission;

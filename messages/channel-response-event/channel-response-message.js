@@ -1,7 +1,8 @@
 'use strict';
+import Message from '../message.js';
+import ChannelResponseEvent from '../../channel/channel-response-event.js';
 
-var Message = require('../message'),
-  ChannelResponseEvent = require('../../channel/channel-response-event');
+
 
 class ChannelResponseMessage extends Message {
   constructor(data) {
@@ -31,4 +32,4 @@ class ChannelResponseMessage extends Message {
   }
 }
 
-module.exports = ChannelResponseMessage;
+export default ChannelResponseMessage;

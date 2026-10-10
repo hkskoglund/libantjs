@@ -1,6 +1,7 @@
 'use strict';
+import CumulativeOperatingTimeShared from './cumulative-operating-time-shared.js';
 
-const CumulativeOperatingTimeShared = require('./cumulative-operating-time-shared');
+
 
 class BatteryStatus {
   constructor(dataByte) {
@@ -87,4 +88,4 @@ class CumulativeOperatingTime extends CumulativeOperatingTimeShared {
   }
 }
 
-module.exports = CumulativeOperatingTime;
+export default CumulativeOperatingTime;

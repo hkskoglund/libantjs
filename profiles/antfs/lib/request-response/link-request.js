@@ -29,4 +29,4 @@ class LinkRequest {
 
 
 
-module.exports = LinkRequest;
+export default LinkRequest;

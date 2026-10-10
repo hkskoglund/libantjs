@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class CapabilitiesMessage extends Message {
   constructor(data) {
@@ -145,5 +146,5 @@ class CapabilitiesMessage extends Message {
 
 // ANT Message Protocol and Usage. rev 5.0b - page 115
 
-module.exports = CapabilitiesMessage;
+export default CapabilitiesMessage;
 

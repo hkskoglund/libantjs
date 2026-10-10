@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetSerialNumChannelIdMessage extends Message {
   constructor(channel, deviceType, transmissionType) {
@@ -38,5 +39,5 @@ class SetSerialNumChannelIdMessage extends Message {
 
  // Bit 0-6
 
-module.exports = SetSerialNumChannelIdMessage;
+export default SetSerialNumChannelIdMessage;
 

@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class BroadcastDataMessage extends Message {
   constructor(data, id = Message.BROADCAST_DATA) {
@@ -62,5 +63,5 @@ function encodeData(message, channel, data) {
 
 BroadcastDataMessage.prototype.encodeData = encodeData;
 
-module.exports = BroadcastDataMessage;
+export default BroadcastDataMessage;
 

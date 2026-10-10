@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../messages/message.js';
 
-var Message = require('../messages/message');
+
 
 class ChannelResponse {
   constructor(channel, initiatingId, code) {
@@ -155,5 +156,5 @@ class ChannelResponse {
 
 
 
-module.exports = ChannelResponse;
+export default ChannelResponse;
 

@@ -1,7 +1,9 @@
 'use strict';
+import EventEmitter from 'node:events';
+import Logger from '../util/logger.js';
 
-const EventEmitter = require('node:events');
-const Logger = require('../util/logger');
+
+
 
 class USBDevice extends EventEmitter {
   constructor(options = {}) {
@@ -68,4 +70,4 @@ class USBDevice extends EventEmitter {
 
 
 
-module.exports = USBDevice;
+export default USBDevice;

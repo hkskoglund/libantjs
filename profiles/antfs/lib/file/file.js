@@ -1,6 +1,7 @@
 'use strict';
+import GeneralFilePermission from './general-file-permission.js';
 
-const GeneralFilePermission = require('./general-file-permission');
+
 
 class File {
   constructor(data, directory) {
@@ -140,4 +141,4 @@ class File {
 
 File.UNIX_HEADER = 'Idx  Flags    Size   Modified          Name';
 
-module.exports = File;
+export default File;

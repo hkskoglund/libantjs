@@ -1,9 +1,10 @@
 'use strict';
+import DeviceProfile from '../device-profile.js';
+import SDMPage1 from './sdm-page1.js';
+import SDMPage2 from './sdm-page2.js';
+import SDMPage3 from './sdm-page3.js';
 
-  var DeviceProfile = require('../device-profile'),
-    SDMPage1 = require('./sdm-page1'),
-    SDMPage2 = require('./sdm-page2'),
-    SDMPage3 = require('./sdm-page3');
+
 
   class DeviceProfile_SDM extends DeviceProfile {
   constructor(configuration) {
@@ -135,4 +136,4 @@
 
 
 
-  module.exports = DeviceProfile_SDM;
+  export default DeviceProfile_SDM;

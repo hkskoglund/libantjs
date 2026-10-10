@@ -1,6 +1,7 @@
 'use strict';
+import Message from '../message.js';
 
-var Message = require('../message');
+
 
 class SetProximitySearchMessage extends Message {
   constructor(channel, searchThreshold) {
@@ -24,5 +25,5 @@ class SetProximitySearchMessage extends Message {
   }
 }
 
-module.exports = SetProximitySearchMessage;
+export default SetProximitySearchMessage;
 

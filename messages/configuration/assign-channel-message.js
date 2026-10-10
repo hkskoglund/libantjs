@@ -1,7 +1,8 @@
 'use strict';
+import Message from '../message.js';
+import Channel from '../../channel/channel.js';
 
-var Message = require('../message'),
-  Channel = require('../../channel/channel');
+
 
 class AssignChannelMessage extends Message {
   constructor(channel, channelType, networkNumber, extendedAssignment) {
@@ -40,5 +41,5 @@ class AssignChannelMessage extends Message {
   }
 }
 
-module.exports = AssignChannelMessage;
+export default AssignChannelMessage;
 
