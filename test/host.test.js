@@ -55,7 +55,7 @@ test('Host forwards USB errors through its error event', () => {
   const usbError = new Error('USB endpoint failed');
   let observedError;
 
-  host.on(Host.prototype.EVENT.ERROR, error => { observedError = error; });
+  host.on(Host.EVENT.ERROR, error => { observedError = error; });
   host.usb.emit('error', usbError);
 
   assert.equal(observedError, usbError);
@@ -359,7 +359,7 @@ test('Host.deserialize reports frames with invalid CRCs and continues parsing', 
   const secondFrame = createFrame(0x02);
 
   firstFrame[firstFrame.length - 1] ^= 0xff;
-  host.on(host.EVENT.ERROR, (error) => errors.push(error));
+  host.on(Host.EVENT.ERROR, (error) => errors.push(error));
   host.deserialize(Buffer.concat([firstFrame, secondFrame]));
 
   assert.deepEqual(errors, ['Invalid message CRC', 'Unable to parse received msg id 2']);
@@ -370,7 +370,7 @@ test('Host.deserialize buffers incomplete frames and clears them after parsing',
   const frame = createFrame(0x01);
   const errors = [];
 
-  host.on(host.EVENT.ERROR, (error) => errors.push(error));
+  host.on(Host.EVENT.ERROR, (error) => errors.push(error));
   host.deserialize(frame.subarray(0, frame.length - 1));
   assert.equal(host.previousPacket.length, frame.length - 1);
 

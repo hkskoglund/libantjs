@@ -67,13 +67,13 @@ class HostCommands {
   }
 
   // For convenience
-  enableAdvancedBurst(maxPacketLength = this.ADVANCED_BURST.MAX_PACKET_24BYTES) {
+  enableAdvancedBurst(maxPacketLength = this.constructor.ADVANCED_BURST.MAX_PACKET_24BYTES) {
 
-    return this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE, maxPacketLength, 0, 0);
+    return this.configAdvancedBurst(this.constructor.ADVANCED_BURST.ENABLE, maxPacketLength, 0, 0);
   }
 
   disableAdvancedBurst() {
-    return this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE, this.ADVANCED_BURST.MAX_PACKET_24BYTES, 0, 0);
+    return this.configAdvancedBurst(this.constructor.ADVANCED_BURST.DISABLE, this.constructor.ADVANCED_BURST.MAX_PACKET_24BYTES, 0, 0);
   }
 
   configAdvancedBurst(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
@@ -104,13 +104,13 @@ class HostCommands {
   // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
   libConfig(libConfig) {
 
-    return this.sendMessage(new LibConfigMessage(libConfig), this.EVENT.OK, 0);
+    return this.sendMessage(new LibConfigMessage(libConfig), this.constructor.EVENT.OK, 0);
   }
 
   // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
   unAssignChannel(channel) {
 
-    return this.sendMessage(new UnAssignChannelMessage(channel), this.EVENT.OK, channel);
+    return this.sendMessage(new UnAssignChannelMessage(channel), this.constructor.EVENT.OK, channel);
   }
 
   /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters
@@ -121,7 +121,7 @@ class HostCommands {
       new AssignChannelMessage(channel, channelType, networkNumber) :
       new AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment);
 
-    return this.sendMessage(configurationMsg, this.EVENT.OK, channel);
+    return this.sendMessage(configurationMsg, this.constructor.EVENT.OK, channel);
 
   }
 
@@ -130,18 +130,18 @@ class HostCommands {
   */
   setChannelId(channel, deviceNum, deviceType, transmissionType) {
 
-    return this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), this.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), this.constructor.EVENT.OK, channel);
   }
 
   // Uses the lower 2 bytes of the device serial number as channel Id.
   setSerialNumChannelId(channel, deviceType, transmissionType) {
 
-    return this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType), this.EVENT.OK, channel);
+    return this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType), this.constructor.EVENT.OK, channel);
   }
 
   setChannelPeriod(channel, messagePeriod) {
 
-    return this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), this.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), this.constructor.EVENT.OK, channel);
   }
 
   // Low priority search mode
@@ -150,61 +150,61 @@ class HostCommands {
   setLowPriorityChannelSearchTimeout(channel, searchTimeout) {
     // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
 
-    return this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel);
+    return this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), this.constructor.EVENT.OK, channel);
   }
 
   // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite,
   //0 = disable high priority search mode (default search timeout is 25 seconds)
   setChannelSearchTimeout(channel, searchTimeout) {
 
-    return this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), this.constructor.EVENT.OK, channel);
   }
 
   // Set the RF frequency, i.e 66 = 2466 MHz
   setChannelRFFreq(channel, RFFreq) {
 
-    return this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq), this.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq), this.constructor.EVENT.OK, channel);
   }
 
   // Set network key for specific net
   setNetworkKey(netNumber, key) {
 
-    return this.sendMessage(new SetNetworkKeyMessage(netNumber, key), this.EVENT.OK, 0);
+    return this.sendMessage(new SetNetworkKeyMessage(netNumber, key), this.constructor.EVENT.OK, 0);
   }
 
   // Set search waveform individual channel
   setSearchWaveform(channel, searchWaveform) {
 
-    return this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), this.EVENT.OK, channel);
+    return this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), this.constructor.EVENT.OK, channel);
   }
 
   // Set transmit power for all channels
   setTransmitPower(transmitPower) {
 
-    return this.sendMessage(new SetTransmitPowerMessage(transmitPower), this.EVENT.OK, 0);
+    return this.sendMessage(new SetTransmitPowerMessage(transmitPower), this.constructor.EVENT.OK, 0);
   }
 
   // Set transmit power for individual channel
   setChannelTxPower(channel, transmitPower) {
 
-    return this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), this.EVENT.OK, channel);
+    return this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), this.constructor.EVENT.OK, channel);
   }
 
   // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
   setProximitySearch(channel, searchThreshold) {
 
-    return this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.EVENT.OK, channel);
+    return this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.constructor.EVENT.OK, channel);
   }
 
   openRxScanMode(channel) {
 
-    return this.sendMessage(new OpenRxScanModeMessage(channel), this.EVENT.OK, channel);
+    return this.sendMessage(new OpenRxScanModeMessage(channel), this.constructor.EVENT.OK, channel);
   }
 
   // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
   openChannel(channel) {
 
-    return this.sendMessage(new OpenChannelMessage(channel), this.EVENT.OK, channel);
+    return this.sendMessage(new OpenChannelMessage(channel), this.constructor.EVENT.OK, channel);
   }
 
   // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
@@ -213,7 +213,7 @@ class HostCommands {
     // Wait for EVENT_CHANNEL_CLOSED ?
     // If channel status is tracking -> can get broadcast data packet before event channel closed packet
 
-    return this.sendMessage(new CloseChannelMessage(channel), this.EVENT.OK, channel);
+    return this.sendMessage(new CloseChannelMessage(channel), this.constructor.EVENT.OK, channel);
 
   }
 

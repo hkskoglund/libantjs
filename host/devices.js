@@ -4,7 +4,7 @@ var USBDevice = require('../usb/USBDevice');
 
 class HostDevices {
   onUSBError(error) {
-    this.emit(this.EVENT.ERROR, error);
+    this.emit(this.constructor.EVENT.ERROR, error);
   }
 
   setChannel(channel) {
@@ -45,7 +45,7 @@ class HostDevices {
   async exit() {
 
     // Stop profile retry timers so nothing is sent on the USB device after it is closed
-    for (var i = 0; i < this.MAX_CHAN; i++) {
+    for (var i = 0; i < this.constructor.MAX_CHAN; i++) {
       if (this.channel[i] && typeof this.channel[i].shutdown === 'function') {
         this.channel[i].shutdown();
       }
@@ -60,7 +60,7 @@ class HostDevices {
       resetError = error;
     }
 
-    for (var c = 0; c < this.MAX_CHAN; c++) {
+    for (var c = 0; c < this.constructor.MAX_CHAN; c++) {
       this.channel[c].removeAllListeners();
     }
 

@@ -58,7 +58,7 @@ class HostDeserialize {
       msgBytes = data.subarray(iStartOfMessage, iStartOfMessage + totalMessageLength);
       frameError = Message.prototype.getFrameError(msgBytes);
       if (frameError) {
-        this.emit(this.EVENT.ERROR, frameError);
+        this.emit(this.constructor.EVENT.ERROR, frameError);
         iStartOfMessage += totalMessageLength;
         continue;
       }
@@ -223,7 +223,7 @@ class HostDeserialize {
         default:
 
           message = 'Unable to parse received msg id ' + msgBytes[Message.prototype.iID];
-          this.emit(this.EVENT.ERROR, message);
+          this.emit(this.constructor.EVENT.ERROR, message);
 
           break;
       }

@@ -7,14 +7,40 @@ var { EventEmitter, once } = require('events'),
   USBNode = require('./usb/USBNode');
 
 class Host extends EventEmitter {
+  static MAX_CHAN = 8;
+
+  static ADVANCED_BURST = {
+    ENABLE: 0x01,
+    DISABLE: 0x02,
+    MAX_PACKET_8BYTES: 0x01,
+    MAX_PACKET_16BYTES: 0x02,
+    MAX_PACKET_24BYTES: 0x03
+  };
+
+  static EVENT = {
+
+    ERROR: 'error',
+
+    // Data
+
+    //BROADCAST: 'broadcast',
+    BURST: 'burst', // Total burst , i.e all burst packets are received
+
+    FAILED: 'EVENT_TRANSFER_TX_FAILED',
+    COMPLETED: 'EVENT_TRANSFER_TX_COMPLETED',
+
+    OK: 'RESPONSE_NO_ERROR'
+
+  };
+
   constructor(options) {
     super();
 
     this.options = Object.assign({}, options);
     this.log = new Logger(Object.assign({}, this.options, { logSource: this }));
-    this.channel = new Array(Host.prototype.MAX_CHAN);
+    this.channel = new Array(Host.MAX_CHAN);
 
-    for (let channel = 0; channel < Host.prototype.MAX_CHAN; channel++) {
+    for (let channel = 0; channel < Host.MAX_CHAN; channel++) {
       this.channel[channel] = new Channel(this.options, this, channel);
     }
 
@@ -70,32 +96,6 @@ class Host extends EventEmitter {
     return responseMessage;
   }
 }
-
-Host.prototype.MAX_CHAN = 8;
-
-Host.prototype.ADVANCED_BURST = {
-  ENABLE: 0x01,
-  DISABLE: 0x02,
-  MAX_PACKET_8BYTES: 0x01,
-  MAX_PACKET_16BYTES: 0x02,
-  MAX_PACKET_24BYTES: 0x03
-};
-
-Host.prototype.EVENT = {
-
-  ERROR: 'error',
-
-  // Data
-
-  //BROADCAST: 'broadcast',
-  BURST: 'burst', // Total burst , i.e all burst packets are received
-
-  FAILED: 'EVENT_TRANSFER_TX_FAILED',
-  COMPLETED: 'EVENT_TRANSFER_TX_COMPLETED',
-
-  OK: 'RESPONSE_NO_ERROR'
-
-};
 
 require('./host/devices')(Host);
 require('./host/profiles')(Host);
