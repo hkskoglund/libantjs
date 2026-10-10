@@ -30,10 +30,10 @@ class CapabilitiesMessage extends Message {
 
     this.NO_RECEIVE_CHANNELS = this.standardOptions & 0x01;
     this.NO_TRANSMIT_CHANNELS = this.standardOptions & 0x02;
-    this.NO_RECEIVE_MESSAGES = this.standardOptions & (1 << 3);
-    this.NO_TRANSMIT_MESSAGES = this.standardOptions & (1 << 4);
-    this.NO_ACKD_MESSAGES = this.standardOptions & (1 << 5);
-    this.NO_BURST_MESSAGES = this.standardOptions & (1 << 6);
+    this.NO_RECEIVE_MESSAGES = this.standardOptions & (1 << 2);
+    this.NO_TRANSMIT_MESSAGES = this.standardOptions & (1 << 3);
+    this.NO_ACKD_MESSAGES = this.standardOptions & (1 << 4);
+    this.NO_BURST_MESSAGES = this.standardOptions & (1 << 5);
 
     this.NETWORK_ENABLED = this.advancedOptions & 0x02;
     this.SERIAL_NUMBER_ENABLED = this.advancedOptions & (1 << 3);
