@@ -15,11 +15,11 @@ class USBDevice extends EventEmitter {
     this.log = new Logger(this.options);
   }
 
-  init(callback) {
+  init(preferredDeviceIndex) {
     throw new Error('Not implemented - should be overridden in descendant objects');
   }
 
-  exit(callback) {
+  exit() {
     throw new Error('Not implemented - should be overridden in descendant objects');
   }
 
@@ -27,11 +27,11 @@ class USBDevice extends EventEmitter {
     throw new Error('Func. should be overridden in descendant objects');
   }
 
-  listen(successCallback) {
+  listen() {
     throw new Error('Func. should be overridden in descendant objects');
   }
 
-  transfer(chunk, successCallback) {
+  transfer(chunk) {
     throw new Error('Func. should be overridden in descendant objects');
   }
 

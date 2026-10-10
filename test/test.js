@@ -1154,22 +1154,20 @@ test('Bike Power treats invalid cadence values as unavailable', () => {
 
 test('Bike Power manual-zero request sends the required acknowledged payload', () => {
   const profile = Object.create(DeviceProfile_BikePower.prototype);
-  const callback = () => {};
+  const sentResult = Promise.resolve();
   let sentPayload;
-  let sentCallback;
 
   assert.deepEqual(Array.from(profile.createManualZeroRequest()), [
     0x01, 0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
   ]);
-  profile.requestManualZero((payload, cb) => {
+  const result = profile.requestManualZero((payload) => {
     sentPayload = payload;
-    sentCallback = cb;
-  }, callback);
+    return sentResult;
+  });
 
   assert.deepEqual(Array.from(sentPayload), Array.from(profile.createManualZeroRequest()));
-  assert.equal(sentCallback, callback);
-  assert.throws(() => profile.requestManualZero(undefined, callback), /sendAcknowledged/);
-  assert.throws(() => profile.requestManualZero(() => {}, undefined), /callback/);
+  assert.equal(result, sentResult);
+  assert.throws(() => profile.requestManualZero(undefined), /sendAcknowledged/);
 });
 
 test('Bike Power calibration page renders all defined calibration IDs safely', () => {

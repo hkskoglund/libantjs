@@ -6,12 +6,9 @@ var ANTFSHostChannel = require('../profiles/antfs/antfs-host-channel'),
   LibConfig = require('../messages/extended/lib-config');
 
 class HostProfiles {
-  connectANTFS(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles, onSearching) {
+  async connectANTFS(channel, options, deviceNumber, hostname, download, erase, ls, skipNewFiles) {
     var antfsOptions,
       antfsHost;
-
-    if (typeof onSearching !== 'function' && typeof arguments[9] === 'function')
-      onSearching = arguments[9];
 
     if (options && typeof options === 'object' && !Array.isArray(options)) {
       antfsOptions = Object.assign({}, options);
@@ -23,8 +20,7 @@ class HostProfiles {
         download: download,
         erase: erase,
         ls: ls,
-        skipNewFiles: skipNewFiles,
-        onSearching: onSearching
+        skipNewFiles: skipNewFiles
       };
     }
 
@@ -38,31 +34,22 @@ class HostProfiles {
     );
 
     this.setChannel(antfsHost);
-    antfsHost.connect(antfsOptions.onSearching);
+    await antfsHost.connect();
+
+    return antfsHost;
   }
 
-  connectANTPlusSensor(channelNumber, sensorType, options, callback) {
+  async connectANTPlusSensor(channelNumber, sensorType, options) {
     var channel = this.channel[channelNumber],
       profile,
       deviceNumber,
-      network,
-      steps,
-      completed = false;
+      network;
 
-    if (typeof options === 'function') {
-      callback = options;
-      options = {};
-    }
     options = options || {};
-
-    if (typeof callback !== 'function') {
-      throw new TypeError('connectANTPlusSensor requires a callback');
-    }
 
     if (!channel || !Number.isInteger(channelNumber) ||
         channelNumber < 0 || channelNumber >= this.channel.length) {
-      callback(new RangeError('ANT channel ' + channelNumber + ' is unavailable'));
-      return;
+      throw new RangeError('ANT channel ' + channelNumber + ' is unavailable');
     }
 
     switch (sensorType) {
@@ -74,71 +61,24 @@ class HostProfiles {
         profile = EnvironmentProfile.prototype;
         break;
       default:
-        callback(new RangeError('Unsupported ANT+ sensor type: ' + sensorType));
-        return;
+        throw new RangeError('Unsupported ANT+ sensor type: ' + sensorType);
     }
 
     deviceNumber = options.deviceNumber === undefined ? 0 : options.deviceNumber;
     network = options.net === undefined ? channel.net : options.net;
 
-    steps = [
-      function(next) {
-        this.libConfig(LibConfig.CHANNEL_ID_ENABLED, next);
-      }.bind(this),
-      function(next) {
-        channel.setNetworkKey(channel.NET.KEY['ANT+'], next);
-      },
-      function(next) {
-        channel.assign(channel.SLAVE_RECEIVE_ONLY, network, next);
-      },
-      function(next) {
-        channel.setId(deviceNumber, profile.CHANNEL_ID.DEVICE_TYPE, 0, next);
-      },
-      function(next) {
-        channel.setFrequency(channel.NET.FREQUENCY['ANT+'], next);
-      },
-      function(next) {
-        var period = sensorType === 'hrm' ?
-          profile.CHANNEL_PERIOD.DEFAULT :
-          profile.CHANNEL_PERIOD.ALTERNATIVE;
-        channel.setPeriod(period, next);
-      },
-      function(next) {
-        channel.open(next);
-      }
-    ];
+    const period = sensorType === 'hrm' ?
+      profile.CHANNEL_PERIOD.DEFAULT :
+      profile.CHANNEL_PERIOD.ALTERNATIVE;
 
-    function finish(error) {
-      if (completed) {
-        return;
-      }
-      completed = true;
-      callback(error, error ? undefined : channel);
-    }
+    await this.libConfig(LibConfig.CHANNEL_ID_ENABLED);
+    await channel.setNetworkKey(channel.NET.KEY['ANT+']);
+    await channel.assign(channel.SLAVE_RECEIVE_ONLY, network);
+    await channel.setId(deviceNumber, profile.CHANNEL_ID.DEVICE_TYPE, 0);
+    await channel.setFrequency(channel.NET.FREQUENCY['ANT+']);
+    await channel.setPeriod(period);
+    await channel.open();
 
-    function runStep(index) {
-      if (index === steps.length) {
-        finish();
-        return;
-      }
-
-      try {
-        steps[index](function(error) {
-          if (error) {
-            finish(error);
-          } else {
-            runStep(index + 1);
-          }
-        });
-      } catch (error) {
-        if (completed) {
-          throw error;
-        }
-        finish(error);
-      }
-    }
-
-    runStep(0);
     return channel;
   }
 

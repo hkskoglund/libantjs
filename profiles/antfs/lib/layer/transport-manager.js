@@ -667,7 +667,7 @@ class TransportManager extends EventEmitter {
 
     this.session.request.push(request);
 
-    this.host.sendBurst(request, this.onRequestSent.bind(this));
+    this.host.sendBurst(request).then(() => this.onRequestSent(), (err) => this.onRequestSent(err));
 
   }
 
@@ -899,7 +899,8 @@ class TransportManager extends EventEmitter {
                        }.bind(this),100);
         } else
            {
-             this.host.disconnect(function _onDisconnect() { this.host.emit('transport_end'); });
+             const onDisconnect = () => this.host.host.emit('transport_end');
+             this.host.disconnect().then(onDisconnect, onDisconnect);
            }
       }
 

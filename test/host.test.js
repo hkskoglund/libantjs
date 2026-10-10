@@ -17,17 +17,21 @@ const message = {
 
 function createHost() {
   const host = new Host();
-  let transferCallback;
+  let resolveTransfer;
+  let rejectTransfer;
 
-  host.usb.transfer = (_bytes, callback) => {
-    transferCallback = callback;
-  };
+  host.usb.transfer = () => new Promise((resolve, reject) => {
+    resolveTransfer = resolve;
+    rejectTransfer = reject;
+  });
 
   return {
     host,
-    completeTransfer: (error, result) => transferCallback(error, result)
+    completeTransfer: (error) => (error ? rejectTransfer(error) : resolveTransfer())
   };
 }
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 function createFrame(id) {
   const message = new Message(undefined, id);
@@ -57,57 +61,41 @@ test('Host forwards USB errors through its error event', () => {
   assert.equal(observedError, usbError);
 });
 
-test('connectANTPlusSensor configures HRM and Tempe while preserving channel data events', () => {
+test('connectANTPlusSensor configures HRM and Tempe while preserving channel data events', async () => {
   const { host } = createHost();
   const channel = host.channel[0];
   const calls = [];
   const dataListener = () => {};
 
-  host.libConfig = (flags, callback) => {
+  host.libConfig = async (flags) => {
     calls.push(['libConfig', flags]);
-    callback();
   };
-  channel.setNetworkKey = (key, callback) => {
+  channel.setNetworkKey = async (key) => {
     calls.push(['setNetworkKey', key]);
-    callback();
   };
-  channel.assign = (type, network, callback) => {
+  channel.assign = async (type, network) => {
     calls.push(['assign', type, network]);
-    callback();
   };
-  channel.setId = (number, type, transmissionType, callback) => {
+  channel.setId = async (number, type, transmissionType) => {
     calls.push(['setId', number, type, transmissionType]);
-    callback();
   };
-  channel.setFrequency = (frequency, callback) => {
+  channel.setFrequency = async (frequency) => {
     calls.push(['setFrequency', frequency]);
-    callback();
   };
-  channel.setPeriod = (period, callback) => {
+  channel.setPeriod = async (period) => {
     calls.push(['setPeriod', period]);
-    callback();
   };
-  channel.open = callback => {
+  channel.open = async () => {
     calls.push(['open']);
-    callback();
   };
 
   for (const sensorType of ['hrm', 'tempe']) {
     calls.length = 0;
     channel.on('data', dataListener);
-    let callbackChannel;
 
-    assert.equal(host.connectANTPlusSensor(
-      0,
-      sensorType,
-      { deviceNumber: 1234 },
-      (error, connectedChannel) => {
-        assert.equal(error, undefined);
-        callbackChannel = connectedChannel;
-      }
-    ), channel);
+    const connectedChannel = await host.connectANTPlusSensor(0, sensorType, { deviceNumber: 1234 });
 
-    assert.equal(callbackChannel, channel);
+    assert.equal(connectedChannel, channel);
     assert.deepEqual(calls.map(([name]) => name), [
       'libConfig', 'setNetworkKey', 'assign', 'setId',
       'setFrequency', 'setPeriod', 'open'
@@ -125,34 +113,32 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
   }
 });
 
-test('connectANTPlusSensor reports unsupported sensors and stops after setup errors', () => {
+test('connectANTPlusSensor reports unsupported sensors and stops after setup errors', async () => {
   const { host } = createHost();
   const channel = host.channel[0];
   const calls = [];
   const setupError = new Error('channel ID setup failed');
-  let receivedError;
 
-  host.libConfig = (_flags, callback) => callback();
-  channel.setNetworkKey = (_key, callback) => callback();
-  channel.assign = (_type, _network, callback) => callback();
-  channel.setId = (_number, _type, _transmissionType, callback) => callback(setupError);
-  channel.setFrequency = () => calls.push('setFrequency');
-  channel.setPeriod = () => calls.push('setPeriod');
-  channel.open = () => calls.push('open');
+  host.libConfig = async () => {};
+  channel.setNetworkKey = async () => {};
+  channel.assign = async () => {};
+  channel.setId = async () => { throw setupError; };
+  channel.setFrequency = async () => calls.push('setFrequency');
+  channel.setPeriod = async () => calls.push('setPeriod');
+  channel.open = async () => calls.push('open');
 
-  host.connectANTPlusSensor(0, 'hrm', error => { receivedError = error; });
-  assert.equal(receivedError, setupError);
+  await assert.rejects(host.connectANTPlusSensor(0, 'hrm'), setupError);
   assert.deepEqual(calls, []);
 
-  host.connectANTPlusSensor(0, 'unsupported', error => { receivedError = error; });
-  assert.ok(receivedError instanceof RangeError);
-  assert.match(receivedError.message, /Unsupported ANT\+ sensor type/);
+  await assert.rejects(host.connectANTPlusSensor(0, 'unsupported'), {
+    name: 'RangeError',
+    message: /Unsupported ANT\+ sensor type/
+  });
 });
 
-test('connectANTFS accepts an options object and preserves the positional form', () => {
+test('connectANTFS accepts an options object and preserves the positional form', async () => {
   const { host } = createHost();
   const originalConnect = ANTFSHostChannel.prototype.connect;
-  const searchCallback = () => {};
   const cases = [
     {
       args: [2, {
@@ -162,8 +148,7 @@ test('connectANTFS accepts an options object and preserves the positional form',
         download: true,
         erase: false,
         ls: true,
-        skipNewFiles: true,
-        onSearching: searchCallback
+        skipNewFiles: true
       }],
       expected: {
         net: 1,
@@ -176,7 +161,7 @@ test('connectANTFS accepts an options object and preserves the positional form',
       }
     },
     {
-      args: [3, 2, 5678, 'legacy-host', true, true, false, true, searchCallback],
+      args: [3, 2, 5678, 'legacy-host', true, true, false, true],
       expected: {
         net: 2,
         deviceNumber: 5678,
@@ -188,7 +173,7 @@ test('connectANTFS accepts an options object and preserves the positional form',
       }
     },
     {
-      args: [4, 2, 9876, 'legacy-host', true, false, true, false, true, searchCallback],
+      args: [4, 2, 9876, 'legacy-host', true, false, true, false],
       expected: {
         net: 2,
         deviceNumber: 9876,
@@ -201,19 +186,20 @@ test('connectANTFS accepts an options object and preserves the positional form',
     }
   ];
 
-  ANTFSHostChannel.prototype.connect = function(callback) {
-    this.searchCallback = callback;
+  ANTFSHostChannel.prototype.connect = async function() {
+    this.connected = true;
   };
 
   try {
     for (const { args, expected } of cases) {
-      host.connectANTFS(...args);
-      const antfsHost = host.channel[args[0]];
+      const antfsHost = await host.connectANTFS(...args);
+
+      assert.equal(host.channel[args[0]], antfsHost);
 
       for (const [key, value] of Object.entries(expected)) {
         assert.equal(antfsHost.option[key], value, key);
       }
-      assert.equal(antfsHost.searchCallback, searchCallback);
+      assert.equal(antfsHost.connected, true);
       assert.equal(antfsHost.constructor, ANTFSHostChannel);
     }
   } finally {
@@ -221,65 +207,51 @@ test('connectANTFS accepts an options object and preserves the positional form',
   }
 });
 
-test('sendMessage calls the callback once when a transfer without a response event fails', () => {
+test('sendMessage rejects when a transfer without a response event fails', async () => {
   const { host, completeTransfer } = createHost();
   const transferError = new Error('transfer failed');
-  let callbackCalls = 0;
 
-  host.sendMessage(message, undefined, undefined, (error, result) => {
-    callbackCalls++;
-    assert.equal(error, transferError);
-    assert.equal(result, 'transfer result');
-  });
-  completeTransfer(transferError, 'transfer result');
-
-  assert.equal(callbackCalls, 1);
-});
-
-test('sendMessage removes a host response listener when the transfer fails', () => {
-  const { host, completeTransfer } = createHost();
-  const transferError = new Error('transfer failed');
-  let callbackCalls = 0;
-
-  host.sendMessage(message, 'response', undefined, (error) => {
-    callbackCalls++;
-    assert.equal(error, transferError);
-  });
+  const sent = host.sendMessage(message);
   completeTransfer(transferError);
 
-  assert.equal(callbackCalls, 1);
+  await assert.rejects(sent, transferError);
+});
+
+test('sendMessage removes a host response listener when the transfer fails', async () => {
+  const { host, completeTransfer } = createHost();
+  const transferError = new Error('transfer failed');
+
+  const sent = host.sendMessage(message, 'response');
+  assert.equal(host.listenerCount('response'), 1);
+  completeTransfer(transferError);
+
+  await assert.rejects(sent, transferError);
   assert.equal(host.listenerCount('response'), 0);
 });
 
-test('sendMessage removes a channel response listener when the transfer fails', () => {
+test('sendMessage removes a channel response listener when the transfer fails', async () => {
   const { host, completeTransfer } = createHost();
   const transferError = new Error('transfer failed');
   const responseEvent = 'response_0x4a';
-  let callbackCalls = 0;
 
-  host.sendMessage(message, 'response', 0, (error) => {
-    callbackCalls++;
-    assert.equal(error, transferError);
-  });
+  const sent = host.sendMessage(message, 'response', 0);
+  assert.equal(host.channel[0].listenerCount(responseEvent), 1);
   completeTransfer(transferError);
 
-  assert.equal(callbackCalls, 1);
+  await assert.rejects(sent, transferError);
   assert.equal(host.channel[0].listenerCount(responseEvent), 0);
 });
 
-test('sendMessage safely completes transfers without an optional callback', () => {
-  const eventless = createHost();
-  const response = createHost();
+test('sendMessage resolves eventless transfers on USB completion', async () => {
+  const { host, completeTransfer } = createHost();
 
-  eventless.host.sendMessage(message);
-  assert.doesNotThrow(() => eventless.completeTransfer());
+  const sent = host.sendMessage(message);
+  completeTransfer();
 
-  response.host.sendMessage(message, 'response');
-  assert.equal(response.host.listenerCount('response'), 0);
-  assert.doesNotThrow(() => response.completeTransfer(new Error('transfer failed')));
+  assert.equal(await sent, undefined);
 });
 
-test('ANT-FS pads short acknowledged requests to the ANT payload size', () => {
+test('ANT-FS pads short acknowledged requests to the ANT payload size', async () => {
   let encodedMessage;
   const antfsChannel = {
     channel: 0,
@@ -294,80 +266,90 @@ test('ANT-FS pads short acknowledged requests to the ANT payload size', () => {
     }
   };
 
-  ANTFSHostChannel.prototype.initRequest.call(antfsChannel, new DisconnectCommand(), () => {});
+  await ANTFSHostChannel.prototype.initRequest.call(antfsChannel, new DisconnectCommand());
 
   assert.deepEqual(Array.from(encodedMessage.payload), [0x44, 0x03, 0, 0, 0, 0, 0, 0]);
 });
 
-test('sendMessage delivers successful response events without calling the callback on USB completion', () => {
+test('sendMessage resolves with the response event without resolving on USB completion', async () => {
   const { host, completeTransfer } = createHost();
   const response = { ok: true };
-  let callbackCalls = 0;
+  let settled = false;
 
-  host.sendMessage(message, 'response', 0, (error, result) => {
-    callbackCalls++;
-    assert.equal(error, undefined);
-    assert.equal(result, response);
+  const sent = host.sendMessage(message, 'response', 0).then((result) => {
+    settled = true;
+    return result;
   });
 
-  test('Host.sleep sends a Sleep Message', () => {
-    const { host } = createHost();
-    let sentMessage;
-
-    host.sendMessage = message => { sentMessage = message; };
-    host.sleep(() => {});
-
-    assert.equal(sentMessage.id, Message.prototype.SLEEP_MESSAGE);
-    assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
-  });
-
-  test('Host sends extended burst packets with sequence and Channel ID fields', () => {
-    const { host } = createHost();
-    const sent = [];
-    const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
-    const payload = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-
-    host.sendMessage = (message, _event, _channel, callback) => {
-      sent.push(message);
-      callback();
-    };
-
-    host.sendExtendedBurstTransfer(2, channelId, payload, error => {
-      assert.equal(error, undefined);
-    });
-
-    assert.equal(sent.length, 2);
-    assert.ok(sent.every(message => message instanceof ExtendedBurstDataMessage));
-    assert.equal(sent[0].sequenceNr, 0);
-    assert.equal(sent[1].sequenceNr, 5);
-    assert.equal(sent[0].channelId.deviceNumber, 0x1234);
-    assert.deepEqual(Array.from(sent[1].packet), [9, 0, 0, 0, 0, 0, 0, 0]);
-  });
-
-  test('Host.deserialize emits extended burst packets and the completed burst', () => {
-    const { host } = createHost();
-    const channel = host.channel[1];
-    const packets = [];
-    let completedBurst;
-    const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
-    const first = new ExtendedBurstDataMessage();
-    const last = new ExtendedBurstDataMessage();
-
-    channel.on('extburstdata', message => packets.push(message));
-    channel.on('burst', payload => { completedBurst = payload; });
-    first.encode(1, channelId, Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]));
-    last.encode(0xA1, channelId, Uint8Array.from([9, 10, 11, 12, 13, 14, 15, 16]));
-
-    host.deserialize(Buffer.concat([Buffer.from(first.serialize()), Buffer.from(last.serialize())]));
-
-    assert.equal(packets.length, 2);
-    assert.deepEqual(Array.from(completedBurst), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
-  });
-  completeTransfer(undefined, 'transfer result');
-  assert.equal(callbackCalls, 0);
+  completeTransfer();
+  await flush();
+  assert.equal(settled, false);
 
   host.channel[0].emit('response_0x4a', undefined, response);
-  assert.equal(callbackCalls, 1);
+  assert.equal(await sent, response);
+});
+
+test('sendMessage rejects when the response event carries an error', async () => {
+  const { host, completeTransfer } = createHost();
+  const responseError = new Error('response failed');
+
+  const sent = host.sendMessage(message, 'response', 0);
+  completeTransfer();
+  await flush();
+  host.channel[0].emit('response_0x4a', responseError);
+
+  await assert.rejects(sent, responseError);
+});
+
+test('Host.sleep sends a Sleep Message', async () => {
+  const { host } = createHost();
+  let sentMessage;
+
+  host.sendMessage = async message => { sentMessage = message; };
+  await host.sleep();
+
+  assert.equal(sentMessage.id, Message.prototype.SLEEP_MESSAGE);
+  assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
+});
+
+test('Host sends extended burst packets with sequence and Channel ID fields', async () => {
+  const { host } = createHost();
+  const sent = [];
+  const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
+  const payload = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+  host.sendMessage = async (message) => {
+    sent.push(message);
+  };
+
+  await host.sendExtendedBurstTransfer(2, channelId, payload);
+
+  assert.equal(sent.length, 2);
+  assert.ok(sent.every(message => message instanceof ExtendedBurstDataMessage));
+  assert.equal(sent[0].sequenceNr, 0);
+  assert.equal(sent[1].sequenceNr, 5);
+  assert.equal(sent[0].channelId.deviceNumber, 0x1234);
+  assert.deepEqual(Array.from(sent[1].packet), [9, 0, 0, 0, 0, 0, 0, 0]);
+});
+
+test('Host.deserialize emits extended burst packets and the completed burst', () => {
+  const { host } = createHost();
+  const channel = host.channel[1];
+  const packets = [];
+  let completedBurst;
+  const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
+  const first = new ExtendedBurstDataMessage();
+  const last = new ExtendedBurstDataMessage();
+
+  channel.on('extburstdata', message => packets.push(message));
+  channel.on('burst', payload => { completedBurst = payload; });
+  first.encode(1, channelId, Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]));
+  last.encode(0xA1, channelId, Uint8Array.from([9, 10, 11, 12, 13, 14, 15, 16]));
+
+  host.deserialize(Buffer.concat([Buffer.from(first.serialize()), Buffer.from(last.serialize())]));
+
+  assert.equal(packets.length, 2);
+  assert.deepEqual(Array.from(completedBurst), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 });
 
 test('Host.deserialize reports frames with invalid CRCs and continues parsing', () => {
@@ -397,39 +379,26 @@ test('Host.deserialize buffers incomplete frames and clears them after parsing',
   assert.deepEqual(errors, ['Unable to parse received msg id 1']);
 });
 
-test('Host.exit propagates a reset error and still exits USB', () => {
+test('Host.exit propagates a reset error and still exits USB', async () => {
   const { host } = createHost();
   const resetError = new Error('reset failed');
   let usbExitCalls = 0;
 
-  host.resetSystem = (callback) => callback(resetError);
-  host.usb.exit = (callback) => {
-    usbExitCalls++;
-    callback();
-  };
+  host.resetSystem = async () => { throw resetError; };
+  host.usb.exit = async () => { usbExitCalls++; };
 
-  return new Promise((resolve) => {
-    host.exit((error) => {
-      assert.equal(error, resetError);
-      assert.equal(usbExitCalls, 1);
-      resolve();
-    });
-  });
+  await assert.rejects(host.exit(), resetError);
+  assert.equal(usbExitCalls, 1);
 });
 
 test('Host.exit propagates a USB exit error', async () => {
   const { host } = createHost();
   const usbExitError = new Error('USB exit failed');
 
-  host.resetSystem = (callback) => callback();
-  host.usb.exit = (callback) => callback(usbExitError);
+  host.resetSystem = async () => {};
+  host.usb.exit = async () => { throw usbExitError; };
 
-  await new Promise((resolve) => {
-    host.exit((error) => {
-      assert.equal(error, usbExitError);
-      resolve();
-    });
-  });
+  await assert.rejects(host.exit(), usbExitError);
 });
 
 test('Host.exit preserves both errors when reset and USB exit fail', async () => {
@@ -437,50 +406,43 @@ test('Host.exit preserves both errors when reset and USB exit fail', async () =>
   const resetError = new Error('reset failed');
   const usbExitError = new Error('USB exit failed');
 
-  host.resetSystem = (callback) => callback(resetError);
-  host.usb.exit = (callback) => callback(usbExitError);
+  host.resetSystem = async () => { throw resetError; };
+  host.usb.exit = async () => { throw usbExitError; };
 
-  await new Promise((resolve) => {
-    host.exit((error) => {
-      assert.ok(error instanceof Error);
-      assert.equal(error.resetError, resetError);
-      assert.equal(error.usbExitError, usbExitError);
-      resolve();
-    });
+  await assert.rejects(host.exit(), (error) => {
+    assert.ok(error instanceof Error);
+    assert.equal(error.resetError, resetError);
+    assert.equal(error.usbExitError, usbExitError);
+    return true;
   });
 });
 
-test('Channel.getStatus forwards errors without updating channel state', () => {
+test('Channel.getStatus forwards errors without updating channel state', async () => {
   const { host } = createHost();
   const channel = host.channel[0];
   const statusError = new Error('status request failed');
   channel.state = channel.TRACKING;
-  host.getChannelStatus = (_channel, callback) => callback(statusError);
+  host.getChannelStatus = async () => { throw statusError; };
 
-  channel.getStatus((error, status) => {
-    assert.equal(error, statusError);
-    assert.equal(status, undefined);
-    assert.equal(channel.state, channel.TRACKING);
-  });
+  await assert.rejects(channel.getStatus(), statusError);
+  assert.equal(channel.state, channel.TRACKING);
 });
 
-test('Channel.assign accepts an omitted extended assignment before the callback', () => {
+test('Channel.assign accepts an omitted extended assignment', async () => {
   const { host } = createHost();
   const channel = host.channel[0];
-  const callback = () => {};
-  let assignArguments;
+  const calls = [];
 
-  host.assignChannel = function() {
-    assignArguments = Array.prototype.slice.call(arguments);
-  };
+  host.assignChannel = async (...args) => { calls.push(args); };
 
-  channel.assign(channel.BIDIRECTIONAL_SLAVE, 0, undefined, callback);
+  await channel.assign(channel.SLAVE_RECEIVE_ONLY, 1);
+  await channel.assign(channel.SLAVE_RECEIVE_ONLY, 1, 0x01);
 
-  assert.equal(assignArguments[0], channel.channel);
-  assert.equal(assignArguments[1], channel.BIDIRECTIONAL_SLAVE);
-  assert.equal(assignArguments[2], 0);
-  assert.equal(assignArguments[3], callback);
-  assert.equal(assignArguments.length, 4);
+  assert.deepEqual(calls, [
+    [0, channel.SLAVE_RECEIVE_ONLY, 1, undefined],
+    [0, channel.SLAVE_RECEIVE_ONLY, 1, 0x01]
+  ]);
+  assert.equal(channel.extendedAssignment, 0x01);
 });
 
 test('Channel.toString includes zero-valued network, type, and state', () => {
@@ -492,4 +454,55 @@ test('Channel.toString includes zero-valued network, type, and state', () => {
   assert.match(description, /Net 0\|/);
   assert.match(description, /Bidirectional SLAVE\|/);
   assert.match(description, /Unassigned\|/);
+});
+
+test('Host.sendBurstTransfer sends sequenced packets and stops on the first failure', async () => {
+  const { host } = createHost();
+  const sent = [];
+  const failure = new Error('burst failed');
+
+  host.sendBurstTransferPacket = async (sequenceChannel, packet) => {
+    sent.push([sequenceChannel, packet.byteLength]);
+    if (sent.length === 3) throw failure;
+  };
+
+  await assert.rejects(host.sendBurstTransfer(1, new Uint8Array(40)), failure);
+  assert.deepEqual(sent, [[0x01, 8], [0x21, 8], [0x41, 8]]);
+
+  sent.length = 0;
+  host.sendBurstTransferPacket = async (sequenceChannel, packet) => { sent.push([sequenceChannel, packet.byteLength]); };
+  await host.sendBurstTransfer(1, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 1);
+  assert.deepEqual(sent, [[0x01, 8], [0xA1, 8]]);
+});
+
+test('Host.resetSystem resolves with the startup notification after the settle delay', async (t) => {
+  const { host } = createHost();
+  const startup = { startup: true };
+
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  host.sendMessage = async () => startup;
+
+  const reset = host.resetSystem();
+  await flush();
+  t.mock.timers.tick(500);
+
+  assert.equal(await reset, startup);
+});
+
+test('Channel.connect configures and opens the channel in order', async () => {
+  const { host } = createHost();
+  const channel = host.channel[0];
+  const calls = [];
+
+  host.setNetworkKey = async () => calls.push('setNetworkKey');
+  host.assignChannel = async () => calls.push('assign');
+  host.setChannelId = async () => calls.push('setId');
+  host.setChannelRFFreq = async () => calls.push('setFrequency');
+  host.setChannelPeriod = async () => calls.push('setPeriod');
+  host.setLowPriorityChannelSearchTimeout = async () => calls.push('setLowPriorityTimeout');
+  host.openChannel = async () => calls.push('open');
+
+  await channel.connect();
+
+  assert.deepEqual(calls, ['setNetworkKey', 'assign', 'setId', 'setFrequency', 'setPeriod', 'setLowPriorityTimeout', 'open']);
 });

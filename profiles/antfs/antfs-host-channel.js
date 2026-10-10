@@ -1,6 +1,7 @@
 'use strict';
 
 const Channel = require('../../channel/channel'),
+  ChannelId = require('../../channel/channel-id'),
   ClientBeacon = require('./lib/layer/client-beacon'),
   State = require('./lib/layer/util/state'),
 
@@ -30,7 +31,7 @@ class ANTFSHostChannel extends Channel {
     this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
     if (typeof options.deviceNumber === 'number') // Search for specific device
-      this.setId(options.deviceNumber, 0, 0);
+      this.id = new ChannelId(options.deviceNumber, 0, 0);
 
     if (typeof options.hostname === 'string')
       this.hostname = options.hostname;
@@ -208,32 +209,22 @@ class ANTFSHostChannel extends Channel {
   this.removeAllListeners('HOST_CHANNEL_OPEN');
   }
 
-  connect(callback) {
+  async connect() {
 
-  const onConnecting = function _onConnecting(err, msg) {
+  try {
+    const serialNumberMsg = await this.getSerialNumber();
+    this.setHostSerialNumber(serialNumberMsg.serialNumber);
+  } catch {
+    this.setHostSerialNumber(0);
+  }
 
-    if (!err) {
-      this.layerState = new State(State.prototype.LINK);
-      if (this.log.logging)
-        this.log.debug( 'Connecting, host state now ' + this.layerState.toString());
-    }
+  const msg = await Channel.prototype.connect.call(this);
 
-    callback(err, msg);
+  this.layerState = new State(State.prototype.LINK);
+  if (this.log.logging)
+    this.log.debug( 'Connecting, host state now ' + this.layerState.toString());
 
-  }.bind(this);
-
-  this.getSerialNumber(function _getSN(err, serialNumberMsg) {
-
-    if (!err) {
-      this.setHostSerialNumber(serialNumberMsg.serialNumber);
-    } else {
-      this.setHostSerialNumber(0);
-    }
-
-    Channel.prototype.connect.call(this, onConnecting);
-
-  }.bind(this));
-
+  return msg;
   }
 
   setHostSerialNumber(serialNumber) {
@@ -244,7 +235,8 @@ class ANTFSHostChannel extends Channel {
   return this.hostSerialNumber;
   }
 
-  initRequest(request, callback) {
+  // Resolves/rejects with the outcome of the first send; retries are logged by sendNow
+  initRequest(request) {
   let NO_ERROR,
       serializedRequest = request.serialize();
 
@@ -260,17 +252,35 @@ class ANTFSHostChannel extends Channel {
 
   this.session.retry = -1;
 
-  if (serializedRequest.length <= 8)
-  {
-    const acknowledgedRequest = new Uint8Array(8);
-    acknowledgedRequest.set(serializedRequest);
-    this.session.sendFunc = Channel.prototype.sendAcknowledged.bind(this, acknowledgedRequest, callback);
-  }
-  else
-   this.session.sendFunc = Channel.prototype.sendBurst.bind(this, serializedRequest, callback);
+  return new Promise((resolve, reject) => {
+    let firstAttempt = true,
+      send;
 
+    if (serializedRequest.length <= 8)
+    {
+      const acknowledgedRequest = new Uint8Array(8);
+      acknowledgedRequest.set(serializedRequest);
+      send = () => Channel.prototype.sendAcknowledged.call(this, acknowledgedRequest);
+    }
+    else
+      send = () => Channel.prototype.sendBurst.call(this, serializedRequest);
 
-  this.sendRequest(NO_ERROR,request);
+    this.session.sendFunc = () => {
+      const sent = send();
+
+      if (firstAttempt) {
+        firstAttempt = false;
+        sent.then(resolve, reject);
+      } else {
+        sent.catch((error) => {
+          if (this.log.logging)
+            this.log.error('Failed to resend request to ANT', error);
+        });
+      }
+    };
+
+    this.sendRequest(NO_ERROR,request);
+  });
   }
 
   sendNow(e, m) {
@@ -348,28 +358,23 @@ class ANTFSHostChannel extends Channel {
   }
 
 // Override Channel
-  sendAcknowledged(request, callback) {
-    this.initRequest(request, callback);
+  sendAcknowledged(request) {
+    return this.initRequest(request);
   }
 
 // Override Channel
-  sendBurst(request, callback) {
-    this.initRequest(request, callback);
+  sendBurst(request) {
+    return this.initRequest(request);
   }
 
-  disconnect(callback) {
-    const onDisconnect = function _onDisconnect(e, m) {
+  async disconnect() {
+    try {
+      await this.linkManager.disconnect();
+    } finally {
       this.removeAllListeners('beacon');
 
       this.emit('reset');
-
-      if (typeof callback === 'function') {
-        callback.call(this, arguments);
-      }
-    }.bind(this);
-
-
-    this.linkManager.disconnect(onDisconnect);
+    }
   }
 }
 

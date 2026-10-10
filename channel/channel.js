@@ -103,198 +103,137 @@ class Channel extends EventEmitter {
     return new ChannelId(0,0,0);
   }
 
-  getSerialNumber(callback) {
+  getSerialNumber() {
 
-    this.host.getSerialNumber(callback);
+    return this.host.getSerialNumber();
   }
 
-  connect(callback) {
+  async connect() {
 
-    var onSetNetworkKey = function _onSetNetworkKey (err,msg) {
-                            if (!err)
-                              this.slave(onAssigned);
-                            else
-                              callback(err);
-                          }.bind(this),
+    await this.setNetworkKey(this.key);
+    await this.slave();
+    await this.setId(this.id);
+    await this.setFrequency(this.frequency);
+    await this.setPeriod(this.period);
+    await this.setLowPriorityTimeout(this.lowPrioritySearchTimeout);
 
-    onAssigned = function _onAssigned (err,msg) {
-                  if (!err)
-                    this.setId(this.id,onSetId);
-                  else
-                    callback(err);
-                }.bind(this),
-
-    onSetId = function _onSetId (err,msg) {
-                if (!err)
-                  this.setFrequency(this.frequency,onSetFreq);
-                else
-                  callback(err);
-              }.bind(this),
-
-    onSetFreq = function _onSetFreq (err,msg) {
-                  if (!err)
-                    this.setPeriod(this.period,onSetPeriod);
-                  else
-                    callback(err);
-                }.bind(this),
-
-    onSetPeriod = function _onSetPeriod (err,msg) {
-                   if (!err)
-                    this.setLowPriorityTimeout(this.lowPrioritySearchTimeout,onSetLowPriorityTimeout);
-                  else
-                    callback(err);
-                }.bind(this),
-
-    onSetLowPriorityTimeout = function _onSetLowPriorityTimeout (err,msg) {
-                                 if (!err)
-                                  this.open(callback);
-                                else
-                                  callback(err);
-                              }.bind(this);
-
-    this.setNetworkKey(this.key,onSetNetworkKey);
+    return this.open();
   }
 
-  setNetworkKey(key, callback) {
+  setNetworkKey(key) {
 
     this.key = key;
 
-    this.host.setNetworkKey(this.net, this.key, callback);
+    return this.host.setNetworkKey(this.net, this.key);
   }
 
-  slave(callback) {
+  slave() {
 
-    this.assign(this.BIDIRECTIONAL_SLAVE, this.net, callback);
+    return this.assign(this.BIDIRECTIONAL_SLAVE, this.net);
   }
 
-  slaveOnly(callback) {
+  slaveOnly() {
 
-    this.assign(this.SLAVE_RECEIVE_ONLY, this.net, callback);
+    return this.assign(this.SLAVE_RECEIVE_ONLY, this.net);
   }
 
-  master(callback) {
+  master() {
 
-    this.assign(this.BIDIRECTIONAL_MASTER, this.net, callback);
+    return this.assign(this.BIDIRECTIONAL_MASTER, this.net);
   }
 
-  masterOnly(callback) {
+  masterOnly() {
 
-    this.assign(this.MASTER_TRANSMIT_ONLY, this.net, callback);
+    return this.assign(this.MASTER_TRANSMIT_ONLY, this.net);
   }
 
-  assign(type, net, extendedAssignment, callback) {
+  assign(type, net, extendedAssignment) {
 
     this.type = type;
     this.net = net;
 
     if (typeof extendedAssignment === 'number') {
       this.extendedAssignment = extendedAssignment;
-      this.host.assignChannel(this.channel, this.type, this.net, this.extendedAssignment, callback);
-
-    } else if (typeof extendedAssignment === 'function') {
-      this.host.assignChannel(this.channel, this.type, this.net, extendedAssignment);
-
-    } else if (typeof extendedAssignment === 'undefined' && typeof callback === 'function') {
-      this.host.assignChannel(this.channel, this.type, this.net, callback);
     }
+
+    return this.host.assignChannel(this.channel, this.type, this.net, extendedAssignment);
   }
 
-  unassign(callback) {
+  unassign() {
 
     this.type = undefined;
 
-    this.host.unassignChannel(this.channel, callback);
+    return this.host.unAssignChannel(this.channel);
   }
 
-  setId(deviceNumber, deviceType, transmissionType, callback) {
-
-    var cb;
+  setId(deviceNumber, deviceType, transmissionType) {
 
     if (deviceNumber instanceof ChannelId) {
       this.id = deviceNumber;
-      cb = deviceType;
     } else {
       this.id = new ChannelId(deviceNumber, deviceType, transmissionType);
-      cb = callback;
     }
 
-    if (cb) // Just update state if no callback is provide
-      this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType, cb);
+    return this.host.setChannelId(this.channel, this.id.deviceNumber, this.id.deviceType, this.id.transmissionType);
   }
 
-  getId(callback) {
+  async getId() {
 
-    var onChannelId = function(err, channelId) {
-      if (!err) {
-        this.id = channelId;
-      }
+    const channelId = await this.host.getChannelId(this.channel);
 
-      callback(err, channelId);
+    this.id = channelId;
 
-    }.bind(this);
-
-    this.host.getChannelId(this.channel, onChannelId);
+    return channelId;
   }
 
-  setFrequency(frequencyOffset, callback) {
+  setFrequency(frequencyOffset) {
 
     this.frequency = frequencyOffset;
 
-    this.host.setChannelRFFreq(this.channel, frequencyOffset, callback);
+    return this.host.setChannelRFFreq(this.channel, frequencyOffset);
   }
 
-  setPeriod(period, callback) {
+  setPeriod(period) {
 
     this.period = period;
 
-    this.host.setChannelPeriod(this.channel, period, callback);
+    return this.host.setChannelPeriod(this.channel, period);
   }
 
-  setLowPriorityTimeout(timeout, callback) {
+  setLowPriorityTimeout(timeout) {
 
     this.lowPrioritySearchTimeout = timeout;
-    this.host.setLowPriorityChannelSearchTimeout(this.channel, this.lowPrioritySearchTimeout, callback);
+    return this.host.setLowPriorityChannelSearchTimeout(this.channel, this.lowPrioritySearchTimeout);
   }
 
-  open(callback) {
+  async open() {
 
-    var cb = function _openCB (e,m)
-    {
-        if (!e)
-         this.host.emit('open', this.channel);
+    const response = await this.host.openChannel(this.channel);
 
-        callback.apply(this,arguments);
+    this.host.emit('open', this.channel);
 
-    }.bind(this);
-
-    this.host.openChannel(this.channel, cb);
+    return response;
   }
 
-  openScan(callback) {
+  openScan() {
 
-    this.host.openRxScanMode(this.channel, callback);
+    return this.host.openRxScanMode(this.channel);
   }
 
-  close(callback) {
+  close() {
 
-    this.host.closeChannel(this.channel, callback);
+    return this.host.closeChannel(this.channel);
   }
 
-  getStatus(callback) {
+  async getStatus() {
 
-    var onStatus = function(err, status) {
+    const status = await this.host.getChannelStatus(this.channel);
 
-        if (!err) {
-          this.state = status.state;
-          this.type = status.type;
-          this.net = status.net;
-        }
+    this.state = status.state;
+    this.type = status.type;
+    this.net = status.net;
 
-        callback(err, status);
-
-      }.bind(this);
-
-    this.host.getChannelStatus(this.channel, onStatus);
+    return status;
   }
 
   hasId() {
@@ -302,40 +241,33 @@ class Channel extends EventEmitter {
     return (this.id.deviceNumber !== 0) && (this.id.deviceType !== 0) && (this.id.transmissionType !== 0);
   }
 
-  send(broadcastData, callback) {
+  send(broadcastData) {
 
-    this.host.sendBroadcastData(this.channel, broadcastData, callback);
+    return this.host.sendBroadcastData(this.channel, broadcastData);
   }
 
-  sendAcknowledged(ackData, callback) {
-
-    var cb = function _sendAcknowledgedCB(e,m) {
-      if (e)
-        this.transferInProgress = false;
-      callback(e,m);
-    }.bind(this);
+  async sendAcknowledged(ackData) {
 
     this.transferInProgress = true;
 
-    this.host.sendAcknowledgedData(this.channel, ackData, cb);
-  }
-
-  sendBurst(burstData, packetsPerURB, callback) {
-
-    var cb = function _sendBurstCB(e,m) {
-      if (e)
-        this.transferInProgress = false;
-      callback(e,m);
-    }.bind(this);
-
-    if (typeof packetsPerURB === 'function') {
-      callback = packetsPerURB;
-      packetsPerURB = 1;
+    try {
+      return await this.host.sendAcknowledgedData(this.channel, ackData);
+    } catch (error) {
+      this.transferInProgress = false;
+      throw error;
     }
+  }
+
+  async sendBurst(burstData, packetsPerURB = 1) {
 
     this.transferInProgress = true;
 
-    this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB,cb);
+    try {
+      return await this.host.sendBurstTransfer(this.channel, burstData, packetsPerURB);
+    } catch (error) {
+      this.transferInProgress = false;
+      throw error;
+    }
   }
 
   toString() {

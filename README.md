@@ -30,66 +30,50 @@ const host = new Host();
 host.on('error', (error) => {
   console.error('ANT/USB error:', error);
 });
-const devices = host.getDevices();
-
-if (devices.length === 0) {
-  throw new Error('No supported ANT USB stick found');
-}
-
 const channel = host.channel[0];
 
-host.init(0, (error) => {
-  if (error) {
-    console.error('Unable to initialize ANT host:', error);
-    return;
+async function main() {
+  const devices = await host.refreshDevices();
+
+  if (devices.length === 0) {
+    throw new Error('No supported ANT USB stick found');
   }
+
+  await host.init(0);
 
   channel.on('data', (message) => {
     console.log('Received:', Array.from(message.payload));
   });
 
-  channel.assign(channel.BIDIRECTIONAL_SLAVE, 0, (assignError) => {
-    if (assignError) {
-      console.error('Unable to assign channel:', assignError);
-      return;
-    }
+  await channel.assign(channel.BIDIRECTIONAL_SLAVE, 0);
+  await channel.setId(0, 0, 0);
+  await channel.open();
+}
 
-    channel.setId(0, 0, 0, (idError) => {
-      if (idError) {
-        console.error('Unable to configure channel ID:', idError);
-        return;
-      }
-
-      channel.open((openError) => {
-        if (openError) {
-          console.error('Unable to open channel:', openError);
-        }
-      });
-    });
-  });
+main().catch((error) => {
+  console.error('Unable to start ANT host:', error);
 });
 ```
 
-`getDevices()` returns the supported sticks detected by USB; the example initializes the first one at index `0`. Host and channel command callbacks receive `(error, response)`. Received broadcast messages are emitted on the channel's `data` event, with the eight-byte payload available as `message.payload`. Register listeners before opening the channel.
+`refreshDevices()` enumerates the supported sticks detected by USB (`getDevices()` returns the list from the last enumeration); the example initializes the first one at index `0`. All host and channel commands return promises that resolve with the response message and reject on transmit errors. Received broadcast messages are emitted on the channel's `data` event, with the eight-byte payload available as `message.payload`. Register listeners before opening the channel.
 
-The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `channel.setNetworkKey(channel.NET.KEY['ANT+'], callback)` before opening the channel. Close an open channel with `channel.close(callback)` and shut down the USB host with `host.exit(callback)`.
+The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `await channel.setNetworkKey(channel.NET.KEY['ANT+'])` before opening the channel. Close an open channel with `await channel.close()` and shut down the USB host with `await host.exit()`.
 
 To configure a receive-only ANT+ sensor channel, use the sensor helper. It sets ANT+ network and device parameters, enables extended channel ID metadata, and opens the channel. The channel continues to emit the original raw `data` messages, so applications can parse payloads themselves:
 
 ```js
-host.connectANTPlusSensor(0, 'hrm', { deviceNumber: 0 }, (error, channel) => {
-  if (error) {
-    console.error('Unable to search for HRM sensors:', error);
-    return;
-  }
-
-  channel.on('data', (message) => {
-    console.log('ANT+ HRM payload:', Array.from(message.payload));
-  });
+host.channel[0].on('data', (message) => {
+  console.log('ANT+ HRM payload:', Array.from(message.payload));
 });
+
+try {
+  await host.connectANTPlusSensor(0, 'hrm', { deviceNumber: 0 });
+} catch (error) {
+  console.error('Unable to search for HRM sensors:', error);
+}
 ```
 
-Supported sensor types are `'hrm'` and `'tempe'` (or `'environment'`). Set `deviceNumber` to `0` to search for any matching sensor; `net` optionally selects the ANT network number. The helper returns the configured channel immediately and reports completion through its callback. Existing manual channel setup remains supported.
+Supported sensor types are `'hrm'` and `'tempe'` (or `'environment'`). Set `deviceNumber` to `0` to search for any matching sensor; `net` optionally selects the ANT network number. The helper returns a promise for the configured channel; register `data` listeners on `host.channel[n]` before calling it to receive every message. Existing manual channel setup remains supported.
 
 USB and endpoint runtime failures are forwarded as the host's `error` event; register an error listener before calling `init()`, as in the example.
 
@@ -98,21 +82,18 @@ ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDi
 Connect an ANT-FS client using a named options object:
 
 ```js
-host.connectANTFS(0, {
+const antfsChannel = await host.connectANTFS(0, {
   net: 0,
   deviceNumber: 123456,
   hostname: 'my-antfs-host',
   download: true,
   erase: false,
   ls: false,
-  skipNewFiles: false,
-  onSearching(error) {
-    if (error) console.error('ANT-FS search failed:', error);
-  }
+  skipNewFiles: false
 });
 ```
 
-The former positional `connectANTFS` arguments remain supported for compatibility.
+`connectANTFS` resolves once the host channel is open and searching for the client. The former positional `connectANTFS` arguments remain supported for compatibility.
 
 ## Checks
 

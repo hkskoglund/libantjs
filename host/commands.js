@@ -25,216 +25,195 @@ var Message = require('../messages/message'),
   CloseChannelMessage = require('../messages/control/close-channel-message');
 
 class HostCommands {
-  resetSystem(callback) {
+  async resetSystem() {
+    const DELAY = 500;
 
-    var onNotificationStartup = function _onNotificationStartup(err, notificationStartup) {
-      var DELAY = 500;
-      if (this.log.logging)
-        this.log.debug( 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
-      setTimeout(callback.bind(this, err, notificationStartup), DELAY);
-    }.bind(this);
+    const notificationStartup = await this.sendMessage(new ResetSystemMessage(), Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP]);
 
-    this.sendMessage(new ResetSystemMessage(), Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], undefined, onNotificationStartup);
+    if (this.log.logging)
+      this.log.debug( 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
+    await new Promise((resolve) => setTimeout(resolve, DELAY));
+
+    return notificationStartup;
   }
 
-  sleep(callback) {
-    this.sendMessage(new SleepMessage(), undefined, undefined, callback);
+  sleep() {
+    return this.sendMessage(new SleepMessage());
   }
 
-  getChannelId(channel, callback) {
+  getChannelId(channel) {
 
-    this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), Message.prototype.MESSAGE[Message.prototype.SET_CHANNEL_ID], undefined, callback);
+    return this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), Message.prototype.MESSAGE[Message.prototype.SET_CHANNEL_ID]);
   }
 
-  getVersion(callback) {
+  getVersion() {
 
-    this.sendMessage(new RequestMessage(undefined, Message.prototype.ANT_VERSION), Message.prototype.MESSAGE[Message.prototype.ANT_VERSION], undefined, callback);
+    return this.sendMessage(new RequestMessage(undefined, Message.prototype.ANT_VERSION), Message.prototype.MESSAGE[Message.prototype.ANT_VERSION]);
   }
 
-  getCapabilities(callback) {
+  getCapabilities() {
 
-    this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.CAPABILITIES], undefined, callback);
+    return this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.CAPABILITIES]);
   }
 
-  getAdvancedBurstCapabilities(callback) {
+  getAdvancedBurstCapabilities() {
 
-    this.sendMessage(new RequestMessage(0x00, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES], undefined, callback);
+    return this.sendMessage(new RequestMessage(0x00, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES]);
   }
 
-  getAdvancedBurstConfiguration(callback) {
+  getAdvancedBurstConfiguration() {
 
-    this.sendMessage(new RequestMessage(0x01, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES], undefined, callback);
+    return this.sendMessage(new RequestMessage(0x01, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES]);
   }
 
   // For convenience
-  enableAdvancedBurst(maxPacketLength, callback) {
+  enableAdvancedBurst(maxPacketLength = this.ADVANCED_BURST.MAX_PACKET_24BYTES) {
 
-    var cb = callback,
-      packetLength;
-
-    if (typeof maxPacketLength === 'function') {
-      cb = maxPacketLength;
-      packetLength = this.ADVANCED_BURST.MAX_PACKET_24BYTES;
-    } else {
-      packetLength = maxPacketLength;
-    }
-
-    this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE, packetLength, 0, 0, cb);
+    return this.configAdvancedBurst(this.ADVANCED_BURST.ENABLE, maxPacketLength, 0, 0);
   }
 
-  disableAdvancedBurst(callback) {
-    this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE, this.ADVANCED_BURST.MAX_PACKET_24BYTES, 0, 0, callback);
+  disableAdvancedBurst() {
+    return this.configAdvancedBurst(this.ADVANCED_BURST.DISABLE, this.ADVANCED_BURST.MAX_PACKET_24BYTES, 0, 0);
   }
 
-  configAdvancedBurst(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount, callback) {
-    var cb = callback;
+  configAdvancedBurst(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
 
-    if (typeof stallCount === 'function')
-      cb = stallCount;
-
-    this.sendMessage(new ConfigureAdvancedBurstMessage(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount), undefined, undefined, cb);
+    return this.sendMessage(new ConfigureAdvancedBurstMessage(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount));
   }
 
-  getSerialNumber(callback) {
+  getSerialNumber() {
 
-    this.sendMessage(new RequestMessage(undefined, Message.prototype.DEVICE_SERIAL_NUMBER), Message.prototype.MESSAGE[Message.prototype.DEVICE_SERIAL_NUMBER], undefined, callback);
+    return this.sendMessage(new RequestMessage(undefined, Message.prototype.DEVICE_SERIAL_NUMBER), Message.prototype.MESSAGE[Message.prototype.DEVICE_SERIAL_NUMBER]);
   }
 
-  configEventBuffer(config, size, time, callback) {
-    this.sendMessage(new ConfigureEventBufferMessage(config, size, time), undefined, undefined, callback);
+  configEventBuffer(config, size, time) {
+    return this.sendMessage(new ConfigureEventBufferMessage(config, size, time));
   }
 
-  getEventBufferConfiguration(callback) {
+  getEventBufferConfiguration() {
 
-    this.sendMessage(new RequestMessage(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION), Message.prototype.MESSAGE[Message.prototype.EVENT_BUFFER_CONFIGURATION], undefined, callback);
+    return this.sendMessage(new RequestMessage(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION), Message.prototype.MESSAGE[Message.prototype.EVENT_BUFFER_CONFIGURATION]);
   }
 
-  getChannelStatus(channel, callback) {
+  getChannelStatus(channel) {
 
-    this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_STATUS), Message.prototype.MESSAGE[Message.prototype.CHANNEL_STATUS], channel, callback);
+    return this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_STATUS), Message.prototype.MESSAGE[Message.prototype.CHANNEL_STATUS], channel);
   }
 
   // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"
   // 0 - Disabled, 0x20 = Enable RX timestamp output, 0x40 - Enable RSSI output, 0x80 - Enabled Channel ID output
-  libConfig(libConfig, callback) {
+  libConfig(libConfig) {
 
-    this.sendMessage(new LibConfigMessage(libConfig), this.EVENT.OK, 0, callback);
+    return this.sendMessage(new LibConfigMessage(libConfig), this.EVENT.OK, 0);
   }
 
   // Unassign a channel. A channel must be unassigned before it may be reassigned. (spec p. 63)
-  unAssignChannel(channel, callback) {
+  unAssignChannel(channel) {
 
-    this.sendMessage(new UnAssignChannelMessage(channel), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new UnAssignChannelMessage(channel), this.EVENT.OK, channel);
   }
 
   /* Reserves channel number and assigns channel type and network number to the channel, sets all other configuration parameters
      to defaults. Assign channel command should be issued before any other channel configuration messages
      (p. 64 ANT Message Protocol And Usaga Rev 50) -> also sets defaults values for RF, period, tx power, search timeout p.22 */
-  assignChannel(channel, channelType, networkNumber, extendedAssignment, callback) {
-    var cb,
-      configurationMsg;
+  assignChannel(channel, channelType, networkNumber, extendedAssignment) {
+    const configurationMsg = extendedAssignment === undefined ?
+      new AssignChannelMessage(channel, channelType, networkNumber) :
+      new AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment);
 
-    if (typeof extendedAssignment === "function") {
-      cb = extendedAssignment; // If no extended assignment use argument as callback
-      configurationMsg = new AssignChannelMessage(channel, channelType, networkNumber);
-    } else {
-      cb = callback;
-      configurationMsg = new AssignChannelMessage(channel, channelType, networkNumber, extendedAssignment);
-    }
-
-    this.sendMessage(configurationMsg, this.EVENT.OK, channel, cb);
+    return this.sendMessage(configurationMsg, this.EVENT.OK, channel);
 
   }
 
   /* Master: id transmitted along with messages Slave: sets channel ID to match the master it wishes to find,
    0 = wildcard "When the device number is fully known the pairing bit is ignored" (spec. p. 65)
   */
-  setChannelId(channel, deviceNum, deviceType, transmissionType, callback) {
+  setChannelId(channel, deviceNum, deviceType, transmissionType) {
 
-    this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetChannelIDMessage(channel, deviceNum, deviceType, transmissionType), this.EVENT.OK, channel);
   }
 
   // Uses the lower 2 bytes of the device serial number as channel Id.
-  setSerialNumChannelId(channel, deviceType, transmissionType, callback) {
+  setSerialNumChannelId(channel, deviceType, transmissionType) {
 
-    this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetSerialNumChannelIdMessage(channel, deviceType, transmissionType), this.EVENT.OK, channel);
   }
 
-  setChannelPeriod(channel, messagePeriod, callback) {
+  setChannelPeriod(channel, messagePeriod) {
 
-    this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetChannelPeriodMessage(channel, messagePeriod), this.EVENT.OK, channel);
   }
 
   // Low priority search mode
   // Spec. p. 72 : "...a low priority search will not interrupt other open channels on the device while searching",
   // "If the low priority search times out, the module will switch to high priority mode"
-  setLowPriorityChannelSearchTimeout(channel, searchTimeout, callback) {
+  setLowPriorityChannelSearchTimeout(channel, searchTimeout) {
     // Timeout in sec. : ucSearchTimeout * 2.5 s, 255 = infinite, 0 = disable low priority search
 
-    this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetLowPriorityChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel);
   }
 
   // Set High priority search timeout, each count in searchTimeout = 2.5 s, 255 = infinite,
   //0 = disable high priority search mode (default search timeout is 25 seconds)
-  setChannelSearchTimeout(channel, searchTimeout, callback) {
+  setChannelSearchTimeout(channel, searchTimeout) {
 
-    this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetChannelSearchTimeoutMessage(channel, searchTimeout), this.EVENT.OK, channel);
   }
 
   // Set the RF frequency, i.e 66 = 2466 MHz
-  setChannelRFFreq(channel, RFFreq, callback) {
+  setChannelRFFreq(channel, RFFreq) {
 
-    this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetChannelRFFreqMessage(channel, RFFreq), this.EVENT.OK, channel);
   }
 
   // Set network key for specific net
-  setNetworkKey(netNumber, key, callback) {
+  setNetworkKey(netNumber, key) {
 
-    this.sendMessage(new SetNetworkKeyMessage(netNumber, key), this.EVENT.OK, 0, callback);
+    return this.sendMessage(new SetNetworkKeyMessage(netNumber, key), this.EVENT.OK, 0);
   }
 
   // Set search waveform individual channel
-  setSearchWaveform(channel, searchWaveform, callback) {
+  setSearchWaveform(channel, searchWaveform) {
 
-    this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetSearchWaveformMessage(channel, searchWaveform), this.EVENT.OK, channel);
   }
 
   // Set transmit power for all channels
-  setTransmitPower(transmitPower, callback) {
+  setTransmitPower(transmitPower) {
 
-    this.sendMessage(new SetTransmitPowerMessage(transmitPower), this.EVENT.OK, 0, callback);
+    return this.sendMessage(new SetTransmitPowerMessage(transmitPower), this.EVENT.OK, 0);
   }
 
   // Set transmit power for individual channel
-  setChannelTxPower(channel, transmitPower, callback) {
+  setChannelTxPower(channel, transmitPower) {
 
-    this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetChannelTxPowerMessage(channel, transmitPower), this.EVENT.OK, channel);
   }
 
   // "Enabled a one-time proximity requirement for searching. Once a proximity searh has been successful, this threshold value will be cleared" (spec. p. 76)
-  setProximitySearch(channel, searchThreshold, callback) {
+  setProximitySearch(channel, searchThreshold) {
 
-    this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new SetProximitySearchMessage(channel, searchThreshold), this.EVENT.OK, channel);
   }
 
-  openRxScanMode(channel, callback) {
+  openRxScanMode(channel) {
 
-    this.sendMessage(new OpenRxScanModeMessage(channel), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new OpenRxScanModeMessage(channel), this.EVENT.OK, channel);
   }
 
   // Opens a previously assigned and configured channel. Data messages or events begins to be issued. (spec p. 88)
-  openChannel(channel, callback) {
+  openChannel(channel) {
 
-    this.sendMessage(new OpenChannelMessage(channel), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new OpenChannelMessage(channel), this.EVENT.OK, channel);
   }
 
   // Close a channel that has been previously opened. Channel still remains assigned and can be reopened at any time. (spec. p 88)
-  closeChannel(channel, callback) {
+  closeChannel(channel) {
 
     // Wait for EVENT_CHANNEL_CLOSED ?
     // If channel status is tracking -> can get broadcast data packet before event channel closed packet
 
-    this.sendMessage(new CloseChannelMessage(channel), this.EVENT.OK, channel, callback);
+    return this.sendMessage(new CloseChannelMessage(channel), this.EVENT.OK, channel);
 
   }
 

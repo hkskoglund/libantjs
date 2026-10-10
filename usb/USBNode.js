@@ -53,7 +53,7 @@ class USBNode extends USBDevice {
       this.log.debug('Attached device ' + this.deviceToString(device));
     }
 
-    this._refreshDevices(() => this.emit('attach', device));
+    this._refreshAndEmit('attach', device);
   }
 
   _onDetach(event) {
@@ -66,10 +66,19 @@ class USBNode extends USBDevice {
       this.log.debug('Detached device ' + this.deviceToString(device));
     }
 
-    this._refreshDevices(() => this.emit('detach', device));
+    this._refreshAndEmit('detach', device);
   }
 
-  deviceToString(device, callback) {
+  async _refreshAndEmit(eventName, device) {
+    try {
+      await this.refreshDevices();
+    } catch {
+      // The event is still emitted; the previous device list is kept
+    }
+    this.emit(eventName, device);
+  }
+
+  deviceToString(device) {
     let description = 'Bus ' + device.bus +
       ' Number ' + device.address +
       ': ID ' + device.vendorId.toString(16) +
@@ -82,10 +91,6 @@ class USBNode extends USBDevice {
       description += ' ' + device.productName;
     }
 
-    if (typeof callback === 'function') {
-      process.nextTick(callback, undefined, description);
-    }
-
     return description;
   }
 
@@ -96,21 +101,16 @@ class USBNode extends USBDevice {
     );
   }
 
-  _refreshDevices(callback) {
-    this.usb.getDevices().then((devices) => {
-      this.devices = devices.filter((device) => this._isANTDevice(device));
-      this.emit(this.EVENT.ENUMERATION_COMPLETE);
-      callback(undefined, this.devices);
-    }, (error) => {
-      callback(error, this.devices);
-    });
+  // usb@3 enumerates asynchronously
+  async refreshDevices() {
+    const devices = await this.usb.getDevices();
+    this.devices = devices.filter((device) => this._isANTDevice(device));
+    this.emit(this.EVENT.ENUMERATION_COMPLETE);
+    return this.devices;
   }
 
-  // usb@3 enumerates asynchronously: pass a callback for a fresh list. Without one, the list from the last enumeration is returned.
-  getDevices(callback) {
-    if (typeof callback === 'function') {
-      this._refreshDevices(callback);
-    }
+  // The list from the last enumeration; use refreshDevices() for a fresh list.
+  getDevices() {
     return this.devices;
   }
 
@@ -130,13 +130,13 @@ class USBNode extends USBDevice {
     return Boolean(error) && error.message === 'Cancelled';
   }
 
-  _generateError(error, callback) {
+  _generateError(error) {
     const generatedError = error instanceof Error
       ? error
       : Object.assign(new Error(error.message), { code: error.code });
 
     this.emit(this.EVENT.ERROR, generatedError);
-    callback(generatedError);
+    return generatedError;
   }
 
   // Some ANT sticks report a broken configuration string descriptor, so fall back to the standard endpoint layout.
@@ -184,64 +184,62 @@ class USBNode extends USBDevice {
     this.outEndpoint = outEndpoint;
   }
 
-  init(preferredDeviceIndex, callback) {
+  async init(preferredDeviceIndex) {
     this._addUSBListeners();
 
-    const fail = (error) => {
+    let devices;
+    let enumerationError;
+    try {
+      devices = await this.refreshDevices();
+    } catch (error) {
+      enumerationError = error;
+      devices = this.devices;
+    }
+
+    this.device = devices[preferredDeviceIndex];
+    if (!this.device) {
       this._removeUSBListeners();
-      this._generateError(error, callback);
-    };
+      throw this._generateError(enumerationError || this.ERROR.NO_DEVICE);
+    }
 
-    this._refreshDevices(async (enumerationError, devices) => {
-      this.device = devices[preferredDeviceIndex];
-      if (!this.device) {
-        fail(enumerationError || this.ERROR.NO_DEVICE);
-        return;
-      }
+    if (this.log.logging) {
+      this.log.debug('Init device ' + preferredDeviceIndex + ' ' + this.deviceToString(this.device));
+    }
 
+    try {
+      await this.device.open();
+      // Reset to discard queued broadcast data left by a previous connection.
+      await this.device.reset();
+    } catch (resetError) {
       if (this.log.logging) {
-        this.log.debug('Init device ' + preferredDeviceIndex + ' ' + this.deviceToString(this.device));
+        this.log.error('Failed to reset device', resetError);
       }
 
+      this._removeUSBListeners();
+      let error = resetError;
       try {
-        await this.device.open();
-        // Reset to discard queued broadcast data left by a previous connection.
-        await this.device.reset();
-      } catch (resetError) {
-        if (this.log.logging) {
-          this.log.error('Failed to reset device', resetError);
-        }
-
-        this._removeUSBListeners();
-        let error = resetError;
-        try {
-          await this.device.close();
-        } catch (closeError) {
-          error = new Error('Failed to reset and close USB device');
-          error.resetError = resetError;
-          error.closeError = closeError;
-        }
-        this.device = undefined;
-        callback(error);
-        return;
+        await this.device.close();
+      } catch (closeError) {
+        error = new Error('Failed to reset and close USB device');
+        error.resetError = resetError;
+        error.closeError = closeError;
       }
+      this.device = undefined;
+      throw error;
+    }
 
+    try {
+      await this._claimInterface();
+    } catch (claimError) {
+      this._removeUSBListeners();
       try {
-        await this._claimInterface();
-      } catch (claimError) {
-        this._removeUSBListeners();
-        try {
-          await this.device.close();
-        } catch (closeError) {
-          claimError.closeError = closeError;
-        }
-        this.device = undefined;
-        callback(claimError);
-        return;
+        await this.device.close();
+      } catch (closeError) {
+        claimError.closeError = closeError;
       }
-
-      callback();
-    });
+      this.device = undefined;
+      throw claimError;
+    }
   }
 
   async _releaseDevice() {
@@ -269,17 +267,16 @@ class USBNode extends USBDevice {
     return firstError;
   }
 
-  exit(callback) {
+  async exit() {
     if (!this.device) {
-      this._generateError(this.ERROR.NO_DEVICE, callback);
-      return;
+      throw this._generateError(this.ERROR.NO_DEVICE);
     }
 
     // A claimed interface cannot be released while a transfer is pending.
     const wasPolling = this.polling;
     this.polling = false;
     if (wasPolling) {
-      this.transfer(RESET_SYSTEM_MESSAGE);
+      this.transfer(RESET_SYSTEM_MESSAGE).catch(() => {});
     }
 
     let pollWaitTimer;
@@ -288,21 +285,21 @@ class USBNode extends USBDevice {
       new Promise((resolve) => { pollWaitTimer = setTimeout(resolve, EXIT_POLL_WAIT); })
     ]);
 
-    Promise.all([pollEnded, this.outQueue]).then(() => {
-      clearTimeout(pollWaitTimer);
-      if (this.log.logging) {
-        this.log.debug('Polling ended (no transfers pending)');
-      }
-      return this._releaseDevice();
-    }).then((error) => {
-      this.emit(this.EVENT.CLOSED);
-      this._removeUSBListeners();
-      this.deviceInterface = null;
-      this.inEndpoint = null;
-      this.outEndpoint = null;
-      this.device = null;
-      callback(error);
-    });
+    await Promise.all([pollEnded, this.outQueue]);
+    clearTimeout(pollWaitTimer);
+    if (this.log.logging) {
+      this.log.debug('Polling ended (no transfers pending)');
+    }
+    const error = await this._releaseDevice();
+    this.emit(this.EVENT.CLOSED);
+    this._removeUSBListeners();
+    this.deviceInterface = null;
+    this.inEndpoint = null;
+    this.outEndpoint = null;
+    this.device = null;
+    if (error) {
+      throw error;
+    }
   }
 
   _onInEndpointError(error) {
@@ -390,35 +387,28 @@ class USBNode extends USBDevice {
     this.pollPromise = this._poll();
   }
 
-  transfer(chunk, callback) {
+  transfer(chunk) {
     const buffer = Uint8Array.from(chunk);
     if (this.log.logging) {
       this.log.debug('TX', buffer);
     }
 
-    const done = typeof callback === 'function' ? callback : () => {};
-
     if (!this.outEndpoint) {
-      done(new Error('USB device closed'));
-      return;
+      return Promise.reject(new Error('USB device closed'));
     }
 
     const device = this.device;
     const endpoint = this.outEndpoint;
 
     // The native binding rejects overlapping transfers on the same endpoint.
-    this.outQueue = this.outQueue.then(async () => {
-      let error;
-      try {
-        const result = await device.transferOut(endpoint.endpointNumber, buffer, endpoint.timeout);
-        if (result.status !== 'ok') {
-          error = new Error('USB transfer out failed with status ' + result.status);
-        }
-      } catch (transferError) {
-        error = transferError;
+    const transferred = this.outQueue.then(async () => {
+      const result = await device.transferOut(endpoint.endpointNumber, buffer, endpoint.timeout);
+      if (result.status !== 'ok') {
+        throw new Error('USB transfer out failed with status ' + result.status);
       }
-      process.nextTick(done, error);
     });
+    this.outQueue = transferred.catch(() => {});
+    return transferred;
   }
 }
 

@@ -11,12 +11,16 @@ class HostDevices {
     this.channel[channel.channel] = channel;
   }
 
-  getDevices(callback) {
-    return this.usb.getDevices(callback);
+  getDevices() {
+    return this.usb.getDevices();
   }
 
-  deviceToString(device, callback) {
-    this.usb.deviceToString(device,callback);
+  refreshDevices() {
+    return this.usb.refreshDevices();
+  }
+
+  deviceToString(device) {
+    return this.usb.deviceToString(device);
   }
 
   listDevices() {
@@ -27,43 +31,18 @@ class HostDevices {
     return str;
   }
 
-  init(iDevice, onInit) {
+  async init(iDevice) {
 
-    var onUSBinit = function(onInit, error) {
+    await this.usb.init(iDevice);
 
-      if (error) {
-        onInit(error);
-      } else {
+    this.usb.on(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
 
-        this.usb.on(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
+    this.usb.listen();
 
-        this.usb.listen();
-
-        this.resetSystem(onInit);
-
-      }
-    }.bind(this);
-
-    /*
-              this.libConfig(libConfig.getFlagsByte(),
-                  function _libConfig(error, channelResponse)
-  {
-                      if (!error)
-  {
-
-                          if (this.log.logging)
-                              this.log.debug( libConfig.toString());
-                          _doLibConfigCB();
-                      }
-                      else
-                          _doLibConfigCB(error);
-                  }.bind(this)); */
-
-    this.usb.init(iDevice, onUSBinit.bind(this, onInit));
-
+    return this.resetSystem();
   }
 
-  exit(callback) {
+  async exit() {
 
     // Stop profile retry timers so nothing is sent on the USB device after it is closed
     for (var i = 0; i < this.MAX_CHAN; i++) {
@@ -72,29 +51,37 @@ class HostDevices {
       }
     }
 
-    this.resetSystem(function _onReset(resetError, notificationStartup) {
+    let resetError;
+    let usbExitError;
 
-      for (var c = 0; c < this.MAX_CHAN; c++) {
-        this.channel[c].removeAllListeners();
-      }
+    try {
+      await this.resetSystem();
+    } catch (error) {
+      resetError = error;
+    }
 
-      this.usb.exit(function _onUSBexit(usbExitError) {
+    for (var c = 0; c < this.MAX_CHAN; c++) {
+      this.channel[c].removeAllListeners();
+    }
 
-        this.removeAllListeners();
+    try {
+      await this.usb.exit();
+    } catch (error) {
+      usbExitError = error;
+    }
 
-        if (resetError && usbExitError) {
-          var shutdownError = new Error('Shutdown failed during reset and USB exit');
-          shutdownError.resetError = resetError;
-          shutdownError.usbExitError = usbExitError;
-          callback(shutdownError);
-        } else {
-          callback(resetError || usbExitError);
-        }
+    this.removeAllListeners();
 
-      }.bind(this));
+    if (resetError && usbExitError) {
+      var shutdownError = new Error('Shutdown failed during reset and USB exit');
+      shutdownError.resetError = resetError;
+      shutdownError.usbExitError = usbExitError;
+      throw shutdownError;
+    }
 
-    }.bind(this));
-
+    if (resetError || usbExitError) {
+      throw resetError || usbExitError;
+    }
   }
 
 }

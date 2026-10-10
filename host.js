@@ -1,6 +1,6 @@
 'use strict';
 
-var EventEmitter = require('events'),
+var { EventEmitter, once } = require('events'),
   Logger = require('./util/logger'),
   Channel = require('./channel/channel'),
   USBDevice = require('./usb/USBDevice'),
@@ -25,71 +25,49 @@ class Host extends EventEmitter {
     this.usb.on(USBDevice.prototype.EVENT.ERROR, this.onUSBError.bind(this));
   }
 
-  // Send a message to ANT
-  sendMessage(message, event, channel, callback) {
+  // Send a message to ANT. Resolves with the response message when a response event is awaited, otherwise when the transfer completes.
+  async sendMessage(message, event, channel) {
+    const emitter = typeof channel === 'number' ? this.channel[channel] : this;
+    const responseEvent = typeof channel === 'number' && event ? event + '_0x' + message.id.toString(16) : event;
+    const messageStr = message.toString();
+    let response;
+    let controller;
 
-    var msgBytes,
-      messageStr,
-      responseEvent,
-      hasCallback = typeof callback === 'function',
+    if (event) {
+      controller = new AbortController();
+      response = once(emitter, responseEvent, { signal: controller.signal });
 
-      onSentToANT = function _onSentToANT(error, msg) {
-
-        if (error) {
-
-          if (this.log.logging) {
-            this.log.error( 'TX failed of ' + messageStr, error);
-          }
-
-          if (event && hasCallback) {
-            if (typeof channel !== 'number') {
-              this.removeListener(event, callback);
-            } else {
-              this.channel[channel].removeListener(responseEvent, callback);
-            }
-          }
-
-          if (hasCallback) {
-            callback(error, msg);
-          }
-          return;
-        }
-
-        if (!event && hasCallback) { // i.e send acknowledged data
-          callback(error, msg);
-        }
-
-      }.bind(this);
-
-    if (event && hasCallback) {
-
-      if (typeof channel !== 'number') {
-
-        this.once(event, callback);
-
-        if (this.log.logging)
-          this.log.debug( 'Waiting for ' + event + ' - host');
-
-      } else {
-
-        responseEvent = event + '_0x' + message.id.toString(16);
-        this.channel[channel].once(responseEvent, callback);
-
-        if (this.log.logging)
-          this.log.debug( 'Waiting for ' + responseEvent + ' channel ' + channel);
-      }
-
+      if (this.log.logging)
+        this.log.debug('Waiting for ' + responseEvent + (typeof channel === 'number' ? ' channel ' + channel : ' - host'));
     }
-
-    messageStr = message.toString();
 
     if (this.log.logging) {
-      this.log.debug( 'Sending ' + messageStr);
+      this.log.debug('Sending ' + messageStr);
     }
 
-    msgBytes = message.serialize();
+    try {
+      await this.usb.transfer(message.serialize());
+    } catch (error) {
+      if (this.log.logging) {
+        this.log.error('TX failed of ' + messageStr, error);
+      }
 
-    this.usb.transfer(msgBytes, onSentToANT);
+      if (controller) {
+        controller.abort();
+        response.catch(() => {});
+      }
+      throw error;
+    }
+
+    if (!response) {
+      return undefined;
+    }
+
+    const [error, responseMessage] = await response;
+    if (error) {
+      throw error;
+    }
+    return responseMessage;
   }
 }
 

@@ -1,88 +1,75 @@
-var masterHost = new(require('../host'))({
-  log: true,
-  debugLevel: 0
-});
-var masterPort = 0;
-var MasterChannel0 = masterHost.channel[0];
-var dataSeed = 0;
-var devices;
+const Host = require('../host');
 
-function onMasterChannel0Open(error, msg) {
-  console.log('master open', error, msg);
-}
+const masterHost = new Host({ log: true, debugLevel: 0 });
+const masterPort = 0;
+const masterChannel0 = masterHost.channel[0];
+let dataSeed = 0;
 
 function generateBurstData() {
-  var burst = new Uint8Array(24*10000),
-    i;
-  for (i = 0; i < burst.byteLength; i++)
+  const burst = new Uint8Array(24 * 10000);
+  for (let i = 0; i < burst.byteLength; i++)
     burst[i] = i & 0xFF;
 
   return burst;
 }
 
-function onMasterAssigned(error) {
-  var sendFunc,
-    burstData = generateBurstData(),
-    data,
-    sendData = function() {
-      if (dataSeed + 7 <= 0xFF)
-        dataSeed += 8;
-      else
-        dataSeed = 0;
+async function main() {
+  const burstData = generateBurstData();
 
-      if (dataSeed === 8) {
-        sendFunc = MasterChannel0.sendBurst;
-        data = burstData;
-        sendFunc.call(MasterChannel0, data, 1,function _sendFunc(err, msg) {
-          if (err) console.error('send fail!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', err);
-        });
+  await masterHost.refreshDevices();
+  console.log('master device', masterHost.getDevices()[masterPort]);
 
+  await masterHost.init(masterPort);
+  console.log('master inited');
+
+  await masterChannel0.master();
+  console.log('master assigned');
+
+  const sendData = async () => {
+    if (dataSeed + 7 <= 0xFF)
+      dataSeed += 8;
+    else
+      dataSeed = 0;
+
+    if (dataSeed === 8) {
+      try {
+        await masterChannel0.sendBurst(burstData, 1);
+      } catch (err) {
+        console.error('send fail!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', err);
       }
-    }.bind(this);
-
-  console.log('master assigned', error);
+    }
+  };
 
   // Standard broadcast
-  MasterChannel0.on("EVENT_TX", function(err, resp) {
+  masterChannel0.on('EVENT_TX', (err, resp) => {
     console.log('EVENT_TX', resp);
     sendData();
   });
 
   // Acknowledged broadcast/Burst data
-  MasterChannel0.on("EVENT_TRANSFER_TX_COMPLETED", function(err, resp) {
+  masterChannel0.on('EVENT_TRANSFER_TX_COMPLETED', (err, resp) => {
     console.log('EVENT_TRANSFER_TX_COMPLETED', resp);
     sendData();
   });
 
-  MasterChannel0.on("EVENT_TRANSFER_TX_FAILED", function(err, resp) {
+  masterChannel0.on('EVENT_TRANSFER_TX_FAILED', (err, resp) => {
     console.log('EVENT_TRANSFER_TX_FAILED', resp);
     sendData();
   });
 
   // Reopen
-  MasterChannel0.on('EVENT_CHANNEL_CLOSED', function(err, msg) {
+  masterChannel0.on('EVENT_CHANNEL_CLOSED', () => {
     console.log('EVENT_CHANNEL_CLOSED');
 
-    setTimeout(function() {
-      MasterChannel0.open(onMasterChannel0Open);
+    setTimeout(() => {
+      masterChannel0.open().then((msg) => console.log('master open', msg), onError);
     }, 3000);
-
   });
 
-  MasterChannel0.setId(1, 1, 1, function(err, msg) {
-    console.log('setChannelId response', msg.toString());
+  const idResponse = await masterChannel0.setId(1, 1, 1);
+  console.log('setChannelId response', idResponse.toString());
 
-    MasterChannel0.open(onMasterChannel0Open);
-
-  });
-
-}
-
-function onMasterInited(error) {
-  console.log('master inited', error);
-
-          MasterChannel0.master(0, onMasterAssigned);
-
+  console.log('master open', await masterChannel0.open());
 }
 
 function onError(error) {
@@ -90,13 +77,4 @@ function onError(error) {
   console.error('error', error);
 }
 
-devices = masterHost.getDevices();
-
-try {
-  console.log('master device', devices[masterPort]);
-
-  masterHost.init(masterPort, onMasterInited);
-
-} catch (err) {
-  onError(err);
-}
+main().catch(onError);

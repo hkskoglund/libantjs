@@ -26,17 +26,14 @@ class LinkManager extends EventEmitter {
 
   onReset() {
 
-  const onSwitchedFreqPeriod = function _onSwitchedFreqPeriod(e)
-  {
-    if (e & this.log.logging)
-      this.log.error( 'Failed to reset search frequency to default ANT-FS 2450 MHz');
-  }.bind(this);
-
   this.removeAllListeners('link');
   this.once('link', this.onLink.bind(this));
   this.linkBeaconCount = 0;
   this.host.layerState.set(State.prototype.LINK);
-  this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onSwitchedFreqPeriod);
+  this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).catch(() => {
+    if (this.log.logging)
+      this.log.error( 'Failed to reset search frequency to default ANT-FS 2450 MHz');
+  });
 
   }
 
@@ -66,11 +63,10 @@ class LinkManager extends EventEmitter {
 
       if (this.host.frequency !== authentication_RF) {
 
-        this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8,
-          function _switchFreq(err) {
-            if (!err && this.log.logging)
-              this.log.debug( 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
-          }.bind(this.host));
+        this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).then(() => {
+          if (this.log.logging)
+            this.log.debug( 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
+        }, () => {});
       }
 
     }.bind(this),
@@ -96,7 +92,7 @@ class LinkManager extends EventEmitter {
 
       this.once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
 
-      this.sendAcknowledged(linkRequest, onSentToANT);
+      this.sendAcknowledged(linkRequest).then(() => onSentToANT(), onSentToANT);
 
     }.bind(this.host);
 
@@ -105,46 +101,14 @@ class LinkManager extends EventEmitter {
 
   if (this.host.frequency !== this.host.NET.FREQUENCY.ANTFS)
   // In case client drops to link layer from higher layers (communicating on the agreed upon authentication RF)
-    this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, onFrequencyAndPeriodSet.bind(this));
+    this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).then(onFrequencyAndPeriodSet, onFrequencyAndPeriodSet); // Continue even if switching failed
   else
     onFrequencyAndPeriodSet.call(this);
 
   }
 
-  switchFrequencyAndPeriod(frequency, period, callback) {
-
-  let newPeriod,
-    switchFreq = function _switchFreq() {
-      if (this.host.frequency !== frequency)
-        this.host.setFrequency(frequency, function _setFreq(err) {
-
-          if (err) {
-            if (this.log.logging)
-              this.log.error( 'Failed to switch frequency to ' + (2400 + frequency) + 'MHz');
-            callback(err);
-            return;
-          }
-
-          switchPeriod();
-        }.bind(this));
-      else
-        switchPeriod();
-
-    }.bind(this),
-
-    switchPeriod = function _switchPeriod() {
-      if (this.host.period !== period)
-        this.host.setPeriod(newPeriod, function _setPeriod(err, msg) {
-          if (err) {
-            if (this.log.logging)
-              this.log.error( 'Failed to switch period to ' + newPeriod);
-          }
-
-          callback(err, msg);
-        }.bind(this));
-      else
-        callback();
-    }.bind(this);
+  async switchFrequencyAndPeriod(frequency, period) {
+  let newPeriod;
 
   switch (period) {
 
@@ -169,28 +133,54 @@ class LinkManager extends EventEmitter {
       break;
   }
 
-  switchFreq();
+  if (this.host.frequency !== frequency) {
+    try {
+      await this.host.setFrequency(frequency);
+    } catch (err) {
+      if (this.log.logging)
+        this.log.error( 'Failed to switch frequency to ' + (2400 + frequency) + 'MHz');
+      throw err;
+    }
   }
 
-  disconnect(callback) {
-    const disconnectRequest = new DisconnectRequest(),
-      onSentToANT = function _onSentToANT(e) {
-        if (e && this.log.logging)
-          this.log.error('Failed to send disconnect request to ANT');
-      };
+  if (this.host.period !== period) {
+    try {
+      return await this.host.setPeriod(newPeriod);
+    } catch (err) {
+      if (this.log.logging)
+        this.log.error( 'Failed to switch period to ' + newPeriod);
+      throw err;
+    }
+  }
+  }
+
+  // Resolves when the client acknowledges the disconnect, rejects if it is not received
+  disconnect() {
+    const disconnectRequest = new DisconnectRequest();
 
     this.host.layerState.set(State.prototype.LINK);
 
-    this.host.once('EVENT_TRANSFER_TX_COMPLETED', callback);
-    this.host.once('EVENT_TRANSFER_TX_FAILED', function _disconnectFailed() {
-      const msg = 'Failed to send disconnect request to client, letting client timeout on session';
-      this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED', callback);
-      if (this.log.logging)
-        this.log.debug(msg);
-      callback(new Error(msg));
-    }.bind(this));
+    return new Promise((resolve, reject) => {
+      const onCompleted = () => {
+        this.host.removeListener('EVENT_TRANSFER_TX_FAILED', onFailed);
+        resolve();
+      };
+      const onFailed = () => {
+        const msg = 'Failed to send disconnect request to client, letting client timeout on session';
+        this.host.removeListener('EVENT_TRANSFER_TX_COMPLETED', onCompleted);
+        if (this.log.logging)
+          this.log.debug(msg);
+        reject(new Error(msg));
+      };
 
-    this.host.sendAcknowledged(disconnectRequest, onSentToANT);
+      this.host.once('EVENT_TRANSFER_TX_COMPLETED', onCompleted);
+      this.host.once('EVENT_TRANSFER_TX_FAILED', onFailed);
+
+      this.host.sendAcknowledged(disconnectRequest).catch(() => {
+        if (this.log.logging)
+          this.log.error('Failed to send disconnect request to ANT');
+      });
+    });
   }
 }
 

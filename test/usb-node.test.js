@@ -56,7 +56,8 @@ function createDevice(overrides = {}) {
   }, overrides);
 }
 
-const once = (node, callbackName, ...args) => new Promise((resolve) => node[callbackName](...args, (...results) => resolve(results)));
+// Settles an async method into [error, result]
+const settle = (node, method, ...args) => node[method](...args).then((result) => [undefined, result], (error) => [error]);
 
 test('USBNode filters ANT devices and refreshes the sync device list', async () => {
   const ant = createDevice();
@@ -65,21 +66,18 @@ test('USBNode filters ANT devices and refreshes the sync device list', async () 
   node.usb = createUSB([other, ant]);
 
   assert.deepEqual(node.getDevices(), []);
-  const [error, devices] = await once(node, 'getDevices');
+  const [error, devices] = await settle(node, 'refreshDevices');
 
   assert.equal(error, undefined);
   assert.deepEqual(devices, [ant]);
   assert.deepEqual(node.getDevices(), [ant]);
 });
 
-test('USBNode describes devices', async () => {
+test('USBNode describes devices', () => {
   const node = new USBNode({});
   const device = createDevice();
 
   assert.equal(node.deviceToString(device), 'Bus 001 Number 1: ID fcf:1008 Dynastream Innovations, ANT USB-2 Stick');
-  const [error, description] = await once(node, 'deviceToString', device);
-  assert.equal(error, undefined);
-  assert.equal(description, node.deviceToString(device));
 });
 
 test('USBNode emits errors from endpoint events', () => {
@@ -108,13 +106,13 @@ test('USBNode emits endpoint data as a copied Uint8Array', () => {
   assert.deepEqual(Array.from(receivedData), [1, 2, 3]);
 });
 
-test('USBNode reports no-device errors to both its error event and init callback', async () => {
+test('USBNode reports no-device errors to both its error event and init rejection', async () => {
   const node = new USBNode({});
   node.usb = createUSB([]);
   let emittedError;
 
   node.on('error', error => { emittedError = error; });
-  const [callbackError] = await once(node, 'init', 0);
+  const [callbackError] = await settle(node, 'init', 0);
 
   assert.equal(callbackError, emittedError);
   assert.equal(callbackError.message, 'No device');
@@ -133,7 +131,7 @@ test('USBNode reports reset and close failures together and removes its listener
   const node = new USBNode({});
   node.usb = createUSB([device]);
 
-  const [callbackError] = await once(node, 'init', 0);
+  const [callbackError] = await settle(node, 'init', 0);
 
   assert.equal(callbackError.message, 'Failed to reset and close USB device');
   assert.equal(callbackError.resetError, resetError);
@@ -149,7 +147,7 @@ test('USBNode opens, resets and claims the interface using default endpoints', a
   const node = new USBNode({});
   node.usb = createUSB([device]);
 
-  const [error] = await once(node, 'init', 0);
+  const [error] = await settle(node, 'init', 0);
 
   assert.equal(error, undefined);
   assert.deepEqual(device.calls, ['open', 'reset', 'claimInterface']);
@@ -165,7 +163,7 @@ test('USBNode closes the device when claiming fails', async () => {
   const node = new USBNode({});
   node.usb = createUSB([device]);
 
-  const [error] = await once(node, 'init', 0);
+  const [error] = await settle(node, 'init', 0);
 
   assert.equal(error, claimError);
   assert.deepEqual(device.calls, ['open', 'reset', 'detachKernelDriver', 'close']);
@@ -189,11 +187,11 @@ test('USBNode polls, transmits, and exits with kernel driver reattached', async 
   const received = [];
   node.on('data', data => received.push(Array.from(data)));
 
-  assert.equal((await once(node, 'init', 0))[0], undefined);
+  assert.equal((await settle(node, 'init', 0))[0], undefined);
   node.listen();
-  const [sendError] = await new Promise(resolve => node.transfer([1, 2, 3], (...args) => resolve(args)));
+  const [sendError] = await settle(node, 'transfer', [1, 2, 3]);
   assert.equal(sendError, undefined);
-  const [exitError] = await once(node, 'exit');
+  const [exitError] = await settle(node, 'exit');
 
   assert.equal(exitError, undefined);
   assert.deepEqual(received, [[0xa4, 1, 0x6f, 0x20, 0xea]]);
@@ -210,7 +208,7 @@ test('USBNode emits polling errors and stops polling', async () => {
   const errors = [];
   node.on('error', error => errors.push(error));
 
-  await once(node, 'init', 0);
+  await settle(node, 'init', 0);
   node.listen();
   await node.pollPromise;
 
@@ -218,20 +216,17 @@ test('USBNode emits polling errors and stops polling', async () => {
   assert.equal(node.polling, false);
 });
 
-test('USBNode transfer reports a closed device', () => {
+test('USBNode transfer reports a closed device', async () => {
   const node = new USBNode({});
-  let error;
 
-  node.transfer([1], (transferError) => { error = transferError; });
-
-  assert.equal(error.message, 'USB device closed');
+  await assert.rejects(node.transfer([1]), { message: 'USB device closed' });
 });
 
 test('USBNode exit without a device reports no-device error', async () => {
   const node = new USBNode({});
   node.on('error', () => {});
 
-  const [error] = await once(node, 'exit');
+  const [error] = await settle(node, 'exit');
 
   assert.equal(error.message, 'No device');
 });
@@ -243,9 +238,9 @@ test('USBNode preserves error listeners after exit', async () => {
   const expectedError = new Error('USB runtime failed');
   let observedError;
 
-  await once(node, 'init', 0);
+  await settle(node, 'init', 0);
   node.on('error', error => { observedError = error; });
-  await once(node, 'exit');
+  await settle(node, 'exit');
   node.emit('error', expectedError);
 
   assert.equal(observedError, expectedError);

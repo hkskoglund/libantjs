@@ -1,16 +1,13 @@
-var HostLib = require('../host');
-var slaveHost = new HostLib({
-  log: false,
-  debugLevel: 0
-});
-var slaveChannel0 = slaveHost.channel[0];
-var searchWindowDelay = 2100;
-var devices = slaveHost.getDevices();
-var currentDevice;
-var singlefreq = true;
+const Host = require('../host');
 
-function onSlaveChannel0Open(err, msg) {
-}
+const slaveHost = new Host({ log: false, debugLevel: 0 });
+const slaveChannel0 = slaveHost.channel[0];
+const searchWindowDelay = 2100;
+const startFreq = 59;
+const currentDevice = 0;
+const singlefreq = true;
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function onBroadcast(err, msg) {
 
@@ -19,91 +16,52 @@ function onBroadcast(err, msg) {
 
 }
 
-function onSlaveAssigned(error) {
-  console.log('slave assigned', error);
+async function scanFrequency(freq) {
+  console.log('scan freq.', freq);
 
-  var startFreq = 59,
-    freq = startFreq,
-    freqIntervalID,
+  if (freq > startFreq)
+    await slaveChannel0.close();
 
-    bumpFreq = function() {
-
-      console.log('scan freq.', freq);
-
-      slaveChannel0.setFrequency(freq++, function() {
-
-        slaveChannel0.openScan(onSlaveChannel0Open);
-
-        if (freq > 124) {
-          clearInterval(freqIntervalID);
-          setTimeout(function() {
-            slaveChannel0.close(function(err, msg) { //if (!err) console.log('slave closed');
-              slaveHost.exit(function(err, msg) {
-                if (!err) {
-                  console.log('host exit');
-                }
-
-              });
-            });
-          }, searchWindowDelay);
-
-        }
-      });
-
-    }.bind(this),
-
-    increaseFreq = function() {
-
-      if (freq > startFreq)
-        slaveChannel0.close(function(err, msg) { //if (!err) console.log('slave closed');
-          bumpFreq();
-        });
-      else {
-        bumpFreq();
-      }
-
-    }.bind(this);
-
-  slaveChannel0.id(0, 0, 0, function(err, msg) {
-    slaveChannel0.on('Broadcast Data', onBroadcast);
-    increaseFreq();
-    if (!singlefreq)
-      freqIntervalID = setInterval(increaseFreq, searchWindowDelay);
-
-  });
+  await slaveChannel0.setFrequency(freq);
+  await slaveChannel0.openScan();
 }
 
-function onSlaveKey(error) {
-  slaveChannel0.assign(slaveChannel0.SLAVE_RECEIVE_ONLY, 0, onSlaveAssigned);
-}
+async function main() {
+  console.log('scan : continous scanning mode, frequency 2400-2524 Mhz');
 
-function onSlaveInited(error) {
-  console.log('slave initied', error);
+  const devices = await slaveHost.refreshDevices();
+  if (devices.length <= currentDevice) {
+    console.error('Found no devices');
+    return;
+  }
+
+  console.log('device ' + slaveHost.deviceToString(devices[currentDevice]));
+
+  await slaveHost.init(currentDevice);
+  console.log('slave initied');
   console.log('slave net 0 key PUBLIC');
-  onSlaveKey();
+
+  await slaveChannel0.assign(slaveChannel0.SLAVE_RECEIVE_ONLY, 0);
+  await slaveChannel0.setId(0, 0, 0);
+  slaveChannel0.on('Broadcast Data', onBroadcast);
+
+  for (let freq = startFreq; freq <= 124; freq++) {
+    await scanFrequency(freq);
+    if (singlefreq)
+      break;
+    await delay(searchWindowDelay);
+  }
+
+  await delay(searchWindowDelay);
+  await slaveChannel0.close();
+  await slaveHost.exit();
+  console.log('host exit');
 }
 
-function onError(error) {
+main().catch((error) => {
   console.trace();
   console.error('error', error);
-}
-
-console.log('scan : continous scanning mode, frequency 2400-2524 Mhz');
-
-currentDevice = 0;
-if (devices.length > currentDevice) {
-
-  console.log('device bus ' + devices[currentDevice].busNumber + ':' + devices[currentDevice].deviceAddress + ' productId 0x' + devices[currentDevice].deviceDescriptor.idProduct.toString(16));
-
-  try {
-
-    slaveHost.init(currentDevice, onSlaveInited);
-  } catch (err) {
-    onError(err);
-  }
-} else {
-  console.error('Found no devices');
-}
+});
 /*
 
 freq. 72

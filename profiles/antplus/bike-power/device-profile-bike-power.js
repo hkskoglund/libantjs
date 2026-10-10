@@ -25,17 +25,13 @@
     return Uint8Array.from([0x01, 0xAA, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
   }
 
-  requestManualZero(sendAcknowledged, callback) {
+  requestManualZero(sendAcknowledged) {
 
     if (typeof sendAcknowledged !== 'function') {
       throw new TypeError('sendAcknowledged must be a function bound to the sensor channel');
     }
 
-    if (typeof callback !== 'function') {
-      throw new TypeError('callback must be a function');
-    }
-
-    return sendAcknowledged(this.createManualZeroRequest(), callback);
+    return sendAcknowledged(this.createManualZeroRequest());
   }
 
   getPageNumber(broadcast) {

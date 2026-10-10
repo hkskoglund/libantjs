@@ -157,10 +157,11 @@ class AuthenticationManager extends EventEmitter {
 
     this.session.request.push(request);
 
-    if (request.authenticationStringLength)
-      this.host.sendBurst(request, this.onSentToANT.bind(this));
-    else
-      this.host.sendAcknowledged(request, this.onSentToANT.bind(this));
+    const sent = request.authenticationStringLength ?
+      this.host.sendBurst(request) :
+      this.host.sendAcknowledged(request);
+
+    sent.then(() => this.onSentToANT(), (err) => this.onSentToANT(err));
 
   }
 
@@ -293,7 +294,7 @@ class AuthenticationManager extends EventEmitter {
 
     let onSerialNumber = function _onSerialNumber(err, response) {
         if (err) {
-          this.host.linkManager.disconnect(function _onDisconnect() {}.bind(this)); // Return to LINK layer
+          this.host.linkManager.disconnect().catch(() => {}); // Return to LINK layer
         }
 
         passkey = this.getPasskey(this.clientSerialNumber);
@@ -324,7 +325,7 @@ class AuthenticationManager extends EventEmitter {
         // EVENT_RX_FAILED_GO_TO_SEARCH and host is reset and starts listening for client beacon in
         // link state
         if (err)
-          this.host.linkManager.disconnect(function _onDisconnect() {}.bind(this)); // Return to LINK layer
+          this.host.linkManager.disconnect().catch(() => {}); // Return to LINK layer
       }.bind(this),
 
       onPairing = function _onPairing(err, response) {

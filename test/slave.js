@@ -1,20 +1,15 @@
-var slaveHost = new(require('../host'))({
-  log: true
-});
-var slavePort = 1;
-var slaveChannel0 = slaveHost.channel[0];
-var devices;
-var burstNr = 0;
+const Host = require('../host');
 
-function onSlaveChannel0Open(err, msg) {
-  console.log('slave open');
-}
+const slaveHost = new Host({ log: true });
+const slavePort = 1;
+const slaveChannel0 = slaveHost.channel[0];
+let burstNr = 0;
 
-function onAckBroadcast(err, msg) {
+function onAckBroadcast(err) {
   console.log(Date.now(), 'ACK broadcast', err);
 }
 
-function onBroadcast(err, msg) {
+function onBroadcast(err) {
   console.log(Date.now(), 'broadcast', err);
 }
 
@@ -30,28 +25,27 @@ function onBurstData(err, msg) {
   console.log(Date.now(), 'burst', err, 'channel ' + msg.channel + ' seq ' + msg.sequenceNr + ' nr ' + burstNr);
 }
 
-function onSlaveAssigned(error) {
-  console.log('slave assigned', error);
+async function main() {
+  await slaveHost.refreshDevices();
+  console.log('slave device', slaveHost.getDevices()[slavePort]);
 
-  slaveChannel0.setId(1, 1, 1, function(err, msg) {
-    console.log('setChannelId response', msg.toString());
-    slaveChannel0.on('data', onBroadcast);
-    slaveChannel0.on('ackdata', onAckBroadcast);
-    slaveChannel0.on('burstdata', onBurstData); // Each packet
-    slaveChannel0.on('burst', onBurst);
-    console.log('slave channel' + slaveChannel0);
-    slaveChannel0.open(onSlaveChannel0Open);
-  });
-}
+  await slaveHost.init(slavePort);
+  console.log('slave initied');
 
+  await slaveChannel0.slave();
+  console.log('slave assigned');
 
-function onSlaveKey(error) {
-  slaveChannel0.slave(0, onSlaveAssigned);
-}
+  const idResponse = await slaveChannel0.setId(1, 1, 1);
+  console.log('setChannelId response', idResponse.toString());
 
-function onSlaveInited(error) {
-  console.log('slave initied', error);
-  onSlaveKey();
+  slaveChannel0.on('data', onBroadcast);
+  slaveChannel0.on('ackdata', onAckBroadcast);
+  slaveChannel0.on('burstdata', onBurstData); // Each packet
+  slaveChannel0.on('burst', onBurst);
+  console.log('slave channel' + slaveChannel0);
+
+  await slaveChannel0.open();
+  console.log('slave open');
 }
 
 function onError(error) {
@@ -59,12 +53,4 @@ function onError(error) {
   console.error('error', error);
 }
 
-devices = slaveHost.getDevices();
-
-try {
-
-  console.log('slave device', devices[slavePort]);
-  slaveHost.init(slavePort, onSlaveInited);
-} catch (err) {
-  onError(err);
-}
+main().catch(onError);
