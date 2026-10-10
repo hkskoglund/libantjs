@@ -7,7 +7,7 @@ var Message = require('../message');
 class RequestMessage extends Message {
   constructor(channel, requestedMessageId, NVMaddr, NVMsize) {
 
-    super(undefined, Message.prototype.REQUEST);
+    super(undefined, Message.REQUEST);
     this.encode(channel, requestedMessageId, NVMaddr, NVMsize);
   }
 
@@ -45,7 +45,7 @@ class RequestMessage extends Message {
 
   toString() {
 
-    var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " ID 0x" + this.requestId.toString(16) + ' ' + Message.prototype.MESSAGE[this.requestId];
+    var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " ID 0x" + this.requestId.toString(16) + ' ' + Message.MESSAGE[this.requestId];
     if (this.NVMaddr)
       msg += " NVMaddr " + this.NVMaddr;
     if (this.NVMsize)

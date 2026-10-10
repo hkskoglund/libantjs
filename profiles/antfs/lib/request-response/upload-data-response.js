@@ -25,12 +25,12 @@ class UploadDataResponse {
 
   switch (this.result) {
 
-    case UploadDataResponse.prototype.OK:
+    case UploadDataResponse.OK:
 
       msg += ' OK';
       break;
 
-    case UploadDataResponse.prototype.FAILED:
+    case UploadDataResponse.FAILED:
 
       msg += ' Failed';
       break;
@@ -39,10 +39,14 @@ class UploadDataResponse {
 
   return msg;
   }
+
+  static OK = 0x00;
+  static FAILED = 0x01;
+  static ID = 0x8C;
 }
 
-UploadDataResponse.prototype.OK = 0x00;
-UploadDataResponse.prototype.FAILED = 0x01;
-UploadDataResponse.prototype.ID = 0x8C;
+
+
+
 
 module.exports = UploadDataResponse;

@@ -14,7 +14,7 @@ class DeviceProfile_HRM extends DeviceProfile {
 
     this.initMasterSlaveConfiguration();
     this.aggregatedRR = [];
-    this.requestPageUpdate(DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY, this.processAggregatedRR);
+    this.requestPageUpdate(DeviceProfile_HRM.DEFAULT_PAGE_UPDATE_DELAY, this.processAggregatedRR);
   }
 
   // Attach RR interval data to the latest page
@@ -48,7 +48,7 @@ class DeviceProfile_HRM extends DeviceProfile {
     const data = broadcast.data;
 
     if (this.isPageToggle(broadcast)) {
-      return data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER;
+      return data[0] & GenericPage.BIT_MASK.PAGE_NUMBER;
     }
 
     return 0;
@@ -61,21 +61,28 @@ class DeviceProfile_HRM extends DeviceProfile {
       this.aggregatedRR.push(page.RRInterval);
     }
   }
-}
 
-DeviceProfile_HRM.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
-
-// Ca. 4 messages per second, or 1 message per 246.3 ms.
-DeviceProfile_HRM.prototype.CHANNEL_PERIOD = {
+  static DEFAULT_PAGE_UPDATE_DELAY = 1000;
+  static CHANNEL_PERIOD = {
   DEFAULT: 8070
 };
-
-DeviceProfile_HRM.prototype.NAME = 'HRM';
-DeviceProfile_HRM.prototype.CHANNEL_ID = {
+  static NAME = 'HRM';
+  static CHANNEL_ID = {
   DEVICE_TYPE: 0x78,
   TRANSMISSION_TYPE: 0x01
 };
-DeviceProfile_HRM.prototype.INVALID_HEART_RATE = 0x00;
-DeviceProfile_HRM.prototype.PAGE_TOGGLE_CAPABLE = true;
+  static INVALID_HEART_RATE = 0x00;
+  static PAGE_TOGGLE_CAPABLE = true;
+}
+
+
+
+// Ca. 4 messages per second, or 1 message per 246.3 ms.
+
+
+
+
+
+
 
 module.exports = DeviceProfile_HRM;

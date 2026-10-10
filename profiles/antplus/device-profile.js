@@ -37,7 +37,7 @@
       // For determining if 7 msb is toggeled of byte 0 in payload
       this.pageToggle = {
         toggle: undefined,
-        state: this.PAGE_TOGGLE_STATE.PREINIT,
+        state: this.constructor.PAGE_TOGGLE_STATE.PREINIT,
         broadcast: {}
       };
     } else if (this.log && this.log.logging) {
@@ -78,7 +78,7 @@
 
         break;
 
-      case BackgroundPage.prototype.COMMON.PAGE0x50:
+      case BackgroundPage.COMMON.PAGE0x50:
 
         page = new ManufacturerId0x50({
           log: this.log.logging
@@ -86,7 +86,7 @@
 
         break;
 
-      case BackgroundPage.prototype.COMMON.PAGE0x51:
+      case BackgroundPage.COMMON.PAGE0x51:
 
         page = new ProductId0x51({
           log: this.log.logging
@@ -94,7 +94,7 @@
 
         break;
 
-      case BackgroundPage.prototype.COMMON.PAGE0x52:
+      case BackgroundPage.COMMON.PAGE0x52:
 
         page = new CumulativeOperatingTime0x52({
           log: this.log.logging
@@ -124,19 +124,19 @@
       data = broadcast.data,
       sensorId = this.sensorId,
       FILTER = true,
-      MAX_PAGE_TOGGLE_BROADCAST_LIMIT = this.MIN_BROADCAST_THRESHOLD + 5,
+      MAX_PAGE_TOGGLE_BROADCAST_LIMIT = this.constructor.MIN_BROADCAST_THRESHOLD + 5,
       transitionMsg;
 
     // Determine page toggle bit - legacy transmitters (bike/hrm) has fixed bit in this position (7 msb byte 0) and only page "0"/undefined
 
-    pageToggleBit = (data[0] & GenericPage.prototype.BIT_MASK.PAGE_TOGGLE) === GenericPage.prototype.BIT_MASK.PAGE_TOGGLE ? true : false;
+    pageToggleBit = (data[0] & GenericPage.BIT_MASK.PAGE_TOGGLE) === GenericPage.BIT_MASK.PAGE_TOGGLE ? true : false;
 
     // Init page toggle on the first broadcast
 
-    if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.PREINIT) {
+    if (this.pageToggle.state === this.constructor.PAGE_TOGGLE_STATE.PREINIT) {
 
       this.pageToggle.toggle = pageToggleBit;
-      this.pageToggle.state = this.PAGE_TOGGLE_STATE.INIT;
+      this.pageToggle.state = this.constructor.PAGE_TOGGLE_STATE.INIT;
       this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
       return FILTER;
@@ -144,7 +144,7 @@
 
     // Determine if page toggle bit have changed from the initialized state
 
-    if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && (pageToggleBit !== this.pageToggle.toggle)) {
+    if ((this.pageToggle.state === this.constructor.PAGE_TOGGLE_STATE.INIT) && (pageToggleBit !== this.pageToggle.toggle)) {
 
       switch (pageToggleBit) {
         case true:
@@ -157,27 +157,27 @@
 
       this.pageToggle.toggle = pageToggleBit;
 
-      this.pageToggle.state = this.PAGE_TOGGLE_STATE.TOGGELING;
+      this.pageToggle.state = this.constructor.PAGE_TOGGLE_STATE.TOGGELING;
       this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
       if (this.log && this.log.logging) {
-        this.log.info( sensorId, 'Page toggeling ' + transitionMsg + ' at B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+        this.log.info( sensorId, 'Page toggeling ' + transitionMsg + ' at B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'init B# ' + this.pageToggle.broadcast[this.constructor.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.constructor.PAGE_TOGGLE_STATE.INIT].data);
       }
     }
 
     // Filter until a page toggeling master is found or not. A well behaved master should toggle page bit after four messages (about each seconds)
 
-    if ((this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT) {
+    if ((this.pageToggle.state === this.constructor.PAGE_TOGGLE_STATE.INIT) && this.broadcastCount < MAX_PAGE_TOGGLE_BROADCAST_LIMIT) {
       return FILTER;
     }
     // If we're still in init state after 5 messages, it can be assumed that we have to deal with a non toggeling/legacy master
 
-    if (this.pageToggle.state === this.PAGE_TOGGLE_STATE.INIT) {
-      this.pageToggle.state = this.PAGE_TOGGLE_STATE.NOT_TOGGELING;
+    if (this.pageToggle.state === this.constructor.PAGE_TOGGLE_STATE.INIT) {
+      this.pageToggle.state = this.constructor.PAGE_TOGGLE_STATE.NOT_TOGGELING;
       this.pageToggle.broadcast[this.pageToggle.state] = broadcast;
 
       if (this.log && this.log.logging) {
-        this.log.info( sensorId, 'No page toggeling after B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'Its a legacy device using page 0 format', 'init B# ' + this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.PAGE_TOGGLE_STATE.INIT].data);
+        this.log.info( sensorId, 'No page toggeling after B# ' + this.broadcastCount, this.pageToggle.broadcast[this.pageToggle.state].data, 'Its a legacy device using page 0 format', 'init B# ' + this.pageToggle.broadcast[this.constructor.PAGE_TOGGLE_STATE.INIT].count, this.pageToggle.broadcast[this.constructor.PAGE_TOGGLE_STATE.INIT].data);
       }
     }
   }
@@ -195,7 +195,7 @@
 
 
     // Limit memory footprint
-    if (this.broadcast.length >= this.MAX_UNFILTERED_BROADCAST_BUFFER) {
+    if (this.broadcast.length >= this.constructor.MAX_UNFILTERED_BROADCAST_BUFFER) {
       this.broadcast.shift();
     }
 
@@ -206,7 +206,7 @@
 
     // 1. Filter out possible "noise" from sensors that come and go quickly
 
-    if (this.broadcastCount < this.MIN_BROADCAST_THRESHOLD) {
+    if (this.broadcastCount < this.constructor.MIN_BROADCAST_THRESHOLD) {
       return FILTER;
     }
 
@@ -413,7 +413,7 @@
     this.page[page.number] = page;
 
     // Limit memory
-    if (this.receivedPage && this.receivedPage.length >= this.MAX_UNFILTERED_BROADCAST_BUFFER) {
+    if (this.receivedPage && this.receivedPage.length >= this.constructor.MAX_UNFILTERED_BROADCAST_BUFFER) {
       this.receivedPage.shift();
     }
 
@@ -424,7 +424,7 @@
 
 
     if (this.PAGE_TOGGLE_CAPABLE) {
-      return this.pageToggle.state === this.PAGE_TOGGLE_STATE.TOGGELING;
+      return this.pageToggle.state === this.constructor.PAGE_TOGGLE_STATE.TOGGELING;
     } else {
       return false;
     }
@@ -491,12 +491,8 @@
 
     return isEqualDeviceType;
   }
-}
 
-
-
-
-  DeviceProfile.prototype.PAGE_TOGGLE_STATE = {
+  static PAGE_TOGGLE_STATE = {
 
     PREINIT: 'preinit', // Before any page toggeling is observed
     INIT: 'init',
@@ -504,10 +500,18 @@
     NOT_TOGGELING: 'not toggeling',
 
   };
+  static MAX_UNFILTERED_BROADCAST_BUFFER = 240;
+  static MIN_BROADCAST_THRESHOLD = 2;
+}
 
-  DeviceProfile.prototype.MAX_UNFILTERED_BROADCAST_BUFFER = 240; // 4 msg/sec * 60 sec = 240 broadcast/min
 
-  DeviceProfile.prototype.MIN_BROADCAST_THRESHOLD = 2; // Minimum number of broadcast before accepted
+
+
+
+
+   // 4 msg/sec * 60 sec = 240 broadcast/min
+
+   // Minimum number of broadcast before accepted
 
   // Is called by a particular device profile after reading pageNumber
 

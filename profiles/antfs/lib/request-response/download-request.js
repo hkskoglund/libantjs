@@ -10,16 +10,16 @@ class DownloadRequest {
   }
 
   continueRequest(index, offset, crcSeed, maxBlockSize) {
-    this.request(index, offset, DownloadRequest.prototype.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
+    this.request(index, offset, DownloadRequest.CONTINUE_TRANSFER, crcSeed, maxBlockSize);
   }
 
   request(index, offset, initialRequest, crcSeed, maxBlockSize) {
-  
+
     this.index = index || 0;
     this.offset = offset || 0;
 
     if (initialRequest === undefined)
-      initialRequest = DownloadRequest.prototype.NEW_TRANSFER;
+      initialRequest = DownloadRequest.NEW_TRANSFER;
 
     this.initialRequest = initialRequest;
     this.crcSeed = crcSeed || 0;
@@ -33,7 +33,7 @@ class DownloadRequest {
       dv      = new DataView(command.buffer);
 
   command[0] = 0x44; // ANT-FS COMMAND message
-  command[1] = this.ID;
+  command[1] = this.constructor.ID;
   dv.setUint16(2, this.index, true);
   dv.setUint32(4, this.offset, true);
 
@@ -46,15 +46,21 @@ class DownloadRequest {
   }
 
   toString() {
-  return 'DOWNLOAD id 0x' + this.ID.toString(16) + ' index ' + this.index + ' offset ' + this.offset + ' initial request ' +
+  return 'DOWNLOAD id 0x' + this.constructor.ID.toString(16) + ' index ' + this.index + ' offset ' + this.offset + ' initial request ' +
     this.initialRequest + ' CRC seed ' + this.crcSeed + ' max blocksize ' + this.maxBlockSize;
   }
+
+  static ID = 0x09;
+  static CONTINUE_TRANSFER = 0x00;
+  static NEW_TRANSFER = 0x01;
+  static DIRECTORY = 0x00;
+  static COMMAND_PIPE = 0xFFFE;
 }
 
-DownloadRequest.prototype.ID = 0x09;
-DownloadRequest.prototype.CONTINUE_TRANSFER = 0x00;
-DownloadRequest.prototype.NEW_TRANSFER = 0x01;
-DownloadRequest.prototype.DIRECTORY = 0x00;
-DownloadRequest.prototype.COMMAND_PIPE = 0xFFFE;
+
+
+
+
+
 
 module.exports = DownloadRequest;

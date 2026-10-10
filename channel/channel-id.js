@@ -15,10 +15,10 @@ class ChannelId {
 
     if (pair) // Set bit 7 high if pairing is wanted
     {
-      this.deviceType = this.deviceType | ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR;
+      this.deviceType = this.deviceType | ChannelId.BITMASK.DEVICE_TYPE.PAIR;
     }
 
-    this.pair = ((this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR) > 0);
+    this.pair = ((this.deviceType & ChannelId.BITMASK.DEVICE_TYPE.PAIR) > 0);
 
     // http://www.thisisant.com/developer/resources/tech-bulletin/pairing-to-devices-with-extended-device-numbers
     // "The extended device number is not intended as a number that must be displayed - it is intended to increase a device's chance of pairing to the right device every time - even in crowded environments."
@@ -33,7 +33,7 @@ class ChannelId {
     delete this.deviceNumber20BIT;
 
     if (this.has20BitDeviceNumber()) {
-      transferTypeMSN = (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
+      transferTypeMSN = (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
       this.deviceNumber20BIT = (transferTypeMSN << 16) | this.deviceNumber;
     }
   }
@@ -83,7 +83,7 @@ class ChannelId {
 
     this.transmissionType = extendedData[3];
 
-    this.pair = ((this.deviceType & ChannelId.prototype.BITMASK.DEVICE_TYPE.PAIR) > 0);
+    this.pair = ((this.deviceType & ChannelId.BITMASK.DEVICE_TYPE.PAIR) > 0);
 
     this._check20BitDeviceNumber();
 
@@ -92,17 +92,17 @@ class ChannelId {
 
   getSharedAddressType() {
 
-    return this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS;
+    return this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS;
   }
 
   has20BitDeviceNumber() {
 
-    return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
+    return (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> ChannelId.BIT_FIELD.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE.start_bit;
   }
 
   hasGlobalDataPages() {
 
-    return (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.prototype.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
+    return (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
   }
 
   toString() {
@@ -111,7 +111,7 @@ class ChannelId {
       var msg = "";
 
       // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
-      switch (this.transmissionType & ChannelId.prototype.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS) {
+      switch (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS) {
         // case 0x00: msg += "Reserved"; break;
         case 0x01:
           msg += "Independent";
@@ -142,9 +142,8 @@ class ChannelId {
 
     return "Id 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
   }
-}
 
-ChannelId.prototype.BITMASK = {
+  static BITMASK = {
   DEVICE_TYPE: {
     PAIR: parseInt("10000000", 2)
   },
@@ -154,8 +153,7 @@ ChannelId.prototype.BITMASK = {
     BIT20_ADDRESS_NIBBLE: parseInt("11110000", 2)
   },
 };
-
-ChannelId.prototype.BIT_FIELD = {
+  static BIT_FIELD = {
   TRANSMISSION_TYPE: {
     ANTPLUS_GLOBAL_PAGES: {
       start_bit: 2,
@@ -169,20 +167,29 @@ ChannelId.prototype.BIT_FIELD = {
 
   }
 };
+  static ANY_DEVICE_NUMBER = 0x00;
+  static ANY_DEVICE_TYPE = ChannelId.ANY_DEVICE_NUMBER;
+  static ANY_TRANSMISSION_TYPE = ChannelId.ANY_DEVICE_NUMBER;
+  static SHARED_ADDRESS_TYPE = {
+  INDEPENDENT_CHANNEL: 0x01,
+  ADDRESS_1BYTE: 0x02,
+  ADDRESS_2BYTE: 0x03
+};
+}
 
-ChannelId.prototype.ANY_DEVICE_NUMBER = 0x00;
-ChannelId.prototype.ANY_DEVICE_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
-ChannelId.prototype.ANY_TRANSMISSION_TYPE = ChannelId.prototype.ANY_DEVICE_NUMBER;
+
+
+
+
+
+
+
 
 // Parse channel ID if enabled via LIBConfig
 
 // Get the 2 least significatiant bit (LSB) of transmission type that determines whether the channel is independent or using 1/2-byte shared address
 
-ChannelId.prototype.SHARED_ADDRESS_TYPE = {
-  INDEPENDENT_CHANNEL: 0x01,
-  ADDRESS_1BYTE: 0x02,
-  ADDRESS_2BYTE: 0x03
-};
+
 
 // ANT Message Protocol and Usage, Rev. 5.1, p. 18
 // "the thrid LSB is used to indicate the precence of a Global Data Identification Byte (such as ANT+ page numbers)"

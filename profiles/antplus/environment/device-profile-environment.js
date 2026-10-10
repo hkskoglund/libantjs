@@ -12,14 +12,14 @@
 
     var channelPeriod = configuration && configuration.channelPeriod;
     if (channelPeriod !== undefined &&
-      channelPeriod !== DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.DEFAULT &&
-      channelPeriod !== DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.ALTERNATIVE) {
+      channelPeriod !== DeviceProfile_ENVIRONMENT.CHANNEL_PERIOD.DEFAULT &&
+      channelPeriod !== DeviceProfile_ENVIRONMENT.CHANNEL_PERIOD.ALTERNATIVE) {
       throw new RangeError('Unsupported ANT+ Environment channel period: ' + channelPeriod);
     }
 
     this.initMasterSlaveConfiguration(channelPeriod);
 
-    this.requestPageUpdate(DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY);
+    this.requestPageUpdate(DeviceProfile_ENVIRONMENT.DEFAULT_PAGE_UPDATE_DELAY);
   }
 
   getPageNumber(broadcast) {
@@ -63,22 +63,26 @@
 
     return page;
   }
+
+  static DEFAULT_PAGE_UPDATE_DELAY = 5000;
+  static CHANNEL_ID = {
+    DEVICE_TYPE: 25, // 0x19
+    TRANSMISSION_TYPE: 0x05 // Low nibble
+  };
+  static CHANNEL_PERIOD = {
+    DEFAULT: 8192, // 4Hz
+    ALTERNATIVE: 65535 // 0.5 Hz low power
+  };
 }
 
 
 
 
-  DeviceProfile_ENVIRONMENT.prototype.DEFAULT_PAGE_UPDATE_DELAY = 5000;
 
-  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 25, // 0x19
-    TRANSMISSION_TYPE: 0x05 // Low nibble
-  };
 
-  DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8192, // 4Hz
-    ALTERNATIVE: 65535 // 0.5 Hz low power
-  };
+
+
+
 
 
   module.exports = DeviceProfile_ENVIRONMENT;

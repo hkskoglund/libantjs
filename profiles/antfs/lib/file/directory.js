@@ -28,7 +28,7 @@ class Directory {
     const dv = new DataView(data.buffer);
     let file;
 
-    if (data.byteLength < Directory.prototype.HEADER_LENGTH)
+    if (data.byteLength < Directory.HEADER_LENGTH)
       throw new Error('Directory data is shorter than its header');
 
     this.structureLength = data[1];
@@ -36,7 +36,7 @@ class Directory {
     if (this.structureLength < 16)
       throw new Error('Invalid directory structure length ' + this.structureLength);
 
-    if ((data.byteLength - Directory.prototype.HEADER_LENGTH) % this.structureLength !== 0)
+    if ((data.byteLength - Directory.HEADER_LENGTH) % this.structureLength !== 0)
       throw new Error('Directory data ends with an incomplete file record');
 
     this.majorRevision = (data[0] & 0xF0) >> 4;
@@ -45,23 +45,23 @@ class Directory {
     this.currentSystemTime = dv.getUint32(8 + data.byteOffset, true);
     this.lastModified = dv.getUint32(12 + data.byteOffset, true);
 
-    if (this.lastModified !== Directory.prototype.SYSTEM_TIME_NOT_USED && this.lastModified >= 0x0FFFFFFF)
+    if (this.lastModified !== Directory.SYSTEM_TIME_NOT_USED && this.lastModified >= 0x0FFFFFFF)
       this.lastModifiedDate = new Date(Date.UTC(1989, 11, 31, 0, 0, 0, 0) + this.lastModified * 1000);
 
     if (this.log.logging)
       this.logger('log', 'directory', this.toString());
 
     this.file = [];
-    const numberOfFiles = (data.byteLength - Directory.prototype.HEADER_LENGTH) / this.structureLength;
+    const numberOfFiles = (data.byteLength - Directory.HEADER_LENGTH) / this.structureLength;
 
     for (let fileNr = 0; fileNr < numberOfFiles; fileNr++) {
-      const iStart = Directory.prototype.HEADER_LENGTH + fileNr * this.structureLength,
-        iEnd = Directory.prototype.HEADER_LENGTH + (fileNr + 1) * this.structureLength,
+      const iStart = Directory.HEADER_LENGTH + fileNr * this.structureLength,
+        iEnd = Directory.HEADER_LENGTH + (fileNr + 1) * this.structureLength,
         fileType = data[iStart + 2],
         fileMetaData = data.subarray(iStart, iEnd);
 
       switch (fileType) {
-        case File.prototype.TYPE.FIT:
+        case File.TYPE.FIT:
           file = new FitFile(fileMetaData, this);
           break;
         default:
@@ -147,19 +147,19 @@ class Directory {
     let msg = 'Version : ' + this.majorRevision + '.' + this.minorRevision + ' | Time format : ';
 
     switch (this.timeFormat) {
-      case Directory.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989:
+      case Directory.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989:
         msg += 'Secs. elapsed since dec 31 1989 00:00';
         break;
-      case Directory.prototype.TIME_FORMAT.SYSTEM_TIME:
+      case Directory.TIME_FORMAT.SYSTEM_TIME:
         msg += 'Secs. since power up';
         break;
-      case Directory.prototype.TIME_FORMAT.COUNTER:
+      case Directory.TIME_FORMAT.COUNTER:
         msg += 'Counter';
         break;
     }
 
     msg += ' | Current system time : ' + this.currentSystemTime;
-    if (this.currentSystemTime === Directory.prototype.SYSTEM_TIME_NOT_USED)
+    if (this.currentSystemTime === Directory.SYSTEM_TIME_NOT_USED)
       msg += ' Not used';
 
     msg += ' | Last modified : ' + this.lastModified;
@@ -168,15 +168,20 @@ class Directory {
 
     return msg;
   }
-}
 
-Directory.prototype.SYSTEM_TIME_NOT_USED = 0xFFFFFFFF;
-Directory.prototype.UNKNOWN_DATE = 0xFFFFFFFF;
-Directory.prototype.TIME_FORMAT = {
+  static SYSTEM_TIME_NOT_USED = 0xFFFFFFFF;
+  static UNKNOWN_DATE = 0xFFFFFFFF;
+  static TIME_FORMAT = {
   ELAPSED_TIME_SINCE_DEC31_1989: 0,
   SYSTEM_TIME: 1,
   COUNTER: 2
 };
-Directory.prototype.HEADER_LENGTH = 16;
+  static HEADER_LENGTH = 16;
+}
+
+
+
+
+
 
 module.exports = Directory;

@@ -88,14 +88,17 @@
 
     return clone;
   }
-}
 
-  GenericPage.prototype.BIT_MASK = {
+  static BIT_MASK = {
     PAGE_NUMBER: parseInt("01111111", 2), // 7 lsb of byte 0 ANT+ format
     PAGE_TOGGLE: parseInt("10000000", 2) // msb of byte 0 ANT+ format
   };
+  static COMMON = {};
+}
 
-  GenericPage.prototype.COMMON = {};
+
+
+
 
   // Used for filtering message properties when using window.postMessage (some properties gives error 'DOMException - cannot clone')
 

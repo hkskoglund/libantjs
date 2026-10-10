@@ -35,21 +35,21 @@ class File {
     let typeStr,
       dateStr;
 
-    if (this.type <= File.prototype.TYPE.MANUFACTURER_MAX)
+    if (this.type <= File.TYPE.MANUFACTURER_MAX)
       typeStr = this.type + ' Manufacturer';
-    else if (this.type === File.prototype.TYPE.FIT)
+    else if (this.type === File.TYPE.FIT)
       typeStr = this.type + ' FIT';
     else
       typeStr = this.type.toString();
 
     switch (timeFormat) {
-      case File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989:
+      case File.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989:
         dateStr = this.getDateFrom31Dec1989().toLocaleString();
         break;
-      case File.prototype.TIME_FORMAT.SYSTEM_TIME:
+      case File.TIME_FORMAT.SYSTEM_TIME:
         dateStr = this.date + 'SEC';
         break;
-      case File.prototype.TIME_FORMAT.COUNTER:
+      case File.TIME_FORMAT.COUNTER:
         dateStr = this.date.toString();
         break;
     }
@@ -82,7 +82,7 @@ class File {
     const pad = n => n < 10 ? '0' + n : '' + n;
     let date;
 
-    if (this.timeFormat !== File.prototype.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989)
+    if (this.timeFormat !== File.TIME_FORMAT.ELAPSED_TIME_SINCE_DEC31_1989)
       return this.date.toString();
 
     // 0 and 0xFFFFFFFF are used for files without a date
@@ -123,18 +123,21 @@ class File {
 
     return (i === 0 || size >= 10 ? Math.round(size) : size.toFixed(1)) + units[i];
   }
-}
 
-File.prototype.TIME_FORMAT = {
+  static TIME_FORMAT = {
   ELAPSED_TIME_SINCE_DEC31_1989: 0,
   SYSTEM_TIME: 1,
   COUNTER: 2
 };
-File.prototype.TYPE = {
+  static TYPE = {
   MANUFACTURER_MIN: 0x00,
   MANUFACTURER_MAX: 0x0F,
   FIT: 0x80
 };
+}
+
+
+
 File.UNIX_HEADER = 'Idx  Flags    Size   Modified          Name';
 
 module.exports = File;

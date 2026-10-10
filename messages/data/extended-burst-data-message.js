@@ -6,7 +6,7 @@ var ChannelId = require('../../channel/channel-id'),
 class ExtendedBurstDataMessage extends Message {
   constructor(data) {
 
-    super(data, Message.prototype.EXTENDED_BURST_TRANSFER_DATA);
+    super(data, Message.EXTENDED_BURST_TRANSFER_DATA);
   }
 
   encode(sequenceChannel, channelId, data) {
@@ -14,7 +14,7 @@ class ExtendedBurstDataMessage extends Message {
     if (!Number.isInteger(sequenceChannel) || sequenceChannel < 0 || sequenceChannel > 0xFF)
       throw new RangeError('Extended ANT burst sequence/channel must be a byte');
 
-    if (!data || typeof data.byteLength !== 'number' || data.byteLength !== Message.prototype.PAYLOAD_LENGTH)
+    if (!data || typeof data.byteLength !== 'number' || data.byteLength !== Message.PAYLOAD_LENGTH)
       throw new RangeError('Extended ANT burst data must contain exactly 8 bytes');
 
     if (!channelId || !Number.isInteger(channelId.deviceNumber) ||

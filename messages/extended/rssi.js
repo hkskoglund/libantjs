@@ -21,7 +21,7 @@ class RSSI {
 
     this.measurementType = extendedData[0];
 
-    if (this.measurementType !== RSSI.prototype.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
+    if (this.measurementType !== RSSI.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
       return;
 
     this.RSSIValue = extendedDataView.getInt8(extendedData.byteOffset + 1);
@@ -46,16 +46,18 @@ class RSSI {
 
   toString() {
 
-    return "RSSI " + this.RSSIValue + " " + RSSI.prototype.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue + " dBm";
+    return "RSSI " + this.RSSIValue + " " + RSSI.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue + " dBm";
   }
+
+  static MEASUREMENT_TYPE = {
+  0x20: "dBm",
+  dBm: 0x20 // Units of dBm
+};
 }
 
 // http://en.wikipedia.org/wiki/DBm
 // 0dBm = 1mW
-RSSI.prototype.MEASUREMENT_TYPE = {
-  0x20: "dBm",
-  dBm: 0x20 // Units of dBm
-};
+
 
 module.exports = RSSI;
 

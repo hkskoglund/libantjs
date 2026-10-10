@@ -80,18 +80,18 @@ class TransportManager extends EventEmitter {
             return;
          }
 
-    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+    responseData = burst.subarray(ClientBeacon.PAYLOAD_LENGTH);
     responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
 
     switch (responseId) {
 
-      case DownloadResponse.prototype.ID:
+      case DownloadResponse.ID:
 
         this.onDownloadResponse(responseData);
 
         break;
 
-      case EraseResponse.prototype.ID:
+      case EraseResponse.ID:
 
         this.onEraseResponse(responseData);
 
@@ -103,7 +103,7 @@ class TransportManager extends EventEmitter {
 
         break;
 
-      case UploadDataResponse.prototype.ID:
+      case UploadDataResponse.ID:
 
         this.onUploadDataResponse(responseData);
 
@@ -206,7 +206,7 @@ class TransportManager extends EventEmitter {
     if (this.log.logging)
       this.log.debug('Adding task',task);
 
-    if (request === DownloadRequest.prototype.ID)
+    if (request === DownloadRequest.ID)
       this.task.splice(1,0,task); // Insert at front (erase tasks should follow download tasks)
     else
       this.task.push(task);
@@ -215,20 +215,20 @@ class TransportManager extends EventEmitter {
 
   addDownloadTask(index) {
 
-    this.addTask(DownloadRequest.prototype.ID,index);
+    this.addTask(DownloadRequest.ID,index);
 
   }
 
   addEraseTask(index) {
 
-    this.addTask(EraseRequest.prototype.ID,index);
+    this.addTask(EraseRequest.ID,index);
 
   }
 
   addUploadTask(index, data) {
 
     this.task.push({
-      request: UploadRequest.prototype.ID,
+      request: UploadRequest.ID,
       index: index,
       data: data,
       done: false,
@@ -250,7 +250,7 @@ class TransportManager extends EventEmitter {
 
     switch (response.result) {
 
-      case EraseResponse.prototype.OK:
+      case EraseResponse.OK:
 
         this.directory.eraseFile(this.session.index);
 
@@ -262,7 +262,7 @@ class TransportManager extends EventEmitter {
 
       default:
 
-        this.task[this.execTaskIndex].done = (response.result !== EraseResponse.prototype.NOT_READY);
+        this.task[this.execTaskIndex].done = (response.result !== EraseResponse.NOT_READY);
 
         this.host.emit('erase', response, this.session);
     }
@@ -331,15 +331,15 @@ class TransportManager extends EventEmitter {
       this.logger('log', response.toString() + ' raw ' + Array.prototype.map.call(responseData, function(b) { return ('0' + b.toString(16)).slice(-2); }).join(' ') +
         ' | sent ' + session.request[session.request.length - 1].toString() + ' block crc 0x' + upload.blockCrc.toString(16) + ' maxBlockSize ' + upload.maxBlockSize);
 
-    if (response.result !== UploadDataResponse.prototype.OK) {
+    if (response.result !== UploadDataResponse.OK) {
 
       // Ask the client where to continue (offset + CRC) instead of guessing what it has received
-      if (++upload.retry > this.MAX_UPLOAD_RETRIES) {
-        this._finishUpload(new Error('Upload failed after ' + this.MAX_UPLOAD_RETRIES + ' retries at offset ' + upload.offset), false);
+      if (++upload.retry > this.constructor.MAX_UPLOAD_RETRIES) {
+        this._finishUpload(new Error('Upload failed after ' + this.constructor.MAX_UPLOAD_RETRIES + ' retries at offset ' + upload.offset), false);
         return;
       }
 
-      this.sendRequest(new UploadRequest(session.index, upload.data.byteLength, UploadRequest.prototype.CONTINUE_OFFSET));
+      this.sendRequest(new UploadRequest(session.index, upload.data.byteLength, UploadRequest.CONTINUE_OFFSET));
       return;
     }
 
@@ -364,7 +364,7 @@ class TransportManager extends EventEmitter {
     let upload = this.session.upload,
       remaining = upload.data.byteLength - offset,
       blockLength = remaining,
-      maxBlock = Math.floor(upload.maxBlockSize / UploadDataRequest.prototype.PACKET_LENGTH) * UploadDataRequest.prototype.PACKET_LENGTH,
+      maxBlock = Math.floor(upload.maxBlockSize / UploadDataRequest.PACKET_LENGTH) * UploadDataRequest.PACKET_LENGTH,
       request;
 
     // Only split when the remaining data does not fit in one block (non-final blocks must be whole 8 byte packets)
@@ -384,7 +384,7 @@ class TransportManager extends EventEmitter {
   _finishUpload(error, final) {
     const task = this.task[this.execTaskIndex];
 
-    if (task && task.request === UploadRequest.prototype.ID)
+    if (task && task.request === UploadRequest.ID)
       task.done = !error || !!final;
 
     this.host.emit('upload', error, this.session);
@@ -401,7 +401,7 @@ class TransportManager extends EventEmitter {
     if (!(data instanceof Uint8Array) || !data.byteLength)
       return callback(new Error('Upload data must be a non-empty Uint8Array'));
 
-    if (typeof index !== 'number' || index < 1 || index >= UploadRequest.prototype.COMMAND_PIPE)
+    if (typeof index !== 'number' || index < 1 || index >= UploadRequest.COMMAND_PIPE)
       return callback(new Error('Invalid upload index ' + index));
 
     file = this.directory && this.directory.getFile(index);
@@ -517,24 +517,24 @@ class TransportManager extends EventEmitter {
       NO_ERROR,
       now;
 
-    if (responseData.byteLength < DownloadResponse.prototype.HEADER_LENGTH + DownloadResponse.prototype.FOOTER_LENGTH) {
+    if (responseData.byteLength < DownloadResponse.HEADER_LENGTH + DownloadResponse.FOOTER_LENGTH) {
       this._failDownload(new Error('Download response is shorter than its header and footer'));
       return;
     }
 
     response = new DownloadResponse(responseData);
 
-    if (response.result === DownloadResponse.prototype.OK &&
-        (response.length > responseData.byteLength - DownloadResponse.prototype.HEADER_LENGTH - DownloadResponse.prototype.FOOTER_LENGTH ||
+    if (response.result === DownloadResponse.OK &&
+        (response.length > responseData.byteLength - DownloadResponse.HEADER_LENGTH - DownloadResponse.FOOTER_LENGTH ||
          response.offset > response.fileSize ||
          response.length > response.fileSize - response.offset ||
-         response.fileSize > this.MAX_DOWNLOAD_FILE_SIZE)) {
+         response.fileSize > this.constructor.MAX_DOWNLOAD_FILE_SIZE)) {
       this._failDownload(new Error('Invalid download response bounds (offset ' + response.offset +
         ', length ' + response.length + ', file size ' + response.fileSize + ')'));
       return;
     }
 
-    if (response.result === DownloadResponse.prototype.OK &&
+    if (response.result === DownloadResponse.OK &&
         response.CRC !== crc.updateCRC16(this.session.request[this.session.request.length - 1].crcSeed, response.packets)) {
       this._failDownload(new Error('Download response CRC mismatch'));
       return;
@@ -547,7 +547,7 @@ class TransportManager extends EventEmitter {
 
     switch (response.result) {
 
-      case DownloadResponse.prototype.OK:
+      case DownloadResponse.OK:
 
         if (response.offset === 0) {
 
@@ -592,7 +592,7 @@ class TransportManager extends EventEmitter {
         now = Date.now();
 
         if (response.offset === 0 ||
-          (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL) ||
+          (this.session.timestamp && (now - this.session.timestamp) >= TransportManager.DOWNLOAD_PROGRESS_UPDATE_INTERVAL) ||
           offset >= response.fileSize) {
 
           this.session.timestamp = now;
@@ -624,7 +624,7 @@ class TransportManager extends EventEmitter {
 
       default: // does not exist, exists not downloadable, not ready to download, request invalid, crc incorrect
 
-        this.task[this.execTaskIndex].done = (response.result !== DownloadResponse.prototype.NOT_READY);
+        this.task[this.execTaskIndex].done = (response.result !== DownloadResponse.NOT_READY);
 
         this.host.emit('download', response, this.session);
 
@@ -833,16 +833,16 @@ class TransportManager extends EventEmitter {
         switch (this.task[this.execTaskIndex].request)
         {
 
-          case DownloadRequest.prototype.ID :
+          case DownloadRequest.ID :
 
             this.download(this.task[this.execTaskIndex].index, onNextTask);
 
             break;
 
-          case EraseRequest.prototype.ID: {
+          case EraseRequest.ID: {
 
             const originalIndicesToDelete = this.task
-              .filter(function(t) { return t.request === EraseRequest.prototype.ID; })
+              .filter(function(t) { return t.request === EraseRequest.ID; })
               .map(function(t) { return t.index; });
 
             const eraseLoop = function() {
@@ -867,7 +867,7 @@ class TransportManager extends EventEmitter {
                 this.erase(nextFileToErase.index, onErase);
               } else {
                 // No more files to erase from the list, mark tasks as done and proceed
-                this.task.forEach(function(t) { if (t.request === EraseRequest.prototype.ID) t.done = true; });
+                this.task.forEach(function(t) { if (t.request === EraseRequest.ID) t.done = true; });
                 onNextTask();
               }
             }.bind(this);
@@ -877,7 +877,7 @@ class TransportManager extends EventEmitter {
             break;
           }
 
-          case UploadRequest.prototype.ID:
+          case UploadRequest.ID:
 
             this.uploadWithBackup(this.task[this.execTaskIndex].index, this.task[this.execTaskIndex].data, onNextTask);
 
@@ -906,7 +906,7 @@ class TransportManager extends EventEmitter {
 
     }.bind(this);
 
-    this.host.layerState.set(State.prototype.TRANSPORT);
+    this.host.layerState.set(State.TRANSPORT);
 
     this.execTaskIndex = -1;
 
@@ -918,6 +918,10 @@ class TransportManager extends EventEmitter {
 
   }
 
+
+  static DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
+  static MAX_UPLOAD_RETRIES = 3;
+  static MAX_DOWNLOAD_FILE_SIZE = 256 * 1024 * 1024;
 }
 
 
@@ -929,11 +933,11 @@ class TransportManager extends EventEmitter {
 
 // Queue an upload (overwrite) of the file at directory index. Executed in transport state after downloads/erases
 
-TransportManager.prototype.DOWNLOAD_PROGRESS_UPDATE_INTERVAL = 1000;
 
 
-TransportManager.prototype.MAX_UPLOAD_RETRIES = 3;
-TransportManager.prototype.MAX_DOWNLOAD_FILE_SIZE = 256 * 1024 * 1024;
+
+
+
 
 
 

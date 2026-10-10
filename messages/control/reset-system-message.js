@@ -5,7 +5,7 @@ var Message = require('../message');
 class ResetSystemMessage extends Message {
   constructor() {
 
-    super(undefined, Message.prototype.RESET_SYSTEM);
+    super(undefined, Message.RESET_SYSTEM);
 
     this.encode();
   }

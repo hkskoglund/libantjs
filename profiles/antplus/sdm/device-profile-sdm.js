@@ -18,12 +18,12 @@
       channelType: "slave",
       channelId: {
         deviceNumber: '*',
-        deviceType: DeviceProfile_SDM.prototype.CHANNEL_ID.DEVICE_TYPE,
+        deviceType: DeviceProfile_SDM.CHANNEL_ID.DEVICE_TYPE,
         transmissionType: '*'
       },
       RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
 
-      channelPeriod: DeviceProfile_SDM.prototype.CHANNEL_PERIOD
+      channelPeriod: DeviceProfile_SDM.CHANNEL_PERIOD
 
     });
 
@@ -34,12 +34,12 @@
       channelType: "master",
       channelId: {
         deviceNumber: 'serial number',
-        deviceType: DeviceProfile_SDM.prototype.CHANNEL_ID.DEVICE_TYPE,
-        transmissionType: DeviceProfile_SDM.prototype.CHANNEL_ID.TRANSMISSION_TYPE
+        deviceType: DeviceProfile_SDM.CHANNEL_ID.DEVICE_TYPE,
+        transmissionType: DeviceProfile_SDM.CHANNEL_ID.TRANSMISSION_TYPE
       },
       RFfrequency: setting.RFfrequency["ANT+"], // 2457 Mhz ANT +
 
-      channelPeriod: DeviceProfile_SDM.prototype.CHANNEL_PERIOD
+      channelPeriod: DeviceProfile_SDM.CHANNEL_PERIOD
 
     });
 
@@ -57,7 +57,7 @@
       BROADCAST_LIMIT_BEFORE_UI_UPDATE = 4; // ca 1 second with ca 4 Hz period
 
     // Don't process broadcast with wrong device type
-    if (!this.verifyDeviceType(DeviceProfile_SDM.prototype.CHANNEL_ID.DEVICE_TYPE, broadcast))
+    if (!this.verifyDeviceType(DeviceProfile_SDM.CHANNEL_ID.DEVICE_TYPE, broadcast))
       return;
 
     this.countBroadcast(sensorId);
@@ -116,17 +116,22 @@
 
     }
   }
-}
-  DeviceProfile_SDM.prototype.NAME = 'SDM';
 
-  DeviceProfile_SDM.prototype.CHANNEL_ID = {
+  static NAME = 'SDM';
+  static CHANNEL_ID = {
     DEVICE_TYPE: 0x7C,
     TRANSMISSION_TYPE: 5
   };
+  static CHANNEL_PERIOD = 8134;
+  static ALTERNATIVE_CHANNEL_PERIOD = 16268;
+}
 
-  DeviceProfile_SDM.prototype.CHANNEL_PERIOD = 8134; // 4 hz
 
-  DeviceProfile_SDM.prototype.ALTERNATIVE_CHANNEL_PERIOD = 16268; // 2 Hz
+
+
+   // 4 hz
+
+   // 2 Hz
 
 
 

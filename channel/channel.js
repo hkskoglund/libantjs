@@ -21,15 +21,15 @@ class Channel extends EventEmitter {
 
     this.net = net || 0;
 
-    this.key = this.NET.KEY.PUBLIC;
+    this.key = this.constructor.NET.KEY.PUBLIC;
 
-    this.type = type || this.BIDIRECTIONAL_SLAVE;
+    this.type = type || this.constructor.BIDIRECTIONAL_SLAVE;
 
     this.id = this.getWildcardId();
 
-    this.frequency = this.NET.FREQUENCY.DEFAULT;
+    this.frequency = this.constructor.NET.FREQUENCY.DEFAULT;
 
-    this.period = this.NET.PERIOD.DEFAULT;
+    this.period = this.constructor.NET.PERIOD.DEFAULT;
 
     this.burst = undefined; // Contains aggregated burst data
 
@@ -51,10 +51,10 @@ class Channel extends EventEmitter {
         return msg;
       }.bind(this);
 
-    msg += getStatus(Channel.prototype.BACKGROUND_SCANNING_ENABLE, 'Background Scanning|');
-    msg += getStatus(Channel.prototype.FREQUENCY_AGILITY_ENABLE, 'Frequency Agility|');
-    msg += getStatus(Channel.prototype.FAST_CHANNEL_INITIATION_ENABLE, 'Fast Channel Initiation|');
-    msg += getStatus(Channel.prototype.ASYNCHRONOUS_TRANSMISSION_ENABLE, 'Asynchronous Transmission|');
+    msg += getStatus(Channel.BACKGROUND_SCANNING_ENABLE, 'Background Scanning|');
+    msg += getStatus(Channel.FREQUENCY_AGILITY_ENABLE, 'Frequency Agility|');
+    msg += getStatus(Channel.FAST_CHANNEL_INITIATION_ENABLE, 'Fast Channel Initiation|');
+    msg += getStatus(Channel.ASYNCHRONOUS_TRANSMISSION_ENABLE, 'Asynchronous Transmission|');
     msg += this.extendedAssignment.toString(2) + 'b';
 
     return msg;
@@ -62,17 +62,17 @@ class Channel extends EventEmitter {
 
   onBurst(burst) {
 
-    this.state = this.TRACKING;
+    this.state = this.constructor.TRACKING;
   }
 
   onBroadcast(broadcast) {
 
-    this.state = this.TRACKING;
+    this.state = this.constructor.TRACKING;
   }
 
   onRxFailGoToSearch() {
 
-    this.state = this.SEARCHING;
+    this.state = this.constructor.SEARCHING;
 
     if (this.log.logging)
        this.log.debug( 'Lost contact with client, searching.');
@@ -95,7 +95,7 @@ class Channel extends EventEmitter {
 
   isTracking() {
 
-    return this.state === this.TRACKING;
+    return this.state === this.constructor.TRACKING;
   }
 
   getWildcardId() {
@@ -129,22 +129,22 @@ class Channel extends EventEmitter {
 
   slave() {
 
-    return this.assign(this.BIDIRECTIONAL_SLAVE, this.net);
+    return this.assign(this.constructor.BIDIRECTIONAL_SLAVE, this.net);
   }
 
   slaveOnly() {
 
-    return this.assign(this.SLAVE_RECEIVE_ONLY, this.net);
+    return this.assign(this.constructor.SLAVE_RECEIVE_ONLY, this.net);
   }
 
   master() {
 
-    return this.assign(this.BIDIRECTIONAL_MASTER, this.net);
+    return this.assign(this.constructor.BIDIRECTIONAL_MASTER, this.net);
   }
 
   masterOnly() {
 
-    return this.assign(this.MASTER_TRANSMIT_ONLY, this.net);
+    return this.assign(this.constructor.MASTER_TRANSMIT_ONLY, this.net);
   }
 
   assign(type, net, extendedAssignment) {
@@ -278,7 +278,7 @@ class Channel extends EventEmitter {
       msg += 'Net ' + this.net + '|';
 
     if (typeof this.type === 'number')
-      msg += Channel.prototype.TYPE[this.type] + '|';
+      msg += Channel.TYPE[this.type] + '|';
 
     if (this.id)
       msg += this.id.toString() + '|';
@@ -293,36 +293,29 @@ class Channel extends EventEmitter {
 
     if (typeof this.state === 'number') // Search etc.
     {
-      msg += Channel.prototype.STATE[this.state] + '|';
+      msg += Channel.STATE[this.state] + '|';
     }
 
     return msg;
   }
-}
 
-Channel.prototype.UNASSIGNED = 0x00;
-
-Channel.prototype.ASSIGNED = 0x01;
-
-Channel.prototype.SEARCHING = 0x02;
-
-Channel.prototype.TRACKING = 0x03;
-
-Channel.prototype.STATE = {
+  static UNASSIGNED = 0x00;
+  static ASSIGNED = 0x01;
+  static SEARCHING = 0x02;
+  static TRACKING = 0x03;
+  static STATE = {
   0x00: 'Unassigned',
   0x01: 'Assigned',
   0x02: 'Searching',
   0x03: 'Tracking'
 };
-
-Channel.prototype.BIDIRECTIONAL_SLAVE = 0x00;
-Channel.prototype.BIDIRECTIONAL_MASTER = 0x10;
-Channel.prototype.SHARED_BIDIRECTIONAL_SLAVE = 0x20;
-Channel.prototype.SHARED_BIDIRECTIONAL_MASTER = 0x30;
-Channel.prototype.SLAVE_RECEIVE_ONLY = 0x40;
-Channel.prototype.MASTER_TRANSMIT_ONLY = 0x50;
-
-Channel.prototype.TYPE = {
+  static BIDIRECTIONAL_SLAVE = 0x00;
+  static BIDIRECTIONAL_MASTER = 0x10;
+  static SHARED_BIDIRECTIONAL_SLAVE = 0x20;
+  static SHARED_BIDIRECTIONAL_MASTER = 0x30;
+  static SLAVE_RECEIVE_ONLY = 0x40;
+  static MASTER_TRANSMIT_ONLY = 0x50;
+  static TYPE = {
   0x00: 'Bidirectional SLAVE',
   0x10: 'Bidirectional MASTER',
   0x20: 'Shared bidirectional SLAVE',
@@ -330,8 +323,7 @@ Channel.prototype.TYPE = {
   0x40: 'SLAVE receive only (diagnostic)',
   0x50: 'MASTER Transmit only (legacy)'
 };
-
-Channel.prototype.NET = {
+  static NET = {
   PERIOD: {
     DEFAULT : 8192,  // 4 Hz
     ANTFS : 4096,    // 8 Hz
@@ -350,17 +342,45 @@ Channel.prototype.NET = {
     ANTFS   : [0xa8, 0xa4, 0x23, 0xb9, 0xf5, 0x5e, 0x63, 0xc1]
   }
 };
-
-Channel.prototype.EVENT = {
+  static EVENT = {
   BURST: 'burst' // Total burst, i.e all burst packets
 };
+  static BACKGROUND_SCANNING_ENABLE = 0x01;
+  static FREQUENCY_AGILITY_ENABLE = 0x04;
+  static FAST_CHANNEL_INITIATION_ENABLE = 0x10;
+  static ASYNCHRONOUS_TRANSMISSION_ENABLE = 0x20;
+  static MAX_RF = 124;
+}
 
-Channel.prototype.BACKGROUND_SCANNING_ENABLE = 0x01; // 0000 0001
-Channel.prototype.FREQUENCY_AGILITY_ENABLE = 0x04; // 0000 0100
-Channel.prototype.FAST_CHANNEL_INITIATION_ENABLE = 0x10; // 0001 0000
-Channel.prototype.ASYNCHRONOUS_TRANSMISSION_ENABLE = 0x20; // 0010 0000
 
-Channel.prototype.MAX_RF = 124;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ // 0000 0001
+ // 0000 0100
+ // 0001 0000
+ // 0010 0000
+
+
 
 // Data
 

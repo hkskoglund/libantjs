@@ -86,7 +86,7 @@ test('USBNode emits errors from endpoint events', () => {
   const usbError = new Error('USB runtime failed');
   const errors = [];
 
-  node.on(USBNode.prototype.EVENT.ERROR, error => errors.push(error));
+  node.on(USBNode.EVENT.ERROR, error => errors.push(error));
   node._onInEndpointError(inError);
   node._onError(usbError);
 

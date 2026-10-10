@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetSearchWaveform extends Message {
   constructor(channel, searchWaveform) {
 
-    super(undefined, Message.prototype.SET_SEARCH_WAVEFORM);
+    super(undefined, Message.SET_SEARCH_WAVEFORM);
 
     this.encode(channel, searchWaveform);
   }
@@ -23,10 +23,13 @@ class SetSearchWaveform extends Message {
 
     return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' search waveform ' + this.searchWaveform;
   }
+
+  static STANDARD_SEARCH_WAVEFORM = 316;
+  static FAST_SEARCH_WAVEFORM = 97;
 }
 
-SetSearchWaveform.prototype.STANDARD_SEARCH_WAVEFORM = 316;
-SetSearchWaveform.prototype.FAST_SEARCH_WAVEFORM = 97;
+
+
 
 module.exports = SetSearchWaveform;
 

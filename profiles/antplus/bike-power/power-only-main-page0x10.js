@@ -20,9 +20,9 @@
     // Rollover 255
     this.pedalPower = data[2];
 
-    if (this.pedalPower !== this.PEDAL_POWER_NOT_USED) {
-      this.isRightPedalPower = (data[2] & this.BIT_MASK.PEDAL_DIFFERENTIATION) >> 7; // Bit 7 == 1 - right, == 0 - unknown
-      this.pedalPowerPercent = data[2] & this.BIT_MASK.PEDAL_POWER_PERCENT;
+    if (this.pedalPower !== this.constructor.PEDAL_POWER_NOT_USED) {
+      this.isRightPedalPower = (data[2] & this.constructor.BIT_MASK.PEDAL_DIFFERENTIATION) >> 7; // Bit 7 == 1 - right, == 0 - unknown
+      this.pedalPowerPercent = data[2] & this.constructor.BIT_MASK.PEDAL_POWER_PERCENT;
     }
 
     // 0-254 rpm, 255=invalid
@@ -43,16 +43,19 @@
 
     this.readPower();
   }
+
+  static PEDAL_POWER_NOT_USED = 0xFF;
+  static BIT_MASK = {
+    PEDAL_POWER_PERCENT: parseInt("01111111", 2),
+    PEDAL_DIFFERENTIATION: parseInt("10000000", 2)
+  };
 }
 
 
 
 
-  PowerOnlyMainPage0x10.prototype.PEDAL_POWER_NOT_USED = 0xFF;
-  PowerOnlyMainPage0x10.prototype.BIT_MASK = {
-    PEDAL_POWER_PERCENT: parseInt("01111111", 2),
-    PEDAL_DIFFERENTIATION: parseInt("10000000", 2)
-  };
+
+
 
 
 

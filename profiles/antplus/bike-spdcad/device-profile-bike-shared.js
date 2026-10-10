@@ -13,9 +13,9 @@
       if (!Number.isFinite(configuration.wheelCircumference) || configuration.wheelCircumference <= 0) {
         throw new RangeError('Wheel circumference must be a positive finite number');
       }
-      this.WHEEL_CIRCUMFERENCE = configuration.wheelCircumference;
+      this.constructor.WHEEL_CIRCUMFERENCE = configuration.wheelCircumference;
     } else {
-      this.WHEEL_CIRCUMFERENCE = DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE;
+      this.constructor.WHEEL_CIRCUMFERENCE = DeviceProfile_BikeShared.WHEEL_CIRCUMFERENCE;
     }
 
     this.measurementPages = [];
@@ -30,7 +30,7 @@
 
     if (this.isPageToggle(broadcast)) {
 
-      pageNumber = data[0] & GenericPage.prototype.BIT_MASK.PAGE_NUMBER; // (7 lsb)
+      pageNumber = data[0] & GenericPage.BIT_MASK.PAGE_NUMBER; // (7 lsb)
     } else {
 
       pageNumber = 0; // Legacy
@@ -73,7 +73,7 @@
       return;
     }
 
-    if (this.measurementPages.length >= this.MAX_UNFILTERED_BROADCAST_BUFFER) {
+    if (this.measurementPages.length >= this.constructor.MAX_UNFILTERED_BROADCAST_BUFFER) {
       this.measurementPages.shift();
     }
 
@@ -88,8 +88,8 @@
       return;
     }
 
-    if (this.ROLLOVER_THRESHOLD &&
-      currentPage.timestamp - previousPage.timestamp >= this.ROLLOVER_THRESHOLD) {
+    if (this.constructor.ROLLOVER_THRESHOLD &&
+      currentPage.timestamp - previousPage.timestamp >= this.constructor.ROLLOVER_THRESHOLD) {
       if (this.log && this.log.logging) {
         this.log.warn('Time between bike measurement pages is longer than the rollover threshold (64s)', currentPage, previousPage);
       }
@@ -98,16 +98,20 @@
 
     return previousPage;
   }
+
+  static DEFAULT_PAGE_UPDATE_DELAY = 1000;
+  static WHEEL_CIRCUMFERENCE = 2.07;
+  static ROLLOVER_THRESHOLD = 64000;
 }
 
 
 
 
-  DeviceProfile_BikeShared.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
 
-  DeviceProfile_BikeShared.prototype.WHEEL_CIRCUMFERENCE = 2.07; // meters
 
-  DeviceProfile_BikeShared.prototype.ROLLOVER_THRESHOLD = 64000; // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
+   // meters
+
+   // Max time between pages/broadcasts for valid speed/cadence calculations which is based on state of the previous page
 
 
 

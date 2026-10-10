@@ -89,7 +89,7 @@ class AuthenticationManager extends EventEmitter {
 
     switch (response.type) {
 
-      case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER:
+      case AuthenticateResponse.CLIENT_SERIAL_NUMBER:
 
         if (response.authenticationStringLength)
           this.clientFriendlyname = response.authenticationString;
@@ -97,13 +97,13 @@ class AuthenticationManager extends EventEmitter {
         this.emit('AUTHENTICATE_RESPONSE', NO_ERROR, response);
         break;
 
-      case AuthenticateResponse.prototype.ACCEPT:
+      case AuthenticateResponse.ACCEPT:
 
         this.authorized = true;
         this.emit('AUTHENTICATE_RESPONSE', NO_ERROR, response);
         break;
 
-      case AuthenticateResponse.prototype.REJECT:
+      case AuthenticateResponse.REJECT:
 
         this.authorized = false;
         this.emit('AUTHENTICATE_RESPONSE', new Error(response.toString()), undefined);
@@ -123,10 +123,10 @@ class AuthenticationManager extends EventEmitter {
         this.host.layerState.isAuthentication()))
       return;
 
-    responseData = burst.subarray(ClientBeacon.prototype.PAYLOAD_LENGTH);
+    responseData = burst.subarray(ClientBeacon.PAYLOAD_LENGTH);
     responseId = responseData[1]; // Spec sec. 12 ANT-FS Host Command/Response
 
-    if (responseId === AuthenticateResponse.prototype.ID) {
+    if (responseId === AuthenticateResponse.ID) {
 
       response = new AuthenticateResponse(responseData);
 
@@ -143,7 +143,7 @@ class AuthenticationManager extends EventEmitter {
         return Math.floor(Math.random() * (this.MAX_RF + 1));
       }.bind(this.host),
 
-      occupiedFrequency = [this.host.NET.FREQUENCY.ANTFS, this.host.NET.FREQUENCY['ANT+'], this.host.NET.FREQUENCY.DEFAULT],
+      occupiedFrequency = [this.host.constructor.NET.FREQUENCY.ANTFS, this.host.constructor.NET.FREQUENCY['ANT+'], this.host.constructor.NET.FREQUENCY.DEFAULT],
       frequency = getRandomRF();
 
     while (occupiedFrequency.indexOf(frequency) !== -1)
@@ -360,7 +360,7 @@ class AuthenticationManager extends EventEmitter {
 
       authenticationType = this.host.beacon.authenticationType;
 
-    this.host.layerState.set(State.prototype.AUTHENTICATION);
+    this.host.layerState.set(State.AUTHENTICATION);
 
     this.requestSerialNumber(onSerialNumber);
 

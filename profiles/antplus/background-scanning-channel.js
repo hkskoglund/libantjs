@@ -37,8 +37,8 @@ class BackgroundScanningChannel extends DeviceProfile {
     broadCastDataParserFunc = this.broadCastDataParser || DeviceProfile.prototype.broadCastDataParser;
     channelResponseEventFunc = this.channelResponseEvent || DeviceProfile.prototype.channelResponseEvent;
 
-    this.channel.addListener(Channel.prototype.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
-    this.channel.addListener(Channel.prototype.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
+    this.channel.addListener(Channel.EVENT.CHANNEL_RESPONSE_EVENT, channelResponseEventFunc.bind(this));
+    this.channel.addListener(Channel.EVENT.BROADCAST, broadCastDataParserFunc.bind(this));
 
 
     return this.channel;

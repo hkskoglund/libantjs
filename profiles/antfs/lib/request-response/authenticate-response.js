@@ -33,29 +33,34 @@ class AuthenticateResponse {
     let msg = 'AUTHENTICATE ';
 
     switch (this.type) {
-      case AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER:
+      case AuthenticateResponse.CLIENT_SERIAL_NUMBER:
 
         if (this.authenticationString)
           msg += 'name ' + this.authenticationString;
         break;
 
-      case AuthenticateResponse.prototype.ACCEPT:
+      case AuthenticateResponse.ACCEPT:
 
         msg += 'accept';
         break;
 
-      case AuthenticateResponse.prototype.REJECT:
+      case AuthenticateResponse.REJECT:
         msg += 'reject';
         break;
     }
 
     return msg + ', client serial number ' + this.clientSerialNumber;
   }
+
+  static CLIENT_SERIAL_NUMBER = 0x00;
+  static ACCEPT = 0x01;
+  static REJECT = 0x02;
+  static ID = 0x84;
 }
 
-AuthenticateResponse.prototype.CLIENT_SERIAL_NUMBER = 0x00;
-AuthenticateResponse.prototype.ACCEPT = 0x01;
-AuthenticateResponse.prototype.REJECT = 0x02;
-AuthenticateResponse.prototype.ID = 0x84;
+
+
+
+
 
 module.exports = AuthenticateResponse;

@@ -5,7 +5,7 @@ var Message = require('../message');
 class ConfigureAdvancedBurstMessage extends Message {
   constructor(enable, maxPacketLength, requiredFeatures, optionalFeatures, stallCount, retryCount) {
 
-    super(undefined, Message.prototype.CONFIGURE_ADVANCED_BURST);
+    super(undefined, Message.CONFIGURE_ADVANCED_BURST);
     this.encode(enable,maxPacketLength,requiredFeatures,optionalFeatures,stallCount,retryCount);
   }
 
@@ -26,7 +26,7 @@ class ConfigureAdvancedBurstMessage extends Message {
       this.retryCount = retryCount;
     }
 
-    msgBuffer[0] = Message.prototype.FILLER_BYTE;
+    msgBuffer[0] = Message.FILLER_BYTE;
     msgBuffer[1] = enable;
     msgBuffer[2] = maxPacketLength;
 
@@ -51,13 +51,19 @@ class ConfigureAdvancedBurstMessage extends Message {
     return Message.prototype.toString.call(this)+ ' enabled '+this.enable+' max packet length '+
           this.maxPacketLength+' required '+this.requiredFeatures+ ' optional '+this.optionalFeatures;
   }
+
+  static ENABLE = 0x01;
+  static DISABLE = 0x00;
+  static MAX_PACKET_8BYTES = 0x01;
+  static MAX_PACKET_16BYTES = 0x02;
+  static MAX_PACKET_24BYTES = 0x03;
 }
 
-ConfigureAdvancedBurstMessage.prototype.ENABLE = 0x01;
-ConfigureAdvancedBurstMessage.prototype.DISABLE = 0x00;
-ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_8BYTES = 0x01;
-ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_16BYTES = 0x02;
-ConfigureAdvancedBurstMessage.prototype.MAX_PACKET_24BYTES = 0x03;
+
+
+
+
+
 
 module.exports = ConfigureAdvancedBurstMessage;
 

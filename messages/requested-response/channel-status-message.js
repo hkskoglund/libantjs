@@ -24,8 +24,8 @@ class ChannelStatusMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + ' Net ' + this.net + " " + Channel.prototype.TYPE[this.type] + " " +
-      Channel.prototype.STATE[this.state];
+    return Message.prototype.toString.call(this) + " Ch " + this.channel + ' Net ' + this.net + " " + Channel.TYPE[this.type] + " " +
+      Channel.STATE[this.state];
   }
 }
 

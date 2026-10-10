@@ -23,23 +23,27 @@
       SPDCADPage0.prototype.calcSpeed.call(this, prototype);
     });
   }
+
+  static NAME = 'SPDCAD';
+  static CHANNEL_ID = {
+    DEVICE_TYPE: 0x79, // 121
+    TRANSMISSION_TYPE: 1
+  };
+  static CHANNEL_PERIOD = {
+    DEFAULT: 8086, // Ca. 4 messages pr. sec.
+
+  };
 }
 
 
 
 
 
-  DeviceProfile_SPDCAD.prototype.NAME = 'SPDCAD';
 
-  DeviceProfile_SPDCAD.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x79, // 121
-    TRANSMISSION_TYPE: 1
-  };
 
-  DeviceProfile_SPDCAD.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8086, // Ca. 4 messages pr. sec.
 
-  };
+
+
 
 
 

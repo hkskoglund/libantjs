@@ -26,9 +26,9 @@
       defaultTransmissionRate: undefined
     };
 
-    this.transmissionInfo.localTime = (data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.LOCAL_TIME) >> TemperaturePage0.prototype.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
-    this.transmissionInfo.UTCTime = (data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.UTC_TIME) >> TemperaturePage0.prototype.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
-    this.transmissionInfo.defaultTransmissionRate = data[TemperaturePage0.prototype.BYTE.TRANSMISSION_INFO] & TemperaturePage0.prototype.BIT_MASK.DEFAULT_TRANSMISSION_RATE;
+    this.transmissionInfo.localTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.LOCAL_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
+    this.transmissionInfo.UTCTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.UTC_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
+    this.transmissionInfo.defaultTransmissionRate = data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.DEFAULT_TRANSMISSION_RATE;
 
 
     // Byte 4 - 7  - Supported pages
@@ -37,7 +37,7 @@
       value: undefined
     };
 
-    supportedPages = dataView.getUint32(data.byteOffset + TemperaturePage0.prototype.BYTE.SUPPORTED_PAGES, true);
+    supportedPages = dataView.getUint32(data.byteOffset + TemperaturePage0.BYTE.SUPPORTED_PAGES, true);
     this.supportedPages.value = supportedPages;
 
     for (var bitNr = 0; bitNr < 32; bitNr++) {
@@ -49,20 +49,15 @@
 
   toString() {
 
-    var msg = "P# " + this.number + " Local time " + TemperaturePage0.prototype.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
-      " UTC time " + TemperaturePage0.prototype.TRANSMISSION_INFO.UTC_TIME[this.transmissionInfo.UTCTime] +
-      " Tch " + TemperaturePage0.prototype.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate] +
+    var msg = "P# " + this.number + " Local time " + TemperaturePage0.TRANSMISSION_INFO.LOCAL_TIME[this.transmissionInfo.localTime] +
+      " UTC time " + TemperaturePage0.TRANSMISSION_INFO.UTC_TIME[this.transmissionInfo.UTCTime] +
+      " Tch " + TemperaturePage0.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE[this.transmissionInfo.defaultTransmissionRate] +
       " Pages 0b" + this.supportedPages.value.toString(2);
 
     return msg;
   }
-}
 
-
-
-
-  // Bit field layout
-  TemperaturePage0.prototype.BIT_FIELD = {
+  static BIT_FIELD = {
 
     TRANSMISSION_INFO: {
       LOCAL_TIME: {
@@ -80,10 +75,7 @@
     }
 
   };
-
-  // Bit mask to pinpoint BIT_FIELD
-
-  TemperaturePage0.prototype.BIT_MASK = {
+  static BIT_MASK = {
 
     TRANSMISSION_INFO: {
       LOCAL_TIME: parseInt('00110000', 2),
@@ -92,17 +84,14 @@
     }
 
   };
-
-  // Byte layout
-  TemperaturePage0.prototype.BYTE = {
+  static BYTE = {
     PAGE_NUMBER: 0,
     // Reserved
     // Reserved
     TRANSMISSION_INFO: 3,
     SUPPORTED_PAGES: 4
   };
-
-  TemperaturePage0.prototype.TRANSMISSION_INFO = {
+  static TRANSMISSION_INFO = {
 
     LOCAL_TIME: {
       0: "Not supported",
@@ -125,6 +114,22 @@
       3: "Reserved"
     }
   };
+}
+
+
+
+
+  // Bit field layout
+
+
+  // Bit mask to pinpoint BIT_FIELD
+
+
+
+  // Byte layout
+
+
+
 
 
 

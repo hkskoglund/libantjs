@@ -17,7 +17,7 @@
 
     this.initMasterSlaveConfiguration();
 
-    this.requestPageUpdate(this.DEFAULT_PAGE_UPDATE_DELAY);
+    this.requestPageUpdate(this.constructor.DEFAULT_PAGE_UPDATE_DELAY);
   }
 
   createManualZeroRequest() {
@@ -87,12 +87,12 @@
         // BACKGROUND pages
 
         // required
-      case BackgroundPage.prototype.COMMON.PAGE0x50:
-      case BackgroundPage.prototype.COMMON.PAGE0x51:
+      case BackgroundPage.COMMON.PAGE0x50:
+      case BackgroundPage.COMMON.PAGE0x51:
 
         // optional
         // falls through
-      case BackgroundPage.prototype.COMMON.PAGE0x52:
+      case BackgroundPage.COMMON.PAGE0x52:
 
         page = this.getBackgroundPage(broadcast, pageNumber);
 
@@ -115,25 +115,30 @@
 
     return page;
   }
+
+  static DEFAULT_PAGE_UPDATE_DELAY = 1000;
+  static CHANNEL_PERIOD = {
+    DEFAULT: 8182,
+
+  };
+  static NAME = 'BIKE_POWER';
+  static CHANNEL_ID = {
+    DEVICE_TYPE: 0x0B,
+    TRANSMISSION_TYPE: 0x05
+  };
 }
 
 
 
 
-  DeviceProfile_BikePower.prototype.DEFAULT_PAGE_UPDATE_DELAY = 1000;
+
 
   // Transmission from power sensor each 8182/32768 seconds -> approx 4.00 Hz, ANT+ Managed Network Document – Bicycle Power Device Profile, 4.1 - p. 19 CHANNEL configuration
-  DeviceProfile_BikePower.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8182,
 
-  };
 
-  DeviceProfile_BikePower.prototype.NAME = 'BIKE_POWER';
 
-  DeviceProfile_BikePower.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x0B,
-    TRANSMISSION_TYPE: 0x05
-  };
+
+
 
 
 

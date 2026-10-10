@@ -2,7 +2,7 @@
 
 class State {
   constructor(state) {
-    this.state = state || State.prototype.LINK;
+    this.state = state || State.LINK;
   }
 
   get() {
@@ -10,7 +10,7 @@ class State {
   }
 
   setLink() {
-    this.set(State.prototype.LINK);
+    this.set(State.LINK);
   }
 
   set(state) {
@@ -21,43 +21,48 @@ class State {
   }
 
   isLink() {
-    return this.state === State.prototype.LINK;
+    return this.state === State.LINK;
   }
 
   isAuthentication() {
-    return this.state === State.prototype.AUTHENTICATION;
+    return this.state === State.AUTHENTICATION;
   }
 
   isTransport() {
-    return this.state === State.prototype.TRANSPORT;
+    return this.state === State.TRANSPORT;
   }
 
   isBusy() {
-    return this.state === State.prototype.BUSY;
+    return this.state === State.BUSY;
   }
 
   toString() {
 
     switch (this.state) {
 
-      case State.prototype.LINK:
+      case State.LINK:
         return "LINK";
 
-      case State.prototype.AUTHENTICATION:
+      case State.AUTHENTICATION:
         return "AUTHENTICATION";
 
-      case State.prototype.TRANSPORT:
+      case State.TRANSPORT:
         return "TRANSPORT";
-        
-      case State.prototype.BUSY:
+
+      case State.BUSY:
         return "BUSY";
     }
   }
+
+  static LINK = 0x00;
+  static AUTHENTICATION = 0x01;
+  static TRANSPORT = 0x02;
+  static BUSY = 0x03;
 }
 
-State.prototype.LINK = 0x00;
-State.prototype.AUTHENTICATION = 0x01;
-State.prototype.TRANSPORT = 0x02;
-State.prototype.BUSY = 0x03;
+
+
+
+
 
 module.exports = State;

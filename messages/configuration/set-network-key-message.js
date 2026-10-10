@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetNetworkKeyMessage extends Message {
   constructor(net, key) {
 
-    super(undefined, Message.prototype.SET_NETWORK_KEY);
+    super(undefined, Message.SET_NETWORK_KEY);
     this.encode(net, key);
   }
 

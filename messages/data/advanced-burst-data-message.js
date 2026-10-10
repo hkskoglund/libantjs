@@ -6,7 +6,7 @@ var AcknowledgedDataMessage = require('./acknowledged-data-message'),
 class AdvancedBurstDataMessage extends AcknowledgedDataMessage {
   constructor(data) {
 
-    super(data, Message.prototype.ADVANCED_BURST_TRANSFER_DATA);
+    super(data, Message.ADVANCED_BURST_TRANSFER_DATA);
   }
 
   encode(channel, data) {
@@ -20,9 +20,9 @@ class AdvancedBurstDataMessage extends AcknowledgedDataMessage {
     if (this.content.byteLength < 2)
       throw new RangeError('Advanced ANT burst message must contain a channel and data');
 
-    this.channel = data[Message.prototype.iChannel] & 0x1F;
-    this.sequenceNr = (data[Message.prototype.iChannel] & 0xE0) >> 5;
-    this.packet = data.subarray(Message.prototype.iPayload, Message.prototype.iPayload + this.length - 1);
+    this.channel = data[Message.iChannel] & 0x1F;
+    this.sequenceNr = (data[Message.iChannel] & 0xE0) >> 5;
+    this.packet = data.subarray(Message.iPayload, Message.iPayload + this.length - 1);
   }
 }
 

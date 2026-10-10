@@ -43,21 +43,23 @@
     }
 
     msg += ' speedEventTime ' + this.bikeSpeedEventTime + ' wheelRevolution ' + this.cumulativeSpeedRevolutionCount +
-      ' wheel circumference (m) ' + this.profile.WHEEL_CIRCUMFERENCE;
+      ' wheel circumference (m) ' + this.profile.constructor.WHEEL_CIRCUMFERENCE;
 
     return msg;
   }
+
+  static BYTE = {
+
+    BIKE_SPEED_EVENT_TIME: 4,
+    CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
+  };
 }
 
 
 
 
   // ANT Message byte layout - does not conform to ANT+ message format (1 byte datapagenumber/msb page toggle, 7 byte data)
-  BikePage0.prototype.BYTE = {
 
-    BIKE_SPEED_EVENT_TIME: 4,
-    CUMULATIVE_SPEED_REVOLUTION_COUNT: 6
-  };
 
 
 
@@ -66,4 +68,3 @@
 
 
   module.exports = BikePage0;
-

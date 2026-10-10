@@ -29,8 +29,8 @@ class LinkManager extends EventEmitter {
   this.removeAllListeners('link');
   this.once('link', this.onLink.bind(this));
   this.linkBeaconCount = 0;
-  this.host.layerState.set(State.prototype.LINK);
-  this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).catch(() => {
+  this.host.layerState.set(State.LINK);
+  this.switchFrequencyAndPeriod(this.host.constructor.NET.FREQUENCY.ANTFS, ClientBeacon.CHANNEL_PERIOD.Hz8).catch(() => {
     if (this.log.logging)
       this.log.error( 'Failed to reset search frequency to default ANT-FS 2450 MHz');
   });
@@ -63,7 +63,7 @@ class LinkManager extends EventEmitter {
 
       if (this.host.frequency !== authentication_RF) {
 
-        this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).then(() => {
+        this.switchFrequencyAndPeriod(authentication_RF, ClientBeacon.CHANNEL_PERIOD.Hz8).then(() => {
           if (this.log.logging)
             this.log.debug( 'Switched frequency to ' + (2400 + authentication_RF) + ' MHz');
         }, () => {});
@@ -88,7 +88,7 @@ class LinkManager extends EventEmitter {
 
     onFrequencyAndPeriodSet = function _onFrequencyAndPeriodSet() {
 
-      const linkRequest = new LinkRequest(authentication_RF, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
+      const linkRequest = new LinkRequest(authentication_RF, ClientBeacon.CHANNEL_PERIOD.Hz8, this.hostSerialNumber);
 
       this.once('EVENT_TRANSFER_TX_COMPLETED', onTxCompleted);
 
@@ -99,9 +99,9 @@ class LinkManager extends EventEmitter {
 
 
 
-  if (this.host.frequency !== this.host.NET.FREQUENCY.ANTFS)
+  if (this.host.frequency !== this.host.constructor.NET.FREQUENCY.ANTFS)
   // In case client drops to link layer from higher layers (communicating on the agreed upon authentication RF)
-    this.switchFrequencyAndPeriod(this.host.NET.FREQUENCY.ANTFS, ClientBeacon.prototype.CHANNEL_PERIOD.Hz8).then(onFrequencyAndPeriodSet, onFrequencyAndPeriodSet); // Continue even if switching failed
+    this.switchFrequencyAndPeriod(this.host.constructor.NET.FREQUENCY.ANTFS, ClientBeacon.CHANNEL_PERIOD.Hz8).then(onFrequencyAndPeriodSet, onFrequencyAndPeriodSet); // Continue even if switching failed
   else
     onFrequencyAndPeriodSet.call(this);
 
@@ -112,23 +112,23 @@ class LinkManager extends EventEmitter {
 
   switch (period) {
 
-    case ClientBeacon.prototype.CHANNEL_PERIOD.Hz05:
+    case ClientBeacon.CHANNEL_PERIOD.Hz05:
       newPeriod = 65535;
       break;
 
-    case ClientBeacon.prototype.CHANNEL_PERIOD.Hz1:
+    case ClientBeacon.CHANNEL_PERIOD.Hz1:
       newPeriod = 32768;
       break;
 
-    case ClientBeacon.prototype.CHANNEL_PERIOD.Hz2:
+    case ClientBeacon.CHANNEL_PERIOD.Hz2:
       newPeriod = 16384;
       break;
 
-    case ClientBeacon.prototype.CHANNEL_PERIOD.Hz4:
+    case ClientBeacon.CHANNEL_PERIOD.Hz4:
       newPeriod = 8192;
       break;
 
-    case ClientBeacon.prototype.CHANNEL_PERIOD.Hz8:
+    case ClientBeacon.CHANNEL_PERIOD.Hz8:
       newPeriod = 4096;
       break;
   }
@@ -158,7 +158,7 @@ class LinkManager extends EventEmitter {
   disconnect() {
     const disconnectRequest = new DisconnectRequest();
 
-    this.host.layerState.set(State.prototype.LINK);
+    this.host.layerState.set(State.LINK);
 
     return new Promise((resolve, reject) => {
       const onCompleted = () => {

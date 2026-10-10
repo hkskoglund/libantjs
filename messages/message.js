@@ -42,23 +42,23 @@ class Message {
 
     // Standard message
 
-    this.SYNC = data[Message.prototype.iSYNC];
-    this.length = data[Message.prototype.iLENGTH];
-    this.id = data[Message.prototype.iID];
-    this.channel = data[Message.prototype.iChannel]; // Normally, but not all
-    this.content = data.subarray(Message.prototype.HEADER_LENGTH, Message.prototype.HEADER_LENGTH + this.length);
-    this.CRC = data[Message.prototype.HEADER_LENGTH + this.length];
+    this.constructor.SYNC = data[Message.iSYNC];
+    this.length = data[Message.iLENGTH];
+    this.id = data[Message.iID];
+    this.channel = data[Message.iChannel]; // Normally, but not all
+    this.content = data.subarray(Message.HEADER_LENGTH, Message.HEADER_LENGTH + this.length);
+    this.CRC = data[Message.HEADER_LENGTH + this.length];
 
     // Extended message (channel id, rx timestamp, rssi)
 
     // TO DO : Check Advanced Burst Transfer data
-    if ((this.id === Message.prototype.BROADCAST_DATA ||
-        this.id === Message.prototype.ACKNOWLEDGED_DATA ||
-        this.id === Message.prototype.BURST_TRANSFER_DATA) &&
-      this.content.length > Message.prototype.iFlagsByte) {
+    if ((this.id === Message.BROADCAST_DATA ||
+        this.id === Message.ACKNOWLEDGED_DATA ||
+        this.id === Message.BURST_TRANSFER_DATA) &&
+      this.content.length > Message.iFlagsByte) {
 
-      this.flagsByte = this.content[Message.prototype.iFlagsByte];
-      this.extendedData = this.content.subarray(Message.prototype.iFlagsByte + 1); // Subarray creates a view to underlying arraybuffer
+      this.flagsByte = this.content[Message.iFlagsByte];
+      this.extendedData = this.content.subarray(Message.iFlagsByte + 1); // Subarray creates a view to underlying arraybuffer
       // Check for channel ID
       // p.37 spec: relative order of extended messages; channel ID, RSSI, timestamp (based on 32kHz clock, rolls over each 2 seconds)
       if (this.flagsByte & LibConfig.CHANNEL_ID_ENABLED) {
@@ -100,7 +100,7 @@ class Message {
 
   getFrameError(data) {
 
-    var minimumLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+    var minimumLength = Message.HEADER_LENGTH + Message.CRC_LENGTH,
       totalLength;
 
     if (!data || typeof data.subarray !== 'function' || typeof data.byteLength !== 'number')
@@ -109,7 +109,7 @@ class Message {
     if (data.byteLength < minimumLength)
       return 'Message is shorter than the minimum frame length';
 
-    totalLength = data[Message.prototype.iLENGTH] + minimumLength;
+    totalLength = data[Message.iLENGTH] + minimumLength;
 
     if (data.byteLength < totalLength)
       return 'Message is shorter than its declared length';
@@ -117,7 +117,7 @@ class Message {
     if (data.byteLength > totalLength)
       return 'Message is longer than its declared length';
 
-    if (data[Message.prototype.iSYNC] !== Message.prototype.SYNC)
+    if (data[Message.iSYNC] !== Message.SYNC)
       return 'Invalid message SYNC';
 
     if (data[totalLength - 1] !== Message.prototype.getCRC.call(this, data.subarray(0, totalLength - 1)))
@@ -126,13 +126,13 @@ class Message {
 
   toString(verbose) {
 
-    var msg = Message.prototype.MESSAGE[this.id];
+    var msg = Message.MESSAGE[this.id];
 
     if (!verbose)
       return msg;
 
-    if (this.SYNC)
-      msg += " SYNC 0x" + this.SYNC.toString(16) + " = " + this.SYNC;
+    if (this.constructor.SYNC)
+      msg += " SYNC 0x" + this.constructor.SYNC.toString(16) + " = " + this.constructor.SYNC;
 
     if (this.length)
       msg += " LEN 0x" + this.length.toString(16) + " = " + this.length;
@@ -171,15 +171,15 @@ class Message {
     if (this.content.byteLength > 0xFF)
       throw new RangeError('Message content must not exceed 255 bytes');
 
-    standardMessage = new Uint8Array(Message.prototype.HEADER_LENGTH + this.content.byteLength + 1);
+    standardMessage = new Uint8Array(Message.HEADER_LENGTH + this.content.byteLength + 1);
     this.length = this.content.byteLength;
 
-    standardMessage[0] = Message.prototype.SYNC;
+    standardMessage[0] = Message.SYNC;
     standardMessage[1] = this.length;
     standardMessage[2] = this.id;
-    standardMessage.set(this.content, Message.prototype.HEADER_LENGTH);
+    standardMessage.set(this.content, Message.HEADER_LENGTH);
 
-    iCRC = this.length + Message.prototype.HEADER_LENGTH;
+    iCRC = this.length + Message.HEADER_LENGTH;
     standardMessage[iCRC] = this.getCRC(standardMessage.subarray(0, iCRC));
 
     return standardMessage;
@@ -188,7 +188,7 @@ class Message {
   getCRC(messageBuffer) {
 
     var checksum = messageBuffer[0], // Should be SYNC 0xA4
-      len = messageBuffer[1] + Message.prototype.HEADER_LENGTH, // Should be messageBuffer.length - 1
+      len = messageBuffer[1] + Message.HEADER_LENGTH, // Should be messageBuffer.length - 1
       byteNr;
 
     for (byteNr = 1; byteNr < len; byteNr++) {
@@ -203,95 +203,63 @@ class Message {
 
     return this.id;
   }
-}
 
-Message.prototype.SYNC = 0xA4; // Every raw ANT message starts with SYNC
-
-Message.prototype.FILLER_BYTE = 0x00;
-
-Message.prototype.HEADER_LENGTH = 3; // SYNC+LENGTH+ID
-
-Message.prototype.PAYLOAD_LENGTH = 8;
-
-Message.prototype.CRC_LENGTH = 1;
-
-Message.prototype.iSYNC = 0; // Index of sync byte within message
-Message.prototype.iLENGTH = 1;
-Message.prototype.iID = 2;
-Message.prototype.iChannel = 3;
-Message.prototype.iPayload = 4;
-Message.prototype.iFlagsByte = 9;
-
-// Get sequence nr. of burst 3 msb of channel byte
-
-/*
-This function create a raw message
- SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
- CRC = XOR of all bytes in message
- Sending of LSB first = little endian NB!
-*/
-
-// CheckSUM = XOR of all bytes in message
-
-// ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
-
-// Config
-
-Message.prototype.UNASSIGN_CHANNEL = 0x41;
-Message.prototype.ASSIGN_CHANNEL = 0x42;
-Message.prototype.SET_CHANNEL_ID = 0x51;
-Message.prototype.SET_CHANNEL_PERIOD = 0x43;
-Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT = 0x44;
-Message.prototype.SET_CHANNEL_RFFREQ = 0x45;
-Message.prototype.SET_NETWORK_KEY = 0x46;
-Message.prototype.SET_TRANSMIT_POWER = 0x47;
-Message.prototype.SET_SEARCH_WAVEFORM = 0x49;
-
-Message.prototype.SET_CHANNEL_TX_POWER = 0x60;
-Message.prototype.SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT = 0x63;
-Message.prototype.SET_SERIAL_NUM_CHANNEL_ID = 0x65;
-Message.prototype.RXEXTMESGSENABLE = 0x66;
-
-Message.prototype.LIBCONFIG = 0x6E;
-
-Message.prototype.SET_PROXIMITY_SEARCH = 0x71;
-Message.prototype.EVENT_BUFFER_CONFIGURATION = 0x74;
-Message.prototype.SET_CHANNEL_SEARCH_PRIORITY = 0x75;
-Message.prototype.ADVANCED_BURST_CAPABILITIES = 0x78;
-Message.prototype.CONFIGURE_ADVANCED_BURST = 0x78;
-
-Message.prototype.RESET_SYSTEM = 0x4A;
-Message.prototype.OPEN_CHANNEL = 0x4B;
-Message.prototype.CLOSE_CHANNEL = 0x4C;
-Message.prototype.OPEN_RX_SCAN_MODE = 0x5B;
-Message.prototype.SLEEP_MESSAGE = 0xC5;
-Message.prototype.NOTIFICATION_STARTUP = 0x6F;
-Message.prototype.NOTIFICATION_SERIAL_ERROR = 0xAE;
-Message.prototype.ANT_VERSION = 0x3E;
-Message.prototype.CAPABILITIES = 0x54;
-Message.prototype.DEVICE_SERIAL_NUMBER = 0x61;
-
-Message.prototype.REQUEST = 0x4D;
-Message.prototype.CHANNEL_RESPONSE = 0x40;
-Message.prototype.CHANNEL_STATUS = 0x52;
-
-// DATA
-
-Message.prototype.BROADCAST_DATA = 0x4E;
-Message.prototype.ACKNOWLEDGED_DATA = 0x4F;
-Message.prototype.BURST_TRANSFER_DATA = 0x50;
-Message.prototype.EXTENDED_BURST_TRANSFER_DATA = 0x5F;
-Message.prototype.ADVANCED_BURST_TRANSFER_DATA = 0x72;
-
-Message.prototype.EVENT = {
+  static SYNC = 0xA4;
+  static FILLER_BYTE = 0x00;
+  static HEADER_LENGTH = 3;
+  static PAYLOAD_LENGTH = 8;
+  static CRC_LENGTH = 1;
+  static iSYNC = 0;
+  static iLENGTH = 1;
+  static iID = 2;
+  static iChannel = 3;
+  static iPayload = 4;
+  static iFlagsByte = 9;
+  static UNASSIGN_CHANNEL = 0x41;
+  static ASSIGN_CHANNEL = 0x42;
+  static SET_CHANNEL_ID = 0x51;
+  static SET_CHANNEL_PERIOD = 0x43;
+  static SET_CHANNEL_SEARCH_TIMEOUT = 0x44;
+  static SET_CHANNEL_RFFREQ = 0x45;
+  static SET_NETWORK_KEY = 0x46;
+  static SET_TRANSMIT_POWER = 0x47;
+  static SET_SEARCH_WAVEFORM = 0x49;
+  static SET_CHANNEL_TX_POWER = 0x60;
+  static SET_LOW_PRIORITY_CHANNEL_SEARCH_TIMEOUT = 0x63;
+  static SET_SERIAL_NUM_CHANNEL_ID = 0x65;
+  static RXEXTMESGSENABLE = 0x66;
+  static LIBCONFIG = 0x6E;
+  static SET_PROXIMITY_SEARCH = 0x71;
+  static EVENT_BUFFER_CONFIGURATION = 0x74;
+  static SET_CHANNEL_SEARCH_PRIORITY = 0x75;
+  static ADVANCED_BURST_CAPABILITIES = 0x78;
+  static CONFIGURE_ADVANCED_BURST = 0x78;
+  static RESET_SYSTEM = 0x4A;
+  static OPEN_CHANNEL = 0x4B;
+  static CLOSE_CHANNEL = 0x4C;
+  static OPEN_RX_SCAN_MODE = 0x5B;
+  static SLEEP_MESSAGE = 0xC5;
+  static NOTIFICATION_STARTUP = 0x6F;
+  static NOTIFICATION_SERIAL_ERROR = 0xAE;
+  static ANT_VERSION = 0x3E;
+  static CAPABILITIES = 0x54;
+  static DEVICE_SERIAL_NUMBER = 0x61;
+  static REQUEST = 0x4D;
+  static CHANNEL_RESPONSE = 0x40;
+  static CHANNEL_STATUS = 0x52;
+  static BROADCAST_DATA = 0x4E;
+  static ACKNOWLEDGED_DATA = 0x4F;
+  static BURST_TRANSFER_DATA = 0x50;
+  static EXTENDED_BURST_TRANSFER_DATA = 0x5F;
+  static ADVANCED_BURST_TRANSFER_DATA = 0x72;
+  static EVENT = {
   0x4E: 'data',
   0x4F: 'ackdata',
   0x50: 'burstdata',
   0x5F: 'extburstdata',
   0x72: 'advburstdata'
 };
-
-Message.prototype.MESSAGE = {
+  static MESSAGE = {
 
   // Control messages
 
@@ -376,5 +344,88 @@ Message.prototype.MESSAGE = {
   0x72: "Advanced Burst Transfer Data",
 
 };
+}
+
+ // Every raw ANT message starts with SYNC
+
+
+
+ // SYNC+LENGTH+ID
+
+
+
+
+
+ // Index of sync byte within message
+
+
+
+
+
+
+// Get sequence nr. of burst 3 msb of channel byte
+
+/*
+This function create a raw message
+ SYNC = 10100100 = 0xA4 or 10100101 (MSB:LSB)
+ CRC = XOR of all bytes in message
+ Sending of LSB first = little endian NB!
+*/
+
+// CheckSUM = XOR of all bytes in message
+
+// ANT message ID - from sec 9.3 ANT Message Summary ANT Message Protocol And Usage Rev 50
+
+// Config
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// DATA
+
+
+
+
+
+
+
+
+
+
 
 module.exports = Message;

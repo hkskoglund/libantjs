@@ -4,7 +4,7 @@ var BroadcastDataMessage = require('./broadcast-data-message'),
   Message = require('../message');
 
 class AcknowledgedDataMessage extends BroadcastDataMessage {
-  constructor(data, id = Message.prototype.ACKNOWLEDGED_DATA) {
+  constructor(data, id = Message.ACKNOWLEDGED_DATA) {
 
     super(data, id);
   }

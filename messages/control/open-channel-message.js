@@ -5,7 +5,7 @@ var Message = require('../message');
 class OpenChannelMessage extends Message {
   constructor(channel) {
 
-    super(undefined, Message.prototype.OPEN_CHANNEL);
+    super(undefined, Message.OPEN_CHANNEL);
     this.encode(channel);
   }
 

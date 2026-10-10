@@ -5,7 +5,7 @@ var Message = require('../message');
 class CloseChannelMessage extends Message {
   constructor(channel) {
 
-    super(undefined, Message.prototype.CLOSE_CHANNEL);
+    super(undefined, Message.CLOSE_CHANNEL);
     this.encode(channel);
   }
 

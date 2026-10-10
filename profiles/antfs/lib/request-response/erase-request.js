@@ -11,7 +11,7 @@ class EraseRequest {
       dv = new DataView(command.buffer);
 
     command[0] = 0x44; // ANT-FS COMMAND message
-    command[1] = this.ID;
+    command[1] = this.constructor.ID;
     dv.setUint16(2, this.index, true);
 
     return command;
@@ -20,8 +20,10 @@ class EraseRequest {
   toString() {
     return 'ERASE index ' + this.index;
   }
+
+  static ID = 0x0B;
 }
 
-EraseRequest.prototype.ID = 0x0B;
+
 
 module.exports = EraseRequest;

@@ -6,7 +6,7 @@ var Message = require('../message'),
 class ChannelResponseMessage extends Message {
   constructor(data) {
 
-    super(data, Message.prototype.CHANNEL_RESPONSE);
+    super(data, Message.CHANNEL_RESPONSE);
   }
 
   decode() {

@@ -21,24 +21,29 @@
       BikePage0.prototype.calcSpeed.call(this, prototype);
     });
   }
+
+  static NAME = 'BIKE_SPD';
+  static CHANNEL_ID = {
+    DEVICE_TYPE: 0x7B, // 123
+    // TRANSMISSION_TYPE: 1 // or 5
+  };
+  static CHANNEL_PERIOD = {
+    DEFAULT: 8118, // 4.06Hz
+  };
+  static PAGE_TOGGLE_CAPABLE = true;
 }
 
 
 
 
 
-  DeviceProfile_BikeSpd.prototype.NAME = 'BIKE_SPD';
 
-  DeviceProfile_BikeSpd.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x7B, // 123
-    // TRANSMISSION_TYPE: 1 // or 5
-  };
 
-  DeviceProfile_BikeSpd.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8118, // 4.06Hz
-  };
 
-  DeviceProfile_BikeSpd.prototype.PAGE_TOGGLE_CAPABLE = true;
+
+
+
+
 
 
 

@@ -32,7 +32,7 @@
 
     // Byte 0 - data page number
 
-    this.number = data[SDMPage2.prototype.BYTE.PAGE_NUMBER];
+    this.number = data[SDMPage2.BYTE.PAGE_NUMBER];
 
     // Byte 1 - reserved 0 x FF
 
@@ -40,26 +40,26 @@
 
     // Byte 3 - cadence - integer
 
-    this.cadenceInteger = data[SDMPage2.prototype.BYTE.CADENCE_INTEGER];
+    this.cadenceInteger = data[SDMPage2.BYTE.CADENCE_INTEGER];
 
     // Byte 4 - cadence fractional upper nibble
-    this.cadenceFractional = ((data[SDMPage2.prototype.BYTE.CADENCE_FRACTIONAL] & SDMPage2.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage2.prototype.BIT_FIELD.CadenceFractional.START_BIT) * (SDMPage2.prototype.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
+    this.cadenceFractional = ((data[SDMPage2.BYTE.CADENCE_FRACTIONAL] & SDMPage2.BIT_MASK.UPPER_NIBBLE) >> SDMPage2.BIT_FIELD.CadenceFractional.START_BIT) * (SDMPage2.UNIT.CADENCE_FRACTIONAL); // Strides pr min.
     this.cadence = this.cadenceInteger + this.cadenceFractional;
 
-    this.speedInteger = data[SDMPage2.prototype.BYTE.SPEED_INTEGER] & SDMPage2.prototype.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
+    this.speedInteger = data[SDMPage2.BYTE.SPEED_INTEGER] & SDMPage2.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
 
     // Byte 5 - fractional instantenous speed
-    this.speedFractional = data[SDMPage2.prototype.BYTE.SPEED_FRACTIONAL] * SDMPage2.prototype.UNIT.SPEED_FRACTIONAL;
+    this.speedFractional = data[SDMPage2.BYTE.SPEED_FRACTIONAL] * SDMPage2.UNIT.SPEED_FRACTIONAL;
     this.speed = this.speedInteger + this.speedFractional;
 
     // Byte 6 - reserved 0xFF
 
     // Byte 7 - status - SDM status flags
 
-    this.status.SDMLocation = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.SDMLocation) >> SDMPage2.prototype.BIT_FIELD.SDMLocation.START_BIT;
-    this.status.BatteryStatus = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.BatteryStatus) >> SDMPage2.prototype.BIT_FIELD.BatteryStatus.START_BIT;
-    this.status.SDMHealth = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.SDMHealth) >> SDMPage2.prototype.BIT_FIELD.SDMHealth.START_BIT;
-    this.status.UseState = (data[SDMPage2.prototype.BYTE.STATUS] & SDMPage2.prototype.BIT_MASK.UseState);
+    this.status.SDMLocation = (data[SDMPage2.BYTE.STATUS] & SDMPage2.BIT_MASK.SDMLocation) >> SDMPage2.BIT_FIELD.SDMLocation.START_BIT;
+    this.status.BatteryStatus = (data[SDMPage2.BYTE.STATUS] & SDMPage2.BIT_MASK.BatteryStatus) >> SDMPage2.BIT_FIELD.BatteryStatus.START_BIT;
+    this.status.SDMHealth = (data[SDMPage2.BYTE.STATUS] & SDMPage2.BIT_MASK.SDMHealth) >> SDMPage2.BIT_FIELD.SDMHealth.START_BIT;
+    this.status.UseState = (data[SDMPage2.BYTE.STATUS] & SDMPage2.BIT_MASK.UseState);
 
 
     switch (this.status.SDMLocation) {
@@ -156,13 +156,8 @@
 
     return msg;
   }
-}
 
-
-
-
-  // Bit field layout
-  SDMPage2.prototype.BIT_FIELD = {
+  static BIT_FIELD = {
 
     SDMLocation: {
       START_BIT: 6,
@@ -188,10 +183,7 @@
 
 
   };
-
-  // Bit mask to pinpoint BIT_FIELD
-
-  SDMPage2.prototype.BIT_MASK = {
+  static BIT_MASK = {
 
     SDMLocation: parseInt("11000000", 2),
     BatteryStatus: parseInt("00110000", 2),
@@ -202,9 +194,7 @@
     LOWER_NIBBLE: 0X0F
 
   };
-
-  // Byte layout
-  SDMPage2.prototype.BYTE = {
+  static BYTE = {
     PAGE_NUMBER: 0,
     RESERVED_1: 1,
     RESERVED_2: 2,
@@ -216,11 +206,26 @@
     STATUS: 7
 
   };
-
-  SDMPage2.prototype.UNIT = {
+  static UNIT = {
     CADENCE_FRACTIONAL: 1 / 16, // strides pr minute
     SPEED_FRACTIONAL: 1 / 256 // m/s
   };
+}
+
+
+
+
+  // Bit field layout
+
+
+  // Bit mask to pinpoint BIT_FIELD
+
+
+
+  // Byte layout
+
+
+
 
 
 

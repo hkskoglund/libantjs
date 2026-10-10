@@ -101,12 +101,12 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
       'setFrequency', 'setPeriod', 'open'
     ]);
     assert.deepEqual(calls[0], ['libConfig', 0x80]);
-    assert.deepEqual(calls[2], ['assign', channel.SLAVE_RECEIVE_ONLY, 0]);
+    assert.deepEqual(calls[2], ['assign', channel.constructor.SLAVE_RECEIVE_ONLY, 0]);
     assert.deepEqual(calls[3], ['setId', 1234, sensorType === 'hrm' ? 120 : 25, 0]);
-    assert.deepEqual(calls[4], ['setFrequency', channel.NET.FREQUENCY['ANT+']]);
+    assert.deepEqual(calls[4], ['setFrequency', channel.constructor.NET.FREQUENCY['ANT+']]);
     assert.deepEqual(calls[5], [
       'setPeriod',
-      sensorType === 'hrm' ? 8070 : channel.NET.PERIOD.ENVIRONMENT.LOW_POWER
+      sensorType === 'hrm' ? 8070 : channel.constructor.NET.PERIOD.ENVIRONMENT.LOW_POWER
     ]);
     assert.equal(channel.listeners('data').includes(dataListener), true);
     channel.removeListener('data', dataListener);
@@ -308,7 +308,7 @@ test('Host.sleep sends a Sleep Message', async () => {
   host.sendMessage = async message => { sentMessage = message; };
   await host.sleep();
 
-  assert.equal(sentMessage.id, Message.prototype.SLEEP_MESSAGE);
+  assert.equal(sentMessage.id, Message.SLEEP_MESSAGE);
   assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
 });
 
@@ -435,12 +435,12 @@ test('Channel.assign accepts an omitted extended assignment', async () => {
 
   host.assignChannel = async (...args) => { calls.push(args); };
 
-  await channel.assign(channel.SLAVE_RECEIVE_ONLY, 1);
-  await channel.assign(channel.SLAVE_RECEIVE_ONLY, 1, 0x01);
+  await channel.assign(channel.constructor.SLAVE_RECEIVE_ONLY, 1);
+  await channel.assign(channel.constructor.SLAVE_RECEIVE_ONLY, 1, 0x01);
 
   assert.deepEqual(calls, [
-    [0, channel.SLAVE_RECEIVE_ONLY, 1, undefined],
-    [0, channel.SLAVE_RECEIVE_ONLY, 1, 0x01]
+    [0, channel.constructor.SLAVE_RECEIVE_ONLY, 1, undefined],
+    [0, channel.constructor.SLAVE_RECEIVE_ONLY, 1, 0x01]
   ]);
   assert.equal(channel.extendedAssignment, 0x01);
 });
@@ -448,7 +448,7 @@ test('Channel.assign accepts an omitted extended assignment', async () => {
 test('Channel.toString includes zero-valued network, type, and state', () => {
   const { host } = createHost();
   const channel = host.channel[0];
-  channel.state = channel.UNASSIGNED;
+  channel.state = channel.constructor.UNASSIGNED;
   const description = channel.toString();
 
   assert.match(description, /Net 0\|/);

@@ -20,16 +20,18 @@ class HRMPage9 extends BackgroundPage {
   }
 
   toString() {
-    const eventType = this.HEART_BEAT_EVENT_TYPE[this.heartBeatEventType];
+    const eventType = this.constructor.HEART_BEAT_EVENT_TYPE[this.heartBeatEventType];
 
     return "P# " + this.number + " Heart beat event type " +
       (eventType === undefined ? "Reserved (" + this.heartBeatEventType + ")" : eventType);
   }
-}
 
-HRMPage9.prototype.HEART_BEAT_EVENT_TYPE = {
+  static HEART_BEAT_EVENT_TYPE = {
   MEASURED: 0,
   COMPUTED: 1
 };
+}
+
+
 
 module.exports = HRMPage9;

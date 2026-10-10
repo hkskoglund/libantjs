@@ -5,18 +5,22 @@ const GenericPage = require('./page');
 class BackgroundPage extends GenericPage {
   getManufacturer(manufacturerID) {
     // Imported from profile.xls in FIT SDK v13.2
-    const manufacturer = Object.keys(this.manufacturers)
-      .find((name) => this.manufacturers[name] === manufacturerID);
+    const manufacturer = Object.keys(this.constructor.manufacturers)
+      .find((name) => this.constructor.manufacturers[name] === manufacturerID);
 
     return manufacturer ? manufacturer.replace(/^_/, '') : '';
   }
-}
 
-BackgroundPage.prototype.COMMON.PAGE0x50 = 0x50;
-BackgroundPage.prototype.COMMON.PAGE0x51 = 0x51;
-BackgroundPage.prototype.COMMON.PAGE0x52 = 0x52;
-
-BackgroundPage.prototype.manufacturers = {
+  static {
+    BackgroundPage.COMMON.PAGE0x50 = 0x50;
+  }
+  static {
+    BackgroundPage.COMMON.PAGE0x51 = 0x51;
+  }
+  static {
+    BackgroundPage.COMMON.PAGE0x52 = 0x52;
+  }
+  static manufacturers = {
   garmin: 1,
   garmin_fr405_antfs: 2,
   zephyr: 3,
@@ -113,5 +117,12 @@ BackgroundPage.prototype.manufacturers = {
   scribe_labs: 259,
   actigraphcorp: 5759
 };
+}
+
+
+
+
+
+
 
 module.exports = BackgroundPage;

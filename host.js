@@ -48,7 +48,7 @@ class Host extends EventEmitter {
       log: this.options.log,
       debugLevel: this.options.debugLevel
     });
-    this.usb.on(USBDevice.prototype.EVENT.ERROR, this.onUSBError.bind(this));
+    this.usb.on(USBDevice.EVENT.ERROR, this.onUSBError.bind(this));
   }
 
   // Send a message to ANT. Resolves with the response message when a response event is awaited, otherwise when the transfer completes.

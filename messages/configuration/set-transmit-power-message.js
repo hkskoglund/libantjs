@@ -5,13 +5,13 @@ var Message = require('../message');
 class SetTransmitPowerMessage extends Message {
   constructor(transmitPower) {
 
-    super(undefined, Message.prototype.SET_TRANSMIT_POWER);
+    super(undefined, Message.SET_TRANSMIT_POWER);
     this.encode(transmitPower);
   }
 
   encode(transmitPower) {
 
-    var msgBuffer = new Uint8Array([Message.prototype.FILLER_BYTE, transmitPower]);
+    var msgBuffer = new Uint8Array([Message.FILLER_BYTE, transmitPower]);
 
     this.transmitPower = transmitPower;
 

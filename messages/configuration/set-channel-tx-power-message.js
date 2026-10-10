@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetChannelTxPowerMessage extends Message {
   constructor(channel, transmitPower) {
 
-    super(undefined, Message.prototype.SET_CHANNEL_TX_POWER);
+    super(undefined, Message.SET_CHANNEL_TX_POWER);
     this.encode(channel, transmitPower);
   }
 

@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetChannelSearchTimeoutMessage extends Message {
   constructor(channel, searchTimeout) {
 
-    super(undefined, Message.prototype.SET_CHANNEL_SEARCH_TIMEOUT);
+    super(undefined, Message.SET_CHANNEL_SEARCH_TIMEOUT);
     this.encode(channel, searchTimeout);
   }
 

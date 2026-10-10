@@ -18,11 +18,11 @@
 
     // Byte 0-1 - Bike Cadence Event Time LSB MSB - last valid bike cadence event - unit: 1/1024s - rollover : 64 s
 
-    this.bikeCadenceEventTime = dataView.getUint16(data.byteOffset + prototype.BYTE.BIKE_CADENCE_EVENT_TIME, true);
+    this.bikeCadenceEventTime = dataView.getUint16(data.byteOffset + prototype.constructor.BYTE.BIKE_CADENCE_EVENT_TIME, true);
 
     // Byte 2-3 - Cumulative Cadence Revolution Count LSB MSB - total number of pedal revolutions - rollover : 65536
 
-    this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + prototype.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
+    this.cumulativeCadenceRevolutionCount = dataView.getUint16(data.byteOffset + prototype.constructor.BYTE.CUMULATIVE_CADENCE_REVOLUTION_COUNT, true);
   }
 
   readSpeed(proto) {
@@ -34,11 +34,11 @@
 
     // Byte 4-5 - Bike speed event time LSB MSB - time of last valid bike speed event - unit : 1/1024 s, 64 s
 
-    this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + prototype.BYTE.BIKE_SPEED_EVENT_TIME, true);
+    this.bikeSpeedEventTime = dataView.getUint16(data.byteOffset + prototype.constructor.BYTE.BIKE_SPEED_EVENT_TIME, true);
 
     // Byte 6-7 - Cumulative Speed Revolution LSB MSB - total number of wheel revolutions - rollover : 65536
 
-    this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + prototype.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
+    this.cumulativeSpeedRevolutionCount = dataView.getUint16(data.byteOffset + prototype.constructor.BYTE.CUMULATIVE_SPEED_REVOLUTION_COUNT, true);
   }
 
   calcSpeed() {
@@ -91,7 +91,7 @@
     }
 
     if (this.unCalibratedSpeed !== undefined) {
-      this.speed = this.unCalibratedSpeed * this.profile.WHEEL_CIRCUMFERENCE;
+      this.speed = this.unCalibratedSpeed * this.profile.constructor.WHEEL_CIRCUMFERENCE;
     }
   }
 
@@ -158,4 +158,3 @@
 
 
   module.exports = SPDCADSharedPage;
-

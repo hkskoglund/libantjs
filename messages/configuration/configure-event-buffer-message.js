@@ -7,9 +7,9 @@ class ConfigureEventBufferMessage extends Message {
 
     if (configOrData instanceof Uint8Array) // When receiving data
     {
-      super(configOrData, Message.prototype.EVENT_BUFFER_CONFIGURATION);
+      super(configOrData, Message.EVENT_BUFFER_CONFIGURATION);
     } else {
-      super(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION);
+      super(undefined, Message.EVENT_BUFFER_CONFIGURATION);
       this.encode(configOrData, size, time);
 
     }
@@ -43,25 +43,31 @@ class ConfigureEventBufferMessage extends Message {
 
     var msg = ' | ';
 
-    if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS) {
+    if (this.config === ConfigureEventBufferMessage.BUFFER_LOW_PRIORITY_EVENTS) {
       msg += 'buffer low priority events ';
-    } else if (this.config === ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS) {
+    } else if (this.config === ConfigureEventBufferMessage.BUFFER_ALL_EVENTS) {
       msg += 'buffer all events | ';
     } else
       msg += 'buffer unknown priority ' + this.config;
 
     msg += ' | size ' + this.size + ' bytes before flush';
-    msg += ' | time ' + this.time * ConfigureEventBufferMessage.prototype.TIME_UNIT + ' ms';
+    msg += ' | time ' + this.time * ConfigureEventBufferMessage.TIME_UNIT + ' ms';
 
     return Message.prototype.toString.call(this) + msg;
   }
+
+  static BUFFER_LOW_PRIORITY_EVENTS = 0x00;
+  static BUFFER_ALL_EVENTS = 0x01;
+  static TIME_DISABLE = 0x00;
+  static TIME_MAX = 0xFFFF;
+  static TIME_UNIT = 10;
 }
 
-ConfigureEventBufferMessage.prototype.BUFFER_LOW_PRIORITY_EVENTS = 0x00; // EVENT_TX,EVENT_RX_FAIL,EVENT_CHANNEL_COLLISION
-ConfigureEventBufferMessage.prototype.BUFFER_ALL_EVENTS = 0x01;
-ConfigureEventBufferMessage.prototype.TIME_DISABLE = 0x00;
-ConfigureEventBufferMessage.prototype.TIME_MAX = 0xFFFF; // Unit : 10ms
-ConfigureEventBufferMessage.prototype.TIME_UNIT = 10;
+ // EVENT_TX,EVENT_RX_FAIL,EVENT_CHANNEL_COLLISION
+
+
+ // Unit : 10ms
+
 
 module.exports = ConfigureEventBufferMessage;
 

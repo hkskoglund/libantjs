@@ -5,7 +5,7 @@ var Message = require('../message');
 class UnAssignChannelMessage extends Message {
   constructor(channel) {
 
-    super(undefined, Message.prototype.UNASSIGN_CHANNEL);
+    super(undefined, Message.UNASSIGN_CHANNEL);
     this.encode(channel);
   }
 

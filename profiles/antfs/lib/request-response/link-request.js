@@ -12,7 +12,7 @@ class LinkRequest {
       dv = new DataView(command.buffer);
 
     command[0] = 0x44; // ANT-FS COMMAND message
-    command[1] = this.ID;
+    command[1] = this.constructor.ID;
     command[2] = this.frequency;
     command[3] = this.period;
     dv.setUint32(4, this.hostSerialNumber, true);
@@ -23,8 +23,10 @@ class LinkRequest {
   toString() {
     return 'LinkRequest ' + 'frequency ' + this.frequency + ' period ' + this.period + ' host ' + this.hostSerialNumber;
   }
+
+  static ID = 0x02;
 }
 
-LinkRequest.prototype.ID = 0x02;
+
 
 module.exports = LinkRequest;

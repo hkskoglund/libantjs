@@ -21,23 +21,28 @@
       BikePage0.prototype.calcCadence.call(this, prototype);
     });
   }
+
+  static NAME = 'BIKE_CAD';
+  static CHANNEL_ID = {
+    DEVICE_TYPE: 0x7A, // 122
+    //TRANSMISSION_TYPE: 1 // or 5
+  };
+  static CHANNEL_PERIOD = {
+    DEFAULT: 8102,
+  };
+  static PAGE_TOGGLE_CAPABLE = true;
 }
 
 
 
 
-  DeviceProfile_BikeCad.prototype.NAME = 'BIKE_CAD';
 
-  DeviceProfile_BikeCad.prototype.CHANNEL_ID = {
-    DEVICE_TYPE: 0x7A, // 122
-    //TRANSMISSION_TYPE: 1 // or 5
-  };
 
-  DeviceProfile_BikeCad.prototype.CHANNEL_PERIOD = {
-    DEFAULT: 8102,
-  };
 
-  DeviceProfile_BikeCad.prototype.PAGE_TOGGLE_CAPABLE = true;
+
+
+
+
 
 
 

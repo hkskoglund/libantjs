@@ -6,7 +6,7 @@ var Message = require('../message'),
 class AssignChannelMessage extends Message {
   constructor(channel, channelType, networkNumber, extendedAssignment) {
 
-    super(undefined, Message.prototype.ASSIGN_CHANNEL);
+    super(undefined, Message.ASSIGN_CHANNEL);
     this.encode(channel, channelType, networkNumber, extendedAssignment);
   }
 
@@ -31,7 +31,7 @@ class AssignChannelMessage extends Message {
 
   toString() {
 
-    var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.prototype.TYPE[this.type];
+    var msg = Message.prototype.toString.call(this) + " Ch " + this.channel + " Net " + this.net + " " + Channel.TYPE[this.type];
 
     if (this.extendedAssignment)
       msg += " extended assignment " + this.extendedAssignment;

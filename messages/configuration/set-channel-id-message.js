@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetChannelIDMessage extends Message {
   constructor(channel, deviceNum, deviceType, transmissionType) {
 
-    super(undefined, Message.prototype.SET_CHANNEL_ID);
+    super(undefined, Message.SET_CHANNEL_ID);
 
     this.encode(channel, deviceNum, deviceType, transmissionType);
   }
@@ -15,7 +15,7 @@ class SetChannelIDMessage extends Message {
     var
       msgBuffer = new Uint8Array(5),
       msgView = new DataView(msgBuffer.buffer),
-      pairingRequest = (deviceType & SetChannelIDMessage.prototype.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
+      pairingRequest = (deviceType & SetChannelIDMessage.PAIRING_BIT_MASK) >> 7; // Bit 7 - Range 0 .. 1
 
     msgBuffer[0] = channel;
     msgView.setUint16(1, deviceNum, true);
@@ -34,11 +34,14 @@ class SetChannelIDMessage extends Message {
 
     return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
   }
+
+  static PAIRING_BIT_MASK = parseInt("10000000", 2);
+  static DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2);
 }
 
-SetChannelIDMessage.prototype.PAIRING_BIT_MASK = parseInt("10000000", 2); // Bit 7
+ // Bit 7
 
-SetChannelIDMessage.prototype.DEVICE_TYPE_ID_BIT_MASK = parseInt("01111111", 2); // Bit 0-6
+ // Bit 0-6
 
 module.exports = SetChannelIDMessage;
 

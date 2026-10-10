@@ -17,12 +17,12 @@ class ChannelResponse {
 
   isTransferTxFailed() {
 
-    return this.isRFevent() && this.code === ChannelResponse.prototype.EVENT_TRANSFER_TX_FAILED;
+    return this.isRFevent() && this.code === ChannelResponse.EVENT_TRANSFER_TX_FAILED;
   }
 
   isTransferRxFailed() {
 
-    return this.isRFevent() && this.code === ChannelResponse.prototype.EVENT_TRANSFER_RX_FAILED;
+    return this.isRFevent() && this.code === ChannelResponse.EVENT_TRANSFER_RX_FAILED;
   }
 
   toString() {
@@ -34,54 +34,50 @@ class ChannelResponse {
         msg += 'RF Event ';
         break;
       default:
-        msg += Message.prototype.MESSAGE[this.initiatingId] + ' ';
+        msg += Message.MESSAGE[this.initiatingId] + ' ';
         break;
     }
 
-    msg += ChannelResponse.prototype.MESSAGE[this.code];
+    msg += ChannelResponse.MESSAGE[this.code];
 
     return msg;
   }
-}
 
-ChannelResponse.prototype.RESPONSE_NO_ERROR = 0x00;
-ChannelResponse.prototype.EVENT_RX_SEARCH_TIMEOUT = 0x01;
-ChannelResponse.prototype.EVENT_RX_FAIL = 0x02;
-ChannelResponse.prototype.EVENT_TX = 0x03;
-ChannelResponse.prototype.EVENT_TRANSFER_RX_FAILED = 0x04;
-ChannelResponse.prototype.EVENT_TRANSFER_TX_COMPLETED = 0x05;
-ChannelResponse.prototype.EVENT_TRANSFER_TX_FAILED = 0x06;
-ChannelResponse.prototype.EVENT_CHANNEL_CLOSED = 0x07;
-ChannelResponse.prototype.EVENT_RX_FAIL_GO_TO_SEARCH = 0x08;
-ChannelResponse.prototype.EVENT_CHANNEL_COLLISION = 0x09;
-ChannelResponse.prototype.EVENT_TRANSFER_TX_START = 0x0A;
-// Found in antdefines.h of ANT-FS PC Tools SDK (ANTFS_PC_Tools_src\antfs_pc_tools_src_v1.3.0\ANTFSHostDemo\ANT_LIB\inc), not mentioned in rev 5.0b ANT Message Protocol and Usage
-// Seen on testing multiple retries of assign channel command nRF24AP2 USB
-ChannelResponse.prototype.EVENT_CHANNEL_ACTIVE = 0x0F;
-ChannelResponse.prototype.EVENT_TRANSFER_NEXT_DATA_BLOCK = 0x11;
-ChannelResponse.prototype.CHANNEL_IN_WRONG_STATE = 0x15;
-ChannelResponse.prototype.CHANNEL_NOT_OPENED = 0x16;
-ChannelResponse.prototype.CHANNEL_ID_NOT_SET = 0x18;
-ChannelResponse.prototype.CLOSE_ALL_CHANNELS = 0x19;
-ChannelResponse.prototype.TRANSFER_IN_PROGRESS = 0x1F;
-ChannelResponse.prototype.TRANSFER_SEQUENCE_NUMBER_ERROR = 0x20;
-ChannelResponse.prototype.TRANSFER_IN_ERROR = 0x21;
-ChannelResponse.prototype.MESSAGE_SIZE_EXCEEDS_LIMIT = 0x27;
-ChannelResponse.prototype.INVALID_MESSAGE = 0x28;
-ChannelResponse.prototype.INVALID_NETWORK_NUMBER = 0x29;
-ChannelResponse.prototype.INVALID_LIST_ID = 0x30;
-ChannelResponse.prototype.INVALID_SCAN_TX_CHANNEL = 0x31;
-ChannelResponse.prototype.INVALID_PARAMETER_PROVIDED = 0x33;
-ChannelResponse.prototype.EVENT_SERIAL_QUEUE_OVERFLOW = 0x34;
-ChannelResponse.prototype.EVENT_QUEUE_OVERFLOW = 0x35;
-ChannelResponse.prototype.NVM_FULL_ERROR = 0x40;
-ChannelResponse.prototype.NVM_WRITE_ERROR = 0x41;
-ChannelResponse.prototype.USB_STRING_WRITE_FAIL = 0x70;
-ChannelResponse.prototype.MESG_SERIAL_ERROR_ID = 0xAE;
-ChannelResponse.prototype.ENCRYPT_NEGOTIATION_SUCCESS = 0x38;
-ChannelResponse.prototype.ENCRYPT_NEGOTIATION_FAIL = 0x39;
-
-ChannelResponse.prototype.MESSAGE = {
+  static RESPONSE_NO_ERROR = 0x00;
+  static EVENT_RX_SEARCH_TIMEOUT = 0x01;
+  static EVENT_RX_FAIL = 0x02;
+  static EVENT_TX = 0x03;
+  static EVENT_TRANSFER_RX_FAILED = 0x04;
+  static EVENT_TRANSFER_TX_COMPLETED = 0x05;
+  static EVENT_TRANSFER_TX_FAILED = 0x06;
+  static EVENT_CHANNEL_CLOSED = 0x07;
+  static EVENT_RX_FAIL_GO_TO_SEARCH = 0x08;
+  static EVENT_CHANNEL_COLLISION = 0x09;
+  static EVENT_TRANSFER_TX_START = 0x0A;
+  static EVENT_CHANNEL_ACTIVE = 0x0F;
+  static EVENT_TRANSFER_NEXT_DATA_BLOCK = 0x11;
+  static CHANNEL_IN_WRONG_STATE = 0x15;
+  static CHANNEL_NOT_OPENED = 0x16;
+  static CHANNEL_ID_NOT_SET = 0x18;
+  static CLOSE_ALL_CHANNELS = 0x19;
+  static TRANSFER_IN_PROGRESS = 0x1F;
+  static TRANSFER_SEQUENCE_NUMBER_ERROR = 0x20;
+  static TRANSFER_IN_ERROR = 0x21;
+  static MESSAGE_SIZE_EXCEEDS_LIMIT = 0x27;
+  static INVALID_MESSAGE = 0x28;
+  static INVALID_NETWORK_NUMBER = 0x29;
+  static INVALID_LIST_ID = 0x30;
+  static INVALID_SCAN_TX_CHANNEL = 0x31;
+  static INVALID_PARAMETER_PROVIDED = 0x33;
+  static EVENT_SERIAL_QUEUE_OVERFLOW = 0x34;
+  static EVENT_QUEUE_OVERFLOW = 0x35;
+  static NVM_FULL_ERROR = 0x40;
+  static NVM_WRITE_ERROR = 0x41;
+  static USB_STRING_WRITE_FAIL = 0x70;
+  static MESG_SERIAL_ERROR_ID = 0xAE;
+  static ENCRYPT_NEGOTIATION_SUCCESS = 0x38;
+  static ENCRYPT_NEGOTIATION_FAIL = 0x39;
+  static MESSAGE = {
 
   0x00: "RESPONSE_NO_ERROR",
   0x01: "EVENT_RX_SEARCH_TIMEOUT", //  "The search is terminated, and the channel has been automatically closed."
@@ -118,6 +114,46 @@ ChannelResponse.prototype.MESSAGE = {
   0x38: "ENCRYPT_NEGOTIATION_SUCCESS",
   0x39: "ENCRYPT_NEGOTIATION_FAIL",
 };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+// Found in antdefines.h of ANT-FS PC Tools SDK (ANTFS_PC_Tools_src\antfs_pc_tools_src_v1.3.0\ANTFSHostDemo\ANT_LIB\inc), not mentioned in rev 5.0b ANT Message Protocol and Usage
+// Seen on testing multiple retries of assign channel command nRF24AP2 USB
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 module.exports = ChannelResponse;
 

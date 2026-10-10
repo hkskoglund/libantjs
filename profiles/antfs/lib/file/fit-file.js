@@ -9,7 +9,7 @@ class FitFile extends File {
   }
 
   isFit() {
-    return this.getType() === File.prototype.TYPE.FIT;
+    return this.getType() === File.TYPE.FIT;
   }
 
   decode(data) {
@@ -49,7 +49,7 @@ class FitFile extends File {
     else
       dateStr = this._formatDate(this.date);
 
-    filename = FitFile.prototype.FIT_FILE_TYPES[this.subType];
+    filename = FitFile.FIT_FILE_TYPES[this.subType];
 
     for (i = 0; this.directory.file && i < this.directory.file.length; i++) {
       if (this.directory.file[i] !== this &&
@@ -78,16 +78,15 @@ class FitFile extends File {
 
   toString() {
     return File.prototype.toString.call(this) + ' | Fit permission : ' + this.fitPermission.toString() +
-      ' | Sub type : ' + this.subType + ' ' + FitFile.prototype.FIT_FILE_TYPES[this.subType] +
+      ' | Sub type : ' + this.subType + ' ' + FitFile.FIT_FILE_TYPES[this.subType] +
       ' | File number : ' + this.fileNumber;
   }
 
   toUnixString() {
     return File.prototype.toUnixString.call(this, this.getFileName(true));
   }
-}
 
-FitFile.prototype.FIT_FILE_TYPES = {
+  static FIT_FILE_TYPES = {
   // FIT SDK - FIT File Types D00001309 FIT File Types Description - Rev 1.6
   1: 'DeviceCapabilities',
   2: 'Settings',
@@ -106,5 +105,8 @@ FitFile.prototype.FIT_FILE_TYPES = {
   28: 'DailyMonitoring',
   32: 'MonitoringB'
 };
+}
+
+
 
 module.exports = FitFile;

@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetChannelRFFreqMessage extends Message {
   constructor(channel, RFFreq) {
 
-    super(undefined, Message.prototype.SET_CHANNEL_RFFREQ);
+    super(undefined, Message.SET_CHANNEL_RFFREQ);
 
     this.encode(channel, RFFreq);
   }

@@ -5,7 +5,7 @@ var Message = require('../message');
 class OpenRxScanModeMessage extends Message {
   constructor(channel) {
 
-    super(undefined, Message.prototype.OPEN_RX_SCAN_MODE);
+    super(undefined, Message.OPEN_RX_SCAN_MODE);
     this.encode(channel);
   }
 

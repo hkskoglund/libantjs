@@ -35,7 +35,7 @@ class HostDevices {
 
     await this.usb.init(iDevice);
 
-    this.usb.on(USBDevice.prototype.EVENT.DATA, this.deserialize.bind(this));
+    this.usb.on(USBDevice.EVENT.DATA, this.deserialize.bind(this));
 
     this.usb.listen();
 

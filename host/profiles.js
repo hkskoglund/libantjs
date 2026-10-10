@@ -54,11 +54,11 @@ class HostProfiles {
 
     switch (sensorType) {
       case 'hrm':
-        profile = HRMProfile.prototype;
+        profile = HRMProfile;
         break;
       case 'tempe':
       case 'environment':
-        profile = EnvironmentProfile.prototype;
+        profile = EnvironmentProfile;
         break;
       default:
         throw new RangeError('Unsupported ANT+ sensor type: ' + sensorType);
@@ -72,10 +72,10 @@ class HostProfiles {
       profile.CHANNEL_PERIOD.ALTERNATIVE;
 
     await this.libConfig(LibConfig.CHANNEL_ID_ENABLED);
-    await channel.setNetworkKey(channel.NET.KEY['ANT+']);
-    await channel.assign(channel.SLAVE_RECEIVE_ONLY, network);
+    await channel.setNetworkKey(channel.constructor.NET.KEY['ANT+']);
+    await channel.assign(channel.constructor.SLAVE_RECEIVE_ONLY, network);
     await channel.setId(deviceNumber, profile.CHANNEL_ID.DEVICE_TYPE, 0);
-    await channel.setFrequency(channel.NET.FREQUENCY['ANT+']);
+    await channel.setFrequency(channel.constructor.NET.FREQUENCY['ANT+']);
     await channel.setPeriod(period);
     await channel.open();
 

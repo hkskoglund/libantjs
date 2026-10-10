@@ -30,7 +30,7 @@ class ProductId extends BackgroundPage {
     let msg = "P# " + this.number + ' ';
     msg += " SW revision " + this.SWRevisionString;
 
-    if (this.serialNumber === ProductId.prototype.NO_SERIAL_NUMBER) {
+    if (this.serialNumber === ProductId.NO_SERIAL_NUMBER) {
       msg += " No serial number";
     } else {
       msg += " Serial number " + this.serialNumber;
@@ -38,8 +38,10 @@ class ProductId extends BackgroundPage {
 
     return msg;
   }
+
+  static NO_SERIAL_NUMBER = 0xFFFFFFFF;
 }
 
-ProductId.prototype.NO_SERIAL_NUMBER = 0xFFFFFFFF;
+
 
 module.exports = ProductId;

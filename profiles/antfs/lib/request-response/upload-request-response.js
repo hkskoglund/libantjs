@@ -42,27 +42,27 @@ class UploadRequestResponse {
 
   switch (this.response) {
 
-    case UploadRequestResponse.prototype.OK:
+    case UploadRequestResponse.OK:
       msg += 'OK';
       break;
 
-    case UploadRequestResponse.prototype.NOT_EXIST:
+    case UploadRequestResponse.NOT_EXIST:
       msg += 'Does not exist';
       break;
 
-    case UploadRequestResponse.prototype.EXIST_NOT_WRITABLE:
+    case UploadRequestResponse.EXIST_NOT_WRITABLE:
       msg += 'Exists, but is not writable';
       break;
 
-    case UploadRequestResponse.prototype.NOT_READY:
+    case UploadRequestResponse.NOT_READY:
       msg += 'Not ready';
       break;
 
-    case UploadRequestResponse.prototype.INVALID:
+    case UploadRequestResponse.INVALID:
       msg += 'Invalid request';
       break;
 
-    case UploadRequestResponse.prototype.NOT_ENOUGH_SPACE:
+    case UploadRequestResponse.NOT_ENOUGH_SPACE:
       msg += 'Not enough space';
       break;
   }
@@ -71,14 +71,22 @@ class UploadRequestResponse {
          ' | Max block size ' + this.maxBlockSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
   }
+
+  static OK = 0x00;
+  static NOT_EXIST = 0x01;
+  static EXIST_NOT_WRITABLE = 0x02;
+  static NOT_ENOUGH_SPACE = 0x03;
+  static INVALID = 0x04;
+  static NOT_READY = 0x05;
+  static ID = 0x8A;
 }
 
-UploadRequestResponse.prototype.OK = 0x00;
-UploadRequestResponse.prototype.NOT_EXIST = 0x01;
-UploadRequestResponse.prototype.EXIST_NOT_WRITABLE = 0x02;
-UploadRequestResponse.prototype.NOT_ENOUGH_SPACE = 0x03;
-UploadRequestResponse.prototype.INVALID = 0x04;
-UploadRequestResponse.prototype.NOT_READY = 0x05;
-UploadRequestResponse.prototype.ID = 0x8A;
+
+
+
+
+
+
+
 
 module.exports = UploadRequestResponse;

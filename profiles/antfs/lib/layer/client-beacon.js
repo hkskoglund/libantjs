@@ -34,7 +34,7 @@ class ClientBeacon {
       this.deviceType = dv.getUint16(4 + payload.byteOffset, true);
       this.manufacturerID = dv.getUint16(6 + payload.byteOffset, true);
 
-      if (this.manufacturerID & ClientBeacon.prototype.BIT_MASK.DEVICE_TYPE_MANAGED_BY)
+      if (this.manufacturerID & ClientBeacon.BIT_MASK.DEVICE_TYPE_MANAGED_BY)
         this.deviceTypeManagedBy = 'ANT+ Alliance';
       else
         this.deviceTypeManagedBy = 'Manufacturer';
@@ -97,22 +97,26 @@ class ClientBeacon {
 
     return str;
   }
-}
 
-ClientBeacon.prototype.PAYLOAD_LENGTH = 0x08;
-ClientBeacon.prototype.BIT_MASK = {
+  static PAYLOAD_LENGTH = 0x08;
+  static BIT_MASK = {
   DATA_AVAILABLE: 0x20,
   UPLOAD_ENABLED: 0x10,
   PAIRING_ENABLED: 0x08,
   BEACON_CHANNEL_PERIOD: 0x07,
   DEVICE_TYPE_MANAGED_BY: 0x8000
 };
-ClientBeacon.prototype.CHANNEL_PERIOD = {
+  static CHANNEL_PERIOD = {
   Hz05: 0x00,
   Hz1: 0x01,
   Hz2: 0x02,
   Hz4: 0x03,
   Hz8: 0x04
 };
+}
+
+
+
+
 
 module.exports = ClientBeacon;

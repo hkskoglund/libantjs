@@ -30,7 +30,7 @@ class USBNode extends USBDevice {
     if (this.log.logging) {
       this.log.error(error);
     }
-    this.emit(this.EVENT.ERROR, error);
+    this.emit(this.constructor.EVENT.ERROR, error);
   }
 
   _addUSBListeners() {
@@ -105,7 +105,7 @@ class USBNode extends USBDevice {
   async refreshDevices() {
     const devices = await this.usb.getDevices();
     this.devices = devices.filter((device) => this._isANTDevice(device));
-    this.emit(this.EVENT.ENUMERATION_COMPLETE);
+    this.emit(this.constructor.EVENT.ENUMERATION_COMPLETE);
     return this.devices;
   }
 
@@ -115,11 +115,11 @@ class USBNode extends USBDevice {
   }
 
   _getINEndpointPacketSize() {
-    return this.inEndpoint.packetSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+    return this.inEndpoint.packetSize || USBNode.DEFAULT_ENDPOINT_PACKET_SIZE;
   }
 
   _getOUTEndpointPacketSize() {
-    return this.outEndpoint.packetSize || USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE;
+    return this.outEndpoint.packetSize || USBNode.DEFAULT_ENDPOINT_PACKET_SIZE;
   }
 
   setDeviceTimeout(timeout) {
@@ -135,15 +135,15 @@ class USBNode extends USBDevice {
       ? error
       : Object.assign(new Error(error.message), { code: error.code });
 
-    this.emit(this.EVENT.ERROR, generatedError);
+    this.emit(this.constructor.EVENT.ERROR, generatedError);
     return generatedError;
   }
 
   // Some ANT sticks report a broken configuration string descriptor, so fall back to the standard endpoint layout.
   _findEndpoints() {
     const endpoints = {
-      inEndpoint: { endpointNumber: DEFAULT_ENDPOINT_NUMBER, packetSize: USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, timeout: DEFAULT_POLL_TIMEOUT },
-      outEndpoint: { endpointNumber: DEFAULT_ENDPOINT_NUMBER, packetSize: USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE, timeout: DEFAULT_OUT_TIMEOUT }
+      inEndpoint: { endpointNumber: DEFAULT_ENDPOINT_NUMBER, packetSize: USBNode.DEFAULT_ENDPOINT_PACKET_SIZE, timeout: DEFAULT_POLL_TIMEOUT },
+      outEndpoint: { endpointNumber: DEFAULT_ENDPOINT_NUMBER, packetSize: USBNode.DEFAULT_ENDPOINT_PACKET_SIZE, timeout: DEFAULT_OUT_TIMEOUT }
     };
 
     try {
@@ -199,7 +199,7 @@ class USBNode extends USBDevice {
     this.device = devices[preferredDeviceIndex];
     if (!this.device) {
       this._removeUSBListeners();
-      throw this._generateError(enumerationError || this.ERROR.NO_DEVICE);
+      throw this._generateError(enumerationError || this.constructor.ERROR.NO_DEVICE);
     }
 
     if (this.log.logging) {
@@ -269,7 +269,7 @@ class USBNode extends USBDevice {
 
   async exit() {
     if (!this.device) {
-      throw this._generateError(this.ERROR.NO_DEVICE);
+      throw this._generateError(this.constructor.ERROR.NO_DEVICE);
     }
 
     // A claimed interface cannot be released while a transfer is pending.
@@ -291,7 +291,7 @@ class USBNode extends USBDevice {
       this.log.debug('Polling ended (no transfers pending)');
     }
     const error = await this._releaseDevice();
-    this.emit(this.EVENT.CLOSED);
+    this.emit(this.constructor.EVENT.CLOSED);
     this._removeUSBListeners();
     this.deviceInterface = null;
     this.inEndpoint = null;
@@ -306,7 +306,7 @@ class USBNode extends USBDevice {
     if (this.log.logging) {
       this.log.error('In endpoint error', error);
     }
-    this.emit(this.EVENT.ERROR, error);
+    this.emit(this.constructor.EVENT.ERROR, error);
   }
 
   _onInEndpointData(data) {
@@ -314,7 +314,7 @@ class USBNode extends USBDevice {
       if (this.log.logging) {
         this.log.debug('RX', data);
       }
-      this.emit(this.EVENT.DATA, Uint8Array.from(data));
+      this.emit(this.constructor.EVENT.DATA, Uint8Array.from(data));
     }
   }
 
@@ -410,10 +410,9 @@ class USBNode extends USBDevice {
     this.outQueue = transferred.catch(() => {});
     return transferred;
   }
-}
 
-USBNode.prototype.DEFAULT_ENDPOINT_PACKET_SIZE = 64;
-USBNode.prototype.ERROR = {
+  static DEFAULT_ENDPOINT_PACKET_SIZE = 64;
+  static ERROR = {
   NO_DEVICE: {
     message: 'No device',
     code: -1
@@ -427,5 +426,9 @@ USBNode.prototype.ERROR = {
     code: -3
   }
 };
+}
+
+
+
 
 module.exports = USBNode;

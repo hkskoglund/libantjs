@@ -3,26 +3,26 @@
 var Message = require('../message');
 
 class BroadcastDataMessage extends Message {
-  constructor(data, id = Message.prototype.BROADCAST_DATA) {
+  constructor(data, id = Message.BROADCAST_DATA) {
 
     super(data, id);
   }
 
   encode(channel, data) {
 
-    if (!data || data.byteLength !== Message.prototype.PAYLOAD_LENGTH)
+    if (!data || data.byteLength !== Message.PAYLOAD_LENGTH)
       throw new RangeError('Standard ANT data payload must contain exactly 8 bytes');
     encodeData(this, channel, data);
   }
 
   decode(data) {
 
-    if (this.content.byteLength < Message.prototype.PAYLOAD_LENGTH + 1)
+    if (this.content.byteLength < Message.PAYLOAD_LENGTH + 1)
       throw new RangeError('Standard ANT data message must contain a channel and 8 data bytes');
 
     // 'RX' <Buffer a4 14 4e 01 04 00 f0 59 a3 5f c3 2b e0 af 41 78 01 10 00 69 00 ce f6 70>
     // 'Broadcast Data ID 0x4e Ch 1 ext. true Flag 0xe0' <Buffer 04 00 f0 59 a3 5f c3 2b>
-    this.payload = data.subarray(Message.prototype.iPayload,Message.prototype.iPayload+Message.prototype.PAYLOAD_LENGTH);
+    this.payload = data.subarray(Message.iPayload,Message.iPayload+Message.PAYLOAD_LENGTH);
   }
 
   toString() {

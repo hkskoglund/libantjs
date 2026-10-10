@@ -38,7 +38,7 @@ class HostTransfers {
   sendBurstTransferPacket(sequenceChannel, packet) {
     var msg;
 
-    if (packet.byteLength === Message.prototype.PAYLOAD_LENGTH) // Use ordinary burst if only 8-byte packets
+    if (packet.byteLength === Message.PAYLOAD_LENGTH) // Use ordinary burst if only 8-byte packets
     {
       msg = new BurstDataMessage();
     } else {
@@ -58,7 +58,7 @@ class HostTransfers {
     if (!Number.isInteger(channel) || channel < 0 || channel > 0x1F)
       throw new RangeError('Extended burst channel must be between 0 and 31');
 
-    const packetCount = Math.ceil(data.byteLength / Message.prototype.PAYLOAD_LENGTH);
+    const packetCount = Math.ceil(data.byteLength / Message.PAYLOAD_LENGTH);
 
     if (packetCount === 0)
       throw new RangeError('Extended burst payload must not be empty');
@@ -72,11 +72,11 @@ class HostTransfers {
         sequenceNr |= 0x04;
 
       let packet = data.subarray(
-        packetIndex * Message.prototype.PAYLOAD_LENGTH,
-        (packetIndex + 1) * Message.prototype.PAYLOAD_LENGTH
+        packetIndex * Message.PAYLOAD_LENGTH,
+        (packetIndex + 1) * Message.PAYLOAD_LENGTH
       );
-      if (packet.byteLength < Message.prototype.PAYLOAD_LENGTH) {
-        const paddedPacket = new Uint8Array(Message.prototype.PAYLOAD_LENGTH);
+      if (packet.byteLength < Message.PAYLOAD_LENGTH) {
+        const paddedPacket = new Uint8Array(Message.PAYLOAD_LENGTH);
         paddedPacket.set(packet);
         packet = paddedPacket;
       }
@@ -99,7 +99,7 @@ class HostTransfers {
     if (typeof data === 'object' && data.constructor.name === 'Array') // Allows sending of Array [1,2,3,4,5,6,7,8,...]
       data = new Uint8Array(data);
 
-    const packetLength = Message.prototype.PAYLOAD_LENGTH * packetsPerURB;
+    const packetLength = Message.PAYLOAD_LENGTH * packetsPerURB;
     const numberOfPackets = Math.ceil(data.byteLength / packetLength);
 
     if (this.log.logging)

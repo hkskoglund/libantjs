@@ -4,12 +4,12 @@ class GeneralFilePermission {
   constructor(flags) {
     this.flags = flags;
 
-    this.crypto = this.flags & GeneralFilePermission.prototype.BIT_MASK.CRYPTO ? true : false;
-    this.append = this.flags & GeneralFilePermission.prototype.BIT_MASK.APPEND ? true : false;
-    this.archive = this.flags & GeneralFilePermission.prototype.BIT_MASK.ARCHIVE ? true : false;
-    this.erase = this.flags & GeneralFilePermission.prototype.BIT_MASK.ERASE ? true : false;
-    this.write = this.flags & GeneralFilePermission.prototype.BIT_MASK.WRITE ? true : false;
-    this.read = this.flags & GeneralFilePermission.prototype.BIT_MASK.READ ? true : false;
+    this.crypto = this.flags & GeneralFilePermission.BIT_MASK.CRYPTO ? true : false;
+    this.append = this.flags & GeneralFilePermission.BIT_MASK.APPEND ? true : false;
+    this.archive = this.flags & GeneralFilePermission.BIT_MASK.ARCHIVE ? true : false;
+    this.erase = this.flags & GeneralFilePermission.BIT_MASK.ERASE ? true : false;
+    this.write = this.flags & GeneralFilePermission.BIT_MASK.WRITE ? true : false;
+    this.read = this.flags & GeneralFilePermission.BIT_MASK.READ ? true : false;
 
   }
 
@@ -36,9 +36,8 @@ class GeneralFilePermission {
 
     return msg;
   }
-}
 
-GeneralFilePermission.prototype.BIT_MASK = {
+  static BIT_MASK = {
   CRYPTO: parseInt("00000100", 2),
   APPEND: parseInt("00001000", 2),
   ARCHIVE: parseInt("00010000", 2),
@@ -46,5 +45,8 @@ GeneralFilePermission.prototype.BIT_MASK = {
   WRITE: parseInt("01000000", 2),
   READ: parseInt("10000000", 2)
 };
+}
+
+
 
 module.exports = GeneralFilePermission;

@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetChannelPeriodMessage extends Message {
   constructor(channel, messagePeriod) {
 
-    super(undefined, Message.prototype.SET_CHANNEL_PERIOD);
+    super(undefined, Message.SET_CHANNEL_PERIOD);
     this.encode(channel, messagePeriod);
   }
 

@@ -5,7 +5,7 @@ var Message = require('../message');
 class NotificationStartup extends Message {
   constructor(data) {
 
-    super(data, Message.prototype.NOTIFICATION_STARTUP);
+    super(data, Message.NOTIFICATION_STARTUP);
   }
 
   decode(data) {
@@ -13,18 +13,18 @@ class NotificationStartup extends Message {
     var msg,
       startupMessage = this.getContent()[0];
 
-    if (startupMessage === NotificationStartup.prototype.POWER_ON_RESET.BIT_MASK) {
-      msg = NotificationStartup.prototype.POWER_ON_RESET.MESSAGE;
-    } else if (startupMessage === NotificationStartup.prototype.HARDWARE_RESET_LINE.BIT_MASK) {
-      msg = NotificationStartup.prototype.HARDWARE_RESET_LINE.MESSAGE;
-    } else if (startupMessage & NotificationStartup.prototype.WATCH_DOG_RESET.BIT_MASK) {
-      msg = NotificationStartup.prototype.WATCH_DOG_RESET.MESSAGE;
-    } else if (startupMessage & NotificationStartup.prototype.COMMAND_RESET.BIT_MASK) {
-      msg = NotificationStartup.prototype.COMMAND_RESET.MESSAGE;
-    } else if (startupMessage & NotificationStartup.prototype.SYNCHRONOUS_RESET.BIT_MASK) {
-      msg = NotificationStartup.prototype.SYNCHRONOUS_RESET.MESSAGE;
-    } else if (startupMessage & NotificationStartup.prototype.SUSPEND_RESET.BIT_MASK) {
-      msg = NotificationStartup.prototype.SUSPEND_RESET.MESSAGE;
+    if (startupMessage === NotificationStartup.POWER_ON_RESET.BIT_MASK) {
+      msg = NotificationStartup.POWER_ON_RESET.MESSAGE;
+    } else if (startupMessage === NotificationStartup.HARDWARE_RESET_LINE.BIT_MASK) {
+      msg = NotificationStartup.HARDWARE_RESET_LINE.MESSAGE;
+    } else if (startupMessage & NotificationStartup.WATCH_DOG_RESET.BIT_MASK) {
+      msg = NotificationStartup.WATCH_DOG_RESET.MESSAGE;
+    } else if (startupMessage & NotificationStartup.COMMAND_RESET.BIT_MASK) {
+      msg = NotificationStartup.COMMAND_RESET.MESSAGE;
+    } else if (startupMessage & NotificationStartup.SYNCHRONOUS_RESET.BIT_MASK) {
+      msg = NotificationStartup.SYNCHRONOUS_RESET.MESSAGE;
+    } else if (startupMessage & NotificationStartup.SUSPEND_RESET.BIT_MASK) {
+      msg = NotificationStartup.SUSPEND_RESET.MESSAGE;
     }
 
     this.message = msg;
@@ -36,37 +36,44 @@ class NotificationStartup extends Message {
 
     return Message.prototype.toString.call(this) + ' ' + this.message;
   }
-}
 
-NotificationStartup.prototype.POWER_ON_RESET = {
+  static POWER_ON_RESET = {
   BIT_MASK: 0x00,
   MESSAGE: 'POWER_ON_RESET'
 };
-
-NotificationStartup.prototype.HARDWARE_RESET_LINE = {
+  static HARDWARE_RESET_LINE = {
   BIT_MASK: 0x01,
   MESSAGE: 'HARDWARE_RESET_LINE'
 };
-
-NotificationStartup.prototype.WATCH_DOG_RESET = {
+  static WATCH_DOG_RESET = {
   BIT_MASK: 1 << 2,
   MESSAGE: 'WATCH_DOG_RESET'
 };
-
-NotificationStartup.prototype.COMMAND_RESET = {
+  static COMMAND_RESET = {
   BIT_MASK: 1 << 5,
   MESSAGE: 'COMMAND_RESET'
 };
-
-NotificationStartup.prototype.SYNCHRONOUS_RESET = {
+  static SYNCHRONOUS_RESET = {
   BIT_MASK: 1 << 6,
   MESSAGE: 'SYNCHRONOUS_RESET'
 };
-
-NotificationStartup.prototype.SUSPEND_RESET = {
+  static SUSPEND_RESET = {
   BIT_MASK: 1 << 7,
   MESSAGE: 'SUSPEND_RESET'
 };
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 module.exports = NotificationStartup;
 

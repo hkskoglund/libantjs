@@ -28,7 +28,7 @@ class HostCommands {
   async resetSystem() {
     const DELAY = 500;
 
-    const notificationStartup = await this.sendMessage(new ResetSystemMessage(), Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP]);
+    const notificationStartup = await this.sendMessage(new ResetSystemMessage(), Message.MESSAGE[Message.NOTIFICATION_STARTUP]);
 
     if (this.log.logging)
       this.log.debug( 'Waiting ' + DELAY + ' ms after reset system (for post-reset device state)');
@@ -43,27 +43,27 @@ class HostCommands {
 
   getChannelId(channel) {
 
-    return this.sendMessage(new RequestMessage(channel, Message.prototype.SET_CHANNEL_ID), Message.prototype.MESSAGE[Message.prototype.SET_CHANNEL_ID]);
+    return this.sendMessage(new RequestMessage(channel, Message.SET_CHANNEL_ID), Message.MESSAGE[Message.SET_CHANNEL_ID]);
   }
 
   getVersion() {
 
-    return this.sendMessage(new RequestMessage(undefined, Message.prototype.ANT_VERSION), Message.prototype.MESSAGE[Message.prototype.ANT_VERSION]);
+    return this.sendMessage(new RequestMessage(undefined, Message.ANT_VERSION), Message.MESSAGE[Message.ANT_VERSION]);
   }
 
   getCapabilities() {
 
-    return this.sendMessage(new RequestMessage(undefined, Message.prototype.CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.CAPABILITIES]);
+    return this.sendMessage(new RequestMessage(undefined, Message.CAPABILITIES), Message.MESSAGE[Message.CAPABILITIES]);
   }
 
   getAdvancedBurstCapabilities() {
 
-    return this.sendMessage(new RequestMessage(0x00, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES]);
+    return this.sendMessage(new RequestMessage(0x00, Message.ADVANCED_BURST_CAPABILITIES), Message.MESSAGE[Message.ADVANCED_BURST_CAPABILITIES]);
   }
 
   getAdvancedBurstConfiguration() {
 
-    return this.sendMessage(new RequestMessage(0x01, Message.prototype.ADVANCED_BURST_CAPABILITIES), Message.prototype.MESSAGE[Message.prototype.ADVANCED_BURST_CAPABILITIES]);
+    return this.sendMessage(new RequestMessage(0x01, Message.ADVANCED_BURST_CAPABILITIES), Message.MESSAGE[Message.ADVANCED_BURST_CAPABILITIES]);
   }
 
   // For convenience
@@ -83,7 +83,7 @@ class HostCommands {
 
   getSerialNumber() {
 
-    return this.sendMessage(new RequestMessage(undefined, Message.prototype.DEVICE_SERIAL_NUMBER), Message.prototype.MESSAGE[Message.prototype.DEVICE_SERIAL_NUMBER]);
+    return this.sendMessage(new RequestMessage(undefined, Message.DEVICE_SERIAL_NUMBER), Message.MESSAGE[Message.DEVICE_SERIAL_NUMBER]);
   }
 
   configEventBuffer(config, size, time) {
@@ -92,12 +92,12 @@ class HostCommands {
 
   getEventBufferConfiguration() {
 
-    return this.sendMessage(new RequestMessage(undefined, Message.prototype.EVENT_BUFFER_CONFIGURATION), Message.prototype.MESSAGE[Message.prototype.EVENT_BUFFER_CONFIGURATION]);
+    return this.sendMessage(new RequestMessage(undefined, Message.EVENT_BUFFER_CONFIGURATION), Message.MESSAGE[Message.EVENT_BUFFER_CONFIGURATION]);
   }
 
   getChannelStatus(channel) {
 
-    return this.sendMessage(new RequestMessage(channel, Message.prototype.CHANNEL_STATUS), Message.prototype.MESSAGE[Message.prototype.CHANNEL_STATUS], channel);
+    return this.sendMessage(new RequestMessage(channel, Message.CHANNEL_STATUS), Message.MESSAGE[Message.CHANNEL_STATUS], channel);
   }
 
   // Spec p. 75 "If supported, when this setting is enabled ANT will include the channel ID, RSSI, or timestamp data with the messages"

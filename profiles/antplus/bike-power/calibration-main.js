@@ -47,11 +47,11 @@
 
   toString() {
 
-    var idName = this.ID[this.calibrationID] || 'Unknown calibration message',
+    var idName = this.constructor.ID[this.calibrationID] || 'Unknown calibration message',
       msg = 'Calibration ID: ' + idName + ' (0x' + this.calibrationID.toString(16) + ')';
 
     if (this.autoZeroStatus !== undefined) {
-      msg += ', ' + (this.AUTO_ZERO[this.autoZeroStatus] || 'Unknown auto zero status') +
+      msg += ', ' + (this.constructor.AUTO_ZERO[this.autoZeroStatus] || 'Unknown auto zero status') +
         ' (0x' + this.autoZeroStatus.toString(16) + '), Calibration data ' + this.calibrationData;
     } else if (this.calibrationID === 0x12) {
       msg += ', Auto zero supported ' + this.autoZeroSupported +
@@ -63,12 +63,8 @@
 
     return msg;
   }
-}
 
-
-
-
-  CalibrationMain.prototype.ID = {
+  static ID = {
     REQUEST_MANUAL_ZERO: 0xAA,
     0xAA: 'Calibration Request: Manual Zero',
 
@@ -99,8 +95,7 @@
     RESPONSE_UPDATE_CUSTUM_CALIBRATION_PARAMETER: 0xBD,
     0xBD: 'Custom Calibration Parameter Update Response'
   };
-
-  CalibrationMain.prototype.AUTO_ZERO = {
+  static AUTO_ZERO = {
     AUTO_ZERO_OFF: 0x00,
     0x00: 'Auto Zero is OFF',
 
@@ -110,6 +105,14 @@
     AUTO_ZERO_NOT_SUPPORTED: 0xFF,
     0xFF: 'Auto Zero Is Not Supported'
   };
+}
+
+
+
+
+
+
+
   /*
 
       CalibrationMain.prototype.PEDAL_POWER_NOT_USED = 0xFF;

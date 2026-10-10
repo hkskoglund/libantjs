@@ -25,7 +25,7 @@ class HostDeserialize {
   deserialize(data) {
     var msgBytes,
       iStartOfMessage = 0,
-      metaDataLength = Message.prototype.HEADER_LENGTH + Message.prototype.CRC_LENGTH,
+      metaDataLength = Message.HEADER_LENGTH + Message.CRC_LENGTH,
       message,
       bufferUtil = new Concat(),
       totalMessageLength,
@@ -48,7 +48,7 @@ class HostDeserialize {
           return;
       }
 
-      totalMessageLength = data[iStartOfMessage + Message.prototype.iLENGTH] + metaDataLength;
+      totalMessageLength = data[iStartOfMessage + Message.iLENGTH] + metaDataLength;
 
       if (data.byteLength - iStartOfMessage < totalMessageLength) {
         this.previousPacket = data.subarray(iStartOfMessage);
@@ -65,65 +65,65 @@ class HostDeserialize {
 
       message = undefined;
 
-      switch (msgBytes[Message.prototype.iID]) {
+      switch (msgBytes[Message.iID]) {
 
         // Notifications
 
-        case Message.prototype.NOTIFICATION_STARTUP:
+        case Message.NOTIFICATION_STARTUP:
 
           message = new NotificationStartup(msgBytes);
-          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_STARTUP], NO_ERROR, message);
+          this.emit(Message.MESSAGE[Message.NOTIFICATION_STARTUP], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.NOTIFICATION_SERIAL_ERROR:
+        case Message.NOTIFICATION_SERIAL_ERROR:
 
           message = new NotificationSerialError(msgBytes);
-          this.emit(Message.prototype.MESSAGE[Message.prototype.NOTIFICATION_SERIAL_ERROR], NO_ERROR, message);
+          this.emit(Message.MESSAGE[Message.NOTIFICATION_SERIAL_ERROR], NO_ERROR, message);
 
           break;
 
           // Requested response
 
-        case Message.prototype.CHANNEL_STATUS:
+        case Message.CHANNEL_STATUS:
 
           message = new ChannelStatusMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.ANT_VERSION:
+        case Message.ANT_VERSION:
 
           message = new VersionMessage(msgBytes);
 
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.CAPABILITIES:
+        case Message.CAPABILITIES:
 
           message = new CapabilitiesMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.DEVICE_SERIAL_NUMBER:
+        case Message.DEVICE_SERIAL_NUMBER:
 
           message = new DeviceSerialNumberMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.EVENT_BUFFER_CONFIGURATION:
+        case Message.EVENT_BUFFER_CONFIGURATION:
 
           message = new ConfigureEventBufferMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.ADVANCED_BURST_CAPABILITIES:
+        case Message.ADVANCED_BURST_CAPABILITIES:
 
-          switch (msgBytes[Message.prototype.iLENGTH]) {
+          switch (msgBytes[Message.iLENGTH]) {
 
             case 0x04:
 
@@ -136,37 +136,37 @@ class HostDeserialize {
               break;
           }
 
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
-        case Message.prototype.SET_CHANNEL_ID:
+        case Message.SET_CHANNEL_ID:
 
           message = new ChannelIdMessage(msgBytes);
-          this.emit(Message.prototype.MESSAGE[msgBytes[Message.prototype.iID]], NO_ERROR, message);
+          this.emit(Message.MESSAGE[msgBytes[Message.iID]], NO_ERROR, message);
 
           break;
 
           // Data
 
-        case Message.prototype.BROADCAST_DATA:
+        case Message.BROADCAST_DATA:
 
           message = new BroadcastDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BROADCAST_DATA], message);
+          this.channel[message.channel].emit(Message.EVENT[Message.BROADCAST_DATA], message);
 
           break;
 
-        case Message.prototype.ACKNOWLEDGED_DATA:
+        case Message.ACKNOWLEDGED_DATA:
 
           message = new AcknowledgedDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.ACKNOWLEDGED_DATA], message);
+          this.channel[message.channel].emit(Message.EVENT[Message.ACKNOWLEDGED_DATA], message);
 
           break;
 
-        case Message.prototype.BURST_TRANSFER_DATA:
+        case Message.BURST_TRANSFER_DATA:
 
           message = new BurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], message);
+          this.channel[message.channel].emit(Message.EVENT[Message.BURST_TRANSFER_DATA], message);
 
           if (message.sequenceNr === 0) // First packet (also for advanced burst)
             this.channel[message.channel].burst = new Uint8Array();
@@ -174,14 +174,14 @@ class HostDeserialize {
           this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
-            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
+            this.channel[message.channel].emit(Channel.EVENT.BURST, this.channel[message.channel].burst);
 
           break;
 
-        case Message.prototype.EXTENDED_BURST_TRANSFER_DATA:
+        case Message.EXTENDED_BURST_TRANSFER_DATA:
 
           message = new ExtendedBurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.EXTENDED_BURST_TRANSFER_DATA], message);
+          this.channel[message.channel].emit(Message.EVENT[Message.EXTENDED_BURST_TRANSFER_DATA], message);
 
           if (message.sequenceNr === 0)
             this.channel[message.channel].burst = new Uint8Array();
@@ -189,32 +189,32 @@ class HostDeserialize {
           this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04)
-            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, this.channel[message.channel].burst);
+            this.channel[message.channel].emit(Channel.EVENT.BURST, this.channel[message.channel].burst);
 
           break;
 
-        case Message.prototype.ADVANCED_BURST_TRANSFER_DATA:
+        case Message.ADVANCED_BURST_TRANSFER_DATA:
 
           message = new AdvancedBurstDataMessage(msgBytes);
-          this.channel[message.channel].emit(Message.prototype.EVENT[Message.prototype.BURST_TRANSFER_DATA], message);
+          this.channel[message.channel].emit(Message.EVENT[Message.BURST_TRANSFER_DATA], message);
 
           this.channel[message.channel].burst = bufferUtil.concat(this.channel[message.channel].burst, message.packet);
 
           if (message.sequenceNr & 0x04) // Last packet
-            this.channel[message.channel].emit(Channel.prototype.EVENT.BURST, message);
+            this.channel[message.channel].emit(Channel.EVENT.BURST, message);
 
           break;
 
         // Channel responses or RF event
 
-        case Message.prototype.CHANNEL_RESPONSE:
+        case Message.CHANNEL_RESPONSE:
 
           message = new ChannelResponseMessage(msgBytes);
 
           if (!message.isRFevent())
-            event = ChannelResponseEvent.prototype.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16);
+            event = ChannelResponseEvent.MESSAGE[message.response.code] + '_0x' + message.response.initiatingId.toString(16);
           else
-            event = ChannelResponseEvent.prototype.MESSAGE[message.response.code];
+            event = ChannelResponseEvent.MESSAGE[message.response.code];
 
           this.channel[message.response.channel].emit(event, NO_ERROR, message.response);
 
@@ -222,7 +222,7 @@ class HostDeserialize {
 
         default:
 
-          message = 'Unable to parse received msg id ' + msgBytes[Message.prototype.iID];
+          message = 'Unable to parse received msg id ' + msgBytes[Message.iID];
           this.emit(this.constructor.EVENT.ERROR, message);
 
           break;

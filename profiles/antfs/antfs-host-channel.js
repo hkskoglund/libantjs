@@ -25,9 +25,9 @@ class ANTFSHostChannel extends Channel {
 
   // ANT-FS Technical specification, p.44 10.2 Host Device ANT Configuration
 
-    this.key = this.NET.KEY.ANTFS;
-    this.frequency = this.NET.FREQUENCY.ANTFS;
-    this.period = this.NET.PERIOD.ANTFS;
+    this.key = this.constructor.NET.KEY.ANTFS;
+    this.frequency = this.constructor.NET.FREQUENCY.ANTFS;
+    this.period = this.constructor.NET.PERIOD.ANTFS;
     this.lowPrioritySearchTimeout = 0xFF; // INFINITE
 
     if (typeof options.deviceNumber === 'number') // Search for specific device
@@ -141,7 +141,7 @@ class ANTFSHostChannel extends Channel {
 
   this.session.response = burst;
 
-  const res = this.beacon.decode(burst.subarray(0, ClientBeacon.prototype.PAYLOAD_LENGTH));
+  const res = this.beacon.decode(burst.subarray(0, ClientBeacon.PAYLOAD_LENGTH));
 
   if (res === -1)
 
@@ -165,7 +165,7 @@ class ANTFSHostChannel extends Channel {
     return;
 
   if (this.session.hasBurstResponse && !(this.session.request instanceof AuthenticateRequest &&
-        this.session.request.commandType === AuthenticateRequest.prototype.REQUEST_PAIRING))
+        this.session.request.commandType === AuthenticateRequest.REQUEST_PAIRING))
   {
     // It's possible that a request is sent, but no burst response is received. In that case, the request must be retried.
     // During pairing, user intervention is necessary, so don't enable timeout
@@ -220,7 +220,7 @@ class ANTFSHostChannel extends Channel {
 
   const msg = await Channel.prototype.connect.call(this);
 
-  this.layerState = new State(State.prototype.LINK);
+  this.layerState = new State(State.LINK);
   if (this.log.logging)
     this.log.debug( 'Connecting, host state now ' + this.layerState.toString());
 

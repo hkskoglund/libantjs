@@ -56,14 +56,16 @@ class USBDevice extends EventEmitter {
       }
     ];
   }
-}
 
-USBDevice.prototype.EVENT = {
+  static EVENT = {
   DATA: 'data',
   ENUMERATION_COMPLETE: 'enumeration_complete',
   LOG: 'log',
   ERROR: 'error',
   CLOSED: 'closed'
 };
+}
+
+
 
 module.exports = USBDevice;

@@ -25,38 +25,38 @@
 
     // Byte 0 - page number
 
-    this.number = data[SDMPage1.prototype.BYTE.PAGE_NUMBER];
+    this.number = data[SDMPage1.BYTE.PAGE_NUMBER];
 
     // Byte 1 - time fractional
 
-    this.timeFractional = data[SDMPage1.prototype.BYTE.TIME_FRACTIONAL] * SDMPage1.prototype.UNIT.TIME_FRACTIONAL; // s
+    this.timeFractional = data[SDMPage1.BYTE.TIME_FRACTIONAL] * SDMPage1.UNIT.TIME_FRACTIONAL; // s
 
     // Byte 2 - time integer
 
-    this.timeInteger = data[SDMPage1.prototype.BYTE.TIME_INTEGER];
+    this.timeInteger = data[SDMPage1.BYTE.TIME_INTEGER];
 
     this.time = this.timeInteger + this.timeFractional;
 
     // Byte 3 - distance integer
-    this.distanceInteger = data[SDMPage1.prototype.BYTE.DISTANCE_INTEGER]; // m
+    this.distanceInteger = data[SDMPage1.BYTE.DISTANCE_INTEGER]; // m
 
     // Byte 4 - distance fractional upper 4 bit, speed integer lower 4 bit
 
-    this.distanceFractional = ((data[SDMPage1.prototype.BYTE.DISTANCE_FRACTIONAL] & SDMPage1.prototype.BIT_MASK.UPPER_NIBBLE) >> SDMPage1.prototype.BIT_FIELD.DISTANCE_FRACTIONAL.START_BIT) * SDMPage1.prototype.UNIT.DISTANCE_FRACTIONAL; // Upper 4 bit
+    this.distanceFractional = ((data[SDMPage1.BYTE.DISTANCE_FRACTIONAL] & SDMPage1.BIT_MASK.UPPER_NIBBLE) >> SDMPage1.BIT_FIELD.DISTANCE_FRACTIONAL.START_BIT) * SDMPage1.UNIT.DISTANCE_FRACTIONAL; // Upper 4 bit
     this.distance = this.distanceInteger + this.distanceFractional;
 
-    this.speedInteger = data[SDMPage1.prototype.BYTE.SPEED_INTEGER] & SDMPage1.prototype.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
+    this.speedInteger = data[SDMPage1.BYTE.SPEED_INTEGER] & SDMPage1.BIT_MASK.LOWER_NIBBLE; // lower 4 bit
 
     // Byte 5 - speed fractional
 
-    this.speedFractional = data[SDMPage1.prototype.BYTE.SPEED_FRACTIONAL] * SDMPage1.prototype.UNIT.SPEED_FRACTIONAL; // m/s
+    this.speedFractional = data[SDMPage1.BYTE.SPEED_FRACTIONAL] * SDMPage1.UNIT.SPEED_FRACTIONAL; // m/s
     this.speed = this.speedInteger + this.speedFractional;
 
     // Byte 6 - stride count
-    this.strideCount = data[SDMPage1.prototype.BYTE.STRIDE_COUNT];
+    this.strideCount = data[SDMPage1.BYTE.STRIDE_COUNT];
 
     // Byte 7 - update latency
-    this.updateLatency = data[SDMPage1.prototype.BYTE.UPDATE_LATENCY] * SDMPage1.prototype.UNIT.UPDATE_LATENCY; // s
+    this.updateLatency = data[SDMPage1.BYTE.UPDATE_LATENCY] * SDMPage1.UNIT.UPDATE_LATENCY; // s
 
     this.updateCumulativeCounters(broadcast);
   }
@@ -134,13 +134,8 @@
 
     return msg;
   }
-}
 
-
-
-
-  // Bit field layout
-  SDMPage1.prototype.BIT_FIELD = {
+  static BIT_FIELD = {
 
     DISTANCE_FRACTIONAL: {
       START_BIT: 4,
@@ -149,18 +144,13 @@
 
 
   };
-
-  // Bit mask to pinpoint BIT_FIELD
-
-  SDMPage1.prototype.BIT_MASK = {
+  static BIT_MASK = {
 
     UPPER_NIBBLE: 0xF0,
     LOWER_NIBLE: 0X0F
 
   };
-
-  // Byte layout
-  SDMPage1.prototype.BYTE = {
+  static BYTE = {
     PAGE_NUMBER: 0,
     TIME_FRACTIONAL: 1,
     TIME_INTEGER: 2,
@@ -171,14 +161,29 @@
     STRIDE_COUNT: 6,
     UPDATE_LATENCY: 7
   };
-
-  SDMPage1.prototype.UNIT = {
+  static UNIT = {
     TIME_FRACTIONAL: 1 / 200, //s
     DISTANCE_FRACTIONAL: 1 / 16, // m
     SPEED_FRACTIONAL: 1 / 256, // m/s
     UPDATE_LATENCY: 1 / 32 //s
 
   };
+}
+
+
+
+
+  // Bit field layout
+
+
+  // Bit mask to pinpoint BIT_FIELD
+
+
+
+  // Byte layout
+
+
+
 
 
 

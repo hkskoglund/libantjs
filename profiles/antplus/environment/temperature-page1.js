@@ -20,22 +20,22 @@
 
     // Byte 2 - Event count - increments with each measurement
 
-    this.eventCount = data[TemperaturePage1.prototype.BYTE_OFFSET.EVENT_COUNT];
+    this.eventCount = data[TemperaturePage1.BYTE_OFFSET.EVENT_COUNT];
 
     // Byte 3 - 24 hour low LSB
 
-    var hour24LowLSB = data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_LOW_LSB];
+    var hour24LowLSB = data[TemperaturePage1.BYTE_OFFSET.HOUR24_LOW_LSB];
 
     // Byte 4 - 24 hour low MSN (4:7) and 24 hour high LSN (0:3)
 
     // Signed Integer 1.5 byte
     // Sbbb bbbbbbbb
-    var hour24LowMSN = (data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_LOW_MSN] & TemperaturePage1.prototype.BIT_MASK.HOUR24_LOW_MSN) >> TemperaturePage1.prototype.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
+    var hour24LowMSN = (data[TemperaturePage1.BYTE_OFFSET.HOUR24_LOW_MSN] & TemperaturePage1.BIT_MASK.HOUR24_LOW_MSN) >> TemperaturePage1.BIT_FIELD.HOUR24_LOW_MSN.START_BIT;
     // Byte 4 & Sbbb 0000 >> 4
 
-    var signHour24LowMSN = (hour24LowMSN >> TemperaturePage1.prototype.BIT_FIELD.SIGN_HOUR24_LOW_MSN.START_BIT) === 1 ? -1 : 1;
+    var signHour24LowMSN = (hour24LowMSN >> TemperaturePage1.BIT_FIELD.SIGN_HOUR24_LOW_MSN.START_BIT) === 1 ? -1 : 1;
 
-    var valueHour24LowMSN = hour24LowMSN & TemperaturePage1.prototype.BIT_MASK.VALUE_HOUR24_LOW_MSN;
+    var valueHour24LowMSN = hour24LowMSN & TemperaturePage1.BIT_MASK.VALUE_HOUR24_LOW_MSN;
     // bbb
 
     // Javascript : bitwise operators working on 32-bit 2's complement bigendian
@@ -47,22 +47,22 @@
     if (valueHour24Low !== 0 || signHour24LowMSN !== -1)
     {
       if (signHour24LowMSN === -1)
-        valueHour24Low = ((~valueHour24Low) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
-      this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.prototype.UNIT.HOUR24_LOW;
+        valueHour24Low = ((~valueHour24Low) + 1) & TemperaturePage1.BIT_MASK.MAGNITUDE_LOW_HIGH;
+      this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.UNIT.HOUR24_LOW;
     } else
       this.hour24Low = undefined;
 
-    var hour24HighLSN = (data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_HIGH_LSN] & TemperaturePage1.prototype.BIT_MASK.HOUR24_HIGH_LSN);
+    var hour24HighLSN = (data[TemperaturePage1.BYTE_OFFSET.HOUR24_HIGH_LSN] & TemperaturePage1.BIT_MASK.HOUR24_HIGH_LSN);
 
     // Byte 4 & 0000 1111
 
     // Byte 5 - 24 hour high MSB
 
-    var hour24HighMSB = data[TemperaturePage1.prototype.BYTE_OFFSET.HOUR24_HIGH_MSB];
+    var hour24HighMSB = data[TemperaturePage1.BYTE_OFFSET.HOUR24_HIGH_MSB];
 
-    var signHour24HighMSB = ((hour24HighMSB & TemperaturePage1.prototype.BIT_MASK.SIGN_HOUR24_HIGH_MSB) >> TemperaturePage1.prototype.BIT_FIELD.SIGN_HOUR24_HIGH_MSB.START_BIT) === 1 ? -1 : 1;
+    var signHour24HighMSB = ((hour24HighMSB & TemperaturePage1.BIT_MASK.SIGN_HOUR24_HIGH_MSB) >> TemperaturePage1.BIT_FIELD.SIGN_HOUR24_HIGH_MSB.START_BIT) === 1 ? -1 : 1;
 
-    var value24HighMSB = hour24HighMSB & TemperaturePage1.prototype.BIT_MASK.VALUE_HOUR24_HIGH_MSB;
+    var value24HighMSB = hour24HighMSB & TemperaturePage1.BIT_MASK.VALUE_HOUR24_HIGH_MSB;
 
     // Byte 5 & 0b01111111
 
@@ -70,32 +70,32 @@
 
     if (value24High !== 0 || signHour24HighMSB !== -1) {
       if (signHour24HighMSB === -1)
-        value24High = ((~value24High) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_LOW_HIGH;
+        value24High = ((~value24High) + 1) & TemperaturePage1.BIT_MASK.MAGNITUDE_LOW_HIGH;
 
-      this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.prototype.UNIT.HOUR24_HIGH;
+      this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.UNIT.HOUR24_HIGH;
     } else
       this.hour24High = undefined;
 
     // Byte 6 -7
 
-    var currentTempLSB = data[TemperaturePage1.prototype.BYTE_OFFSET.CURRENT_TEMP_LSB];
+    var currentTempLSB = data[TemperaturePage1.BYTE_OFFSET.CURRENT_TEMP_LSB];
 
     // Byte 7
 
-    var currentTempMSB = data[TemperaturePage1.prototype.BYTE_OFFSET.CURRENT_TEMP_MSB];
+    var currentTempMSB = data[TemperaturePage1.BYTE_OFFSET.CURRENT_TEMP_MSB];
 
-    var signCurrentTempMSB = ((currentTempMSB & TemperaturePage1.prototype.BIT_MASK.SIGN_CURRENT_TEMP) >> TemperaturePage1.prototype.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT) === 1 ? -1 : 1;
+    var signCurrentTempMSB = ((currentTempMSB & TemperaturePage1.BIT_MASK.SIGN_CURRENT_TEMP) >> TemperaturePage1.BIT_FIELD.SIGN_CURRENT_TEMP.START_BIT) === 1 ? -1 : 1;
 
-    var valueCurrentTempMSB = currentTempMSB & TemperaturePage1.prototype.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
+    var valueCurrentTempMSB = currentTempMSB & TemperaturePage1.BIT_MASK.VALUE_CURRENT_TEMP_MSB;
 
     var valueCurrentTemp = (valueCurrentTempMSB << 8) | currentTempLSB;
 
     if (valueCurrentTemp !== 0 || signCurrentTempMSB !== -1) {
 
       if (signCurrentTempMSB == -1)
-        valueCurrentTemp = ((~valueCurrentTemp) + 1) & TemperaturePage1.prototype.BIT_MASK.MAGNITUDE_CURRENT_TEMP;
+        valueCurrentTemp = ((~valueCurrentTemp) + 1) & TemperaturePage1.BIT_MASK.MAGNITUDE_CURRENT_TEMP;
 
-      this.currentTemp = valueCurrentTemp * signCurrentTempMSB * TemperaturePage1.prototype.UNIT.CURRENT_TEMP;
+      this.currentTemp = valueCurrentTemp * signCurrentTempMSB * TemperaturePage1.UNIT.CURRENT_TEMP;
     } else
       this.currentTemp = undefined;
   }
@@ -110,13 +110,8 @@
 
     return msg;
   }
-}
 
-
-
-
-  // Byte layout
-  TemperaturePage1.prototype.BYTE_OFFSET = {
+  static BYTE_OFFSET = {
     PAGE_NUMBER: 0,
     // Reserved
     EVENT_COUNT: 2,
@@ -127,9 +122,7 @@
     CURRENT_TEMP_LSB: 6,
     CURRENT_TEMP_MSB: 7
   };
-
-  // Bit field layout
-  TemperaturePage1.prototype.BIT_FIELD = {
+  static BIT_FIELD = {
 
     HOUR24_LOW_MSN: {
       START_BIT: 4,
@@ -155,9 +148,7 @@
     }
 
   };
-
-  // Bit mask to pinpoint BIT_FIELD
-  TemperaturePage1.prototype.BIT_MASK = {
+  static BIT_MASK = {
 
     HOUR24_LOW_MSN: parseInt("11110000", 2),
     HOUR24_HIGH_LSN: parseInt("00001111", 2),
@@ -175,12 +166,26 @@
     MAGNITUDE_CURRENT_TEMP: parseInt("0111111111111111", 2)
 
   };
-
-  TemperaturePage1.prototype.UNIT = {
+  static UNIT = {
     HOUR24_LOW: 0.1,
     HOUR24_HIGH: 0.1,
     CURRENT_TEMP: 0.01
   };
+}
+
+
+
+
+  // Byte layout
+
+
+  // Bit field layout
+
+
+  // Bit mask to pinpoint BIT_FIELD
+
+
+
 
 
 

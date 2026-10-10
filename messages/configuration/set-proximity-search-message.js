@@ -5,7 +5,7 @@ var Message = require('../message');
 class SetProximitySearchMessage extends Message {
   constructor(channel, searchThreshold) {
 
-    super(undefined, Message.prototype.SET_PROXIMITY_SEARCH);
+    super(undefined, Message.SET_PROXIMITY_SEARCH);
     this.encode(channel, searchThreshold);
   }
 

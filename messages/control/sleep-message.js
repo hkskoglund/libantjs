@@ -5,7 +5,7 @@ var Message = require('../message');
 class SleepMessage extends Message {
   constructor() {
 
-    super(undefined, Message.prototype.SLEEP_MESSAGE);
+    super(undefined, Message.SLEEP_MESSAGE);
     this.encode();
   }
 

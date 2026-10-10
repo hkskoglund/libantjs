@@ -183,10 +183,10 @@ test('Directory.decode rejects incomplete headers and malformed file records', (
 
   assert.throws(() => directory.decode(new Uint8Array(15)), /shorter than its header/);
 
-  const zeroRecordLength = new Uint8Array(Directory.prototype.HEADER_LENGTH);
+  const zeroRecordLength = new Uint8Array(Directory.HEADER_LENGTH);
   assert.throws(() => directory.decode(zeroRecordLength), /Invalid directory structure length/);
 
-  const incompleteRecord = new Uint8Array(Directory.prototype.HEADER_LENGTH + 1);
+  const incompleteRecord = new Uint8Array(Directory.HEADER_LENGTH + 1);
   incompleteRecord[1] = 16;
   assert.throws(() => directory.decode(incompleteRecord), /incomplete file record/);
 });
@@ -194,7 +194,7 @@ test('Directory.decode rejects incomplete headers and malformed file records', (
 test('Directory resolves and erases files by their recorded indices', () => {
   const host = { log: { logging: false, log() {} } };
   const directory = new Directory(undefined, host);
-  const data = new Uint8Array(Directory.prototype.HEADER_LENGTH + 2 * 16);
+  const data = new Uint8Array(Directory.HEADER_LENGTH + 2 * 16);
   const view = new DataView(data.buffer);
 
   data[1] = 16;
@@ -223,7 +223,7 @@ test('ClientBeacon recognizes the manufacturer ID MSB as the ANT+ Alliance flag'
 
 test('File decodes 24-bit identifiers as unsigned values', () => {
   const metadata = new Uint8Array(16);
-  const directory = { timeFormat: File.prototype.TIME_FORMAT.COUNTER };
+  const directory = { timeFormat: File.TIME_FORMAT.COUNTER };
 
   new DataView(metadata.buffer).setUint32(3, 0xffffff00, true);
 
@@ -233,7 +233,7 @@ test('File decodes 24-bit identifiers as unsigned values', () => {
 test('Generic files have unique names and downloads persist without throwing', async () => {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'libantjs-'));
   const manager = Object.create(TransportManager.prototype);
-  const directory = { timeFormat: File.prototype.TIME_FORMAT.COUNTER };
+  const directory = { timeFormat: File.TIME_FORMAT.COUNTER };
   const metadata = new Uint8Array(16);
   const packets = Uint8Array.from([0xAA, 0xBB]);
   const view = new DataView(metadata.buffer);
@@ -438,7 +438,7 @@ test('ChannelIdMessage exposes its decoded ChannelId', () => {
 });
 
 test('Extended broadcast frames decode their channel ID', () => {
-  const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
+  const message = new Message(undefined, Message.BROADCAST_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x80, 0x34, 0x12, 0x56, 0x78
@@ -452,7 +452,7 @@ test('Extended broadcast frames decode their channel ID', () => {
 });
 
 test('Extended broadcast frames with truncated channel ID metadata do not throw', () => {
-  const message = new Message(undefined, Message.prototype.BROADCAST_DATA);
+  const message = new Message(undefined, Message.BROADCAST_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x80, 0x34
@@ -466,7 +466,7 @@ test('Extended broadcast frames with truncated channel ID metadata do not throw'
 });
 
 test('Extended acknowledged-data frames decode their channel ID', () => {
-  const message = new Message(undefined, Message.prototype.ACKNOWLEDGED_DATA);
+  const message = new Message(undefined, Message.ACKNOWLEDGED_DATA);
   message.setContent(Uint8Array.from([
     0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x80, 0x34, 0x12, 0x56, 0x78
@@ -480,9 +480,9 @@ test('Extended acknowledged-data frames decode their channel ID', () => {
 });
 
 test('Data message decoders reject short standard payloads and accept variable advanced burst payloads', () => {
-  const shortBroadcast = messageFrame(Message.prototype.BROADCAST_DATA, Uint8Array.from([1, 2]));
-  const shortBurst = messageFrame(Message.prototype.BURST_TRANSFER_DATA, Uint8Array.from([1, 2]));
-  const shortChannelResponse = messageFrame(Message.prototype.CHANNEL_RESPONSE, Uint8Array.from([1, 2]));
+  const shortBroadcast = messageFrame(Message.BROADCAST_DATA, Uint8Array.from([1, 2]));
+  const shortBurst = messageFrame(Message.BURST_TRANSFER_DATA, Uint8Array.from([1, 2]));
+  const shortChannelResponse = messageFrame(Message.CHANNEL_RESPONSE, Uint8Array.from([1, 2]));
   const advancedBurst = new AdvancedBurstDataMessage();
 
   assert.throws(() => new BroadcastDataMessage(shortBroadcast), {
@@ -702,7 +702,7 @@ test('SPDCADSharedPage calculates valid speed and cadence across 16-bit rollover
   const page = Object.create(SPDCADSharedPage.prototype);
 
   page.profile = {
-    WHEEL_CIRCUMFERENCE: 2.07,
+    constructor: { WHEEL_CIRCUMFERENCE: 2.07 },
     getPreviousBikeMeasurementPageValidateRolloverTime: () => previousPage
   };
   page.bikeSpeedEventTime = 488;
@@ -727,7 +727,7 @@ test('SPDCADSharedPage applies configured wheel circumference to speed in m/s', 
   const page = Object.create(SPDCADSharedPage.prototype);
 
   page.profile = {
-    WHEEL_CIRCUMFERENCE: 2.1,
+    constructor: { WHEEL_CIRCUMFERENCE: 2.1 },
     getPreviousBikeMeasurementPageValidateRolloverTime: () => previousPage
   };
   page.bikeSpeedEventTime = 1024;
@@ -744,7 +744,7 @@ test('Bike speed/cadence profile accepts a validated wheel circumference setting
     logger: { logging: false },
     wheelCircumference: 2.15
   });
-  assert.equal(profile.WHEEL_CIRCUMFERENCE, 2.15);
+  assert.equal(profile.constructor.WHEEL_CIRCUMFERENCE, 2.15);
   assert.equal(profile.timer.onPage, undefined);
   assert.throws(
     () => new DeviceProfile_BikeShared({ logger: { logging: false }, wheelCircumference: 0 }),
@@ -893,7 +893,7 @@ test('Environment profile configures the selected supported channel period', () 
   try {
     new DeviceProfile_ENVIRONMENT({
       logger: { logging: false },
-      channelPeriod: DeviceProfile_ENVIRONMENT.prototype.CHANNEL_PERIOD.ALTERNATIVE
+      channelPeriod: DeviceProfile_ENVIRONMENT.CHANNEL_PERIOD.ALTERNATIVE
     });
     assert.equal(selectedPeriod, 65535);
     assert.throws(
@@ -1037,7 +1037,7 @@ test('HRM dispatches and decodes pages 5, 6, and 9', () => {
   assert.equal(page6.enabled.extendedRunning, true);
 
   assert.ok(page9 instanceof HRMPage9);
-  assert.equal(page9.heartBeatEventType, HRMPage9.prototype.HEART_BEAT_EVENT_TYPE.COMPUTED);
+  assert.equal(page9.heartBeatEventType, HRMPage9.HEART_BEAT_EVENT_TYPE.COMPUTED);
 });
 
 test('SDM dispatches common background pages without calling a missing decode method', () => {
@@ -1065,7 +1065,7 @@ test('SDM dispatches common background pages without calling a missing decode me
 });
 
 test('SDM uses the specified master transmission type and decodes page 3 calories', () => {
-  assert.equal(DeviceProfile_SDM.prototype.CHANNEL_ID.TRANSMISSION_TYPE, 0x05);
+  assert.equal(DeviceProfile_SDM.CHANNEL_ID.TRANSMISSION_TYPE, 0x05);
 
   let emittedPage;
   const profile = Object.create(DeviceProfile_SDM.prototype);

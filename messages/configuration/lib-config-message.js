@@ -5,7 +5,7 @@ var Message = require('../message');
 class LibConfigMessage extends Message {
   constructor(libConfig) {
 
-    super(undefined, Message.prototype.LIBCONFIG);
+    super(undefined, Message.LIBCONFIG);
 
     this.encode(libConfig || 0);
   }
@@ -14,7 +14,7 @@ class LibConfigMessage extends Message {
 
     this.libConfig = libConfig;
 
-    this.setContent(new Uint8Array([Message.prototype.FILLER_BYTE, libConfig]));
+    this.setContent(new Uint8Array([Message.FILLER_BYTE, libConfig]));
   }
 
   toString() {

@@ -28,8 +28,8 @@ class DownloadResponse {
 
     // DATA
 
-    iStart = DownloadResponse.prototype.HEADER_LENGTH;
-    iEnd = DownloadResponse.prototype.HEADER_LENGTH + this.length; // we are optimistic and trust length
+    iStart = DownloadResponse.HEADER_LENGTH;
+    iEnd = DownloadResponse.HEADER_LENGTH + this.length; // we are optimistic and trust length
 
     this.packets = data.subarray(iStart, iEnd);
 
@@ -44,20 +44,33 @@ class DownloadResponse {
       this.fileSize + ' | CRC 16-bit 0x' + this.CRC.toString(16);
 
   }
+
+  static OK = 0x00;
+  static NOT_EXIST = 0x01;
+  static EXIST_NOT_DOWNLOADABLE = 0x02;
+  static NOT_READY = 0x03;
+  static INVALID = 0x04;
+  static CRC_INCORRECT = 0x05;
+  static ID = 0x89;
+  static HEADER_LENGTH = 16;
+  static FOOTER_LENGTH = 8;
+  static FOOTER_RESERVED_PAD_LENGTH = 6;
+  static CRC_LENGTH = 2;
+  static PACKET_LENGTH = 8;
 }
 
-DownloadResponse.prototype.OK = 0x00;
-DownloadResponse.prototype.NOT_EXIST = 0x01;
-DownloadResponse.prototype.EXIST_NOT_DOWNLOADABLE = 0x02;
-DownloadResponse.prototype.NOT_READY = 0x03;
-DownloadResponse.prototype.INVALID = 0x04;
-DownloadResponse.prototype.CRC_INCORRECT = 0x05;
-DownloadResponse.prototype.ID = 0x89;
-DownloadResponse.prototype.HEADER_LENGTH = 16;
-DownloadResponse.prototype.FOOTER_LENGTH = 8;
-DownloadResponse.prototype.FOOTER_RESERVED_PAD_LENGTH = 6;
-DownloadResponse.prototype.CRC_LENGTH = 2;
-DownloadResponse.prototype.PACKET_LENGTH = 8;
+
+
+
+
+
+
+
+
+
+
+
+
 
   module.exports = DownloadResponse;
-  
+

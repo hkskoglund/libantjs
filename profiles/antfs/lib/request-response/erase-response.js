@@ -23,17 +23,17 @@ class EraseResponse {
 
     switch (this.result) {
 
-      case EraseResponse.prototype.OK:
+      case EraseResponse.OK:
 
         msg += 'OK';
         break;
 
-      case EraseResponse.prototype.FAILED:
+      case EraseResponse.FAILED:
 
         msg += 'Failed';
         break;
 
-      case EraseResponse.prototype.NOT_READY:
+      case EraseResponse.NOT_READY:
 
         msg += 'Not ready to erase';
         break;
@@ -42,11 +42,16 @@ class EraseResponse {
 
     return msg;
   }
+
+  static OK = 0x00;
+  static FAILED = 0x01;
+  static NOT_READY = 0x03;
+  static ID = 0x8B;
 }
 
-EraseResponse.prototype.OK = 0x00;
-EraseResponse.prototype.FAILED = 0x01;
-EraseResponse.prototype.NOT_READY = 0x03;
-EraseResponse.prototype.ID = 0x8B;
+
+
+
+
 
 module.exports = EraseResponse;
