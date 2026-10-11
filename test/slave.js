@@ -1,7 +1,7 @@
-import Host from '../host.js';
+import AntController from '../ant-controller.js';
 
 
-const slaveHost = new Host({ log: true });
+const slaveHost = new AntController({ log: true });
 const slavePort = 1;
 const slaveChannel0 = slaveHost.channel[0];
 let burstNr = 0;

@@ -1,7 +1,7 @@
-import Host from '../host.js';
+import AntController from '../ant-controller.js';
 
 
-const masterHost = new Host({ log: true, debugLevel: 0 });
+const masterHost = new AntController({ log: true, debugLevel: 0 });
 const masterPort = 0;
 const masterChannel0 = masterHost.channel[0];
 let dataSeed = 0;

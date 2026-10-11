@@ -1,7 +1,7 @@
 'use strict';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import Host from '../host.js';
+import AntController from '../ant-controller.js';
 import Message from '../messages/message.js';
 import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.js';
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
@@ -24,7 +24,7 @@ const message = {
 };
 
 function createHost() {
-  const host = new Host();
+  const host = new AntController();
   let resolveTransfer;
   let rejectTransfer;
 
@@ -39,8 +39,8 @@ function createHost() {
   };
 }
 
-test('Host exposes Lib Config flags', () => {
-  assert.deepEqual(Host.LIB_CONFIG, {
+test('AntController exposes Lib Config flags', () => {
+  assert.deepEqual(AntController.LIB_CONFIG, {
     DISABLED: 0x00,
     CHANNEL_ID_ENABLED: 0x80,
     RSSI_ENABLED: 0x40,
@@ -56,9 +56,9 @@ function createFrame(id) {
   return message.serialize();
 }
 
-test('Host and channels do not mutate the caller options object', () => {
+test('AntController and channels do not mutate the caller options object', () => {
   const options = { log: false, dataDir: '/tmp/ant-data' };
-  const host = new Host(options);
+  const host = new AntController(options);
 
   assert.deepEqual(options, { log: false, dataDir: '/tmp/ant-data' });
   assert.notEqual(host.options, options);
@@ -67,12 +67,12 @@ test('Host and channels do not mutate the caller options object', () => {
   assert.equal(host.channel[0].log.options.logSource, host.channel[0]);
 });
 
-test('Host forwards USB errors through its error event', () => {
+test('AntController forwards USB errors through its error event', () => {
   const { host } = createHost();
   const usbError = new Error('USB endpoint failed');
   let observedError;
 
-  host.on(Host.EVENT.ERROR, error => { observedError = error; });
+  host.on(AntController.EVENT.ERROR, error => { observedError = error; });
   host.usb.emit('error', usbError);
 
   assert.equal(observedError, usbError);
@@ -318,7 +318,7 @@ test('sendMessage rejects when the response event carries an error', async () =>
   await assert.rejects(sent, responseError);
 });
 
-test('Host.sleep sends a Sleep Message', async () => {
+test('AntController.sleep sends a Sleep Message', async () => {
   const { host } = createHost();
   let sentMessage;
 
@@ -329,7 +329,7 @@ test('Host.sleep sends a Sleep Message', async () => {
   assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
 });
 
-test('Host.disableAdvancedBurst sends 0x00 in the enable byte', async () => {
+test('AntController.disableAdvancedBurst sends 0x00 in the enable byte', async () => {
   const { host } = createHost();
   let sentMessage;
 
@@ -339,7 +339,7 @@ test('Host.disableAdvancedBurst sends 0x00 in the enable byte', async () => {
   assert.equal(sentMessage.content[1], 0x00);
 });
 
-test('Host sends extended burst packets with sequence and Channel ID fields', async () => {
+test('AntController sends extended burst packets with sequence and Channel ID fields', async () => {
   const { host } = createHost();
   const sent = [];
   const channelId = { deviceNumber: 0x1234, deviceType: 0x56, transmissionType: 0x78 };
@@ -359,7 +359,7 @@ test('Host sends extended burst packets with sequence and Channel ID fields', as
   assert.deepEqual(Array.from(sent[1].packet), [9, 0, 0, 0, 0, 0, 0, 0]);
 });
 
-test('Host.deserialize emits extended burst packets and the completed burst', () => {
+test('AntController.deserialize emits extended burst packets and the completed burst', () => {
   const { host } = createHost();
   const channel = host.channel[1];
   const packets = [];
@@ -379,25 +379,25 @@ test('Host.deserialize emits extended burst packets and the completed burst', ()
   assert.deepEqual(Array.from(completedBurst), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
 });
 
-test('Host.deserialize reports frames with invalid CRCs and continues parsing', () => {
+test('AntController.deserialize reports frames with invalid CRCs and continues parsing', () => {
   const { host } = createHost();
   const errors = [];
   const firstFrame = createFrame(0x01);
   const secondFrame = createFrame(0x02);
 
   firstFrame[firstFrame.length - 1] ^= 0xff;
-  host.on(Host.EVENT.ERROR, (error) => errors.push(error));
+  host.on(AntController.EVENT.ERROR, (error) => errors.push(error));
   host.deserialize(Buffer.concat([firstFrame, secondFrame]));
 
   assert.deepEqual(errors, ['Invalid message CRC', 'Unable to parse received msg id 2']);
 });
 
-test('Host.deserialize buffers incomplete frames and clears them after parsing', () => {
+test('AntController.deserialize buffers incomplete frames and clears them after parsing', () => {
   const { host } = createHost();
   const frame = createFrame(0x01);
   const errors = [];
 
-  host.on(Host.EVENT.ERROR, (error) => errors.push(error));
+  host.on(AntController.EVENT.ERROR, (error) => errors.push(error));
   host.deserialize(frame.subarray(0, frame.length - 1));
   assert.equal(host.previousPacket.length, frame.length - 1);
 
@@ -406,7 +406,7 @@ test('Host.deserialize buffers incomplete frames and clears them after parsing',
   assert.deepEqual(errors, ['Unable to parse received msg id 1']);
 });
 
-test('Host.exit propagates a reset error and still exits USB', async () => {
+test('AntController.exit propagates a reset error and still exits USB', async () => {
   const { host } = createHost();
   const resetError = new Error('reset failed');
   let usbExitCalls = 0;
@@ -418,7 +418,7 @@ test('Host.exit propagates a reset error and still exits USB', async () => {
   assert.equal(usbExitCalls, 1);
 });
 
-test('Host.exit propagates a USB exit error', async () => {
+test('AntController.exit propagates a USB exit error', async () => {
   const { host } = createHost();
   const usbExitError = new Error('USB exit failed');
 
@@ -428,7 +428,7 @@ test('Host.exit propagates a USB exit error', async () => {
   await assert.rejects(host.exit(), usbExitError);
 });
 
-test('Host.exit preserves both errors when reset and USB exit fail', async () => {
+test('AntController.exit preserves both errors when reset and USB exit fail', async () => {
   const { host } = createHost();
   const resetError = new Error('reset failed');
   const usbExitError = new Error('USB exit failed');
@@ -483,7 +483,7 @@ test('Channel.toString includes zero-valued network, type, and state', () => {
   assert.match(description, /Unassigned\|/);
 });
 
-test('Host.sendBurstTransfer sends sequenced packets and stops on the first failure', async () => {
+test('AntController.sendBurstTransfer sends sequenced packets and stops on the first failure', async () => {
   const { host } = createHost();
   const sent = [];
   const failure = new Error('burst failed');
@@ -502,7 +502,7 @@ test('Host.sendBurstTransfer sends sequenced packets and stops on the first fail
   assert.deepEqual(sent, [[0x01, 8], [0xA1, 8]]);
 });
 
-test('Host.resetSystem resolves with the startup notification after the settle delay', async (t) => {
+test('AntController.resetSystem resolves with the startup notification after the settle delay', async (t) => {
   const { host } = createHost();
   const startup = { startup: true };
 

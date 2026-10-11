@@ -1,7 +1,7 @@
-import Host from '../host.js';
+import AntController from '../ant-controller.js';
 
 
-const slaveHost = new Host({ log: false, debugLevel: 0 });
+const slaveHost = new AntController({ log: false, debugLevel: 0 });
 const slaveChannel0 = slaveHost.channel[0];
 const searchWindowDelay = 2100;
 const startFreq = 59;

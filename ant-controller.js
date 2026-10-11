@@ -11,7 +11,7 @@ import applyHostTransfers from './host/transfers.js';
 import applyHostDeserialize from './host/deserialize.js';
 import LibConfig from './messages/extended/lib-config.js';
 
-class Host extends EventEmitter {
+class AntController extends EventEmitter {
   static MAX_CHAN = 8;
 
   static LIB_CONFIG = LibConfig;
@@ -45,9 +45,9 @@ class Host extends EventEmitter {
 
     this.options = Object.assign({}, options);
     this.log = new Logger(Object.assign({}, this.options, { logSource: this }));
-    this.channel = new Array(Host.MAX_CHAN);
+    this.channel = new Array(AntController.MAX_CHAN);
 
-    for (let channel = 0; channel < Host.MAX_CHAN; channel++) {
+    for (let channel = 0; channel < AntController.MAX_CHAN; channel++) {
       this.channel[channel] = new Channel(this.options, this, channel);
     }
 
@@ -104,10 +104,10 @@ class Host extends EventEmitter {
   }
 }
 
-applyHostDevices(Host);
-applyHostProfiles(Host);
-applyHostCommands(Host);
-applyHostTransfers(Host);
-applyHostDeserialize(Host);
+applyHostDevices(AntController);
+applyHostProfiles(AntController);
+applyHostCommands(AntController);
+applyHostTransfers(AntController);
+applyHostDeserialize(AntController);
 
-export default Host;
+export default AntController;
