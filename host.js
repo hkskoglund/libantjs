@@ -9,9 +9,12 @@ import applyHostProfiles from './host/profiles.js';
 import applyHostCommands from './host/commands.js';
 import applyHostTransfers from './host/transfers.js';
 import applyHostDeserialize from './host/deserialize.js';
+import LibConfig from './messages/extended/lib-config.js';
 
 class Host extends EventEmitter {
   static MAX_CHAN = 8;
+
+  static LIB_CONFIG = LibConfig;
 
   static ADVANCED_BURST = {
     ENABLE: 0x01,

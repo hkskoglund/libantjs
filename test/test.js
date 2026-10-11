@@ -552,6 +552,35 @@ test('Extended broadcast frames decode their channel ID', () => {
   assert.equal(decoded.channelId.transmissionType, 0x78);
 });
 
+test('Extended broadcast frames decode raw RSSI measurement metadata', () => {
+  const message = new Message(undefined, Message.BROADCAST_DATA);
+  message.setContent(Uint8Array.from([
+    0x00, 0x00, 0xff, 0xff, 0x14, 0x03, 0x00, 0x00, 0x00,
+    0xc0, 0x6e, 0xa3, 0x19, 0x95, 0x10, 0x01, 0x6d, 0x00
+  ]));
+
+  const decoded = new BroadcastDataMessage(message.serialize());
+
+  assert.equal(decoded.channelId.deviceNumber, 0xa36e);
+  assert.equal(decoded.RSSI.getRawMeasurementType(), 0x10);
+  assert.equal(decoded.RSSI.getRawMeasurementValue(), 0x006d);
+  assert.equal(decoded.RSSI.getRSSIValue(), undefined);
+});
+
+test('Extended broadcast frames decode dBm RSSI metadata', () => {
+  const message = new Message(undefined, Message.BROADCAST_DATA);
+  message.setContent(Uint8Array.from([
+    0x00, 0x00, 0xff, 0xff, 0x14, 0x03, 0x00, 0x00, 0x00,
+    0xc0, 0x6e, 0xa3, 0x19, 0x95, 0x20, 0xb0, 0xba
+  ]));
+
+  const decoded = new BroadcastDataMessage(message.serialize());
+
+  assert.equal(decoded.RSSI.getRawMeasurementType(), 0x20);
+  assert.equal(decoded.RSSI.getRSSIValue(), -80);
+  assert.equal(decoded.RSSI.getThresholdConfigDB(), -70);
+});
+
 test('Extended broadcast frames with truncated channel ID metadata do not throw', () => {
   const message = new Message(undefined, Message.BROADCAST_DATA);
   message.setContent(Uint8Array.from([

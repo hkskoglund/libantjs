@@ -17,16 +17,20 @@ class RSSI {
 
   decode(extendedData) {
 
-    var extendedDataView = new DataView(extendedData.buffer);
+    var extendedDataView = new DataView(
+      extendedData.buffer,
+      extendedData.byteOffset,
+      extendedData.byteLength
+    );
 
     this.measurementType = extendedData[0];
 
-    if (this.measurementType !== RSSI.MEASUREMENT_TYPE.dBm) // Stop decoding according to spec.
-      return;
-
-    this.RSSIValue = extendedDataView.getInt8(extendedData.byteOffset + 1);
-
-    this.thresholdConfigurationValue = extendedDataView.getInt8(extendedData.byteOffset + 2); // Signed int (2's complement ?)
+    if (this.measurementType === RSSI.MEASUREMENT_TYPE.dBm) {
+      this.RSSIValue = extendedDataView.getInt8(1);
+      this.thresholdConfigurationValue = extendedDataView.getInt8(2);
+    } else if (this.measurementType === RSSI.MEASUREMENT_TYPE.raw) {
+      this.rawMeasurementValue = extendedDataView.getUint16(2, true);
+    }
   }
 
   getRawMeasurementType() {
@@ -44,15 +48,34 @@ class RSSI {
     return this.thresholdConfigurationValue;
   }
 
+  getRawMeasurementValue() {
+
+    return this.rawMeasurementValue;
+  }
+
   toString() {
+
+    if (this.measurementType === RSSI.MEASUREMENT_TYPE.raw) {
+      var valueHex = this.rawMeasurementValue.toString(16).toUpperCase().padStart(4, '0');
+      return "RSSI raw (type 0x10): " + this.rawMeasurementValue + " (0x" + valueHex + ")";
+    }
 
     return "RSSI " + this.RSSIValue + " " + RSSI.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue + " dBm";
   }
 
   static MEASUREMENT_TYPE = {
+  0x10: "raw",
   0x20: "dBm",
+  raw: 0x10,
   dBm: 0x20 // Units of dBm
 };
+
+  static getDataLength(measurementType) {
+    if (measurementType === RSSI.MEASUREMENT_TYPE.raw)
+      return 4;
+    if (measurementType === RSSI.MEASUREMENT_TYPE.dBm)
+      return 3;
+  }
 }
 
 // http://en.wikipedia.org/wiki/DBm
@@ -60,4 +83,3 @@ class RSSI {
 
 
 export default RSSI;
-

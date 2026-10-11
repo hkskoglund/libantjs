@@ -75,6 +75,8 @@ try {
 
 Supported sensor types are `'hrm'` and `'tempe'` (or `'environment'`). Set `deviceNumber` to `0` to search for any matching sensor; `net` optionally selects the ANT network number. The helper returns a promise for the configured channel; register `data` listeners on `host.channel[n]` before calling it to receive every message. Existing manual channel setup remains supported.
 
+Enable receiver RSSI metadata with `host.libConfig(Host.LIB_CONFIG.RSSI_ENABLED)`. Combine it with `Host.LIB_CONFIG.CHANNEL_ID_ENABLED` when both RSSI and extended channel ID metadata are needed. The named Lib Config flags are also available on the public `Host` class.
+
 USB and endpoint runtime failures are forwarded as the host's `error` event; register an error listener before calling `init()`, as in the example.
 
 ANT-FS files downloaded from a device (and upload backups) are saved to `<dataDir>/<device serial number>/`. Each downloaded directory is also saved as a readable `directory-<device serial number>.txt` listing in that folder, replacing the previous listing. Set `dataDir` in the `Host` options, e.g. `new Host({ dataDir: '/path/to/dir' })`; the default is `$XDG_DATA_HOME/libantjs` (`~/.local/share/libantjs`).

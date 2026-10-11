@@ -39,6 +39,15 @@ function createHost() {
   };
 }
 
+test('Host exposes Lib Config flags', () => {
+  assert.deepEqual(Host.LIB_CONFIG, {
+    DISABLED: 0x00,
+    CHANNEL_ID_ENABLED: 0x80,
+    RSSI_ENABLED: 0x40,
+    RX_TIMESTAMP_ENABLED: 0x20
+  });
+});
+
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 function createFrame(id) {

@@ -32,7 +32,8 @@ class Message {
   decode(data) {
 
     var frameError = Message.prototype.getFrameError(data),
-      extendedDataOffset = 0;
+      extendedDataOffset = 0,
+      rssiDataLength;
 
     if (frameError)
       throw new Error(frameError);
@@ -73,14 +74,28 @@ class Message {
       }
 
       if (this.flagsByte & LibConfig.RSSI_ENABLED) {
-        if (this.extendedData.length < extendedDataOffset + 3) {
-          this.extendedDataError = 'RSSI data must contain at least 3 bytes';
+        if (this.extendedData.length <= extendedDataOffset) {
+          this.extendedDataError = 'RSSI data must contain a measurement type';
+          return;
+        }
+        rssiDataLength = RSSI.getDataLength(this.extendedData[extendedDataOffset]);
+        if (!rssiDataLength) {
+          this.extendedDataError = 'Unsupported RSSI measurement type 0x' +
+            this.extendedData[extendedDataOffset].toString(16);
+          return;
+        }
+        if (this.extendedData.length < extendedDataOffset + rssiDataLength) {
+          this.extendedDataError = 'RSSI data must contain at least ' +
+            rssiDataLength + ' bytes';
           return;
         }
         if (!this.RSSI)
           this.RSSI = new RSSI();
-        this.RSSI.decode(this.extendedData.subarray(extendedDataOffset, extendedDataOffset + 3));
-        extendedDataOffset += 3;
+        this.RSSI.decode(this.extendedData.subarray(
+          extendedDataOffset,
+          extendedDataOffset + rssiDataLength
+        ));
+        extendedDataOffset += rssiDataLength;
       }
 
       if (this.flagsByte & LibConfig.RX_TIMESTAMP_ENABLED) {
