@@ -1125,6 +1125,35 @@ test('Environment profile configures the selected supported channel period', () 
   }
 });
 
+test('Environment profile requests manufacturer and battery pages with Common Page 70', async () => {
+  const requests = [];
+  const delays = [];
+
+  await DeviceProfile_ENVIRONMENT.requestStartupPages(async payload => {
+    requests.push(Array.from(payload));
+  }, async delay => {
+    delays.push(delay);
+  });
+
+  assert.deepEqual(requests, [
+    [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x50, 0x01],
+    [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x51, 0x01],
+    [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x52, 0x01]
+  ]);
+  assert.deepEqual(delays, [
+    DeviceProfile_ENVIRONMENT.STARTUP_REQUEST_INTERVAL,
+    DeviceProfile_ENVIRONMENT.STARTUP_REQUEST_INTERVAL
+  ]);
+  await assert.rejects(
+    DeviceProfile_ENVIRONMENT.requestStartupPages(undefined, async () => {}),
+    /sendAcknowledged/
+  );
+  await assert.rejects(
+    DeviceProfile_ENVIRONMENT.requestStartupPages(async () => {}, undefined),
+    /wait/
+  );
+});
+
 test('DeviceProfile applies the selected channel period to master and slave configurations', () => {
   const hadSetting = Object.hasOwn(global, 'setting');
   const originalSetting = global.setting;

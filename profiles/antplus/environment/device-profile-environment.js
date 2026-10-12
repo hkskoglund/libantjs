@@ -23,6 +23,25 @@ import TempPage1 from './temperature-page1.js';
     this.requestPageUpdate(DeviceProfile_ENVIRONMENT.DEFAULT_PAGE_UPDATE_DELAY);
   }
 
+  static async requestStartupPages(sendAcknowledged, wait) {
+    if (typeof sendAcknowledged !== 'function') {
+      throw new TypeError('sendAcknowledged must be a function bound to the sensor channel');
+    }
+    if (typeof wait !== 'function') {
+      throw new TypeError('wait must be a delay function');
+    }
+
+    const pageNumbers = [0x50, 0x51, 0x52];
+    for (let i = 0; i < pageNumbers.length; i++) {
+      await sendAcknowledged(Uint8Array.from([
+        0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, pageNumbers[i], 0x01
+      ]));
+      if (i < pageNumbers.length - 1) {
+        await wait(DeviceProfile_ENVIRONMENT.STARTUP_REQUEST_INTERVAL);
+      }
+    }
+  }
+
   getPageNumber(broadcast) {
 
     return broadcast.data[0];
@@ -66,6 +85,7 @@ import TempPage1 from './temperature-page1.js';
   }
 
   static DEFAULT_PAGE_UPDATE_DELAY = 5000;
+  static STARTUP_REQUEST_INTERVAL = 45000;
   static CHANNEL_ID = {
     DEVICE_TYPE: 25, // 0x19
     TRANSMISSION_TYPE: 0x05 // Low nibble

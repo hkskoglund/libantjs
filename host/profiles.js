@@ -71,14 +71,40 @@ class HostProfiles {
     const period = sensorType === 'hrm' ?
       profile.CHANNEL_PERIOD.DEFAULT :
       profile.CHANNEL_PERIOD.ALTERNATIVE;
+    const channelType = sensorType === 'hrm' ?
+      channel.constructor.SLAVE_RECEIVE_ONLY :
+      channel.constructor.BIDIRECTIONAL_SLAVE;
 
     await this.libConfig(LibConfig.CHANNEL_ID_ENABLED);
     await channel.setNetworkKey(channel.constructor.NET.KEY['ANT+']);
-    await channel.assign(channel.constructor.SLAVE_RECEIVE_ONLY, network);
+    await channel.assign(channelType, network);
     await channel.setId(deviceNumber, profile.CHANNEL_ID.DEVICE_TYPE, 0);
     await channel.setFrequency(channel.constructor.NET.FREQUENCY['ANT+']);
     await channel.setPeriod(period);
-    await channel.open();
+
+    const requestEnvironmentPages = sensorType !== 'hrm' ?
+      () => {
+        const wait = delay => new Promise(resolve => setTimeout(resolve, delay));
+        profile.requestStartupPages(
+          channel.sendAcknowledged.bind(channel),
+          wait
+        )
+          .catch(error => this.emit(this.constructor.EVENT.ERROR, error));
+      } :
+      undefined;
+
+    if (requestEnvironmentPages) {
+      channel.once('data', requestEnvironmentPages);
+    }
+
+    try {
+      await channel.open();
+    } catch (error) {
+      if (requestEnvironmentPages) {
+        channel.removeListener('data', requestEnvironmentPages);
+      }
+      throw error;
+    }
 
     return channel;
   }

@@ -7,6 +7,7 @@ import AcknowledgedDataMessage from '../messages/data/acknowledged-data-message.
 import ExtendedBurstDataMessage from '../messages/data/extended-burst-data-message.js';
 import ANTFSHostChannel from '../profiles/antfs/antfs-host-channel.js';
 import DisconnectCommand from '../profiles/antfs/lib/request-response/disconnect-request.js';
+import DeviceProfile_ENVIRONMENT from '../profiles/antplus/environment/device-profile-environment.js';
 
 
 
@@ -78,7 +79,7 @@ test('AntController forwards USB errors through its error event', () => {
   assert.equal(observedError, usbError);
 });
 
-test('connectANTPlusSensor configures HRM and Tempe while preserving channel data events', async () => {
+test('connectANTPlusSensor configures HRM and Tempe while preserving channel data events', async (t) => {
   const { host } = createHost();
   const channel = host.channel[0];
   const calls = [];
@@ -102,9 +103,14 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
   channel.setPeriod = async (period) => {
     calls.push(['setPeriod', period]);
   };
+  channel.sendAcknowledged = async payload => {
+    calls.push(['sendAcknowledged', Array.from(payload)]);
+  };
   channel.open = async () => {
     calls.push(['open']);
   };
+
+  t.mock.timers.enable({ apis: ['setTimeout'] });
 
   for (const sensorType of ['hrm', 'tempe']) {
     calls.length = 0;
@@ -118,7 +124,11 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
       'setFrequency', 'setPeriod', 'open'
     ]);
     assert.deepEqual(calls[0], ['libConfig', 0x80]);
-    assert.deepEqual(calls[2], ['assign', channel.constructor.SLAVE_RECEIVE_ONLY, 0]);
+    assert.deepEqual(calls[2], [
+      'assign',
+      sensorType === 'hrm' ? channel.constructor.SLAVE_RECEIVE_ONLY : channel.constructor.BIDIRECTIONAL_SLAVE,
+      0
+    ]);
     assert.deepEqual(calls[3], ['setId', 1234, sensorType === 'hrm' ? 120 : 25, 0]);
     assert.deepEqual(calls[4], ['setFrequency', channel.constructor.NET.FREQUENCY['ANT+']]);
     assert.deepEqual(calls[5], [
@@ -126,6 +136,27 @@ test('connectANTPlusSensor configures HRM and Tempe while preserving channel dat
       sensorType === 'hrm' ? 8070 : channel.constructor.NET.PERIOD.ENVIRONMENT.LOW_POWER
     ]);
     assert.equal(channel.listeners('data').includes(dataListener), true);
+
+    if (sensorType !== 'hrm') {
+      channel.emit('data', {});
+      await flush();
+      assert.deepEqual(calls.slice(-1), [
+        ['sendAcknowledged', [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x50, 0x01]]
+      ]);
+
+      t.mock.timers.tick(DeviceProfile_ENVIRONMENT.STARTUP_REQUEST_INTERVAL);
+      await flush();
+      assert.deepEqual(calls.slice(-1), [
+        ['sendAcknowledged', [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x51, 0x01]]
+      ]);
+
+      t.mock.timers.tick(DeviceProfile_ENVIRONMENT.STARTUP_REQUEST_INTERVAL);
+      await flush();
+      assert.deepEqual(calls.slice(-1), [
+        ['sendAcknowledged', [0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x52, 0x01]]
+      ]);
+    }
+
     channel.removeListener('data', dataListener);
   }
 });

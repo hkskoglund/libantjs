@@ -59,7 +59,7 @@ main().catch((error) => {
 
 The example listens on the public ANT network. ANT+ devices use a different network key; configure it with `await channel.setNetworkKey(channel.NET.KEY['ANT+'])` before opening the channel. Close an open channel with `await channel.close()` and shut down the USB host with `await host.exit()`.
 
-To configure a receive-only ANT+ sensor channel, use the sensor helper. It sets ANT+ network and device parameters, enables extended channel ID metadata, and opens the channel. The channel continues to emit the original raw `data` messages, so applications can parse payloads themselves:
+To configure an ANT+ sensor channel, use the sensor helper. It sets ANT+ network and device parameters, enables extended channel ID metadata, and opens the channel. HRM uses a receive-only channel; environment/Tempe uses a bidirectional channel and requests manufacturer, product, and battery pages (`0x50`, `0x51`, and `0x52`) after the first sensor message, with a 45-second interval between requests. The channel continues to emit the original raw `data` messages, so applications can parse payloads themselves:
 
 ```js
 host.channel[0].on('data', (message) => {
