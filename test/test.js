@@ -18,6 +18,7 @@ import DeviceProfile_BikePower from '../profiles/antplus/bike-power/device-profi
 import CalibrationMainPage from '../profiles/antplus/bike-power/calibration-main.js';
 import BikePowerDataPage from '../profiles/antplus/bike-power/bike-power-data-page.js';
 import PowerOnlyMainPage0x10 from '../profiles/antplus/bike-power/power-only-main-page0x10.js';
+import TemperaturePage0 from '../profiles/antplus/environment/temperature-page0.js';
 import TemperaturePage1 from '../profiles/antplus/environment/temperature-page1.js';
 import DeviceProfile_HRM from '../profiles/antplus/hrm/device-profile-hrm.js';
 import HRMPage0 from '../profiles/antplus/hrm/hrm-page0.js';
@@ -1097,6 +1098,26 @@ test('TemperaturePage1 decodes negative signed temperatures and invalid values',
   assert.equal(invalid.hour24High, undefined);
   assert.equal(invalid.currentTemp, undefined);
   assert.match(invalid.toString(), /Low \(24H\) N\/A°C High \(24H\) N\/A°C Current Temp N\/A°C/);
+});
+
+test('TemperaturePage0 decodes transmission info and supported pages', () => {
+  const page = new TemperaturePage0(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([0, 0, 0, 0x19, 0x05, 0, 0, 0]) },
+    undefined,
+    0
+  );
+
+  assert.deepEqual(page.transmissionInfo, {
+    localTime: 1,
+    UTCTime: 2,
+    defaultTransmissionRate: 1
+  });
+  assert.deepEqual(page.supportedPages, {
+    value: 5,
+    page0: true,
+    page2: true
+  });
 });
 
 test('Environment profile configures the selected supported channel period', () => {

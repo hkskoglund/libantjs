@@ -27,9 +27,9 @@ import MainPage from '../main-page.js';
       defaultTransmissionRate: undefined
     };
 
-    this.transmissionInfo.localTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.LOCAL_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
-    this.transmissionInfo.UTCTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.UTC_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
-    this.transmissionInfo.defaultTransmissionRate = data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.DEFAULT_TRANSMISSION_RATE;
+    this.transmissionInfo.localTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.TRANSMISSION_INFO.LOCAL_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.LOCAL_TIME.START_BIT;
+    this.transmissionInfo.UTCTime = (data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.TRANSMISSION_INFO.UTC_TIME) >> TemperaturePage0.BIT_FIELD.TRANSMISSION_INFO.UTC_TIME.START_BIT;
+    this.transmissionInfo.defaultTransmissionRate = data[TemperaturePage0.BYTE.TRANSMISSION_INFO] & TemperaturePage0.BIT_MASK.TRANSMISSION_INFO.DEFAULT_TRANSMISSION_RATE;
 
 
     // Byte 4 - 7  - Supported pages
@@ -137,4 +137,3 @@ import MainPage from '../main-page.js';
 
 
   export default TemperaturePage0;
-
