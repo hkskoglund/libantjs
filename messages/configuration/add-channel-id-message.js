@@ -1,5 +1,6 @@
 'use strict';
 import Message from '../message.js';
+import ChannelId from '../../channel/channel-id.js';
 
 class AddChannelIdMessage extends Message {
   constructor(channel, deviceNum, deviceType, transmissionType, listIndex) {
@@ -25,7 +26,18 @@ class AddChannelIdMessage extends Message {
   }
 
   toString() {
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " index " + this.listIndex + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
+    const deviceTypeName = ChannelId.getDeviceTypeName(this.deviceType);
+    const deviceNumber = this.deviceNumber === 0 ? 'any (wildcard)' : this.deviceNumber;
+    const deviceType = this.deviceType === 0
+      ? 'any (wildcard)'
+      : this.deviceType + (deviceTypeName ? ' (' + deviceTypeName + ')' : '');
+    const transmissionType = this.transmissionType === 0
+      ? 'any (wildcard)'
+      : ChannelId.describeTransmissionType(this.transmissionType);
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' list index ' + this.listIndex +
+      ': device number ' + deviceNumber + ', device type ' + deviceType +
+      ', transmission type ' + transmissionType;
   }
 }
 

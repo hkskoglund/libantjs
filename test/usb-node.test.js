@@ -175,6 +175,7 @@ test('USBNode closes the device when claiming fails', async () => {
 
 test('USBNode polls, transmits, and exits with kernel driver reattached', async () => {
   let reads = 0;
+  const sent = [];
   const device = createDevice({
     transferIn: async () => {
       reads++;
@@ -183,6 +184,10 @@ test('USBNode polls, transmits, and exits with kernel driver reattached', async 
       }
       await new Promise(resolve => setTimeout(resolve, 5));
       throw new Error('Cancelled');
+    },
+    transferOut: async (_endpoint, data) => {
+      sent.push(Array.from(data));
+      return { bytesWritten: data.length, status: 'ok' };
     }
   });
   const node = new USBNode({});
@@ -198,6 +203,7 @@ test('USBNode polls, transmits, and exits with kernel driver reattached', async 
 
   assert.equal(exitError, undefined);
   assert.deepEqual(received, [[0xa4, 1, 0x6f, 0x20, 0xea]]);
+  assert.deepEqual(sent, [[1, 2, 3], [0xa4, 1, 0x4a, 0, 0xef]]);
   assert.equal(node.device, null);
   assert.deepEqual(device.calls.slice(-3), ['releaseInterface', 'attachKernelDriver', 'close']);
   assert.equal(node.usb.listenerCount('connect'), 0);

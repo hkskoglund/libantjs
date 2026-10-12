@@ -269,9 +269,14 @@ class HostDeserialize {
           break;
       }
 
-      if (message)
-        if (this.log.logging)
-          this.log.debug( message.toString());
+      if (message && this.log.logging) {
+        if (message instanceof ChannelResponseMessage && !message.isRFevent()) {
+          if (message.response.code !== ChannelResponseEvent.RESPONSE_NO_ERROR)
+            this.log.warn('RESPONSE_NO_ERROR has not been received for ' + message.response.toString());
+        } else {
+          this.log.debug(message.toString());
+        }
+      }
 
       iStartOfMessage += totalMessageLength;
 

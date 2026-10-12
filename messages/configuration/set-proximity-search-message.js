@@ -14,6 +14,7 @@ class SetProximitySearchMessage extends Message {
 
     var msgBuffer = new Uint8Array([channel, searchThreshold]);
 
+    this.channel = channel;
     this.searchThreshold = searchThreshold;
 
     this.setContent(msgBuffer);
@@ -21,9 +22,13 @@ class SetProximitySearchMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " search threshold " + this.searchThreshold;
+    const description = this.searchThreshold === 0
+      ? 'disabled'
+      : 'ANT proximity bin ' + this.searchThreshold;
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' one-time proximity search threshold: ' + description;
   }
 }
 
 export default SetProximitySearchMessage;
-

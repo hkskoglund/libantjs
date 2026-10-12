@@ -57,7 +57,7 @@ class RSSI {
 
     if (this.measurementType === RSSI.MEASUREMENT_TYPE.raw) {
       var valueHex = this.rawMeasurementValue.toString(16).toUpperCase().padStart(4, '0');
-      return "RSSI raw (type 0x10): " + this.rawMeasurementValue + " (0x" + valueHex + ")";
+      return "RSSI raw measurement: " + this.rawMeasurementValue + " (0x" + valueHex + ")";
     }
 
     return "RSSI " + this.RSSIValue + " " + RSSI.MEASUREMENT_TYPE[this.measurementType] + " Proximity threshold " + this.thresholdConfigurationValue + " dBm";

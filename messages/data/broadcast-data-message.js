@@ -1,5 +1,6 @@
 'use strict';
 import Message from '../message.js';
+import LibConfig from '../extended/lib-config.js';
 
 
 
@@ -31,16 +32,23 @@ class BroadcastDataMessage extends Message {
     var msg = Message.prototype.toString.call(this) + " Ch " + this.channel;
 
     if (this.extendedData) {
-      msg += " Flags 0x" + this.flagsByte.toString(16);
+      const extendedFields = [];
+      if (this.flagsByte & LibConfig.CHANNEL_ID_ENABLED)
+        extendedFields.push('device ID');
+      if (this.flagsByte & LibConfig.RSSI_ENABLED)
+        extendedFields.push('RSSI');
+      if (this.flagsByte & LibConfig.RX_TIMESTAMP_ENABLED)
+        extendedFields.push('receive timestamp');
+      msg += " | Extended fields: " + extendedFields.join(', ');
 
       if (this.channelId)
-        msg += " " + this.channelId.toString();
+        msg += " | " + this.channelId.toString();
 
       if (this.RSSI)
-        msg += " " + this.RSSI.toString();
+        msg += " | " + this.RSSI.toString();
 
       if (this.RXTimestamp)
-        msg += " " + this.RXTimestamp.toString();
+        msg += " | " + this.RXTimestamp.toString();
     }
 
     return msg;
@@ -64,4 +72,3 @@ function encodeData(message, channel, data) {
 BroadcastDataMessage.prototype.encodeData = encodeData;
 
 export default BroadcastDataMessage;
-

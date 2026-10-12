@@ -29,6 +29,18 @@ test('Logger sends level methods through loglevel with timestamp and source', ()
   assert.equal(entries[3].args[1], 'error message');
 });
 
+test('Logger formats Uint8Array values without passing through the decimal array', () => {
+  const entries = [];
+  const logger = new Logger(true);
+  logger.changeConsole({ log: (...args) => entries.push(args) });
+
+  logger.debug('RX', Uint8Array.from([0x01, 0x0a, 0xff]));
+
+  assert.equal(entries[0][1], 'RX');
+  assert.equal(entries[0][2], '< 01 0a ff >');
+  assert.equal(entries[0].length, 3);
+});
+
 test('Logger can be disabled and re-enabled through its logging property', () => {
   const entries = [];
   const logger = new Logger(false);

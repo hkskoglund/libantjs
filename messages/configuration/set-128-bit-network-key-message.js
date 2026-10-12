@@ -22,7 +22,8 @@ class Set128BitNetworkKeyMessage extends Message {
   }
 
   toString() {
-    return Message.prototype.toString.call(this) + " Net " + this.net + " key " + this.key;
+    return Message.prototype.toString.call(this) + ' Net ' + this.net +
+      ' set 128-bit network key (key bytes hidden)';
   }
 }
 

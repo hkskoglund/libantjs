@@ -1,5 +1,6 @@
 'use strict';
 import Message from '../message.js';
+import ChannelId from '../../channel/channel-id.js';
 
 
 
@@ -33,7 +34,24 @@ class SetChannelIDMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceNumber " + this.deviceNumber + " deviceType " + this.deviceType + " transmissionType " + this.transmissionType;
+    const deviceType = this.deviceType & SetChannelIDMessage.DEVICE_TYPE_ID_BIT_MASK;
+    const typeName = ChannelId.getDeviceTypeName(deviceType);
+    const deviceNumberDescription = this.deviceNumber === 0
+      ? 'any (wildcard)'
+      : this.deviceNumber;
+    const deviceTypeDescription = deviceType === 0
+      ? 'any (wildcard)'
+      : deviceType + (typeName ? ' (' + typeName + ')' : '');
+    const transmissionTypeDescription = this.transmissionType === 0
+      ? 'any (wildcard)'
+      : ChannelId.describeTransmissionType(this.transmissionType);
+    const pairingDescription = this.pair ? ', pairing requested' : '';
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ': device number ' + deviceNumberDescription +
+      ', device type ' + deviceTypeDescription +
+      ', transmission type ' + transmissionTypeDescription +
+      pairingDescription;
   }
 
   static PAIRING_BIT_MASK = parseInt("10000000", 2);
@@ -45,4 +63,3 @@ class SetChannelIDMessage extends Message {
  // Bit 0-6
 
 export default SetChannelIDMessage;
-

@@ -29,9 +29,12 @@ class SetChannelRFFreqMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " RF freq. " + this.RFFreq;
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' RF frequency ' + (SetChannelRFFreqMessage.BASE_FREQUENCY_MHZ + this.RFFreq) +
+      ' MHz (offset ' + this.RFFreq + ')';
   }
+
+  static BASE_FREQUENCY_MHZ = 2400;
 }
 
 export default SetChannelRFFreqMessage;
-

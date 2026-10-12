@@ -48,6 +48,12 @@ import ResetSystemMessage from '../messages/control/reset-system-message.js';
 import SleepMessage from '../messages/control/sleep-message.js';
 import SetChannelSearchPriorityMessage from '../messages/configuration/set-channel-search-priority-message.js';
 import AddChannelIdMessage from '../messages/configuration/add-channel-id-message.js';
+import SetSerialNumChannelIdMessage from '../messages/configuration/set-serial-num-channel-id-message.js';
+import SetChannelSearchTimeoutMessage from '../messages/configuration/set-channel-search-timeout-message.js';
+import SetLowPrioriyChannelSearchTimeoutMessage from '../messages/configuration/set-low-priority-channel-search-timeout-message.js';
+import SetProximitySearchMessage from '../messages/configuration/set-proximity-search-message.js';
+import SetTransmitPowerMessage from '../messages/configuration/set-transmit-power-message.js';
+import SetChannelTxPowerMessage from '../messages/configuration/set-channel-tx-power-message.js';
 import ConfigIdListMessage from '../messages/configuration/config-id-list-message.js';
 import EnableExtRxMessagesMessage from '../messages/configuration/enable-ext-rx-messages-message.js';
 import EnableLedMessage from '../messages/configuration/enable-led-message.js';
@@ -68,6 +74,9 @@ import OpenRxScanModeMessage from '../messages/control/open-rx-scan-mode-message
 import ConfigureEventBufferMessage from '../messages/configuration/configure-event-buffer-message.js';
 import UnAssignChannelMessage from '../messages/configuration/un-assign-channel-message.js';
 import SetChannelRFFreqMessage from '../messages/configuration/set-channel-rf-freq-message.js';
+import SetChannelPeriodMessage from '../messages/configuration/set-channel-period-message.js';
+import SetChannelIDMessage from '../messages/configuration/set-channel-id-message.js';
+import LibConfigMessage from '../messages/configuration/lib-config-message.js';
 import VersionMessage from '../messages/requested-response/version-message.js';
 import CapabilitiesMessage from '../messages/requested-response/capabilities-message.js';
 import AdvancedBurstCurrentConfigurationMessage from '../messages/requested-response/advanced-burst-current-configuration-message.js';
@@ -516,6 +525,69 @@ test('SetChannelRFFreqMessage preserves zero offsets and defaults omitted offset
 
   assert.deepEqual(Array.from(zeroOffset.serialize().subarray(3, -1)), [2, 0]);
   assert.deepEqual(Array.from(defaultOffset.serialize().subarray(3, -1)), [2, 66]);
+  assert.match(zeroOffset.toString(), /RF frequency 2400 MHz \(offset 0\)/);
+  assert.match(defaultOffset.toString(), /RF frequency 2466 MHz \(offset 66\)/);
+});
+
+test('SetChannelPeriodMessage explains period ticks as time and frequency', () => {
+  assert.match(
+    new SetChannelPeriodMessage(0, 65535).toString(),
+    /message period 65535 ticks \(2\.000 s, 0\.5 Hz\)/
+  );
+});
+
+test('LibConfigMessage explains enabled extended-message flags', () => {
+  assert.match(
+    new LibConfigMessage(0xe0).toString(),
+    /libconfig 224 \(0xe0: channel ID, RSSI, receive timestamp\)/
+  );
+  assert.match(new LibConfigMessage(0).toString(), /libconfig 0 \(0x0: disabled\)/);
+  assert.match(new LibConfigMessage(0x01).toString(), /unknown flags 0x1/);
+});
+
+test('SetChannelIDMessage explains wildcard fields and known device types', () => {
+  const message = new SetChannelIDMessage(0, 0, 25, 0);
+
+  assert.equal(
+    message.toString(),
+    'Set/Get Channel ID Ch 0: device number any (wildcard), device type 25 (Environment), transmission type any (wildcard)'
+  );
+});
+
+test('Remaining configuration messages explain units, levels, and wildcard fields', () => {
+  assert.match(new SetChannelSearchTimeoutMessage(1, 10).toString(), /Ch 1 high-priority search timeout: 25 s \(10\)/);
+  assert.match(new SetChannelSearchTimeoutMessage(1, 255).toString(), /timeout: infinite \(255\)/);
+  assert.match(new SetLowPrioriyChannelSearchTimeoutMessage(1, 0).toString(), /Ch 1 low-priority search timeout: disabled \(0\)/);
+  assert.match(new SetLowPrioriyChannelSearchTimeoutMessage(1, 2).toString(), /timeout: 5 s \(2\)/);
+  assert.match(new SetChannelSearchPriorityMessage(1, 3).toString(), /search priority level 3/);
+  assert.match(new SetProximitySearchMessage(1, 0).toString(), /one-time proximity search threshold: disabled/);
+  assert.match(new SetProximitySearchMessage(1, 4).toString(), /ANT proximity bin 4/);
+  assert.match(new SetTransmitPowerMessage(3).toString(), /transmit power level 3 \(0 dBm\)/);
+  assert.match(new SetChannelTxPowerMessage(1, 4).toString(), /transmit power level 4 \(4 dBm\)/);
+});
+
+test('Channel ID messages describe known device and transmission types', () => {
+  assert.match(
+    new AddChannelIdMessage(0, 145, 120, 5, 1).toString(),
+    /device number 145, device type 120 \(Heart Rate\), transmission type independent channel, global data pages enabled \(0x05\)/
+  );
+  assert.match(
+    new SetSerialNumChannelIdMessage(0, 0x99, 0).toString(),
+    /device number from serial number, device type 25 \(Environment\), transmission type any \(wildcard\), pairing requested/
+  );
+});
+
+test('Key and encryption logs do not expose key or identifier bytes', () => {
+  const networkKey = new Set128BitNetworkKeyMessage(1, Uint8Array.from({ length: 16 }, (_, index) => index));
+  const encryptionId = new EncryptionParametersMessage(messageFrame(0x7d, Uint8Array.of(1, 9, 8, 7, 6)));
+  const userInfo = new EncryptionParametersMessage(messageFrame(0x7d, Uint8Array.of(2, 0x61, 0x62)));
+
+  assert.match(networkKey.toString(), /Net 1 set 128-bit network key \(key bytes hidden\)/);
+  assert.doesNotMatch(networkKey.toString(), /0,1,2,3/);
+  assert.match(encryptionId.toString(), /encryption ID \(4 bytes; value hidden\)/);
+  assert.match(userInfo.toString(), /user information string \(2 bytes; value hidden\)/);
+  assert.doesNotMatch(encryptionId.toString(), /9,8,7,6/);
+  assert.doesNotMatch(userInfo.toString(), /97,98/);
 });
 
 test('AdvancedBurstCurrentConfigurationMessage decodes stall counts containing zero bytes', () => {
@@ -565,6 +637,23 @@ test('Extended broadcast frames decode raw RSSI measurement metadata', () => {
   assert.equal(decoded.RSSI.getRawMeasurementType(), 0x10);
   assert.equal(decoded.RSSI.getRawMeasurementValue(), 0x006d);
   assert.equal(decoded.RSSI.getRSSIValue(), undefined);
+});
+
+test('Broadcast data stringifies extended fields with readable labels', () => {
+  const message = new Message(undefined, Message.BROADCAST_DATA);
+  message.setContent(Uint8Array.from([
+    0x00, 0x00, 0xff, 0xff, 0x14, 0x03, 0x00, 0x00, 0x00,
+    0xe0, 0x6e, 0xa3, 0x19, 0x95, 0x10, 0x01, 0x68, 0x00, 0x00, 0x00
+  ]));
+
+  const decoded = new BroadcastDataMessage(message.serialize());
+  const output = decoded.toString();
+
+  assert.match(output, /Ch 0 \| Extended fields: device ID, RSSI, receive timestamp/);
+  assert.match(output, /Device 41838 \(20-bit 631662\), type Environment, pairing not requested, independent channel, global data pages enabled/);
+  assert.match(output, /RSSI raw measurement: 104 \(0x0068\)/);
+  assert.match(output, /Receive timestamp: 0\.000 s/);
+  assert.doesNotMatch(output, /Flags 0xe0|Id 0xa36e/);
 });
 
 test('Extended broadcast frames decode dBm RSSI metadata', () => {

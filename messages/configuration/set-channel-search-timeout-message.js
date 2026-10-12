@@ -25,9 +25,18 @@ class SetChannelSearchTimeoutMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + "Ch " + this.channel + " high priority search timeout" + this.highPrioritySearchTimeout;
+    const timeout = this.highPrioritySearchTimeout;
+    const description = timeout === 0
+      ? 'disabled'
+      : timeout === 0xff
+        ? 'infinite'
+        : (timeout * SetChannelSearchTimeoutMessage.SECONDS_PER_COUNT) + ' s';
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' high-priority search timeout: ' + description + ' (' + timeout + ')';
   }
+
+  static SECONDS_PER_COUNT = 2.5;
 }
 
 export default SetChannelSearchTimeoutMessage;
-

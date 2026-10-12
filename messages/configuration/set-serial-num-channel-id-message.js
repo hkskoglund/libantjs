@@ -1,5 +1,6 @@
 'use strict';
 import Message from '../message.js';
+import ChannelId from '../../channel/channel-id.js';
 
 
 
@@ -20,15 +21,29 @@ class SetSerialNumChannelIdMessage extends Message {
     msgBuffer[2] = deviceType & SetSerialNumChannelIdMessage.DEVICE_TYPE_ID_BIT_MASK; // Slave: 0 = match any device type - Range 0 .. 127
     msgBuffer[3] = transmissionType; // Slave: 0 = match any transmission type
 
+    this.channel = channel;
     this.deviceType = deviceType;
     this.transmissionType = transmissionType;
+    this.pair = pairingRequest;
 
     this.setContent(msgBuffer);
   }
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " deviceType" + this.deviceType + " transmissionType " + this.transmissionType;
+    const deviceType = this.deviceType & SetSerialNumChannelIdMessage.DEVICE_TYPE_ID_BIT_MASK;
+    const typeName = ChannelId.getDeviceTypeName(deviceType);
+    const deviceTypeDescription = deviceType === 0
+      ? 'any (wildcard)'
+      : deviceType + (typeName ? ' (' + typeName + ')' : '');
+    const transmissionTypeDescription = this.transmissionType === 0
+      ? 'any (wildcard)'
+      : ChannelId.describeTransmissionType(this.transmissionType);
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ': device number from serial number, device type ' + deviceTypeDescription +
+      ', transmission type ' + transmissionTypeDescription +
+      (this.pair ? ', pairing requested' : '');
   }
 
   static PAIRING_BIT_MASK = parseInt("10000000", 2);
@@ -40,4 +55,3 @@ class SetSerialNumChannelIdMessage extends Message {
  // Bit 0-6
 
 export default SetSerialNumChannelIdMessage;
-

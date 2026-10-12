@@ -190,8 +190,12 @@ class HostCommands {
 
   // Set network key for specific net
   setNetworkKey(netNumber, key) {
+    const knownKeys = this.channel[0].constructor.NET.KEY;
+    const keyType = Object.entries(knownKeys).find(([, knownKey]) =>
+      knownKey.length === key.length && knownKey.every((byte, index) => byte === key[index])
+    )?.[0] || 'custom';
 
-    return this.sendMessage(new SetNetworkKeyMessage(netNumber, key), this.constructor.EVENT.OK, 0);
+    return this.sendMessage(new SetNetworkKeyMessage(netNumber, key, keyType), this.constructor.EVENT.OK, 0);
   }
 
   // Set search waveform individual channel

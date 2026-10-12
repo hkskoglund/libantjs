@@ -26,9 +26,16 @@ class SetChannelPeriodMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " message period " + this.messagePeriod;
+    const periodSeconds = this.messagePeriod / SetChannelPeriodMessage.CLOCK_RATE;
+    const frequencyHz = SetChannelPeriodMessage.CLOCK_RATE / this.messagePeriod;
+    const frequency = Number(frequencyHz.toFixed(3));
+
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' message period ' + this.messagePeriod + ' ticks (' + periodSeconds.toFixed(3) +
+      ' s, ' + frequency + ' Hz)';
   }
+
+  static CLOCK_RATE = 32768;
 }
 
 export default SetChannelPeriodMessage;
-

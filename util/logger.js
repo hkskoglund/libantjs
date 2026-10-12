@@ -50,7 +50,8 @@ class Logger {
         for (const arg of args) {
           if (arg instanceof Uint8Array)
             outputArguments.push(this._formatUint8Array(arg));
-          outputArguments.push(arg);
+          else
+            outputArguments.push(arg);
         }
 
         output.apply(this.console, outputArguments);
@@ -64,7 +65,7 @@ class Logger {
     if (!(arg instanceof Uint8Array))
       return arg;
 
-    let msg = 'Uint8Array < ';
+    let msg = '< ';
     const maxBytesToFormat = 32;
     let i;
     for (i = 0; i < arg.length && i < maxBytesToFormat; i++) {

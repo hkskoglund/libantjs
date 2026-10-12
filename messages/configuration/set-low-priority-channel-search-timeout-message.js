@@ -17,28 +17,29 @@ class SetLowPrioriyChannelSearchTimeoutMessage extends Message {
 
     this.setContent(msgBuffer);
 
+    this.channel = channel;
     this.lowPrioritySearchTimeout = searchTimeout;
   }
 
   toString() {
 
-    var msg = Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' low priority search timeout ' + this.lowPrioritySearchTimeout;
+    const timeout = this.lowPrioritySearchTimeout;
+    const description = timeout === SetLowPrioriyChannelSearchTimeoutMessage.DISABLE
+      ? 'disabled'
+      : timeout === SetLowPrioriyChannelSearchTimeoutMessage.INFINITE
+        ? 'infinite'
+        : (timeout * SetLowPrioriyChannelSearchTimeoutMessage.SECONDS_PER_COUNT) + ' s';
 
-    switch (this.lowPrioritySearchTimeout) {
-      case SetLowPrioriyChannelSearchTimeoutMessage.DISABLE : msg += ' DISABLED'; break;
-      case SetLowPrioriyChannelSearchTimeoutMessage.INFINITE : msg += ' INFINITE'; break;
-      default : msg += ' '+this.lowPrioritySearchTimeout * 2.5 +'s';
-    }
-
-    return msg;
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' low-priority search timeout: ' + description + ' (' + timeout + ')';
   }
 
   static DISABLE = 0x00;
   static INFINITE = 0xFF;
+  static SECONDS_PER_COUNT = 2.5;
 }
 
 
 
 
 export default SetLowPrioriyChannelSearchTimeoutMessage;
-

@@ -52,14 +52,7 @@ class HostDevices {
       }
     }
 
-    let resetError;
     let usbExitError;
-
-    try {
-      await this.resetSystem();
-    } catch (error) {
-      resetError = error;
-    }
 
     for (var c = 0; c < this.constructor.MAX_CHAN; c++) {
       this.channel[c].removeAllListeners();
@@ -73,15 +66,8 @@ class HostDevices {
 
     this.removeAllListeners();
 
-    if (resetError && usbExitError) {
-      var shutdownError = new Error('Shutdown failed during reset and USB exit');
-      shutdownError.resetError = resetError;
-      shutdownError.usbExitError = usbExitError;
-      throw shutdownError;
-    }
-
-    if (resetError || usbExitError) {
-      throw resetError || usbExitError;
+    if (usbExitError) {
+      throw usbExitError;
     }
   }
 

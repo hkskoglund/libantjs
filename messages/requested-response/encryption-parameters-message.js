@@ -20,7 +20,19 @@ class EncryptionParametersMessage extends Message {
   }
 
   toString() {
-    return Message.prototype.toString.call(this) + " parameter " + this.parameter + " " + Array.from(this.value);
+    let description;
+    if (this.parameter === EncryptionParametersMessage.MAX_SUPPORTED_MODE) {
+      description = 'maximum supported encryption mode ' + this.maxSupportedMode;
+    } else if (this.parameter === EncryptionParametersMessage.ENCRYPTION_ID) {
+      description = 'encryption ID (' + this.encryptionId.length + ' bytes; value hidden)';
+    } else if (this.parameter === EncryptionParametersMessage.USER_INFORMATION_STRING) {
+      description = 'user information string (' + this.userInformationString.length + ' bytes; value hidden)';
+    } else {
+      description = 'unknown parameter (' + this.value.length + ' value bytes)';
+    }
+
+    return Message.prototype.toString.call(this) + ' encryption parameter ' +
+      this.parameter + ': ' + description;
   }
 
   static MAX_SUPPORTED_MODE = 0x00;

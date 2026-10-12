@@ -21,9 +21,12 @@ class SetTransmitPowerMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + ' transmit power ' + this.transmitPower;
+    const power = SetTransmitPowerMessage.POWER_LEVELS[this.transmitPower];
+    return Message.prototype.toString.call(this) + ' transmit power level ' + this.transmitPower +
+      (power === undefined ? ' (unknown level)' : ' (' + power + ' dBm)');
   }
+
+  static POWER_LEVELS = [-20, -10, -5, 0, 4];
 }
 
 export default SetTransmitPowerMessage;
-

@@ -70,7 +70,7 @@ class AntController extends EventEmitter {
       controller = new AbortController();
       response = once(emitter, responseEvent, { signal: controller.signal });
 
-      if (this.log.logging)
+      if (this.log.logging && event !== this.constructor.EVENT.OK)
         this.log.debug('Waiting for ' + responseEvent + (typeof channel === 'number' ? ' channel ' + channel : ' - host'));
     }
 
@@ -82,7 +82,10 @@ class AntController extends EventEmitter {
       await this.usb.transfer(message.serialize());
     } catch (error) {
       if (this.log.logging) {
-        this.log.error('TX failed of ' + messageStr, error);
+        const responseStatus = event === this.constructor.EVENT.OK
+          ? '; RESPONSE_NO_ERROR has not been received'
+          : '';
+        this.log.error('TX failed of ' + messageStr + responseStatus, error);
       }
 
       if (controller) {

@@ -105,42 +105,56 @@ class ChannelId {
     return (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES) >> ChannelId.BIT_FIELD.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES.start_bit;
   }
 
+  static getDeviceTypeName(deviceType) {
+    return ChannelId.DEVICE_TYPE_NAMES[deviceType & ~ChannelId.BITMASK.DEVICE_TYPE.PAIR];
+  }
+
+  static describeTransmissionType(transmissionType) {
+    const details = [];
+    const sharedAddressType = transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS;
+
+    if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.INDEPENDENT_CHANNEL)
+      details.push('independent channel');
+    else if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE)
+      details.push('shared 1-byte address');
+    else if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE)
+      details.push('shared 2-byte address');
+
+    if (transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.ANTPLUS_GLOBAL_PAGES)
+      details.push('global data pages enabled');
+
+    const deviceNumberExtension = (transmissionType &
+      ChannelId.BITMASK.TRANSMISSION_TYPE.BIT20_ADDRESS_NIBBLE) >> 4;
+    if (deviceNumberExtension)
+      details.push('20-bit device number extension ' + deviceNumberExtension);
+
+    return details.length
+      ? details.join(', ') + ' (0x' + transmissionType.toString(16).padStart(2, '0') + ')'
+      : 'no additional transmission features (0x' + transmissionType.toString(16).padStart(2, '0') + ')';
+  }
+
   toString() {
 
-    var formatTransmissionType = function() {
-      var msg = "";
+    const details = [
+      "Device " + this.deviceNumber,
+      "type " + (ChannelId.getDeviceTypeName(this.deviceType) || (this.deviceType & ~ChannelId.BITMASK.DEVICE_TYPE.PAIR)),
+      this.pair ? "pairing requested" : "pairing not requested"
+    ];
+    const sharedAddressType = this.getSharedAddressType();
 
-      // Bit 0-1 - "indicate the presence, and size, of a shared address field at the beginning of the data payload", spec. p. 17
-      switch (this.transmissionType & ChannelId.BITMASK.TRANSMISSION_TYPE.SHARED_ADDRESS) {
-        // case 0x00: msg += "Reserved"; break;
-        case 0x01:
-          msg += "Independent";
-          break; // Only one master and one slave participating
-        case 0x02:
-          msg += "Shared 1 byte address (if supported)";
-          break;
-        case 0x03:
-          msg += "Shared 2 byte address";
-          break;
-          // default: msg += "?"; break;
-      }
+    if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.INDEPENDENT_CHANNEL)
+      details.push("independent channel");
+    else if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.ADDRESS_1BYTE)
+      details.push("shared 1-byte address");
+    else if (sharedAddressType === ChannelId.SHARED_ADDRESS_TYPE.ADDRESS_2BYTE)
+      details.push("shared 2-byte address");
 
-      // Bit 2
-      if (this.hasGlobalDataPages()) {
-        // case 0: msg += " | ANT+ Global data pages not used"; break;
-        msg += " | Global datapages";
-        // default: msg += " | ?"; break;
-      }
+    details.push(this.hasGlobalDataPages() ? "global data pages enabled" : "global data pages disabled");
 
-      if (this.has20BitDeviceNumber()) {
-        msg += " | 20-bit D# = 0x" + this.deviceNumber20BIT.toString(16);
-      }
+    if (this.has20BitDeviceNumber())
+      details[0] += " (20-bit " + this.deviceNumber20BIT + ")";
 
-      return msg;
-
-    }.bind(this);
-
-    return "Id 0x" + this.deviceNumber.toString(16) + ",0x" + this.deviceType.toString(16) + ",0x" + this.transmissionType.toString(16) + "," + this.pair + " " + formatTransmissionType();
+    return details.join(", ");
   }
 
   static BITMASK = {
@@ -153,6 +167,15 @@ class ChannelId {
     BIT20_ADDRESS_NIBBLE: parseInt("11110000", 2)
   },
 };
+  static DEVICE_TYPE_NAMES = {
+    0x0B: 'Bike Power',
+    0x19: 'Environment',
+    0x78: 'Heart Rate',
+    0x79: 'Bike Speed/Cadence',
+    0x7A: 'Bike Cadence',
+    0x7B: 'Bike Speed',
+    0x7C: 'Stride-Based Speed and Distance'
+  };
   static BIT_FIELD = {
   TRANSMISSION_TYPE: {
     ANTPLUS_GLOBAL_PAGES: {
@@ -196,4 +219,3 @@ class ChannelId {
 // Optional bit for non-ANT+ managed networks: table 5-2
 
 export default ChannelId;
-

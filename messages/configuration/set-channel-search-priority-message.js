@@ -14,7 +14,8 @@ class SetChannelSearchPriorityMessage extends Message {
   }
 
   toString() {
-    return Message.prototype.toString.call(this) + " Ch " + this.channel + " search priority " + this.searchPriority;
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' search priority level ' + this.searchPriority;
   }
 }
 

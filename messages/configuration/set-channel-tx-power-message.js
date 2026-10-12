@@ -25,9 +25,13 @@ class SetChannelTxPowerMessage extends Message {
 
   toString() {
 
-    return Message.prototype.toString.call(this) + ' Ch ' + this.channel + ' transmit power ' + this.transmitPower;
+    const power = SetChannelTxPowerMessage.POWER_LEVELS[this.transmitPower];
+    return Message.prototype.toString.call(this) + ' Ch ' + this.channel +
+      ' transmit power level ' + this.transmitPower +
+      (power === undefined ? ' (unknown level)' : ' (' + power + ' dBm)');
   }
+
+  static POWER_LEVELS = [-20, -10, -5, 0, 4];
 }
 
 export default SetChannelTxPowerMessage;
-

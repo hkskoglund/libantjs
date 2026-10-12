@@ -292,6 +292,9 @@ test('sendMessage resolves with the response event without resolving on USB comp
   const { host, completeTransfer } = createHost();
   const response = { ok: true };
   let settled = false;
+  const logs = [];
+  host.log.logging = true;
+  host.log.changeConsole({ log: (...args) => logs.push(args) });
 
   const sent = host.sendMessage(message, 'response', 0).then((result) => {
     settled = true;
@@ -304,6 +307,42 @@ test('sendMessage resolves with the response event without resolving on USB comp
 
   host.channel[0].emit('response_0x4a', undefined, response);
   assert.equal(await sent, response);
+  assert.equal(logs.some(args => args.join(' ').includes('Waiting for response')), true);
+});
+
+test('sendMessage does not log waiting for RESPONSE_NO_ERROR', async () => {
+  const { host, completeTransfer } = createHost();
+  const logs = [];
+  host.log.logging = true;
+  host.log.changeConsole({ log: (...args) => logs.push(args) });
+
+  const sent = host.sendMessage(message, AntController.EVENT.OK, 0);
+  completeTransfer();
+  host.channel[0].emit('RESPONSE_NO_ERROR_0x4a', undefined, {});
+
+  await sent;
+  assert.equal(logs.some(args => args.join(' ').includes('Waiting for')), false);
+});
+
+test('deserialize suppresses successful command responses and warns when RESPONSE_NO_ERROR is missing', () => {
+  const { host } = createHost();
+  const logs = [];
+  host.log.logging = true;
+  host.log.changeConsole({
+    log: (...args) => logs.push(args),
+    warn: (...args) => logs.push(args)
+  });
+  const response = new Message(undefined, Message.CHANNEL_RESPONSE);
+
+  response.setContent(Uint8Array.of(0, Message.SET_CHANNEL_RFFREQ, 0));
+  host.deserialize(response.serialize());
+  assert.equal(logs.length, 0);
+
+  response.setContent(Uint8Array.of(0, Message.SET_CHANNEL_RFFREQ, 0x33));
+  host.deserialize(response.serialize());
+  assert.equal(logs.length, 1);
+  assert.match(logs[0].join(' '), /RESPONSE_NO_ERROR has not been received/);
+  assert.match(logs[0].join(' '), /INVALID_PARAMETER_PROVIDED/);
 });
 
 test('sendMessage rejects when the response event carries an error', async () => {
@@ -327,6 +366,22 @@ test('AntController.sleep sends a Sleep Message', async () => {
 
   assert.equal(sentMessage.id, Message.SLEEP_MESSAGE);
   assert.deepEqual(Array.from(sentMessage.serialize()), [0xa4, 0x01, 0xc5, 0x00, 0x60]);
+});
+
+test('AntController identifies standard network key types in logs without exposing key bytes', async () => {
+  const { host } = createHost();
+  host.sendMessage = async message => message.toString();
+
+  const publicKey = await host.setNetworkKey(0, host.channel[0].constructor.NET.KEY.PUBLIC);
+  const antPlusKey = await host.setNetworkKey(0, host.channel[0].constructor.NET.KEY['ANT+']);
+  const antfsKey = await host.setNetworkKey(0, host.channel[0].constructor.NET.KEY.ANTFS);
+  const customKey = await host.setNetworkKey(0, [1, 2, 3, 4, 5, 6, 7, 8]);
+
+  assert.match(publicKey, /key type PUBLIC/);
+  assert.match(antPlusKey, /key type ANT\+/);
+  assert.match(antfsKey, /key type ANTFS/);
+  assert.match(customKey, /key type custom/);
+  assert.doesNotMatch(antPlusKey, /185,165,33,251,189,114,195,69/);
 });
 
 test('AntController.disableAdvancedBurst sends 0x00 in the enable byte', async () => {
@@ -406,15 +461,15 @@ test('AntController.deserialize buffers incomplete frames and clears them after 
   assert.deepEqual(errors, ['Unable to parse received msg id 1']);
 });
 
-test('AntController.exit propagates a reset error and still exits USB', async () => {
+test('AntController.exit leaves resetting the stick to USB shutdown', async () => {
   const { host } = createHost();
-  const resetError = new Error('reset failed');
   let usbExitCalls = 0;
-
-  host.resetSystem = async () => { throw resetError; };
+  host.resetSystem = async () => {
+    throw new Error('exit should not send a separate reset');
+  };
   host.usb.exit = async () => { usbExitCalls++; };
 
-  await assert.rejects(host.exit(), resetError);
+  await host.exit();
   assert.equal(usbExitCalls, 1);
 });
 
@@ -426,22 +481,6 @@ test('AntController.exit propagates a USB exit error', async () => {
   host.usb.exit = async () => { throw usbExitError; };
 
   await assert.rejects(host.exit(), usbExitError);
-});
-
-test('AntController.exit preserves both errors when reset and USB exit fail', async () => {
-  const { host } = createHost();
-  const resetError = new Error('reset failed');
-  const usbExitError = new Error('USB exit failed');
-
-  host.resetSystem = async () => { throw resetError; };
-  host.usb.exit = async () => { throw usbExitError; };
-
-  await assert.rejects(host.exit(), (error) => {
-    assert.ok(error instanceof Error);
-    assert.equal(error.resetError, resetError);
-    assert.equal(error.usbExitError, usbExitError);
-    return true;
-  });
 });
 
 test('Channel.getStatus forwards errors without updating channel state', async () => {

@@ -9,7 +9,7 @@ class RXTimestamp {
 
   decode(timestamp) {
 
-    this.timestamp = (new DataView(timestamp.buffer)).getUint16(0 + timestamp.byteOffset, true);
+    this.timestamp = (new DataView(timestamp.buffer, timestamp.byteOffset, timestamp.byteLength)).getUint16(0, true);
   }
 
   getRxTimestamp() {
@@ -27,9 +27,8 @@ class RXTimestamp {
 
   toString() {
 
-    return "RX Timestamp " + this.getRxTimestamp() + " " + this.convertRXTimestampToSeconds().toFixed(3) + " s";
+    return "Receive timestamp: " + this.convertRXTimestampToSeconds().toFixed(3) + " s";
   }
 }
 
 export default RXTimestamp;
-
