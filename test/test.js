@@ -1100,6 +1100,25 @@ test('TemperaturePage1 decodes negative signed temperatures and invalid values',
   assert.match(invalid.toString(), /Low \(24H\) N\/A°C High \(24H\) N\/A°C Current Temp N\/A°C/);
 });
 
+test('TemperaturePage1 serializes 24-hour temperatures without floating-point noise', () => {
+  const page = new TemperaturePage1(
+    { logger: { logging: false } },
+    { data: Uint8Array.from([1, 0xff, 251, 214, 0x0d, 0x0e, 0x03, 0x09]) },
+    undefined,
+    1
+  );
+
+  assert.equal(page.hour24Low, 21.4);
+  assert.equal(page.hour24High, 23.7);
+  assert.deepEqual(JSON.parse(JSON.stringify({
+    temperatureLow24hC: page.hour24Low,
+    temperatureHigh24hC: page.hour24High
+  })), {
+    temperatureLow24hC: 21.4,
+    temperatureHigh24hC: 23.7
+  });
+});
+
 test('TemperaturePage0 decodes transmission info and supported pages', () => {
   const page = new TemperaturePage0(
     { logger: { logging: false } },

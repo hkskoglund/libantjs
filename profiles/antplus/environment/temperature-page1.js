@@ -49,7 +49,9 @@ import MainPage from '../main-page.js';
     {
       if (signHour24LowMSN === -1)
         valueHour24Low = ((~valueHour24Low) + 1) & TemperaturePage1.BIT_MASK.MAGNITUDE_LOW_HIGH;
-      this.hour24Low = valueHour24Low * signHour24LowMSN * TemperaturePage1.UNIT.HOUR24_LOW;
+      this.hour24Low = Math.round(
+        valueHour24Low * signHour24LowMSN * TemperaturePage1.UNIT.HOUR24_LOW * 10
+      ) / 10;
     } else
       this.hour24Low = undefined;
 
@@ -73,7 +75,9 @@ import MainPage from '../main-page.js';
       if (signHour24HighMSB === -1)
         value24High = ((~value24High) + 1) & TemperaturePage1.BIT_MASK.MAGNITUDE_LOW_HIGH;
 
-      this.hour24High = value24High * signHour24HighMSB * TemperaturePage1.UNIT.HOUR24_HIGH;
+      this.hour24High = Math.round(
+        value24High * signHour24HighMSB * TemperaturePage1.UNIT.HOUR24_HIGH * 10
+      ) / 10;
     } else
       this.hour24High = undefined;
 
@@ -193,4 +197,3 @@ import MainPage from '../main-page.js';
 
 
   export default TemperaturePage1;
-
