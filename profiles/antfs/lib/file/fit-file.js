@@ -29,7 +29,7 @@ class FitFile extends File {
       date = iso.substring(0, 10),
       time = date1989.toLocaleTimeString().replace(new RegExp(':', 'g'), '-');
 
-    return date + ' ' + time;
+    return date + '-' + time;
   }
 
   getFileName(unixFormat, omitDevice) {
@@ -44,7 +44,7 @@ class FitFile extends File {
       dateStr = '';
     else if (this.date < 0x0FFFFFFF)
       if (this.date)
-        dateStr = ' System Date ' + this.date;
+        dateStr = 'system-date-' + this.date;
       else
         dateStr = '';
     else
@@ -53,7 +53,8 @@ class FitFile extends File {
     filename = FitFile.FIT_FILE_TYPES[this.subType];
 
     for (i = 0; this.directory.file && i < this.directory.file.length; i++) {
-      if (this.directory.file[i] !== this &&
+      if (!(omitDevice && this.subType === 4) &&
+          this.directory.file[i] !== this &&
           this.directory.file[i] instanceof FitFile &&
           this.directory.file[i].subType === this.subType) {
         indexPrefix = this.index + '-';
@@ -66,7 +67,7 @@ class FitFile extends File {
 
     filename = indexPrefix + filename;
     if (dateStr !== '')
-      filename += ' ' + dateStr + '.fit';
+      filename += '-' + dateStr + '.fit';
     else
       filename += dateStr + '.fit';
     if (omitDevice)
@@ -89,22 +90,22 @@ class FitFile extends File {
 
   static FIT_FILE_TYPES = {
   // FIT SDK - FIT File Types D00001309 FIT File Types Description - Rev 1.6
-  1: 'DeviceCapabilities',
-  2: 'Settings',
-  3: 'SportSettings',
-  4: 'Activity',
-  5: 'Workout',
-  6: 'Course',
-  7: 'Schedule',
-  8: 'Locations',
-  9: 'Weight',
-  10: 'Totals',
-  11: 'Goals',
-  14: 'BloodPressure',
-  15: 'MonitoringA',
-  20: 'ActivitySummary',
-  28: 'DailyMonitoring',
-  32: 'MonitoringB'
+  1: 'device-capabilities',
+  2: 'settings',
+  3: 'sport-settings',
+  4: 'activity',
+  5: 'workout',
+  6: 'course',
+  7: 'schedule',
+  8: 'locations',
+  9: 'weight',
+  10: 'totals',
+  11: 'goals',
+  14: 'blood-pressure',
+  15: 'monitoring-a',
+  20: 'activity-summary',
+  28: 'daily-monitoring',
+  32: 'monitoring-b'
 };
 }
 

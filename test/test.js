@@ -797,14 +797,24 @@ test('Directory.getFileName falls back to the client serial number without a fri
   assert.equal(directory.getFileName(), 'directory-3842729776');
 });
 
-test('Directory.ls starts the flags header on a new line', () => {
+test('Directory.ls lists FIT filenames in lowercase kebab-case', () => {
   const host = {
     log: { log() {} },
+    getClientFriendlyname: () => 'Forerunner 935',
     getClientSerialNumber: () => 3842729776
   };
   const directory = new Directory(undefined, host);
+  const file = new FitFile(undefined, directory);
+  file.subType = 3;
+  file.index = 5;
+  file.date = 0xFFFFFFFF;
+  file.permission = { read: true, write: false, erase: false, archive: false, append: false, crypto: false };
+  file.size = 1024;
+  directory.file.push(file);
 
-  assert.ok(directory.ls().startsWith('\nFlags:'));
+  const listing = directory.ls();
+  assert.ok(listing.startsWith('\nFlags:'));
+  assert.ok(listing.includes('sport-settings.fit'));
 });
 
 test('FitFile.getFileName omits the authenticated client friendly name', () => {
@@ -820,7 +830,7 @@ test('FitFile.getFileName omits the authenticated client friendly name', () => {
   file.index = 4;
   file.date = 0xFFFFFFFF;
 
-  assert.equal(file.getFileName(), 'Settings.fit');
+  assert.equal(file.getFileName(), 'settings.fit');
 });
 
 test('FitFile.getFileName prefixes only duplicate names in Unix format', () => {
@@ -838,7 +848,7 @@ test('FitFile.getFileName prefixes only duplicate names in Unix format', () => {
   schedule.date = 0xFFFFFFFF;
   directory.file.push(schedule);
 
-  assert.equal(schedule.getFileName(true), 'Schedule.fit');
+  assert.equal(schedule.getFileName(true), 'schedule.fit');
 
   const firstSportSettings = new FitFile(undefined, directory);
   firstSportSettings.subType = 3;
@@ -850,10 +860,30 @@ test('FitFile.getFileName prefixes only duplicate names in Unix format', () => {
   secondSportSettings.date = 0xFFFFFFFF;
   directory.file.push(firstSportSettings, secondSportSettings);
 
-  assert.equal(firstSportSettings.getFileName(true), '5-SportSettings.fit');
-  assert.equal(secondSportSettings.getFileName(true), '6-SportSettings.fit');
-  assert.equal(firstSportSettings.getFileName(), '5-SportSettings.fit');
-  assert.equal(secondSportSettings.getFileName(), '6-SportSettings.fit');
+  assert.equal(firstSportSettings.getFileName(true), '5-sport-settings.fit');
+  assert.equal(secondSportSettings.getFileName(true), '6-sport-settings.fit');
+  assert.equal(firstSportSettings.getFileName(), '5-sport-settings.fit');
+  assert.equal(secondSportSettings.getFileName(), '6-sport-settings.fit');
+
+  const firstActivity = new FitFile(undefined, directory);
+  firstActivity.subType = 4;
+  firstActivity.index = 10;
+  firstActivity.date = 0xFFFFFFFF;
+  const secondActivity = new FitFile(undefined, directory);
+  secondActivity.subType = 4;
+  secondActivity.index = 11;
+  secondActivity.date = 0xFFFFFFFF;
+  directory.file.push(firstActivity, secondActivity);
+
+  assert.equal(firstActivity.getFileName(false, true), 'activity.fit');
+  assert.equal(secondActivity.getFileName(false, true), 'activity.fit');
+  assert.equal(firstActivity.getFileName(true), '10-activity.fit');
+  assert.equal(secondActivity.getFileName(true), '11-activity.fit');
+
+  firstActivity.date = Date.UTC(2026, 9, 13, 14, 21, 12) / 1000 -
+    Date.UTC(1989, 11, 31, 0, 0, 0) / 1000;
+  assert.match(firstActivity.getFileName(false, true), /^activity-2026-10-13-/);
+  assert.ok(!firstActivity.getFileName(false, true).includes(' '));
 });
 
 test('CumulativeOperatingTime0x52 decodes battery status from byte 7', () => {
